@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 import 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import '../interfaces/IPayments.sol';
@@ -15,13 +15,13 @@ abstract contract Payments is IPayments {
     }
 
     receive() external payable {
-        require(msg.sender == WETH9, 'Not WETH9');
+        if (msg.sender != WETH9) revert NotWETH9();
     }
 
     /// @inheritdoc IPayments
     function unwrapWETH9(uint256 amountMinimum, address recipient) public payable override {
         uint256 balanceWETH9 = IWETH9(WETH9).balanceOf(address(this));
-        require(balanceWETH9 >= amountMinimum, 'Insufficient WETH9');
+        if (balanceWETH9 < amountMinimum) revert InsufficientWETH9();
 
         if (balanceWETH9 > 0) {
             IWETH9(WETH9).withdraw(balanceWETH9);
@@ -32,7 +32,7 @@ abstract contract Payments is IPayments {
     /// @inheritdoc IPayments
     function sweepToken(address token, uint256 amountMinimum, address recipient) public payable override {
         uint256 balanceToken = IERC20(token).balanceOf(address(this));
-        require(balanceToken >= amountMinimum, 'Insufficient token');
+        if (balanceToken < amountMinimum) revert InsufficientToken(token);
 
         if (balanceToken > 0) {
             TransferHelper.safeTransfer(token, recipient, balanceToken);

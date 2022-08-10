@@ -4,6 +4,16 @@ pragma solidity >=0.7.5;
 /// @title Periphery Payments
 /// @notice Functions to ease deposits and withdrawals of ETH
 interface IPayments {
+    /// @notice Thrown when sent ETH from address other than the WETH contract
+    error NotWETH9();
+
+    /// @notice Thrown when trying to unwrap more WETH9 than the contract owns
+    error InsufficientWETH9();
+
+    /// @notice Thrown when trying to sweep more tokens than the contract owns
+    /// @param token The token being swept
+    error InsufficientToken(address token);
+
     /// @return Returns the address of WETH9
     function WETH9() external view returns (address);
 
