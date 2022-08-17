@@ -14,10 +14,6 @@ abstract contract Payments is IPayments {
         WETH9 = _WETH9;
     }
 
-    receive() external payable {
-        if (msg.sender != WETH9) revert NotWETH9();
-    }
-
     /// @inheritdoc IPayments
     function unwrapWETH9(uint256 amountMinimum, address recipient) public payable override {
         uint256 balanceWETH9 = IWETH9(WETH9).balanceOf(address(this));
@@ -44,21 +40,25 @@ abstract contract Payments is IPayments {
         if (address(this).balance > 0) TransferHelper.safeTransferETH(msg.sender, address(this).balance);
     }
 
-    /// @param token The token to pay
-    /// @param payer The entity that must pay
-    /// @param recipient The entity that will receive payment
-    /// @param value The amount to pay
-    function pay(address token, address payer, address recipient, uint256 value) internal {
-        if (token == WETH9 && address(this).balance >= value) {
+    struct Payment {
+      address token;
+      address payer;
+      address recipient;
+      uint256 value;
+    }
+
+    /// @param payment The payment
+    function pay(Payment memory payment) internal {
+        if (payment.token == WETH9 && address(this).balance >= payment.value) {
             // pay with WETH9
-            IWETH9(WETH9).deposit{value: value}(); // wrap only what is needed to pay
-            IWETH9(WETH9).transfer(recipient, value);
-        } else if (payer == address(this)) {
+            IWETH9(WETH9).deposit{value: payment.value}(); // wrap only what is needed to pay
+            IWETH9(WETH9).transfer(payment.recipient, payment.value);
+        } else if (payment.payer == address(this)) {
             // pay with tokens already in the contract (for the exact input multihop case)
-            TransferHelper.safeTransfer(token, recipient, value);
+            TransferHelper.safeTransfer(payment.token, payment.recipient, payment.value);
         } else {
             // pull payment
-            TransferHelper.safeTransferFrom(token, payer, recipient, value);
+            TransferHelper.safeTransferFrom(payment.token, payment.payer, payment.recipient, payment.value);
         }
     }
 }

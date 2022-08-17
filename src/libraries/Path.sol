@@ -9,13 +9,16 @@ library Path {
 
     /// @dev The length of the bytes encoded address
     uint256 private constant ADDR_SIZE = 20;
+
     /// @dev The length of the bytes encoded fee
     uint256 private constant FEE_SIZE = 3;
 
     /// @dev The offset of a single token address and pool fee
     uint256 private constant NEXT_OFFSET = ADDR_SIZE + FEE_SIZE;
+
     /// @dev The offset of an encoded pool key
     uint256 private constant POP_OFFSET = NEXT_OFFSET + ADDR_SIZE;
+
     /// @dev The minimum length of an encoding that contains 2 or more pools
     uint256 private constant MULTIPLE_POOLS_MIN_LENGTH = POP_OFFSET + NEXT_OFFSET;
 
@@ -39,15 +42,7 @@ library Path {
     /// @return tokenA The first token of the given pool
     /// @return tokenB The second token of the given pool
     /// @return fee The fee level of the pool
-    function decodeFirstPool(bytes memory path)
-        internal
-        pure
-        returns (
-            address tokenA,
-            address tokenB,
-            uint24 fee
-        )
-    {
+    function decodeFirstPool(bytes memory path) internal pure returns (address tokenA, address tokenB, uint24 fee) {
         tokenA = path.toAddress(0);
         fee = path.toUint24(ADDR_SIZE);
         tokenB = path.toAddress(NEXT_OFFSET);

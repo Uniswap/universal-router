@@ -9,11 +9,7 @@
 pragma solidity ^0.8.0;
 
 library BytesLib {
-    function slice(
-        bytes memory _bytes,
-        uint256 _start,
-        uint256 _length
-    ) internal pure returns (bytes memory) {
+    function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
         require(_length + 31 >= _length, 'slice_overflow');
         require(_start + _length >= _start, 'slice_overflow');
         require(_bytes.length >= _start + _length, 'slice_outOfBounds');
@@ -44,16 +40,11 @@ library BytesLib {
                     let mc := add(add(tempBytes, lengthmod), mul(0x20, iszero(lengthmod)))
                     let end := add(mc, _length)
 
-                    for {
-                        // The multiplication in the next line has the same exact purpose
-                        // as the one above.
-                        let cc := add(add(add(_bytes, lengthmod), mul(0x20, iszero(lengthmod))), _start)
-                    } lt(mc, end) {
+                    for { let cc := add(add(add(_bytes, lengthmod), mul(0x20, iszero(lengthmod))), _start) } lt(mc, end)
+                    {
                         mc := add(mc, 0x20)
                         cc := add(cc, 0x20)
-                    } {
-                        mstore(mc, mload(cc))
-                    }
+                    } { mstore(mc, mload(cc)) }
 
                     mstore(tempBytes, _length)
 
