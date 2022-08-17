@@ -1,0 +1,52 @@
+
+{
+  "name": "@ewilz/narwhal",
+  "description": "Smart contracts for Narwhal",
+  "license": "GPL-2.0-or-later",
+  "publishConfig": {
+    "access": "private"
+  },
+  "version": "1.0.0",
+  "keywords": [
+    "narwhal"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Uniswap/narwhal"
+  },
+  "files": [
+    "contracts/base",
+    "contracts/interfaces",
+    "contracts/libraries",
+    "contracts",
+    "typechain",
+    "artifacts/src/**/*.json",
+    "!artifacts/src/**/*.dbg.json",
+    "!artifacts/src/test/**/*",
+    "!artifacts/src/base/**/*"
+  ],
+  "engines": {
+    "node": ">=10"
+  },
+"engines": {
+  "node": ">=10"
+},
+"dependencies": {
+  "@openzeppelin/contracts": "^v4.7.3"
+},
+"devDependencies": {
+  "@nomiclabs/hardhat-ethers": "^2.0.2",
+  "@typechain/ethers-v5": "^4.0.0",
+  "ethers": "^5.0.8",
+  "hardhat": "^2.6.8",
+  "hardhat-typechain": "^0.3.5",
+  "ts-generator": "^0.1.1",
+  "ts-node": "^8.5.4",
+  "typechain": "^4.0.0",
+  "typescript": "^3.7.3"
+},
+"scripts": {
+  "compile": "hardhat compile",
+  "test": "hardhat test"
+}
+}
