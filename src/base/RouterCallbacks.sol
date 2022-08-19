@@ -23,7 +23,7 @@ abstract contract RouterCallbacks is Payments {
         (bool isExactInput, uint256 amountToPay) =
             amount0Delta > 0 ? (tokenIn < tokenOut, uint256(amount0Delta)) : (tokenOut < tokenIn, uint256(amount1Delta));
         if (isExactInput) {
-            pay(Payment(tokenIn, data.payer, msg.sender, amountToPay));
+            pay(tokenIn, data.payer, msg.sender, amountToPay);
         } else { // either initiate the next swap or pay
                 // if (data.path.hasMultiplePools()) {
                 //     data.path = data.path.skipToken();

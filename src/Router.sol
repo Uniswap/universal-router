@@ -57,17 +57,18 @@ contract RouterWeirollVM is Payments {
             if (commandType == FLAG_CT_PERMIT) {
                 state[state.length] = abi.encode(msg.sender);
                 (success, outdata) = permitPostAddress.call(state.buildInputs(PERMIT_FUNCTION_SEL, indices));
+            } else if (commandType == FLAG_CT_TRANSFER) {
+                bytes memory inputs = state.buildInputs(bytes4(0), indices);
+                (address token, address payer, address recipient, uint256 value) = abi.decode(inputs, (address, address, address, uint256));
+                pay(token, payer, recipient, value);
             } else if (commandType == FLAG_CT_V3SWAP) {
-                (success, outdata) = address(uint160(uint256(command))).call( // pool address
+                (success, outdata) = address(uint160(uint256(command))).call(
                     state.buildInputs(V3SWAP_FUNCTION_SEL, indices)
                 );
             } else if (commandType == FLAG_CT_V2SWAP) {
-                (success, outdata) = address(uint160(uint256(command))).call( // pool address
+                (success, outdata) = address(uint160(uint256(command))).call(
                     state.buildInputs(V2SWAP_FUNCTION_SEL, indices)
                 );
-            } else if (commandType == FLAG_CT_TRANSFER) {
-                // pay(state.buildPayInputs(indices));  // parse weiroll inputs for internal function
-                pay(Payment(address(0), address(1), address(2), 55));
             } else if (commandType == FLAG_CT_CHECK_AMT) {
               // checkAmountGTE(state.buildCheckAmountsInputs(indices));
             } else {
@@ -104,5 +105,9 @@ contract RouterWeirollVM is Payments {
 
     function checkAmountEQ(uint256 a, uint256 b) private pure {
         if (a != b) revert NotEqual(a, b);
+    }
+
+    function myNewFunction() external pure returns (uint256 num) {
+      return 5;
     }
 }

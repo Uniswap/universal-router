@@ -40,25 +40,21 @@ abstract contract Payments is IPayments {
         if (address(this).balance > 0) TransferHelper.safeTransferETH(msg.sender, address(this).balance);
     }
 
-    struct Payment {
-      address token;
-      address payer;
-      address recipient;
-      uint256 value;
-    }
-
-    /// @param payment The payment
-    function pay(Payment memory payment) internal {
-        if (payment.token == WETH9 && address(this).balance >= payment.value) {
+    /// @param token The token to pay
+    /// @param payer The entity that must pay
+    /// @param recipient The entity that will receive payment
+    /// @param value The amount to pay
+    function pay(address token, address payer, address recipient, uint256 value) internal {
+        if (token == WETH9 && address(this).balance >= value) {
             // pay with WETH9
-            IWETH9(WETH9).deposit{value: payment.value}(); // wrap only what is needed to pay
-            IWETH9(WETH9).transfer(payment.recipient, payment.value);
-        } else if (payment.payer == address(this)) {
+            IWETH9(WETH9).deposit{value: value}(); // wrap only what is needed to pay
+            IWETH9(WETH9).transfer(recipient, value);
+        } else if (payer == address(this)) {
             // pay with tokens already in the contract (for the exact input multihop case)
-            TransferHelper.safeTransfer(payment.token, payment.recipient, payment.value);
+            TransferHelper.safeTransfer(token, recipient, value);
         } else {
             // pull payment
-            TransferHelper.safeTransferFrom(payment.token, payment.payer, payment.recipient, payment.value);
+            TransferHelper.safeTransferFrom(token, payer, recipient, value);
         }
     }
 }

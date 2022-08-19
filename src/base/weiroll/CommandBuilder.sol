@@ -49,10 +49,15 @@ library CommandBuilder {
         }
 
         // Encode it
-        ret = new bytes(count + 4);
-        assembly {
-            mstore(add(ret, 32), selector)
+        if (selector != bytes4(0)){
+          ret = new bytes(count + 4);
+          assembly {
+              mstore(add(ret, 32), selector)
+          }
+        } else {
+          ret = new bytes(count);
         }
+
         count = 0;
         for (uint256 i; i < 32;) {
             idx = uint8(indices[i]);
