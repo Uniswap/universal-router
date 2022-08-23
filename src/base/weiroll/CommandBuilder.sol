@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-import 'hardhat/console.sol';
-
 pragma solidity ^0.8.11;
 
 library CommandBuilder {
@@ -10,12 +8,11 @@ library CommandBuilder {
     uint256 constant IDX_END_OF_ARGS = 0xff;
     uint256 constant IDX_USE_STATE = 0xfe;
 
-    function buildInputs(bytes[] memory state, bytes4 selector, bytes32 indices)
+    function buildInputs(bytes[] memory state, bytes32 indices)
         internal
         view
         returns (bytes memory ret)
     {
-        uint256 gasLeft = gasleft();
         uint256 count; // Number of bytes in whole ABI encoded message
         uint256 free; // Pointer to first free byte in tail part of message
         bytes memory stateData; // Optionally encode the current state if the call requires it
@@ -51,19 +48,7 @@ library CommandBuilder {
             }
         }
 
-        uint256 offset;
-        // Encode it
-        if (selector != bytes4(0)) {
-            ret = new bytes(count + 4);
-            assembly {
-                mstore(add(ret, 32), selector)
-            }
-            offset = 4;
-        } else {
-            ret = new bytes(count);
-            offset = 0;
-        }
-
+        ret = new bytes(count);
         count = 0;
         for (uint256 i; i < 32;) {
             idx = uint8(indices[i]);
@@ -74,7 +59,7 @@ library CommandBuilder {
                     assembly {
                         mstore(add(add(ret, 36), count), free)
                     }
-                    memcpy(stateData, 32, ret, free + offset, stateData.length - 32);
+                    memcpy(stateData, 32, ret, free, stateData.length - 32);
                     free += stateData.length - 32;
                 } else {
                     uint256 arglen = state[idx & IDX_VALUE_MASK].length;
@@ -83,7 +68,7 @@ library CommandBuilder {
                     assembly {
                         mstore(add(add(ret, 36), count), free)
                     }
-                    memcpy(state[idx & IDX_VALUE_MASK], 0, ret, free + offset, arglen);
+                    memcpy(state[idx & IDX_VALUE_MASK], 0, ret, free, arglen);
                     free += arglen;
                 }
             } else {
@@ -100,8 +85,6 @@ library CommandBuilder {
                 ++i;
             }
         }
-        console.log('gasLeft:');
-        console.log(gasLeft - gasleft());
     }
 
     function writeOutputs(bytes[] memory state, bytes1 index, bytes memory output)

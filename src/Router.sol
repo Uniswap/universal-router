@@ -5,12 +5,12 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 
 import './base/Payments.sol';
 import './base/weiroll/CommandBuilder.sol';
-import 'hardhat/console.sol';
 
+import 'hardhat/console.sol';
 contract RouterWeirollVM is Payments {
     error NotGreaterOrEqual(uint256 big, uint256 smol);
     error NotEqual(uint256 equal1, uint256 equal2);
-    error ExecutionFailed(uint256 command_index, address target, string message);
+    error ExecutionFailed(uint256 command_index, string message);
 
     using CommandBuilder for bytes[];
 
@@ -37,7 +37,7 @@ contract RouterWeirollVM is Payments {
         permitPostAddress = permitPost;
     }
 
-    function execute(bytes32[] calldata commands, bytes[] memory state) external returns (bytes[] memory) {
+    function execute(bytes8[] calldata commands, bytes[] memory state) external returns (bytes[] memory) {
         bytes32 command;
         uint256 commandType;
         uint256 flags;
@@ -49,25 +49,25 @@ contract RouterWeirollVM is Payments {
         for (uint256 i; i < commands.length; i++) {
             success = true;
             command = commands[i];
-            flags = uint256(uint8(bytes1(command << 32)));
+            flags = uint256(uint8(bytes1(command)));
             commandType = flags & FLAG_CT_MASK;
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
                 indices = commands[i++];
             } else {
-                indices = bytes32(uint256(command << 40) | SHORT_COMMAND_FILL);
+                indices = bytes32(uint256(command << 8) | SHORT_COMMAND_FILL);
             }
 
             if (commandType == FLAG_CT_PERMIT) {
-                state[state.length] = abi.encode(msg.sender);
-                (success, outdata) = permitPostAddress.call(state[0]);
+                // state[state.length] = abi.encode(msg.sender);
+                // (success, outdata) = permitPostAddress.call(state[0]);
 
                 // bytes memory inputs = state.build(bytes4(0), indices);
                 // (address some, address parameters, uint256 forPermit) = abi.decode(inputs, (address, address, uint));
                 //
                 // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
             } else if (commandType == FLAG_CT_TRANSFER) {
-                bytes memory inputs = state.buildInputs(bytes4(0), indices);
+                bytes memory inputs = state.buildInputs(indices);
                 (
                   address token,
                   address payer,
@@ -77,9 +77,9 @@ contract RouterWeirollVM is Payments {
                 pay(token, payer, recipient, value);
 
             } else if (commandType == FLAG_CT_V3SWAP) {
-                (success, outdata) = address(uint160(uint256(command))).call(state.buildInputs(V3SWAP_FUNCTION_SEL, indices));
+                // (success, outdata) = address(uint160(uint256(command))).call(state.buildInputs(V3SWAP_FUNCTION_SEL, indices));
             } else if (commandType == FLAG_CT_V2SWAP) {
-              bytes memory inputs = state.buildInputs(bytes4(0), indices);
+              bytes memory inputs = state.buildInputs(indices);
               (
                 uint256 amountIn,
                 uint256 amountOutMin,
@@ -103,15 +103,14 @@ contract RouterWeirollVM is Payments {
                 }
                 revert ExecutionFailed({
                     command_index: 0,
-                    target: address(uint160(uint256(command))),
                     message: outdata.length > 0 ? string(outdata) : 'Unknown'
                 });
             }
 
             if (flags & FLAG_TUPLE_RETURN != 0) {
-                state.writeTuple(bytes1(command << 88), outdata);
+                state.writeTuple(bytes1(command << 56), outdata);
             } else {
-                state = state.writeOutputs(bytes1(command << 88), outdata);
+                state = state.writeOutputs(bytes1(command << 56), outdata);
             }
         }
 
