@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+import 'hardhat/console.sol';
 
 pragma solidity ^0.8.11;
 
@@ -48,14 +49,17 @@ library CommandBuilder {
             }
         }
 
+        uint256 offset;
         // Encode it
-        if (selector != bytes4(0)){
-          ret = new bytes(count + 4);
-          assembly {
-              mstore(add(ret, 32), selector)
-          }
+        if (selector != bytes4(0)) {
+            ret = new bytes(count + 4);
+            assembly {
+                mstore(add(ret, 32), selector)
+            }
+            offset = 4;
         } else {
-          ret = new bytes(count);
+            ret = new bytes(count);
+            offset = 0;
         }
 
         count = 0;
@@ -68,7 +72,7 @@ library CommandBuilder {
                     assembly {
                         mstore(add(add(ret, 36), count), free)
                     }
-                    memcpy(stateData, 32, ret, free + 4, stateData.length - 32);
+                    memcpy(stateData, 32, ret, free + offset, stateData.length - 32);
                     free += stateData.length - 32;
                 } else {
                     uint256 arglen = state[idx & IDX_VALUE_MASK].length;
@@ -77,14 +81,14 @@ library CommandBuilder {
                     assembly {
                         mstore(add(add(ret, 36), count), free)
                     }
-                    memcpy(state[idx & IDX_VALUE_MASK], 0, ret, free + 4, arglen);
+                    memcpy(state[idx & IDX_VALUE_MASK], 0, ret, free + offset, arglen);
                     free += arglen;
                 }
             } else {
                 // Fixed length data; write it directly
                 bytes memory statevar = state[idx & IDX_VALUE_MASK];
                 assembly {
-                    mstore(add(add(ret, 36), count), mload(add(statevar, 32)))
+                    mstore(add(add(ret, 32), count), mload(add(statevar, 32)))
                 }
             }
             unchecked {
@@ -146,7 +150,7 @@ library CommandBuilder {
 
     function memcpy(bytes memory src, uint256 srcidx, bytes memory dest, uint256 destidx, uint256 len) internal view {
         assembly {
-            pop(staticcall(gas(), 4, add(add(src, 32), srcidx), len, add(add(dest, 32), destidx), len))
+            pop(staticcall(gas(), 0, add(add(src, 32), srcidx), len, add(add(dest, 32), destidx), len))
         }
     }
 }
