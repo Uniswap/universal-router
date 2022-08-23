@@ -5,7 +5,6 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 
 import './base/Payments.sol';
 import './base/weiroll/CommandBuilder.sol';
-
 import 'hardhat/console.sol';
 
 contract RouterWeirollVM is Payments {
@@ -23,8 +22,8 @@ contract RouterWeirollVM is Payments {
 
     uint256 constant FLAG_CT_PERMIT = 0x00;
     uint256 constant FLAG_CT_TRANSFER = 0x01;
-    uint256 constant FLAG_CT_V2SWAP = 0x02;
-    uint256 constant FLAG_CT_V3SWAP = 0x03;
+    uint256 constant FLAG_CT_V2SWAP = 0x03;
+    uint256 constant FLAG_CT_V3SWAP = 0x02;
     uint256 constant FLAG_CT_CHECK_AMT = 0x04;
     uint256 constant FLAG_CT_MASK = 0x07;
 
@@ -80,9 +79,18 @@ contract RouterWeirollVM is Payments {
             } else if (commandType == FLAG_CT_V3SWAP) {
                 (success, outdata) = address(uint160(uint256(command))).call(state.buildInputs(V3SWAP_FUNCTION_SEL, indices));
             } else if (commandType == FLAG_CT_V2SWAP) {
-                (success, outdata) =
-                    address(uint160(uint256(command))).call(state.buildInputs(V2SWAP_FUNCTION_SEL, indices));
-            } else if (commandType == FLAG_CT_CHECK_AMT) { // checkAmountGTE(state.buildCheckAmountsInputs(indices));
+              bytes memory inputs = state.buildInputs(bytes4(0), indices);
+              (
+                uint256 amountIn,
+                uint256 amountOutMin,
+                address input,
+                address output,
+                address recipient
+              ) = abi.decode(inputs, (uint256, uint256, address, address, address));
+              address[] memory path = new address[](2);
+              path[0] = input;
+              path[1] = output;
+              outdata = abi.encode(swapV2(amountIn, amountOutMin, path, recipient));
             } else {
                 revert('Invalid calltype');
             }
@@ -110,27 +118,15 @@ contract RouterWeirollVM is Payments {
         return state;
     }
 
-    function swapV2(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address recipient)
+    function swapV2(uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient)
         internal
         returns (uint256 amountOut)
     {
+      uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(recipient);
       for (uint256 i; i < path.length - 1; i++) {
           (address input, address output) = (path[i], path[i + 1]);
           (address token0, address token1) = input < output ? (input, output) : (output, input);
-          IUniswapV2Pair pair = IUniswapV2Pair(
-            address(
-              uint256(
-                  keccak256(
-                      abi.encodePacked(
-                          hex'ff',
-                          hex'5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f',
-                          keccak256(abi.encodePacked(token0, token1)),
-                          hex'96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f'
-                      )
-                  )
-              )
-            )
-          );
+          IUniswapV2Pair pair = IUniswapV2Pair(getV2Pair(token0, token1));
           uint256 amountInput;
           uint256 amountOutput;
           // scope to avoid stack too deep errors
@@ -138,14 +134,37 @@ contract RouterWeirollVM is Payments {
               (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
               (uint256 reserveInput, uint256 reserveOutput) =
                   input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
-              amountInput = IERC20(input).balanceOf(address(pair)).sub(reserveInput);
-              amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
+              amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
+              uint256 amountInWithFee = amountIn * 997;
+              uint256 numerator = amountInWithFee * reserveOutput;
+              uint256 denominator = reserveInput * 1000 + amountInWithFee;
+              amountOutput = numerator / denominator;
           }
           (uint256 amount0Out, uint256 amount1Out) =
               input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
-          address to = i < path.length - 2 ? UniswapV2Library.pairFor(factoryV2, output, path[i + 2]) : recipient;
+          address to = i < path.length - 2 ? getV2Pair(output, path[i + 2]) : recipient;
           pair.swap(amount0Out, amount1Out, to, new bytes(0));
+          amountOut = IERC20(path[path.length - 1]).balanceOf(recipient) - balanceBefore;
+          require(amountOut >= amountOutMin, 'Too little received');
       }
+    }
+
+    function getV2Pair(address token0, address token1) private pure returns (address) {
+      return (
+        address(
+          uint160(
+          uint256(
+              keccak256(
+                  abi.encodePacked(
+                      hex'ff',
+                      hex'5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f',
+                      keccak256(abi.encodePacked(token0, token1)),
+                      hex'96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f'
+                  )
+              )
+          ))
+        )
+      );
     }
 
     // could combine with enum for operation.

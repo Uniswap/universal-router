@@ -4,6 +4,7 @@ import 'hardhat-typechain'
 const DEFAULT_COMPILER_SETTINGS = {
   version: '0.8.15',
   settings: {
+    viaIR: true,
     evmVersion: 'istanbul',
     optimizer: {
       enabled: true,

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 import 'hardhat/console.sol';
 
 pragma solidity ^0.8.11;
@@ -14,6 +15,7 @@ library CommandBuilder {
         view
         returns (bytes memory ret)
     {
+        uint256 gasLeft = gasleft();
         uint256 count; // Number of bytes in whole ABI encoded message
         uint256 free; // Pointer to first free byte in tail part of message
         bytes memory stateData; // Optionally encode the current state if the call requires it
@@ -98,6 +100,8 @@ library CommandBuilder {
                 ++i;
             }
         }
+        console.log('gasLeft:');
+        console.log(gasLeft - gasleft());
     }
 
     function writeOutputs(bytes[] memory state, bytes1 index, bytes memory output)
