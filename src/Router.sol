@@ -6,7 +6,6 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import './base/Payments.sol';
 import './base/weiroll/CommandBuilder.sol';
 
-import 'hardhat/console.sol';
 contract RouterWeirollVM is Payments {
     error NotGreaterOrEqual(uint256 big, uint256 smol);
     error NotEqual(uint256 equal1, uint256 equal2);
@@ -17,8 +16,6 @@ contract RouterWeirollVM is Payments {
     bytes4 constant TRANSFER_FUNCTION_SEL = 0x9d61d234;
     bytes4 constant NFT_TRANSFER_FUNCTION_SEL = 0x9d61d234;
     bytes4 constant PERMIT_FUNCTION_SEL = 0x6a8769fc;
-    bytes4 constant V2SWAP_FUNCTION_SEL = 0x778769fd;
-    bytes4 constant V3SWAP_FUNCTION_SEL = 0xda3469aa;
 
     uint256 constant FLAG_CT_PERMIT = 0x00;
     uint256 constant FLAG_CT_TRANSFER = 0x01;
@@ -83,13 +80,9 @@ contract RouterWeirollVM is Payments {
               (
                 uint256 amountIn,
                 uint256 amountOutMin,
-                address input,
-                address output,
+                address[] memory path,
                 address recipient
-              ) = abi.decode(inputs, (uint256, uint256, address, address, address));
-              address[] memory path = new address[](2);
-              path[0] = input;
-              path[1] = output;
+              ) = abi.decode(inputs, (uint256, uint256, address[], address));
               outdata = abi.encode(swapV2(amountIn, amountOutMin, path, recipient));
             } else {
                 revert('Invalid calltype');

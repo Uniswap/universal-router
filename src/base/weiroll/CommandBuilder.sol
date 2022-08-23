@@ -57,7 +57,7 @@ library CommandBuilder {
             if (idx & IDX_VARIABLE_LENGTH != 0) {
                 if (idx == IDX_USE_STATE) {
                     assembly {
-                        mstore(add(add(ret, 36), count), free)
+                        mstore(add(add(ret, 32), count), free)
                     }
                     memcpy(stateData, 32, ret, free, stateData.length - 32);
                     free += stateData.length - 32;
@@ -66,7 +66,7 @@ library CommandBuilder {
 
                     // Variable length data; put a pointer in the slot and write the data at the end
                     assembly {
-                        mstore(add(add(ret, 36), count), free)
+                        mstore(add(add(ret, 32), count), free)
                     }
                     memcpy(state[idx & IDX_VALUE_MASK], 0, ret, free, arglen);
                     free += arglen;
@@ -137,7 +137,7 @@ library CommandBuilder {
 
     function memcpy(bytes memory src, uint256 srcidx, bytes memory dest, uint256 destidx, uint256 len) internal view {
         assembly {
-            pop(staticcall(gas(), 0, add(add(src, 32), srcidx), len, add(add(dest, 32), destidx), len))
+            pop(staticcall(gas(), 4, add(add(src, 32), srcidx), len, add(add(dest, 32), destidx), len))
         }
     }
 }
