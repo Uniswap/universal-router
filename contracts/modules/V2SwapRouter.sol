@@ -5,10 +5,12 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract V2SwapRouter {
-    function swapV2(uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient)
-        internal
-        returns (uint256 amountOut)
-    {
+    function swapV2(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] memory path,
+        address recipient
+    ) internal returns (uint256 amountOut) {
         uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(recipient);
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
@@ -18,17 +20,19 @@ contract V2SwapRouter {
             uint256 amountOutput;
             // scope to avoid stack too deep errors
             {
-                (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
-                (uint256 reserveInput, uint256 reserveOutput) =
-                    input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+                (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
+                (uint256 reserveInput, uint256 reserveOutput) = input == token0
+                    ? (reserve0, reserve1)
+                    : (reserve1, reserve0);
                 amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
                 uint256 amountInWithFee = amountIn * 997;
                 uint256 numerator = amountInWithFee * reserveOutput;
                 uint256 denominator = reserveInput * 1000 + amountInWithFee;
                 amountOutput = numerator / denominator;
             }
-            (uint256 amount0Out, uint256 amount1Out) =
-                input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
+            (uint256 amount0Out, uint256 amount1Out) = input == token0
+                ? (uint256(0), amountOutput)
+                : (amountOutput, uint256(0));
             address to = i < path.length - 2 ? getV2Pair(output, path[i + 2]) : recipient;
             pair.swap(amount0Out, amount1Out, to, new bytes(0));
             amountOut = IERC20(path[path.length - 1]).balanceOf(recipient) - balanceBefore;
