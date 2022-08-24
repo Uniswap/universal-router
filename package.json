@@ -1,4 +1,3 @@
-
 {
   "name": "@ewilz/narwhal",
   "description": "Smart contracts for Narwhal",
@@ -20,7 +19,7 @@
     "contracts/libraries",
     "contracts",
     "typechain",
-    "artifacts/src/**/*.json",
+    "artifacts/ src/**/*.json",
     "!artifacts/src/**/*.dbg.json",
     "!artifacts/src/test/**/*",
     "!artifacts/src/base/**/*"
@@ -28,25 +27,33 @@
   "engines": {
     "node": ">=10"
   },
-"engines": {
-  "node": ">=10"
-},
-"dependencies": {
-  "@openzeppelin/contracts": "^v4.7.3"
-},
-"devDependencies": {
-  "@nomiclabs/hardhat-ethers": "^2.0.2",
-  "@typechain/ethers-v5": "^4.0.0",
-  "ethers": "^5.0.8",
-  "hardhat": "^2.6.8",
-  "hardhat-typechain": "^0.3.5",
-  "ts-generator": "^0.1.1",
-  "ts-node": "^8.5.4",
-  "typechain": "^4.0.0",
-  "typescript": "^3.7.3"
-},
-"scripts": {
-  "compile": "hardhat compile",
-  "test": "hardhat test"
-}
+  "dependencies": {
+    "@openzeppelin/contracts": "^v4.7.3"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@typechain/ethers-v5": "^4.0.0",
+    "@types/chai": "^4.2.6",
+    "@types/mocha": "^5.2.7",
+    "@uniswap/router-sdk": "^1.3.0",
+    "@uniswap/sdk-core": "^3.0.1",
+    "@uniswap/snapshot-gas-cost": "^1.0.0",
+    "@uniswap/v2-sdk": "^3.0.1",
+    "@uniswap/v3-sdk": "^3.8.3",
+    "chai": "^4.3.4",
+    "ethereum-waffle": "^3.0.2",
+    "ethers": "^5.0.8",
+    "hardhat": "^2.6.8",
+    "hardhat-typechain": "^0.3.5",
+    "mocha-chai-jest-snapshot": "^1.1.0",
+    "ts-generator": "^0.1.1",
+    "ts-node": "^8.5.4",
+    "typechain": "^4.0.0",
+    "typescript": "^3.7.3"
+  },
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test"
+  }
 }

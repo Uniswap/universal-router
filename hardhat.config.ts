@@ -1,5 +1,9 @@
-import '@nomiclabs/hardhat-ethers'
 import 'hardhat-typechain'
+import '@nomiclabs/hardhat-ethers'
+import '@nomiclabs/hardhat-waffle'
+import dotenv from 'dotenv'
+dotenv.config()
+
 
 const DEFAULT_COMPILER_SETTINGS = {
   version: '0.8.15',
@@ -18,11 +22,15 @@ const DEFAULT_COMPILER_SETTINGS = {
 
 export default {
   paths: {
-    sources: './src'
+    sources: './contracts'
   },
   networks: {
     hardhat: {
       allowUnlimitedContractSize: false,
+      forking: {
+        url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+        blockNumber: 15360000,
+      }
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -51,6 +59,9 @@ export default {
     optimism: {
       url: `https://mainnet.optimism.io`,
     },
+  },
+  namedAccounts: {
+    deployer: 0,
   },
   solidity: {
     compilers: [DEFAULT_COMPILER_SETTINGS],
