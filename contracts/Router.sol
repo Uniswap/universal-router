@@ -7,16 +7,12 @@ import './base/Payments.sol';
 import './base/weiroll/CommandBuilder.sol';
 // import 'hardhat/console.sol';
 
-contract RouterWeirollVM is Payments {
+contract WeirollRouter is Payments {
+    using CommandBuilder for bytes[];
+
     error NotGreaterOrEqual(uint256 big, uint256 smol);
     error NotEqual(uint256 equal1, uint256 equal2);
     error ExecutionFailed(uint256 command_index, string message);
-
-    using CommandBuilder for bytes[];
-
-    bytes4 constant TRANSFER_FUNCTION_SEL = 0x9d61d234;
-    bytes4 constant NFT_TRANSFER_FUNCTION_SEL = 0x9d61d234;
-    bytes4 constant PERMIT_FUNCTION_SEL = 0x6a8769fc;
 
     uint256 constant FLAG_CT_PERMIT = 0x00;
     uint256 constant FLAG_CT_TRANSFER = 0x01;
