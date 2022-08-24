@@ -5,6 +5,7 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 
 import './base/Payments.sol';
 import './base/weiroll/CommandBuilder.sol';
+// import 'hardhat/console.sol';
 
 contract RouterWeirollVM is Payments {
     error NotGreaterOrEqual(uint256 big, uint256 smol);
@@ -19,10 +20,10 @@ contract RouterWeirollVM is Payments {
 
     uint256 constant FLAG_CT_PERMIT = 0x00;
     uint256 constant FLAG_CT_TRANSFER = 0x01;
-    uint256 constant FLAG_CT_V2SWAP = 0x03;
     uint256 constant FLAG_CT_V3SWAP = 0x02;
+    uint256 constant FLAG_CT_V2SWAP = 0x03;
     uint256 constant FLAG_CT_CHECK_AMT = 0x04;
-    uint256 constant FLAG_CT_MASK = 0x07;
+    uint256 constant FLAG_CT_MASK = 0x0f;
 
     uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
     uint256 constant FLAG_TUPLE_RETURN = 0x40;
@@ -73,8 +74,9 @@ contract RouterWeirollVM is Payments {
                 ) = abi.decode(inputs, (address, address, address, uint256));
                 pay(token, payer, recipient, value);
 
-            } else if (commandType == FLAG_CT_V3SWAP) {
-                // (success, outdata) = address(uint160(uint256(command))).call(state.buildInputs(V3SWAP_FUNCTION_SEL, indices));
+            } else if (commandType == FLAG_CT_CHECK_AMT) {
+                (uint256 amountA, uint256 amountB) = abi.decode(state.buildInputs(indices), (uint256, uint256));
+                checkAmountGTE(amountA, amountB);
             } else if (commandType == FLAG_CT_V2SWAP) {
               bytes memory inputs = state.buildInputs(indices);
               (
