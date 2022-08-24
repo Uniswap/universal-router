@@ -2,15 +2,15 @@
 pragma solidity ^0.8.15;
 
 import 'forge-std/Test.sol';
-import {RouterWeirollVM} from '../../contracts/Router.sol';
+import {WeirollRouter} from '../../contracts/Router.sol';
 import {ExampleModule} from '../../contracts/modules/ExampleModule.sol';
 
 contract RouterTest is Test {
-    RouterWeirollVM router;
+    WeirollRouter router;
     ExampleModule testModule;
 
     function setUp() public {
-        router = new RouterWeirollVM(address(0));
+        router = new WeirollRouter(address(0));
         testModule = new ExampleModule();
     }
 

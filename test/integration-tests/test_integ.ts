@@ -56,12 +56,12 @@ describe('WeirollRouter', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
   })
 
-  describe('#single-hop exact input (v2 + v3)', () => {
+  describe('#single trade uniswap v2', () => {
     describe('with Router02', () => {
       const amountIn = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
       const v2Trade = V2Trade.exactIn(new V2Route([pair_DAI_WETH], DAI, WETH), amountIn)
 
-      it('router-sdk', async () => {
+      it('successfully completes the swap', async () => {
         const trades = [v2Trade]//, v2Trade, v2Trade, v2Trade, v2Trade, v2Trade]
         const { calldata } = SwapRouter.swapCallParameters(trades, {
           slippageTolerance,
@@ -71,33 +71,33 @@ describe('WeirollRouter', () => {
 
         await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
       })
+    })
 
-      describe('with Weiroll', () => {
-        let weirollRouter: WeirollRouter
+    describe('with Weiroll', () => {
+      let weirollRouter: WeirollRouter
 
-        beforeEach(async () => {
-          const weirollRouterFactory = await ethers.getContractFactory("WeirollRouter");
-          weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)) as WeirollRouter
-        })
+      beforeEach(async () => {
+        const weirollRouterFactory = await ethers.getContractFactory("WeirollRouter");
+        weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)) as WeirollRouter
+      })
 
-        it('adds function calls to a list of commands', async () => {
-          const amountIn = expandTo18DecimalsBN(5)
-          const planner = new RouterPlanner();
-          for (let i = 0; i < 1; i++) {
-            planner.add(new TransferCommand(DAI.address, weirollRouter.address, '0xa478c2975ab1ea89e8196811f51a7b7ade33eb11', amountIn));
-            planner.add(new V2SwapCommand(amountIn, 1, [DAI.address, WETH.address], alice.address))
-          }
+      it('adds function calls to a list of commands', async () => {
+        const amountIn = expandTo18DecimalsBN(5)
+        const planner = new RouterPlanner();
+        for (let i = 0; i < 1; i++) {
+          planner.add(new TransferCommand(DAI.address, weirollRouter.address, '0xa478c2975ab1ea89e8196811f51a7b7ade33eb11', amountIn));
+          planner.add(new V2SwapCommand(amountIn, 1, [DAI.address, WETH.address], alice.address))
+        }
 
-          const { commands, state } = planner.plan();
+        const { commands, state } = planner.plan();
 
-          const balanceBefore = await wethContract.balanceOf(alice.address)
-          await daiContract.transfer(weirollRouter.address, expandTo18DecimalsBN(55))
-          const tx = await weirollRouter.execute(commands, state)
-          const receipt = await tx.wait()
-          const balanceAfter = await wethContract.balanceOf(alice.address)
-          const amountOut = parseEvents(V2_EVENTS, receipt)[0]!.args.amount1Out
-          expect(balanceAfter.sub(balanceBefore)).to.equal(amountOut)
-        })
+        const balanceBefore = await wethContract.balanceOf(alice.address)
+        await daiContract.transfer(weirollRouter.address, expandTo18DecimalsBN(55))
+        const tx = await weirollRouter.execute(commands, state)
+        const receipt = await tx.wait()
+        const balanceAfter = await wethContract.balanceOf(alice.address)
+        const amountOut = parseEvents(V2_EVENTS, receipt)[0]!.args.amount1Out
+        expect(balanceAfter.sub(balanceBefore)).to.equal(amountOut)
       })
     })
   })
