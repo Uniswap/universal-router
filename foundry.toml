@@ -1,7 +1,8 @@
 [profile.default]
-src = 'src'
+src = 'contracts'
 out = 'out'
 libs = ['lib']
+via_ir = true
 
 [fmt]
 line_length = 120

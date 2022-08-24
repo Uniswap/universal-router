@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.4;
 
-import 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '../interfaces/IPayments.sol';
 import '../interfaces/external/IWETH9.sol';
 import '../libraries/TransferHelper.sol';
@@ -12,10 +12,6 @@ abstract contract Payments is IPayments {
 
     constructor(address _WETH9) {
         WETH9 = _WETH9;
-    }
-
-    receive() external payable {
-        if (msg.sender != WETH9) revert NotWETH9();
     }
 
     /// @inheritdoc IPayments
