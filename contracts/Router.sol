@@ -51,36 +51,25 @@ contract WeirollRouter is Payments, V2SwapRouter {
                 indices = bytes32(uint256(command << 8) | SHORT_COMMAND_FILL);
             }
 
-            if (commandType == FLAG_CT_PERMIT) {
-                // state[state.length] = abi.encode(msg.sender);
-                // (success, outdata) = permitPostAddress.call(state[0]);
-
+            if (commandType == FLAG_CT_PERMIT) { // state[state.length] = abi.encode(msg.sender);
+                    // (success, outdata) = permitPostAddress.call(state[0]);
                 // bytes memory inputs = state.build(bytes4(0), indices);
                 // (address some, address parameters, uint256 forPermit) = abi.decode(inputs, (address, address, uint));
                 //
                 // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
             } else if (commandType == FLAG_CT_TRANSFER) {
                 bytes memory inputs = state.buildInputs(indices);
-                (
-                  address token,
-                  address payer,
-                  address recipient,
-                  uint256 value
-                ) = abi.decode(inputs, (address, address, address, uint256));
+                (address token, address payer, address recipient, uint256 value) =
+                    abi.decode(inputs, (address, address, address, uint256));
                 pay(token, payer, recipient, value);
-
             } else if (commandType == FLAG_CT_CHECK_AMT) {
                 (uint256 amountA, uint256 amountB) = abi.decode(state.buildInputs(indices), (uint256, uint256));
                 checkAmountGTE(amountA, amountB);
             } else if (commandType == FLAG_CT_V2SWAP) {
-              bytes memory inputs = state.buildInputs(indices);
-              (
-                uint256 amountIn,
-                uint256 amountOutMin,
-                address[] memory path,
-                address recipient
-              ) = abi.decode(inputs, (uint256, uint256, address[], address));
-              outdata = abi.encode(swapV2(amountIn, amountOutMin, path, recipient));
+                bytes memory inputs = state.buildInputs(indices);
+                (uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient) =
+                    abi.decode(inputs, (uint256, uint256, address[], address));
+                outdata = abi.encode(swapV2(amountIn, amountOutMin, path, recipient));
             } else {
                 revert('Invalid calltype');
             }
@@ -91,10 +80,7 @@ contract WeirollRouter is Payments, V2SwapRouter {
                         outdata := add(outdata, 68)
                     }
                 }
-                revert ExecutionFailed({
-                    command_index: 0,
-                    message: outdata.length > 0 ? string(outdata) : 'Unknown'
-                });
+                revert ExecutionFailed({command_index: 0, message: outdata.length > 0 ? string(outdata) : 'Unknown'});
             }
 
             if (flags & FLAG_TUPLE_RETURN != 0) {
@@ -111,6 +97,7 @@ contract WeirollRouter is Payments, V2SwapRouter {
     function checkAmountGTE(uint256 a, uint256 b) private pure {
         if (a < b) revert NotGreaterOrEqual(a, b);
     }
+
     function checkAmountEQ(uint256 a, uint256 b) private pure {
         if (a != b) revert NotEqual(a, b);
     }

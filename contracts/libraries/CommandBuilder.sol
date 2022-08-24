@@ -8,11 +8,7 @@ library CommandBuilder {
     uint256 constant IDX_END_OF_ARGS = 0xff;
     uint256 constant IDX_USE_STATE = 0xfe;
 
-    function buildInputs(bytes[] memory state, bytes32 indices)
-        internal
-        view
-        returns (bytes memory ret)
-    {
+    function buildInputs(bytes[] memory state, bytes32 indices) internal view returns (bytes memory ret) {
         uint256 count; // Number of bytes in whole ABI encoded message
         uint256 free; // Pointer to first free byte in tail part of message
         bytes memory stateData; // Optionally encode the current state if the call requires it
