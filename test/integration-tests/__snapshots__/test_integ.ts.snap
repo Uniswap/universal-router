@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`WeirollRouter #single trade uniswap v2 with Weiroll gas 1`] = `"116485"`;
+
+exports[`WeirollRouter bytecode size 1`] = `6908`;

@@ -2,11 +2,11 @@
 pragma solidity ^0.8.15;
 
 import './modules/V2SwapRouter.sol';
-
+import './modules/V3SwapRouter.sol';
 import './base/Payments.sol';
-import './base/weiroll/CommandBuilder.sol';
+import './libraries/CommandBuilder.sol';
 
-contract WeirollRouter is Payments, V2SwapRouter {
+contract WeirollRouter is Payments, V2SwapRouter, V3SwapRouter {
     using CommandBuilder for bytes[];
 
     error NotGreaterOrEqual(uint256 big, uint256 smol);
@@ -15,8 +15,8 @@ contract WeirollRouter is Payments, V2SwapRouter {
 
     uint256 constant FLAG_CT_PERMIT = 0x00;
     uint256 constant FLAG_CT_TRANSFER = 0x01;
-    uint256 constant FLAG_CT_V3SWAP = 0x02;
-    uint256 constant FLAG_CT_V2SWAP = 0x03;
+    uint256 constant FLAG_CT_V3_SWAP = 0x02;
+    uint256 constant FLAG_CT_V2_SWAP = 0x03;
     uint256 constant FLAG_CT_CHECK_AMT = 0x04;
     uint256 constant FLAG_CT_MASK = 0x0f;
 
@@ -62,14 +62,19 @@ contract WeirollRouter is Payments, V2SwapRouter {
                 (address token, address payer, address recipient, uint256 value) =
                     abi.decode(inputs, (address, address, address, uint256));
                 pay(token, payer, recipient, value);
-            } else if (commandType == FLAG_CT_CHECK_AMT) {
-                (uint256 amountA, uint256 amountB) = abi.decode(state.buildInputs(indices), (uint256, uint256));
-                checkAmountGTE(amountA, amountB);
-            } else if (commandType == FLAG_CT_V2SWAP) {
+            } else if (commandType == FLAG_CT_V3_SWAP) {
                 bytes memory inputs = state.buildInputs(indices);
                 (uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient) =
                     abi.decode(inputs, (uint256, uint256, address[], address));
                 outdata = abi.encode(swapV2(amountIn, amountOutMin, path, recipient));
+            } else if (commandType == FLAG_CT_V2_SWAP) {
+                bytes memory inputs = state.buildInputs(indices);
+                (uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient) =
+                    abi.decode(inputs, (uint256, uint256, address[], address));
+                outdata = abi.encode(swapV2(amountIn, amountOutMin, path, recipient));
+            } else if (commandType == FLAG_CT_CHECK_AMT) {
+                (uint256 amountA, uint256 amountB) = abi.decode(state.buildInputs(indices), (uint256, uint256));
+                checkAmountGTE(amountA, amountB);
             } else {
                 revert('Invalid calltype');
             }

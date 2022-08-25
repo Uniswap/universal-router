@@ -43,6 +43,7 @@ describe('WeirollRouter', () => {
   const deadline = 2000000000
 
   let alice: SignerWithAddress
+  let weirollRouter: WeirollRouter
   let daiContract: Contract
   let wethContract: Contract
 
@@ -54,6 +55,12 @@ describe('WeirollRouter', () => {
     alice = await ethers.getSigner('0xf977814e90da44bfa03b6295a0616a897441acec')
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
+    const weirollRouterFactory = await ethers.getContractFactory("WeirollRouter");
+    weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)) as WeirollRouter
+  })
+
+  it('bytecode size', async () => {
+    expect(((await weirollRouter.provider.getCode(weirollRouter.address)).length - 2) / 2).to.matchSnapshot()
   })
 
   describe('#single trade uniswap v2', () => {
@@ -74,30 +81,33 @@ describe('WeirollRouter', () => {
     })
 
     describe('with Weiroll', () => {
-      let weirollRouter: WeirollRouter
+      let commands: string[]
+      let state: string[]
 
       beforeEach(async () => {
-        const weirollRouterFactory = await ethers.getContractFactory("WeirollRouter");
-        weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)) as WeirollRouter
-      })
-
-      it('adds function calls to a list of commands', async () => {
         const amountIn = expandTo18DecimalsBN(5)
         const planner = new RouterPlanner();
         for (let i = 0; i < 1; i++) {
           planner.add(new TransferCommand(DAI.address, weirollRouter.address, '0xa478c2975ab1ea89e8196811f51a7b7ade33eb11', amountIn));
           planner.add(new V2SwapCommand(amountIn, 1, [DAI.address, WETH.address], alice.address))
         }
-
-        const { commands, state } = planner.plan();
-
-        const balanceBefore = await wethContract.balanceOf(alice.address)
         await daiContract.transfer(weirollRouter.address, expandTo18DecimalsBN(55))
+        ;({ commands, state } = planner.plan())
+      })
+
+      it('completes a V2 swap', async () => {
+        const balanceBefore = await wethContract.balanceOf(alice.address)
         const tx = await weirollRouter.execute(commands, state)
         const receipt = await tx.wait()
         const balanceAfter = await wethContract.balanceOf(alice.address)
         const amountOut = parseEvents(V2_EVENTS, receipt)[0]!.args.amount1Out
         expect(balanceAfter.sub(balanceBefore)).to.equal(amountOut)
+      })
+
+      it('gas', async () => {
+        const tx = await weirollRouter.execute(commands, state)
+        const receipt = await tx.wait()
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
     })
   })

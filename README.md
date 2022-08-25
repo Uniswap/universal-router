@@ -14,13 +14,14 @@ yarn compile
 yarn test
 ```
 
-3. Or to run tests with local sdk, run these commands, then repeat step 2.
+3. Or to run tests with local sdk, run these commands.
 ```console
 # from inside narwhal-sdk repo run:
 yarn link
 
 # from inside narwhal repo run:
 yarn link "@uniswap/narwhal-sdk"
+yarn test
 ```
 
 

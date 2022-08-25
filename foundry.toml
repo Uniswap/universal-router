@@ -3,6 +3,7 @@ src = 'contracts'
 out = 'out'
 libs = ['lib']
 via_ir = true
+solc_version = '0.8.16'
 
 [fmt]
 line_length = 120

@@ -6,13 +6,13 @@ dotenv.config()
 
 
 const DEFAULT_COMPILER_SETTINGS = {
-  version: '0.8.15',
+  version: '0.8.16',
   settings: {
     viaIR: true,
     evmVersion: 'istanbul',
     optimizer: {
       enabled: true,
-      runs: 1_000_000,
+      runs: 800,
     },
     metadata: {
       bytecodeHash: 'none',
