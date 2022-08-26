@@ -181,7 +181,7 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
                     // transfer erc721 to user if order was filled (looksrare and x2y2 transfer it to the contract)
                     if (success) {
                         ERC721(address(uint160(uint256(collectionAddress))))
-                            .transferFrom(msg.sender, address(this), tokenId);
+                            .transferFrom(address(this), msg.sender, tokenId);
                     }
                 }
             }
