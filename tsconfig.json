@@ -8,6 +8,7 @@
     "outDir": "dist",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "lib": ["esnext.string"],
     "typeRoots": ["./typechain", "./node_modules/@types"],
     "types": ["@nomiclabs/hardhat-ethers"]
   },
