@@ -170,7 +170,7 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
                             amount,
                             DefaultFreeMemoryPointer,
                             lengthOfData,
-                            add(DefaultFreeMemoryPointer, lengthOfData),
+                            0,
                             OneWord
                         )
 
