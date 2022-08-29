@@ -4,7 +4,6 @@ import '@nomiclabs/hardhat-waffle'
 import dotenv from 'dotenv'
 dotenv.config()
 
-
 const DEFAULT_COMPILER_SETTINGS = {
   version: '0.8.16',
   settings: {
@@ -22,7 +21,7 @@ const DEFAULT_COMPILER_SETTINGS = {
 
 export default {
   paths: {
-    sources: './contracts'
+    sources: './contracts',
   },
   networks: {
     hardhat: {
@@ -30,7 +29,7 @@ export default {
       forking: {
         url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
         blockNumber: 15360000,
-      }
+      },
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,

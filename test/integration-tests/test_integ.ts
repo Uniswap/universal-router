@@ -1,13 +1,13 @@
-import { Interface, LogDescription } from '@ethersproject/abi';
-import { TransactionReceipt } from "@ethersproject/abstract-provider";
-import type { Contract } from '@ethersproject/contracts';
-import { RouterPlanner, TransferCommand, V2SwapCommand } from '@uniswap/narwhal-sdk';
+import { Interface, LogDescription } from '@ethersproject/abi'
+import { TransactionReceipt } from '@ethersproject/abstract-provider'
+import type { Contract } from '@ethersproject/contracts'
+import { RouterPlanner, TransferCommand, V2SwapCommand } from '@uniswap/narwhal-sdk'
 import { BigintIsh, CurrencyAmount, Percent } from '@uniswap/sdk-core'
 import { Route as V2Route, Trade as V2Trade } from '@uniswap/v2-sdk'
 import JSBI from 'jsbi'
 import { SwapRouter } from '@uniswap/router-sdk'
 import { expect } from './shared/expect'
-import {  pair_DAI_WETH } from './shared/swapRouter02Helpers'
+import { pair_DAI_WETH } from './shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
@@ -26,10 +26,15 @@ function expandTo18DecimalsBN(n: number): BigNumber {
 }
 
 function parseEvents(iface: Interface, receipt: TransactionReceipt): (LogDescription | undefined)[] {
-  return receipt.logs.map((log: { topics: Array<string>, data: string }) => {
-    try { return iface.parseLog(log) }
-    catch(e) { return undefined}
-  }).filter((n: LogDescription | undefined) => n)
+  return receipt.logs
+    .map((log: { topics: Array<string>; data: string }) => {
+      try {
+        return iface.parseLog(log)
+      } catch (e) {
+        return undefined
+      }
+    })
+    .filter((n: LogDescription | undefined) => n)
 }
 
 async function resetFork() {
@@ -48,7 +53,6 @@ const V2_EVENTS = new Interface([
   'event Swap(address indexed sender, uint amount0In, uint amount1In, uint amount0Out, uint amount1Out, address indexed to)',
 ])
 
-
 describe('WeirollRouter', () => {
   const slippageTolerance = new Percent(50, 100)
   const recipient = '0x0000000000000000000000000000000000000003'
@@ -61,13 +65,13 @@ describe('WeirollRouter', () => {
 
   beforeEach(async () => {
     await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: ["0xf977814e90da44bfa03b6295a0616a897441acec"],
-    });
+      method: 'hardhat_impersonateAccount',
+      params: ['0xf977814e90da44bfa03b6295a0616a897441acec'],
+    })
     alice = await ethers.getSigner('0xf977814e90da44bfa03b6295a0616a897441acec')
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
-    const weirollRouterFactory = await ethers.getContractFactory("WeirollRouter");
+    const weirollRouterFactory = await ethers.getContractFactory('WeirollRouter')
     weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)) as WeirollRouter
   })
 

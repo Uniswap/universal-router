@@ -1,14 +1,7 @@
 import JSBI from 'jsbi'
 import { BigintIsh, CurrencyAmount, Token } from '@uniswap/sdk-core'
 import { Pair } from '@uniswap/v2-sdk'
-import {
-  encodeSqrtRatioX96,
-  FeeAmount,
-  nearestUsableTick,
-  Pool,
-  TickMath,
-  TICK_SPACINGS,
-} from '@uniswap/v3-sdk'
+import { encodeSqrtRatioX96, FeeAmount, nearestUsableTick, Pool, TickMath, TICK_SPACINGS } from '@uniswap/v3-sdk'
 import { WETH, DAI, USDC } from './mainnetForkHelpers'
 
 const feeAmount = FeeAmount.MEDIUM
