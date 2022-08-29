@@ -1,5 +1,11 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`WeirollRouter #single trade uniswap v2 with Weiroll gas 1`] = `"116485"`;
+exports[`WeirollRouter #trade uniswap v2 with Router02 gas one trade 1`] = `"121359"`;
+
+exports[`WeirollRouter #trade uniswap v2 with Router02 gas six trades 1`] = `"290065"`;
+
+exports[`WeirollRouter #trade uniswap v2 with Weiroll gas one trade 1`] = `"116485"`;
+
+exports[`WeirollRouter #trade uniswap v2 with Weiroll gas six trades 1`] = `"293056"`;
 
 exports[`WeirollRouter bytecode size 1`] = `6908`;
