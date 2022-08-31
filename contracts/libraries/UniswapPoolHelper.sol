@@ -16,9 +16,7 @@ library UniswapPoolHelper {
     }
 
     function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
-        require(tokenA != tokenB);
         (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0));
     }
 
     function getAmountOut(
@@ -26,7 +24,6 @@ library UniswapPoolHelper {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal pure returns (uint256 amountOut) {
-        require(amountIn > 0, 'INSUFFICIENT_INPUT_AMOUNT');
         require(reserveIn > 0 && reserveOut > 0);
         uint256 amountInWithFee = amountIn*997;
         uint256 numerator = amountInWithFee*reserveOut;
