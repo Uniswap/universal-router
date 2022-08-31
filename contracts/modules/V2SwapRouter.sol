@@ -3,7 +3,7 @@ pragma solidity ^0.8.15;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '../libraries/PoolAddress.sol';
+import '../libraries/V3PoolAddress.sol';
 
 contract V2SwapRouter {
     address immutable V2_Factory = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
@@ -19,7 +19,7 @@ contract V2SwapRouter {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0, address token1) = input < output ? (input, output) : (output, input);
             IUniswapV2Pair pair = IUniswapV2Pair(
-                PoolAddress.computeAddress(V2_Factory, abi.encodePacked(token0, token1), POOL_INIT_CODE_HASH_V2)
+                V3PoolAddress.computeAddress(V2_Factory, abi.encodePacked(token0, token1), POOL_INIT_CODE_HASH_V2)
             );
             uint256 amountInput;
             uint256 amountOutput;
@@ -35,7 +35,7 @@ contract V2SwapRouter {
                 input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
             address to =
                 i < path.length - 2
-                ? PoolAddress.computeAddress(V2_Factory, abi.encodePacked(output, path[i + 2]), POOL_INIT_CODE_HASH_V2)
+                ? V3PoolAddress.computeAddress(V2_Factory, abi.encodePacked(output, path[i + 2]), POOL_INIT_CODE_HASH_V2)
                 : recipient;
             pair.swap(amount0Out, amount1Out, to, new bytes(0));
             amountOut = IERC20(path[path.length - 1]).balanceOf(recipient) - balanceBefore;

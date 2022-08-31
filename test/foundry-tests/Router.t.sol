@@ -3,7 +3,7 @@ pragma solidity ^0.8.15;
 
 import 'forge-std/Test.sol';
 import {WeirollRouter} from '../../contracts/Router.sol';
-import {ExampleModule} from '../../contracts/modules/ExampleModule.sol';
+import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
 
 contract RouterTest is Test {
     WeirollRouter router;

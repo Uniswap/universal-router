@@ -11,8 +11,9 @@ contract WeirollRouter is Payments, V2SwapRouter, V3SwapRouter {
 
     error NotGreaterOrEqual(uint256 big, uint256 smol);
     error NotEqual(uint256 equal1, uint256 equal2);
-    error ExecutionFailed(uint256 command_index, string message);
+    error ExecutionFailed(uint256 commandIndex, string message);
 
+    // Command Types
     uint256 constant FLAG_CT_PERMIT = 0x00;
     uint256 constant FLAG_CT_TRANSFER = 0x01;
     uint256 constant FLAG_CT_V3_SWAP = 0x02;
@@ -26,12 +27,14 @@ contract WeirollRouter is Payments, V2SwapRouter, V3SwapRouter {
 
     uint256 constant COMMAND_INDICES_OFFSET = 200;
 
-    address immutable permitPostAddress;
+    address immutable permitPost;
 
-    constructor(address permitPost) Payments(permitPost) {
-        permitPostAddress = permitPost;
+    constructor(address _permitPost) Payments(_permitPost) {
+        permitPost = _permitPost;
     }
 
+    /// @param commands A set of concatenated commands, each 8 bytes in length
+    /// @param state The state elements that should be used for the input and output of commands
     function execute(bytes memory commands, bytes[] memory state) external returns (bytes[] memory) {
         bytes8 command;
         uint256 commandType;
@@ -57,7 +60,7 @@ contract WeirollRouter is Payments, V2SwapRouter, V3SwapRouter {
             }
 
             if (commandType == FLAG_CT_PERMIT) { // state[state.length] = abi.encode(msg.sender);
-                    // (success, outdata) = permitPostAddress.call(state[0]);
+                    // (success, outdata) = permitPost.call(state[0]);
                     // bytes memory inputs = state.build(bytes4(0), indices);
                     // (address some, address parameters, uint256 forPermit) = abi.decode(inputs, (address, address, uint));
                     //
@@ -90,7 +93,7 @@ contract WeirollRouter is Payments, V2SwapRouter, V3SwapRouter {
                         outdata := add(outdata, 68)
                     }
                 }
-                revert ExecutionFailed({command_index: 0, message: outdata.length > 0 ? string(outdata) : 'Unknown'});
+                revert ExecutionFailed({commandIndex: 0, message: outdata.length > 0 ? string(outdata) : 'Unknown'});
             }
 
             if (flags & FLAG_TUPLE_RETURN != 0) {
