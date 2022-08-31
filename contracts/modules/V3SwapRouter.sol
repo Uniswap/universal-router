@@ -3,7 +3,7 @@ pragma solidity ^0.8.15;
 
 import '../base/Payments.sol';
 import '../libraries/Path.sol';
-import '../libraries/V3PoolAddress.sol';
+import '../libraries/UniswapPoolHelper.sol';
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
@@ -93,7 +93,7 @@ abstract contract V3SwapRouter is Payments {
         bool zeroForOne = tokenIn < tokenOut;
 
         (int256 amount0, int256 amount1) = IUniswapV3Pool(
-            V3PoolAddress.computeAddress(V3_FACTORY, abi.encode(getPoolKey(tokenIn, tokenOut, fee)), POOL_INIT_CODE_HASH_V3)
+            UniswapPoolHelper.computePoolAddress(V3_FACTORY, abi.encode(getPoolKey(tokenIn, tokenOut, fee)), POOL_INIT_CODE_HASH_V3)
         ).swap(
             recipient,
             zeroForOne,

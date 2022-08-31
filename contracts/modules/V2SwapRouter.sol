@@ -3,7 +3,7 @@ pragma solidity ^0.8.15;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '../libraries/V3PoolAddress.sol';
+import '../libraries/UniswapPoolHelper.sol';
 
 contract V2SwapRouter {
     address immutable V2_Factory = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
@@ -17,9 +17,9 @@ contract V2SwapRouter {
         uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(recipient);
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            (address token0, address token1) = input < output ? (input, output) : (output, input);
+            (address token0, address token1) = UniswapPoolHelper.sortTokens(input, output);
             IUniswapV2Pair pair = IUniswapV2Pair(
-                V3PoolAddress.computeAddress(V2_Factory, abi.encodePacked(token0, token1), POOL_INIT_CODE_HASH_V2)
+                UniswapPoolHelper.computePoolAddress(V2_Factory, abi.encodePacked(token0, token1), POOL_INIT_CODE_HASH_V2)
             );
             uint256 amountInput;
             uint256 amountOutput;
@@ -27,19 +27,16 @@ contract V2SwapRouter {
             (uint256 reserveInput, uint256 reserveOutput) =
                 input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
             amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
-            uint256 amountInWithFee = amountIn * 997;
-            uint256 numerator = amountInWithFee * reserveOutput;
-            uint256 denominator = reserveInput * 1000 + amountInWithFee;
-            amountOutput = numerator / denominator;
+            amountOutput = UniswapPoolHelper.getAmountOut(amountInput, reserveInput, reserveOutput);
             (uint256 amount0Out, uint256 amount1Out) =
                 input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
             address to =
                 i < path.length - 2
-                ? V3PoolAddress.computeAddress(V2_Factory, abi.encodePacked(output, path[i + 2]), POOL_INIT_CODE_HASH_V2)
+                ? UniswapPoolHelper.computeV2Address(V2_Factory, output, path[i+2])
                 : recipient;
             pair.swap(amount0Out, amount1Out, to, new bytes(0));
-            amountOut = IERC20(path[path.length - 1]).balanceOf(recipient) - balanceBefore;
-            require(amountOut >= amountOutMin, 'Too little received');
         }
+        amountOut = IERC20(path[path.length - 1]).balanceOf(recipient) - balanceBefore;
+        require(amountOut >= amountOutMin, 'Too little received');
     }
 }

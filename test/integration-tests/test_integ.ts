@@ -11,7 +11,7 @@ import { pair_DAI_WETH } from './shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { executeSwap, WETH, DAI } from './shared/mainnetForkHelpers'
+import { executeSwap, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -62,6 +62,7 @@ describe('WeirollRouter', () => {
   let weirollRouter: WeirollRouter
   let daiContract: Contract
   let wethContract: Contract
+  let usdcContract: Contract
 
   beforeEach(async () => {
     await hre.network.provider.request({
@@ -71,6 +72,7 @@ describe('WeirollRouter', () => {
     alice = await ethers.getSigner('0xf977814e90da44bfa03b6295a0616a897441acec')
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
+    usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
     const weirollRouterFactory = await ethers.getContractFactory('WeirollRouter')
     weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)) as WeirollRouter
   })
@@ -117,16 +119,30 @@ describe('WeirollRouter', () => {
       const amountIn: BigNumber = expandTo18DecimalsBN(5)
       const addV2Trades = (planner: RouterPlanner, numTrades: number) => {
         for (let i = 0; i < numTrades; i++) {
+          // transfer input tokens into the pair to trade
           planner.add(
             new TransferCommand(
               DAI.address,
               weirollRouter.address,
-              '0xa478c2975ab1ea89e8196811f51a7b7ade33eb11',
+              pair_DAI_WETH.liquidityToken.address,
               amountIn
             )
           )
           planner.add(new V2SwapCommand(amountIn, 1, [DAI.address, WETH.address], alice.address))
         }
+      }
+
+      const addV2MultiHop = (planner: RouterPlanner) => {
+        // transfer input tokens into the pair to trade
+        planner.add(
+          new TransferCommand(
+            DAI.address,
+            weirollRouter.address,
+            pair_DAI_WETH.liquidityToken.address,
+            amountIn
+          )
+        )
+        planner.add(new V2SwapCommand(amountIn, 1, [DAI.address, WETH.address, USDC.address], alice.address))
       }
 
       let planner: RouterPlanner
@@ -152,6 +168,19 @@ describe('WeirollRouter', () => {
           (prev, current) => prev.add(current!.args.amount1Out),
           expandTo18DecimalsBN(0)
         )
+        expect(balanceAfter.sub(balanceBefore)).to.equal(amountOut)
+      })
+
+      it('completes a V2 swap with longer path', async () => {
+        addV2MultiHop(planner)
+        const { commands, state } = planner.plan()
+
+        const balanceBefore = await usdcContract.balanceOf(alice.address)
+        const tx = await weirollRouter.execute(commands, state)
+        const receipt = await tx.wait()
+        const balanceAfter = await usdcContract.balanceOf(alice.address)
+        const events = parseEvents(V2_EVENTS, receipt)
+        const amountOut = events[events.length-1]!.args.amount0Out
         expect(balanceAfter.sub(balanceBefore)).to.equal(amountOut)
       })
 
