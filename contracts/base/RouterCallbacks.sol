@@ -6,7 +6,7 @@ pragma abicoder v2;
 import './Payments.sol';
 import '../libraries/Path.sol';
 
-abstract contract RouterCallbacks is Payments {
+abstract contract RouterCallbacks {
     using Path for bytes;
 
     struct SwapCallbackData {
@@ -23,7 +23,7 @@ abstract contract RouterCallbacks is Payments {
         (bool isExactInput, uint256 amountToPay) =
             amount0Delta > 0 ? (tokenIn < tokenOut, uint256(amount0Delta)) : (tokenOut < tokenIn, uint256(amount1Delta));
         if (isExactInput) {
-            pay(tokenIn, data.payer, msg.sender, amountToPay);
+            Payments.pay(tokenIn, data.payer, msg.sender, amountToPay);
         } else { // either initiate the next swap or pay
                 // if (data.path.hasMultiplePools()) {
                 //     data.path = data.path.skipToken();

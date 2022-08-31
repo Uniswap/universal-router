@@ -39,4 +39,19 @@ library UniswapPoolHelper {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
         return computePoolAddress(factory, abi.encodePacked(token0, token1), POOL_INIT_CODE_HASH_V2);
     }
+
+    // performs chained getAmountIn calculations on any number of pairs
+    // function getAmountsIn(
+    //     address factory,
+    //     uint256 amountOut,
+    //     address[] memory path
+    // ) internal view returns (uint256[] memory amounts) {
+    //     require(path.length >= 2);
+    //     amounts = new uint256[](path.length);
+    //     amounts[amounts.length - 1] = amountOut;
+    //     for (uint256 i = path.length - 1; i > 0; i--) {
+    //         (uint256 reserveIn, uint256 reserveOut) = getReserves(factory, path[i - 1], path[i]);
+    //         amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
+    //     }
+    // }
 }
