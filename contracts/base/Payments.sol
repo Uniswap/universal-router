@@ -1,44 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.4;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '../interfaces/IPayments.sol';
 import '../interfaces/external/IWETH9.sol';
 import '../libraries/TransferHelper.sol';
 
-abstract contract Payments is IPayments {
-    /// @inheritdoc IPayments
-    address public immutable override WETH9;
-
-    constructor(address _WETH9) {
-        WETH9 = _WETH9;
-    }
-
-    /// @inheritdoc IPayments
-    function unwrapWETH9(uint256 amountMinimum, address recipient) public payable override {
-        uint256 balanceWETH9 = IWETH9(WETH9).balanceOf(address(this));
-        if (balanceWETH9 < amountMinimum) revert InsufficientWETH9();
-
-        if (balanceWETH9 > 0) {
-            IWETH9(WETH9).withdraw(balanceWETH9);
-            TransferHelper.safeTransferETH(recipient, balanceWETH9);
-        }
-    }
-
-    /// @inheritdoc IPayments
-    function sweepToken(address token, uint256 amountMinimum, address recipient) public payable override {
-        uint256 balanceToken = IERC20(token).balanceOf(address(this));
-        if (balanceToken < amountMinimum) revert InsufficientToken(token);
-
-        if (balanceToken > 0) {
-            TransferHelper.safeTransfer(token, recipient, balanceToken);
-        }
-    }
-
-    /// @inheritdoc IPayments
-    function refundETH() external payable override {
-        if (address(this).balance > 0) TransferHelper.safeTransferETH(msg.sender, address(this).balance);
-    }
+library Payments {
+    address constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     /// @param token The token to pay
     /// @param payer The entity that must pay

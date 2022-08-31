@@ -6,7 +6,7 @@ import './modules/V3SwapRouter.sol';
 import './base/Payments.sol';
 import './libraries/CommandBuilder.sol';
 
-contract WeirollRouter is Payments, V2SwapRouter, V3SwapRouter {
+contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     using CommandBuilder for bytes[];
 
     error NotGreaterOrEqual(uint256 big, uint256 smol);
@@ -29,7 +29,7 @@ contract WeirollRouter is Payments, V2SwapRouter, V3SwapRouter {
 
     address immutable permitPost;
 
-    constructor(address _permitPost) Payments(_permitPost) {
+    constructor(address _permitPost) {
         permitPost = _permitPost;
     }
 
@@ -69,17 +69,17 @@ contract WeirollRouter is Payments, V2SwapRouter, V3SwapRouter {
                 bytes memory inputs = state.buildInputs(indices);
                 (address token, address payer, address recipient, uint256 value) =
                     abi.decode(inputs, (address, address, address, uint256));
-                pay(token, payer, recipient, value);
+                Payments.pay(token, payer, recipient, value);
             } else if (commandType == FLAG_CT_V2_SWAP) {
                 bytes memory inputs = state.buildInputs(indices);
                 (uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient) =
                     abi.decode(inputs, (uint256, uint256, address[], address));
-                outdata = abi.encode(swapV2(amountIn, amountOutMin, path, recipient));
+                outdata = abi.encode(v2SwapExactInput(amountIn, amountOutMin, path, recipient));
             } else if (commandType == FLAG_CT_V3_SWAP) {
                 bytes memory inputs = state.buildInputs(indices);
                 (uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient) =
                     abi.decode(inputs, (uint256, uint256, address[], address));
-                outdata = abi.encode(swapV2(amountIn, amountOutMin, path, recipient));
+                outdata = abi.encode(v2SwapExactInput(amountIn, amountOutMin, path, recipient));
             } else if (commandType == FLAG_CT_CHECK_AMT) {
                 (uint256 amountA, uint256 amountB) = abi.decode(state.buildInputs(indices), (uint256, uint256));
                 checkAmountGTE(amountA, amountB);

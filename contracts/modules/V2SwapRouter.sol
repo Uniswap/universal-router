@@ -10,11 +10,7 @@ contract V2SwapRouter {
     bytes32 internal constant POOL_INIT_CODE_HASH_V2 =
         0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
-    function swapV2(uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient)
-        internal
-        returns (uint256 amountOut)
-    {
-        uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(recipient);
+    function _v2Swap(address[] memory path, address recipient) private {
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0, address token1) = UniswapPoolHelper.sortTokens(input, output);
@@ -36,6 +32,16 @@ contract V2SwapRouter {
                 : recipient;
             pair.swap(amount0Out, amount1Out, to, new bytes(0));
         }
+    }
+
+    function v2SwapExactInput(uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient)
+        internal
+        returns (uint256 amountOut)
+    {
+        uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(recipient);
+
+        _v2Swap(path, recipient);
+
         amountOut = IERC20(path[path.length - 1]).balanceOf(recipient) - balanceBefore;
         require(amountOut >= amountOutMin, 'Too little received');
     }

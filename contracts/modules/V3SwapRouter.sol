@@ -7,7 +7,7 @@ import '../libraries/UniswapPoolHelper.sol';
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
-abstract contract V3SwapRouter is Payments {
+abstract contract V3SwapRouter {
     using Path for bytes;
     using SafeCast for uint256;
 
@@ -45,7 +45,7 @@ abstract contract V3SwapRouter is Payments {
         require(amount0Delta > 0 || amount1Delta > 0); // swaps entirely within 0-liquidity regions are not supported
         (address tokenIn,,) = path.decodeFirstPool();
         uint256 amountToPay = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
-        pay(tokenIn, address(this), msg.sender, amountToPay);
+        Payments.pay(tokenIn, address(this), msg.sender, amountToPay);
     }
 
     function exactInput(address recipient, uint256 amountIn, uint256 amountOutMinimum, bytes memory path)
