@@ -93,7 +93,7 @@ abstract contract V3SwapRouter is Payments {
         bool zeroForOne = tokenIn < tokenOut;
 
         (int256 amount0, int256 amount1) = IUniswapV3Pool(
-            UniswapPoolHelper.computeV3Address(V3_FACTORY, abi.encode(getPoolKey(tokenIn, tokenOut, fee)), POOL_INIT_CODE_HASH_V3)
+            UniswapPoolHelper.computePoolAddress(V3_FACTORY, abi.encode(getPoolKey(tokenIn, tokenOut, fee)), POOL_INIT_CODE_HASH_V3)
         ).swap(
             recipient,
             zeroForOne,

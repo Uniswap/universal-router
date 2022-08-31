@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 /// @title Provides function for deriving a v2 and v3 pool address
 library UniswapPoolHelper {
-    function computeV3Address(address factory, bytes memory identifier, bytes32 initCodeHash)
+    function computePoolAddress(address factory, bytes memory identifier, bytes32 initCodeHash)
         internal
         pure
         returns (address pool)
