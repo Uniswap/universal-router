@@ -25,10 +25,6 @@ function expandTo18DecimalsBN(n: number): BigNumber {
   return BigNumber.from(n).mul(BigNumber.from(10).pow(18))
 }
 
-// function expandTo6DecimalsBN(n: number): BigNumber {
-//   return BigNumber.from(n).mul(BigNumber.from(10).pow(18))
-// }
-
 function parseEvents(iface: Interface, receipt: TransactionReceipt): (LogDescription | undefined)[] {
   return receipt.logs
     .map((log: { topics: Array<string>; data: string }) => {
