@@ -125,7 +125,7 @@ describe('WeirollRouter', () => {
           planner.add(
             new TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn)
           )
-          planner.add(new V2SwapCommand(amountIn, 1, [DAI.address, WETH.address], alice.address))
+          planner.add(new V2SwapCommand(1, [DAI.address, WETH.address], alice.address))
         }
       }
 
@@ -134,7 +134,7 @@ describe('WeirollRouter', () => {
         planner.add(
           new TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn)
         )
-        planner.add(new V2SwapCommand(amountIn, 1, [DAI.address, WETH.address, USDC.address], alice.address))
+        planner.add(new V2SwapCommand(1, [DAI.address, WETH.address, USDC.address], alice.address))
       }
 
       let planner: RouterPlanner
