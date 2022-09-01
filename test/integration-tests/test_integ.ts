@@ -39,13 +39,15 @@ function parseEvents(iface: Interface, receipt: TransactionReceipt): (LogDescrip
 
 async function resetFork() {
   await hre.network.provider.request({
-    method: "hardhat_reset",
-    params: [{
-      forking: {
-        jsonRpcUrl: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-        blockNumber: 15360000,
+    method: 'hardhat_reset',
+    params: [
+      {
+        forking: {
+          jsonRpcUrl: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+          blockNumber: 15360000,
+        },
       },
-    }],
+    ],
   })
 }
 
@@ -121,12 +123,7 @@ describe('WeirollRouter', () => {
         for (let i = 0; i < numTrades; i++) {
           // transfer input tokens into the pair to trade
           planner.add(
-            new TransferCommand(
-              DAI.address,
-              weirollRouter.address,
-              pair_DAI_WETH.liquidityToken.address,
-              amountIn
-            )
+            new TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn)
           )
           planner.add(new V2SwapCommand(amountIn, 1, [DAI.address, WETH.address], alice.address))
         }
@@ -135,12 +132,7 @@ describe('WeirollRouter', () => {
       const addV2MultiHop = (planner: RouterPlanner) => {
         // transfer input tokens into the pair to trade
         planner.add(
-          new TransferCommand(
-            DAI.address,
-            weirollRouter.address,
-            pair_DAI_WETH.liquidityToken.address,
-            amountIn
-          )
+          new TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn)
         )
         planner.add(new V2SwapCommand(amountIn, 1, [DAI.address, WETH.address, USDC.address], alice.address))
       }
@@ -180,7 +172,7 @@ describe('WeirollRouter', () => {
         const receipt = await tx.wait()
         const balanceAfter = await usdcContract.balanceOf(alice.address)
         const events = parseEvents(V2_EVENTS, receipt)
-        const amountOut = events[events.length-1]!.args.amount0Out
+        const amountOut = events[events.length - 1]!.args.amount0Out
         expect(balanceAfter.sub(balanceBefore)).to.equal(amountOut)
       })
 

@@ -6,13 +6,14 @@ library UniswapPoolHelper {
     bytes32 internal constant POOL_INIT_CODE_HASH_V2 =
         0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
-    function computePoolAddress(address factory, bytes memory identifier, bytes32 initCodeHash)
-        internal
-        pure
-        returns (address pool)
-    {
-        pool =
-            address(uint160(uint256(keccak256(abi.encodePacked(hex'ff', factory, keccak256(identifier), initCodeHash)))));
+    function computePoolAddress(
+        address factory,
+        bytes memory identifier,
+        bytes32 initCodeHash
+    ) internal pure returns (address pool) {
+        pool = address(
+            uint160(uint256(keccak256(abi.encodePacked(hex'ff', factory, keccak256(identifier), initCodeHash))))
+        );
     }
 
     function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
@@ -25,9 +26,9 @@ library UniswapPoolHelper {
         uint256 reserveOut
     ) internal pure returns (uint256 amountOut) {
         require(reserveIn > 0 && reserveOut > 0);
-        uint256 amountInWithFee = amountIn*997;
-        uint256 numerator = amountInWithFee*reserveOut;
-        uint256 denominator = reserveIn*1000+amountInWithFee;
+        uint256 amountInWithFee = amountIn * 997;
+        uint256 numerator = amountInWithFee * reserveOut;
+        uint256 denominator = reserveIn * 1000 + amountInWithFee;
         amountOut = numerator / denominator;
     }
 
