@@ -55,6 +55,7 @@
   },
   "scripts": {
     "compile": "hardhat compile",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "prettier": "prettier --write '**/*.sol' && prettier --write '**/*.ts'"
   }
 }
