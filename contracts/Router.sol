@@ -16,12 +16,13 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     // Command Types
     uint256 constant FLAG_CT_PERMIT = 0x00;
     uint256 constant FLAG_CT_TRANSFER = 0x01;
-    uint256 constant FLAG_CT_V3_SWAP = 0x02;
-    uint256 constant FLAG_CT_V2_SWAP_EXACT_IN = 0x03;
-    uint256 constant FLAG_CT_V2_SWAP_EXACT_OUT = 0x04;
-    uint256 constant FLAG_CT_CHECK_AMT = 0x05;
-    uint256 constant FLAG_CT_MASK = 0x0f;
+    uint256 constant FLAG_CT_V3_SWAP_EXACT_IN = 0x02;
+    uint256 constant FLAG_CT_V3_SWAP_EXACT_OUT = 0x03;
+    uint256 constant FLAG_CT_V2_SWAP_EXACT_IN = 0x04;
+    uint256 constant FLAG_CT_V2_SWAP_EXACT_OUT = 0x05;
+    uint256 constant FLAG_CT_CHECK_AMT = 0x06;
 
+    uint256 constant FLAG_CT_MASK = 0x0f;
     uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
     uint256 constant FLAG_TUPLE_RETURN = 0x40;
     uint256 constant SHORT_COMMAND_FILL = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
@@ -88,7 +89,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                     (uint256, uint256, address[], address)
                 );
                 outdata = abi.encode(v2SwapExactOutput(amountOut, amountInMax, path, recipient));
-            } else if (commandType == FLAG_CT_V3_SWAP) {
+            } else if (commandType == FLAG_CT_V3_SWAP_EXACT_IN) {
                 bytes memory inputs = state.buildInputs(indices);
                 (uint256 amountOutMin, address[] memory path, address recipient) = abi.decode(
                     inputs,

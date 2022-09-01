@@ -1,7 +1,7 @@
 import { Interface, LogDescription } from '@ethersproject/abi'
 import { TransactionReceipt } from '@ethersproject/abstract-provider'
 import type { Contract } from '@ethersproject/contracts'
-import { RouterPlanner, TransferCommand, V2SwapCommand } from '@uniswap/narwhal-sdk'
+import { RouterPlanner, TransferCommand, V2ExactInputCommand } from '@uniswap/narwhal-sdk'
 import { BigintIsh, CurrencyAmount, Percent } from '@uniswap/sdk-core'
 import { Route as V2Route, Trade as V2Trade } from '@uniswap/v2-sdk'
 import JSBI from 'jsbi'
@@ -125,7 +125,7 @@ describe('WeirollRouter', () => {
           planner.add(
             new TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn)
           )
-          planner.add(new V2SwapCommand(1, [DAI.address, WETH.address], alice.address))
+          planner.add(new V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
         }
       }
 
@@ -134,7 +134,7 @@ describe('WeirollRouter', () => {
         planner.add(
           new TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn)
         )
-        planner.add(new V2SwapCommand(1, [DAI.address, WETH.address, USDC.address], alice.address))
+        planner.add(new V2ExactInputCommand(1, [DAI.address, WETH.address, USDC.address], alice.address))
       }
 
       let planner: RouterPlanner
