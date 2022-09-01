@@ -48,6 +48,8 @@
     "hardhat": "^2.6.8",
     "hardhat-typechain": "^0.3.5",
     "mocha-chai-jest-snapshot": "^1.1.0",
+    "prettier": "^2.0.5",
+    "prettier-plugin-solidity": "^1.0.0-alpha.59",
     "ts-generator": "^0.1.1",
     "ts-node": "^8.5.4",
     "typechain": "^4.0.0",

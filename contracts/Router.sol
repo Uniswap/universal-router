@@ -56,29 +56,36 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
                 indices = commands[i++];
             } else {
-                indices = bytes32(uint256(uint64(command)) << COMMAND_INDICES_OFFSET | SHORT_COMMAND_FILL);
+                indices = bytes32((uint256(uint64(command)) << COMMAND_INDICES_OFFSET) | SHORT_COMMAND_FILL);
             }
 
-            if (commandType == FLAG_CT_PERMIT) { // state[state.length] = abi.encode(msg.sender);
-                    // (success, outdata) = permitPost.call(state[0]);
-                    // bytes memory inputs = state.build(bytes4(0), indices);
-                    // (address some, address parameters, uint256 forPermit) = abi.decode(inputs, (address, address, uint));
-                    //
-                    // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
+            if (commandType == FLAG_CT_PERMIT) {
+                // state[state.length] = abi.encode(msg.sender);
+                // (success, outdata) = permitPost.call(state[0]);
+                // bytes memory inputs = state.build(bytes4(0), indices);
+                // (address some, address parameters, uint256 forPermit) = abi.decode(inputs, (address, address, uint));
+                //
+                // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
             } else if (commandType == FLAG_CT_TRANSFER) {
                 bytes memory inputs = state.buildInputs(indices);
-                (address token, address payer, address recipient, uint256 value) =
-                    abi.decode(inputs, (address, address, address, uint256));
+                (address token, address payer, address recipient, uint256 value) = abi.decode(
+                    inputs,
+                    (address, address, address, uint256)
+                );
                 Payments.pay(token, payer, recipient, value);
             } else if (commandType == FLAG_CT_V2_SWAP) {
                 bytes memory inputs = state.buildInputs(indices);
-                (uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient) =
-                    abi.decode(inputs, (uint256, uint256, address[], address));
+                (uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient) = abi.decode(
+                    inputs,
+                    (uint256, uint256, address[], address)
+                );
                 outdata = abi.encode(v2SwapExactInput(amountIn, amountOutMin, path, recipient));
             } else if (commandType == FLAG_CT_V3_SWAP) {
                 bytes memory inputs = state.buildInputs(indices);
-                (uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient) =
-                    abi.decode(inputs, (uint256, uint256, address[], address));
+                (uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient) = abi.decode(
+                    inputs,
+                    (uint256, uint256, address[], address)
+                );
                 outdata = abi.encode(v2SwapExactInput(amountIn, amountOutMin, path, recipient));
             } else if (commandType == FLAG_CT_CHECK_AMT) {
                 (uint256 amountA, uint256 amountB) = abi.decode(state.buildInputs(indices), (uint256, uint256));

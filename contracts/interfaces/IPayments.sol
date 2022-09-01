@@ -33,5 +33,9 @@ interface IPayments {
     /// @param token The contract address of the token which will be transferred to `recipient`
     /// @param amountMinimum The minimum amount of token required for a transfer
     /// @param recipient The destination address of the token
-    function sweepToken(address token, uint256 amountMinimum, address recipient) external payable;
+    function sweepToken(
+        address token,
+        uint256 amountMinimum,
+        address recipient
+    ) external payable;
 }
