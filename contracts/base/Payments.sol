@@ -26,6 +26,7 @@ library Payments {
             TransferHelper.safeTransfer(token, recipient, value);
         } else {
             // pull payment
+
             TransferHelper.safeTransferFrom(token, payer, recipient, value);
         }
     }
