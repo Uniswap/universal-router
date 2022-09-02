@@ -133,7 +133,9 @@ describe('WeirollRouter', () => {
 
       const addV2ExactOutTrades = (planner: RouterPlanner, numTrades: number, amountOut: BigNumber) => {
         for (let i = 0; i < numTrades; i++) {
-          planner.add(new V2ExactOutputCommand(amountOut, expandTo18DecimalsBN(10000), [DAI.address, WETH.address], alice.address))
+          planner.add(
+            new V2ExactOutputCommand(amountOut, expandTo18DecimalsBN(10000), [DAI.address, WETH.address], alice.address)
+          )
         }
       }
 
