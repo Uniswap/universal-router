@@ -78,6 +78,7 @@ describe('WeirollRouter', () => {
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
     const weirollRouterFactory = await ethers.getContractFactory('WeirollRouter')
     weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)) as WeirollRouter
+    await daiContract.connect(alice).approve(weirollRouter.address, MAX_UINT)
   })
 
   it('bytecode size', async () => {
@@ -172,8 +173,6 @@ describe('WeirollRouter', () => {
 
       it('completes a V2 exactOut swap', async () => {
         // this will eventually be permit post
-        await daiContract.connect(alice).approve(weirollRouter.address, MAX_UINT)
-
         const amountOut = expandTo18DecimalsBN(1)
         addV2ExactOutTrades(planner, 1, amountOut)
         const { commands, state } = planner.plan()
@@ -205,6 +204,14 @@ describe('WeirollRouter', () => {
         addV2ExactInTrades(planner, 1)
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.execute(commands, state)
+        const receipt = await tx.wait()
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+
+      it('gas: one trade, one hop, exactOut', async () => {
+        addV2ExactOutTrades(planner, 1, expandTo18DecimalsBN(1))
+        const { commands, state } = planner.plan()
+        const tx = await weirollRouter.connect(alice).execute(commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
