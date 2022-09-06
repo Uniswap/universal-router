@@ -16,9 +16,9 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
         bytes wishDetails;
     }
 
-    // @dev pathing is determined in binary
-    // @dev if 1 in first position then order contains a seaport order
-    // @dev if 1 in second position then order contains x2y2/looksrare orders
+    /// @dev pathing is determined in binary
+    /// @dev if 1 in first position then order contains a seaport order
+    /// @dev if 1 in second position then order contains x2y2/looksrare orders
     enum OrderType {
         // 0[00]: Empty order
         EMPTY,
@@ -31,32 +31,32 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
     }
 
     enum Marketplace {
-        // @dev Seaport is not in enum because its logic branch doesn't check for marketplace
+        /// @dev Seaport is not in enum because its logic branch doesn't check for marketplace
         LooksRare,
         X2Y2
     }
 
-    address private constant seaportAddress =
+    address private constant SEAPORT_ADDRESS =
         0x00000000006c3852cbEf3e08E8dF289169EdE581;
-    address private constant looksRareAddress =
+    address private constant LOOKSRARE_ADDRESS =
         0x59728544B08AB483533076417FbBB2fD0B17CE3a;
-    address private constant x2y2Address =
+    address private constant X2Y2_ADDRESS =
         0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3;
 
     // 0x44 (array length) = 0x04 (selector) + 0x20 (orderType) + 0x20 (location of array)
-    uint256 constant ArrayLengthPointer = 0x44;
+    uint256 constant ARRAY_LENGTH_POINTER = 0x44;
     // 0x64 (location of array) = 0x04 (selector) + 0x20 (orderType) + 0x20 (location of array) + 0x20(length of array)
-    uint256 constant ArrayOffsetPointer = 0x64;
+    uint256 constant ARRAY_OFFSET_POINTER = 0x64;
 
-    uint256 constant DefaultFreeMemoryPointer = 0x80;
-    uint256 constant OneWord = 0x20;
-    uint256 constant TwoWords = 0x40;
-    uint256 constant ThreeWords = 0x60;
-    uint256 constant FourWords = 0x80;
+    uint256 constant DEFAULT_FREE_MEMORY_POINTER = 0x80;
+    uint256 constant ONE_WORD = 0x20;
+    uint256 constant TWO_WORDS = 0x40;
+    uint256 constant THREE_WORDS = 0x60;
+    uint256 constant FOUR_WORDS = 0x80;
 
-    // @dev Loops through array of nft orders, first order always has to be seaport if its included.
-    //      Bundles LooksRare and X2Y2 together because they both require tokens to be transfered from
-    //      this contract to the user.
+    /// @dev Loops through array of nft orders, first order always has to be seaport if its included.
+    ///      Bundles LooksRare and X2Y2 together because they both require tokens to be transfered from
+    ///      this contract to the user.
     function purchase(
         OrderType orderType,
         PurchaseParameters[] calldata purchaseParameters
@@ -73,25 +73,25 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
             containsL2R2 := gt(orderType, 1)
 
             // length of array is the number of orders
-            numberOfOrders := calldataload(ArrayLengthPointer)
+            numberOfOrders := calldataload(ARRAY_LENGTH_POINTER)
 
             // if an order is empty revert
             if iszero(numberOfOrders) {
                 mstore(0, "No orders")
-                revert(0, OneWord)
+                revert(0, ONE_WORD)
             }
 
-            // @dev we branch for seaport separately because it will only be called once
-            //      so any checks in a for loop would waste gas
+            /// @dev we branch for seaport separately because it will only be called once
+            ///      so any checks in a for loop would waste gas
             if containsSeaport {
                 // pointer to location of purchaseParameters struct in calldata
-                let structOffset := calldataload(ArrayOffsetPointer)
-                let structPointer := add(structOffset, ArrayOffsetPointer)
+                let structOffset := calldataload(ARRAY_OFFSET_POINTER)
+                let structPointer := add(structOffset, ARRAY_OFFSET_POINTER)
                 // amount is first word in stuct calldata
                 let amount := calldataload(structPointer)
 
                 // offset to the encoded calldata bytes for seaport is the fifth word in struct calldata
-                let structBytesOffset := calldataload(add(structPointer, FourWords))
+                let structBytesOffset := calldataload(add(structPointer, FOUR_WORDS))
 
                 // pointer to the encoded calldata bytes
                 let structBytesPointer := add(structPointer, structBytesOffset)
@@ -99,22 +99,22 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
                 let lengthOfData := calldataload(structBytesPointer)
                 // copy the encoded calldata to memory
                 calldatacopy(
-                    DefaultFreeMemoryPointer,
-                    add(structBytesPointer, OneWord),
+                    DEFAULT_FREE_MEMORY_POINTER,
+                    add(structBytesPointer, ONE_WORD),
                     lengthOfData
                 )
                 let success := call(
                     gas(),
-                    seaportAddress,
+                    SEAPORT_ADDRESS,
                     amount,
-                    DefaultFreeMemoryPointer,
+                    DEFAULT_FREE_MEMORY_POINTER,
                     lengthOfData,
                     0,
-                    OneWord
+                    ONE_WORD
                 )
 
                 // set to true if order was filled
-                fulfilledAnOrder := or(fulfilledAnOrder, success)
+                fulfilledAnOrder := success
             }
         }
 
@@ -128,21 +128,21 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
                     assembly {
                         // calculating the offset for this order's struct in calldata
                         let structOffset := calldataload(
-                            add(ArrayOffsetPointer, mul(i, OneWord))
+                            add(ARRAY_OFFSET_POINTER, mul(i, ONE_WORD))
                         )
                         // pointer to location of this order's purchaseParameters struct in calldata
-                        let structPointer := add(structOffset, ArrayOffsetPointer)
+                        let structPointer := add(structOffset, ARRAY_OFFSET_POINTER)
                         // fetching calldata parameters at appropriate offsets
                         let amount := calldataload(structPointer)
                         let marketplaceType := calldataload(
-                            add(structPointer, OneWord)
+                            add(structPointer, ONE_WORD)
                         )
-                        tokenId := calldataload(add(structPointer, TwoWords))
+                        tokenId := calldataload(add(structPointer, TWO_WORDS))
                         collectionAddress := calldataload(
-                            add(structPointer, ThreeWords)
+                            add(structPointer, THREE_WORDS)
                         )
                         let structBytesOffset := calldataload(
-                            add(structPointer, FourWords)
+                            add(structPointer, FOUR_WORDS)
                         )
 
                         // pointer to encoded calldata
@@ -153,25 +153,25 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
                         // length of bytes is first word
                         let lengthOfData := calldataload(structBytesPointer)
                         // set default address to x2y2
-                        let marketplaceAddress := x2y2Address
+                        let marketplaceAddress := X2Y2_ADDRESS
                         // check if marketplaceType is looksrare
                         if iszero(marketplaceType) {
-                            marketplaceAddress := looksRareAddress
+                            marketplaceAddress := LOOKSRARE_ADDRESS
                         }
                         // copy the encoded calldata to memory
                         calldatacopy(
-                            DefaultFreeMemoryPointer,
-                            add(structBytesPointer, OneWord),
+                            DEFAULT_FREE_MEMORY_POINTER,
+                            add(structBytesPointer, ONE_WORD),
                             lengthOfData
                         )
                         success := call(
                             gas(),
                             marketplaceAddress,
                             amount,
-                            DefaultFreeMemoryPointer,
+                            DEFAULT_FREE_MEMORY_POINTER,
                             lengthOfData,
                             0,
-                            OneWord
+                            ONE_WORD
                         )
 
                         // set to true if order was filled
@@ -191,7 +191,7 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
             // if not a single order was filled revert
             if iszero(fulfilledAnOrder) {
                 mstore(0, "No available orders")
-                revert(0, OneWord)
+                revert(0, ONE_WORD)
             }
 
             // refund user if available
@@ -205,6 +205,11 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
                     0,
                     0
                 )
+
+                if iszero(returnCallStatus) {
+                    mstore(0, "Refund failed")
+                    revert(0, ONE_WORD)
+                }
             }
         }
     }
@@ -216,33 +221,6 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
         bytes calldata
     ) external pure returns (bytes4) {
         return this.onERC721Received.selector;
-    }
-
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata
-    ) external pure returns (bytes4) {
-        return this.onERC1155Received.selector;
-    }
-
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata
-    ) external pure returns (bytes4) {
-        return this.onERC1155BatchReceived.selector;
-    }
-
-    function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
-        return
-            interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
-            interfaceId == 0x80ac58cd || // ERC165 Interface ID for ERC721
-            interfaceId == 0x5b5e139f; // ERC165 Interface ID for ERC721Metadata
     }
 
     receive() external payable {}
