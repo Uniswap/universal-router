@@ -63,6 +63,10 @@ library Path {
         return path.slice(0, POP_OFFSET);
     }
 
+    function decodeFirstToken(bytes memory path) internal pure returns (address tokenA) {
+        tokenA = path.toAddress(0);
+    }
+
     /// @notice Skips a token + fee element from the buffer and returns the remainder
     /// @param path The swap path
     /// @return The remaining token + fee elements in the path

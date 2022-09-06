@@ -4,10 +4,10 @@ exports[`WeirollRouter #trade uniswap v2 with Router02 gas: one trade, one hop, 
 
 exports[`WeirollRouter #trade uniswap v2 with Router02 gas: six trades (all same), one hop, exactIn 1`] = `"290065"`;
 
-exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: one trade, one hop, exactIn 1`] = `"116066"`;
+exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: one trade, one hop, exactIn 1`] = `"115778"`;
 
-exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: one trade, one hop, exactOut 1`] = `"112472"`;
+exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: one trade, one hop, exactOut 1`] = `"112292"`;
 
-exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: six trades (all same), one hop, exactIn 1`] = `"288116"`;
+exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: six trades (all same), one hop, exactIn 1`] = `"287828"`;
 
-exports[`WeirollRouter bytecode size 1`] = `7144`;
+exports[`WeirollRouter bytecode size 1`] = `7168`;
