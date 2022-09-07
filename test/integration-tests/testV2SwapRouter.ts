@@ -4,7 +4,7 @@ import { TransactionReceipt } from '@ethersproject/abstract-provider'
 import type { Contract } from '@ethersproject/contracts'
 import { RouterPlanner, TransferCommand, V2ExactInputCommand, V2ExactOutputCommand } from '@uniswap/narwhal-sdk'
 import { BigintIsh, CurrencyAmount, Percent, Token } from '@uniswap/sdk-core'
-import {Pair, Route as V2Route, Trade as V2Trade } from '@uniswap/v2-sdk'
+import { Pair, Route as V2Route, Trade as V2Trade } from '@uniswap/v2-sdk'
 import { SwapRouter } from '@uniswap/router-sdk'
 import { expect } from './shared/expect'
 import { makePair } from './shared/swapRouter02Helpers'
@@ -70,7 +70,6 @@ describe('WeirollRouter', () => {
   let pair_DAI_USDC: Pair
   let pair_USDC_WETH: Pair
 
-
   beforeEach(async () => {
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
@@ -101,10 +100,10 @@ describe('WeirollRouter', () => {
       let v2TradeExactOut: any
 
       beforeEach(async () => {
-         amountIn = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
-         amountOut = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
-         v2TradeExactIn = V2Trade.exactIn(new V2Route([pair_DAI_WETH], DAI, WETH), amountIn)
-         v2TradeExactOut = V2Trade.exactOut(new V2Route([pair_DAI_WETH], WETH, DAI), amountOut)
+        amountIn = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
+        amountOut = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
+        v2TradeExactIn = V2Trade.exactIn(new V2Route([pair_DAI_WETH], DAI, WETH), amountIn)
+        v2TradeExactOut = V2Trade.exactOut(new V2Route([pair_DAI_WETH], WETH, DAI), amountOut)
       })
 
       afterEach(async () => {
@@ -134,7 +133,6 @@ describe('WeirollRouter', () => {
         const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
-
 
       it('gas: one trade, one hop, exactOut', async () => {
         const trades = [v2TradeExactOut]
@@ -175,9 +173,7 @@ describe('WeirollRouter', () => {
 
       const addV2ExactOutTrades = (planner: RouterPlanner, numTrades: number, amountOut: BigNumber) => {
         for (let i = 0; i < numTrades; i++) {
-          planner.add(
-            new TransferCommand(WETH.address, alice.address, pair_DAI_WETH.liquidityToken.address, amountIn)
-          )
+          planner.add(new TransferCommand(WETH.address, alice.address, pair_DAI_WETH.liquidityToken.address, amountIn))
           planner.add(
             new V2ExactOutputCommand(amountOut, expandTo18DecimalsBN(10000), [WETH.address, DAI.address], alice.address)
           )
@@ -186,9 +182,7 @@ describe('WeirollRouter', () => {
 
       const addV2ExactInMultiHop = (planner: RouterPlanner) => {
         // transfer input tokens into the pair to trade
-        planner.add(
-          new TransferCommand(DAI.address, alice.address, pair_DAI_WETH.liquidityToken.address, amountIn)
-        )
+        planner.add(new TransferCommand(DAI.address, alice.address, pair_DAI_WETH.liquidityToken.address, amountIn))
         planner.add(new V2ExactInputCommand(1, [DAI.address, WETH.address, USDC.address], alice.address))
       }
 
@@ -232,10 +226,9 @@ describe('WeirollRouter', () => {
         const balanceWethAfter = await wethContract.balanceOf(alice.address)
         const balanceDaiAfter = await daiContract.balanceOf(alice.address)
 
-        const amountIn = parseEvents(V2_EVENTS, receipt).reduce(
-          (prev, current) => prev.add(current!.args.amount1In),
-          expandTo18DecimalsBN(0)
-        ).mul(-1) // amountIn will be negative
+        const amountIn = parseEvents(V2_EVENTS, receipt)
+          .reduce((prev, current) => prev.add(current!.args.amount1In), expandTo18DecimalsBN(0))
+          .mul(-1) // amountIn will be negative
 
         expect(balanceWethAfter.sub(balanceWethBefore)).to.equal(amountIn)
         expect(balanceDaiBefore.sub(balanceDaiAfter)).to.be.lte(amountOut)
@@ -263,7 +256,9 @@ describe('WeirollRouter', () => {
       })
 
       it('gas: one trade, two hops, exactIn', async () => {
-        planner.add(new TransferCommand(DAI.address, weirollRouter.address, pair_DAI_USDC.liquidityToken.address, amountIn))
+        planner.add(
+          new TransferCommand(DAI.address, weirollRouter.address, pair_DAI_USDC.liquidityToken.address, amountIn)
+        )
         planner.add(new V2ExactInputCommand(1, [DAI.address, USDC.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.execute(commands, state)
@@ -273,7 +268,12 @@ describe('WeirollRouter', () => {
 
       it('gas: one trade, one hop, exactOut', async () => {
         planner.add(
-          new V2ExactOutputCommand(expandTo18DecimalsBN(5), expandTo18DecimalsBN(10000), [WETH.address, DAI.address], alice.address)
+          new V2ExactOutputCommand(
+            expandTo18DecimalsBN(5),
+            expandTo18DecimalsBN(10000),
+            [WETH.address, DAI.address],
+            alice.address
+          )
         )
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.connect(alice).execute(commands, state)
