@@ -1,13 +1,15 @@
 import type { Contract } from '@ethersproject/contracts'
 import { RouterPlanner, V3ExactInputCommand } from '@uniswap/narwhal-sdk'
-import { FeeAmount } from '@uniswap/v3-sdk'
+import { FeeAmount, Route as V3Route, Trade as V3Trade } from '@uniswap/v3-sdk'
+import { SwapRouter } from '@uniswap/router-sdk'
+import { CurrencyAmount, Percent } from '@uniswap/sdk-core'
 import { expect } from './shared/expect'
-import { encodePath } from './shared/swapRouter02Helpers'
+import { expandTo18Decimals, encodePath, pool_DAI_WETH } from './shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { WETH, DAI, USDC } from './shared/mainnetForkHelpers'
-import { MAX_UINT } from './shared/constants'
+import { executeSwap, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
+import { ALICE_ADDRESS, MAX_UINT } from './shared/constants'
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -42,9 +44,9 @@ describe('V3SwapRouter', () => {
   beforeEach(async () => {
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
-      params: ['0xf977814e90da44bfa03b6295a0616a897441acec'],
+      params: [ALICE_ADDRESS],
     })
-    alice = await ethers.getSigner('0xf977814e90da44bfa03b6295a0616a897441acec')
+    alice = await ethers.getSigner(ALICE_ADDRESS)
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
@@ -58,9 +60,45 @@ describe('V3SwapRouter', () => {
   })
 
   describe('#trade uniswap v3', () => {
-    const amountIn: BigNumber = expandTo18DecimalsBN(5)
+    describe('with Router02', () => {
+      const amountIn = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
+      const v3TradePromise = V3Trade.exactIn(new V3Route([pool_DAI_WETH], DAI, WETH), amountIn)
+      const slippageTolerance = new Percent(50, 100)
+
+      afterEach(async () => {
+        await resetFork()
+      })
+
+      it('gas: one trade, one hop, exactIn', async () => {
+        const v3Trade = await v3TradePromise
+        const trades = [v3Trade]
+        const { calldata } = SwapRouter.swapCallParameters(trades, {
+          slippageTolerance,
+          recipient: alice.address,
+          deadlineOrPreviousBlockhash: 2000000000,
+        })
+
+        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+
+      it('gas: six trades (all same), one hop, exactIn', async () => {
+        const v3Trade = await v3TradePromise
+        const trades = [v3Trade, v3Trade, v3Trade, v3Trade, v3Trade, v3Trade]
+        const { calldata } = SwapRouter.swapCallParameters(trades, {
+          slippageTolerance,
+          recipient: alice.address,
+          deadlineOrPreviousBlockhash: 2000000000,
+        })
+
+        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+    })
 
     describe('with Weiroll', () => {
+      const amountIn: BigNumber = expandTo18DecimalsBN(5)
+
       const addV3ExactInTrades = (planner: RouterPlanner, numTrades: number, amountOutMin: number, tokens: string[] = [DAI.address, WETH.address]) => {
         const path = encodePath(tokens, new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
         for (let i = 0; i < numTrades; i++) {

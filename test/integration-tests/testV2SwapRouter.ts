@@ -2,12 +2,11 @@ import { Interface, LogDescription } from '@ethersproject/abi'
 import { TransactionReceipt } from '@ethersproject/abstract-provider'
 import type { Contract } from '@ethersproject/contracts'
 import { RouterPlanner, TransferCommand, V2ExactInputCommand, V2ExactOutputCommand } from '@uniswap/narwhal-sdk'
-import { BigintIsh, CurrencyAmount, Percent } from '@uniswap/sdk-core'
+import { CurrencyAmount, Percent } from '@uniswap/sdk-core'
 import { Route as V2Route, Trade as V2Trade } from '@uniswap/v2-sdk'
-import JSBI from 'jsbi'
 import { SwapRouter } from '@uniswap/router-sdk'
 import { expect } from './shared/expect'
-import { pair_DAI_WETH } from './shared/swapRouter02Helpers'
+import { expandTo18Decimals, pair_DAI_WETH } from './shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
@@ -17,10 +16,6 @@ import { MAX_UINT } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 const { ethers } = hre
-
-function expandTo18Decimals(n: number): BigintIsh {
-  return JSBI.BigInt(BigNumber.from(n).mul(BigNumber.from(10).pow(18)).toString())
-}
 
 function expandTo18DecimalsBN(n: number): BigNumber {
   return BigNumber.from(n).mul(BigNumber.from(10).pow(18))
@@ -60,6 +55,7 @@ describe('V2SwapRouter', () => {
   const slippageTolerance = new Percent(50, 100)
   const recipient = '0x0000000000000000000000000000000000000003'
   const deadline = 2000000000
+  const ALICE_ADDRESS = '0xf977814e90da44bfa03b6295a0616a897441acec'
 
   let alice: SignerWithAddress
   let weirollRouter: WeirollRouter
@@ -70,9 +66,9 @@ describe('V2SwapRouter', () => {
   beforeEach(async () => {
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
-      params: ['0xf977814e90da44bfa03b6295a0616a897441acec'],
+      params: [ALICE_ADDRESS],
     })
-    alice = await ethers.getSigner('0xf977814e90da44bfa03b6295a0616a897441acec')
+    alice = await ethers.getSigner(ALICE_ADDRESS)
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
