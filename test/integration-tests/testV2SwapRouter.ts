@@ -67,6 +67,9 @@ describe('WeirollRouter', () => {
   let wethContract: Contract
   let usdcContract: Contract
   let pair_DAI_WETH: Pair
+  let pair_DAI_USDC: Pair
+  let pair_USDC_WETH: Pair
+
 
   beforeEach(async () => {
     await hre.network.provider.request({
@@ -82,6 +85,8 @@ describe('WeirollRouter', () => {
     await daiContract.connect(alice).approve(weirollRouter.address, MAX_UINT)
     await wethContract.connect(alice).approve(weirollRouter.address, MAX_UINT)
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
+    pair_DAI_USDC = await makePair(alice, DAI, USDC)
+    pair_USDC_WETH = await makePair(alice, USDC, WETH)
   })
 
   it('bytecode size', async () => {
@@ -117,6 +122,19 @@ describe('WeirollRouter', () => {
         const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
+
+      it('gas: one trade, two hops, exactIn', async () => {
+        const trades = [V2Trade.exactIn(new V2Route([pair_DAI_USDC, pair_USDC_WETH], DAI, WETH), amountIn)]
+        const { calldata } = SwapRouter.swapCallParameters(trades, {
+          slippageTolerance,
+          recipient,
+          deadlineOrPreviousBlockhash: deadline,
+        })
+
+        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+
 
       it('gas: one trade, one hop, exactOut', async () => {
         const trades = [v2TradeExactOut]
@@ -238,6 +256,15 @@ describe('WeirollRouter', () => {
 
       it('gas: one trade, one hop, exactIn', async () => {
         addV2ExactInTrades(planner, 1)
+        const { commands, state } = planner.plan()
+        const tx = await weirollRouter.execute(commands, state)
+        const receipt = await tx.wait()
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+
+      it('gas: one trade, two hops, exactIn', async () => {
+        planner.add(new TransferCommand(DAI.address, weirollRouter.address, pair_DAI_USDC.liquidityToken.address, amountIn))
+        planner.add(new V2ExactInputCommand(1, [DAI.address, USDC.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.execute(commands, state)
         const receipt = await tx.wait()
