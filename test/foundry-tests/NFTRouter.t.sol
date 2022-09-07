@@ -4,6 +4,7 @@ pragma solidity ^0.8.16;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import {NFTMarketplaceRouter} from "contracts/modules/NFTMarketplaceRouter.sol";
+import {ReferenceNFTMarketplaceRouter} from "contracts/modules/ReferenceNFTMarketplaceRouter.sol";
 import {MockMarketplace, MockedMarketplace} from "test/foundry-tests/mocks/MockMarketplace.sol";
 import {MockERC721} from "test/foundry-tests/mocks/MockERC721.sol";
 
@@ -35,6 +36,7 @@ contract NFTMarketplaceRouterTest is Test {
 
     function deployContracts() internal {
         router = new NFTMarketplaceRouter();
+        refRouter = new ReferenceNFTMarketplaceRouter();
 
         seaport = new MockMarketplace();
         x2y2 = new MockMarketplace();
@@ -401,6 +403,351 @@ contract NFTMarketplaceRouterTest is Test {
         vm.prank(alice);
         vm.expectRevert();
         router.purchase{value: 15 ether}(NFTMarketplaceRouter.OrderType.EMPTY, parameters);
+        
+        assertEq(alice.balance, 100 ether);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                              SOLIDITY-BASED TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    function testRefSingleBuys() public {
+        bytes memory seaportCalldata = abi.encodeWithSelector(seaport.seaportPurchase.selector, 0, address(token), alice);
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory seaportParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            0,
+            address(token),
+            seaportCalldata
+        );
+        
+        ReferenceNFTMarketplaceRouter.PurchaseParameters[] memory parameters = new ReferenceNFTMarketplaceRouter.PurchaseParameters[](1);
+        parameters[0] = seaportParameters;
+        
+        vm.expectEmit(false, false, false, true);
+        emit Purchased(5 ether, MockedMarketplace.SEAPORT, 0, address(token));
+        vm.prank(alice);
+        refRouter.purchase{value: 5 ether}(ReferenceNFTMarketplaceRouter.OrderType.SEAPORT, parameters);
+
+        bytes memory x2y2Calldata = abi.encodeWithSelector(x2y2.l2r2Purchase.selector, 50, address(token));
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
+            50,
+            address(token),
+            x2y2Calldata
+        );
+        
+        parameters[0] = x2y2Parameters;
+        
+        vm.expectEmit(false, false, false, true);
+        emit Purchased(5 ether, MockedMarketplace.X2Y2, 50, address(token));
+        vm.prank(alice);
+        refRouter.purchase{value: 5 ether}(ReferenceNFTMarketplaceRouter.OrderType.L2R2, parameters);
+
+        bytes memory looksRareCalldata = abi.encodeWithSelector(looksRare.l2r2Purchase.selector, 75, address(token));
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            75,
+            address(token),
+            looksRareCalldata
+        );
+        
+        parameters[0] = looksRareParameters;
+        
+        vm.expectEmit(false, false, false, true);
+        emit Purchased(5 ether, MockedMarketplace.LOOKSRARE, 75, address(token));
+        vm.prank(alice);
+        refRouter.purchase{value: 5 ether}(ReferenceNFTMarketplaceRouter.OrderType.L2R2, parameters);
+        
+        assertEq(token.ownerOf(0), alice);
+        assertEq(token.ownerOf(50), alice);
+        assertEq(token.ownerOf(75), alice);
+        assertEq(alice.balance, 85 ether);
+    }
+
+    function testRefBuysAcrossAllMarketplaces() public {
+        ReferenceNFTMarketplaceRouter.PurchaseParameters[] memory parameters = new ReferenceNFTMarketplaceRouter.PurchaseParameters[](3);
+    
+        bytes memory seaportCalldata = abi.encodeWithSelector(seaport.seaportPurchase.selector, 0, address(token), alice);
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory seaportParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            0,
+            address(token),
+            seaportCalldata
+        );
+        
+        parameters[0] = seaportParameters;
+        
+        bytes memory x2y2Calldata = abi.encodeWithSelector(x2y2.l2r2Purchase.selector, 50, address(token));
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
+            50,
+            address(token),
+            x2y2Calldata
+        );
+        
+        parameters[1] = x2y2Parameters;
+    
+        bytes memory looksRareCalldata = abi.encodeWithSelector(looksRare.l2r2Purchase.selector, 75, address(token));
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            75,
+            address(token),
+            looksRareCalldata
+        );
+        
+        parameters[2] = looksRareParameters;
+        
+        vm.prank(alice);
+        refRouter.purchase{value: 15 ether}(ReferenceNFTMarketplaceRouter.OrderType.BOTH, parameters);
+        
+        assertEq(token.ownerOf(0), alice);
+        assertEq(token.ownerOf(50), alice);
+        assertEq(token.ownerOf(75), alice);
+        assertEq(alice.balance, 85 ether);
+    }
+    
+    function testRefOnlyL2R2Buys() public {
+        ReferenceNFTMarketplaceRouter.PurchaseParameters[] memory parameters = new ReferenceNFTMarketplaceRouter.PurchaseParameters[](2);
+    
+        bytes memory x2y2Calldata = abi.encodeWithSelector(x2y2.l2r2Purchase.selector, 50, address(token));
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
+            50,
+            address(token),
+            x2y2Calldata
+        );
+        
+        parameters[0] = x2y2Parameters;
+    
+        bytes memory looksRareCalldata = abi.encodeWithSelector(looksRare.l2r2Purchase.selector, 75, address(token));
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            75,
+            address(token),
+            looksRareCalldata
+        );
+        
+        parameters[1] = looksRareParameters;
+        
+        vm.prank(alice);
+        refRouter.purchase{value: 10 ether}(ReferenceNFTMarketplaceRouter.OrderType.L2R2, parameters);
+        
+        assertEq(token.ownerOf(50), alice);
+        assertEq(token.ownerOf(75), alice);
+        assertEq(alice.balance, 90 ether);
+    }
+    
+    function testRefOnlyX2Y2Buys() public {
+        ReferenceNFTMarketplaceRouter.PurchaseParameters[] memory parameters = new ReferenceNFTMarketplaceRouter.PurchaseParameters[](3);
+    
+        bytes memory x2y2Calldata1 = abi.encodeWithSelector(x2y2.l2r2Purchase.selector, 50, address(token));
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters1 = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
+            50,
+            address(token),
+            x2y2Calldata1
+        );
+        
+        parameters[0] = x2y2Parameters1;
+    
+        bytes memory x2y2Calldata2 = abi.encodeWithSelector(x2y2.l2r2Purchase.selector, 51, address(token));
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters2 = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
+            51,
+            address(token),
+            x2y2Calldata2
+        );
+        
+        parameters[1] = x2y2Parameters2;
+    
+        bytes memory x2y2Calldata3 = abi.encodeWithSelector(x2y2.l2r2Purchase.selector, 52, address(token));
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters3 = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
+            52,
+            address(token),
+            x2y2Calldata3
+        );
+        
+        parameters[2] = x2y2Parameters3;
+        
+        vm.prank(alice);
+        refRouter.purchase{value: 15 ether}(ReferenceNFTMarketplaceRouter.OrderType.L2R2, parameters);
+        
+        assertEq(token.ownerOf(50), alice);
+        assertEq(token.ownerOf(51), alice);
+        assertEq(token.ownerOf(52), alice);
+        assertEq(alice.balance, 85 ether);
+    }
+    
+    function testRefOnlyLooksRareBuys() public {
+        ReferenceNFTMarketplaceRouter.PurchaseParameters[] memory parameters = new ReferenceNFTMarketplaceRouter.PurchaseParameters[](3);
+    
+        bytes memory looksRareCalldata1 = abi.encodeWithSelector(looksRare.l2r2Purchase.selector, 75, address(token));
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters1 = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            75,
+            address(token),
+            looksRareCalldata1
+        );
+        
+        parameters[0] = looksRareParameters1;
+    
+        bytes memory looksRareCalldata2 = abi.encodeWithSelector(looksRare.l2r2Purchase.selector, 76, address(token));
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters2 = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            76,
+            address(token),
+            looksRareCalldata2
+        );
+        
+        parameters[1] = looksRareParameters2;
+    
+        bytes memory looksRareCalldata3 = abi.encodeWithSelector(looksRare.l2r2Purchase.selector, 77, address(token));
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters3 = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            77,
+            address(token),
+            looksRareCalldata3
+        );
+        
+        parameters[2] = looksRareParameters3;
+        
+        vm.prank(alice);
+        refRouter.purchase{value: 15 ether}(ReferenceNFTMarketplaceRouter.OrderType.L2R2, parameters);
+        
+        assertEq(token.ownerOf(75), alice);
+        assertEq(token.ownerOf(76), alice);
+        assertEq(token.ownerOf(77), alice);
+        assertEq(alice.balance, 85 ether);
+    }
+    
+    function testRefOneBuyTwoRefund() public {
+        ReferenceNFTMarketplaceRouter.PurchaseParameters[] memory parameters = new ReferenceNFTMarketplaceRouter.PurchaseParameters[](3);
+    
+        bytes memory seaportCalldata = abi.encodeWithSelector(seaport.seaportPurchase.selector, 0, address(token), alice);
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory seaportParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            0,
+            address(token),
+            seaportCalldata
+        );
+        
+        parameters[0] = seaportParameters;
+        
+        bytes memory x2y2Calldata = abi.encodeWithSelector(x2y2.failPurchase.selector);
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
+            50,
+            address(token),
+            x2y2Calldata
+        );
+        
+        parameters[1] = x2y2Parameters;
+    
+        bytes memory looksRareCalldata = abi.encodeWithSelector(looksRare.failPurchase.selector);
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            75,
+            address(token),
+            looksRareCalldata
+        );
+        
+        parameters[2] = looksRareParameters;
+        
+        vm.prank(alice);
+        refRouter.purchase{value: 15 ether}(ReferenceNFTMarketplaceRouter.OrderType.BOTH, parameters);
+        
+        assertEq(token.ownerOf(0), alice);
+        assertEq(alice.balance, 95 ether);
+    }
+    
+    function testRefThreeFailShouldRevert() public {
+        ReferenceNFTMarketplaceRouter.PurchaseParameters[] memory parameters = new ReferenceNFTMarketplaceRouter.PurchaseParameters[](3);
+    
+        bytes memory seaportCalldata = abi.encodeWithSelector(seaport.failPurchase.selector);
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory seaportParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            0,
+            address(token),
+            seaportCalldata
+        );
+        
+        parameters[0] = seaportParameters;
+        
+        bytes memory x2y2Calldata = abi.encodeWithSelector(x2y2.failPurchase.selector);
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
+            50,
+            address(token),
+            x2y2Calldata
+        );
+        
+        parameters[1] = x2y2Parameters;
+    
+        bytes memory looksRareCalldata = abi.encodeWithSelector(looksRare.failPurchase.selector);
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            75,
+            address(token),
+            looksRareCalldata
+        );
+        
+        parameters[2] = looksRareParameters;
+        
+        vm.prank(alice);
+        vm.expectRevert("No orders fulfilled");
+        refRouter.purchase{value: 15 ether}(ReferenceNFTMarketplaceRouter.OrderType.BOTH, parameters);
+        
+        assertEq(alice.balance, 100 ether);
+    }
+    
+    function testRefEmptyOrder() public {
+        ReferenceNFTMarketplaceRouter.PurchaseParameters[] memory parameters = new ReferenceNFTMarketplaceRouter.PurchaseParameters[](1);
+    
+        bytes memory seaportCalldata = abi.encodeWithSelector(seaport.failPurchase.selector);
+        ReferenceNFTMarketplaceRouter.PurchaseParameters memory seaportParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+            5 ether,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
+            0,
+            address(token),
+            seaportCalldata
+        );
+        
+        parameters[0] = seaportParameters;
+        
+        vm.prank(alice);
+        vm.expectRevert("No orders fulfilled");
+        refRouter.purchase{value: 15 ether}(ReferenceNFTMarketplaceRouter.OrderType.EMPTY, parameters);
+        
+        assertEq(alice.balance, 100 ether);
+    }
+    
+    function testRefEmptyOrderArray() public {
+        ReferenceNFTMarketplaceRouter.PurchaseParameters[] memory parameters = new ReferenceNFTMarketplaceRouter.PurchaseParameters[](0);
+        
+        vm.prank(alice);
+        vm.expectRevert("No orders");
+        refRouter.purchase{value: 15 ether}(ReferenceNFTMarketplaceRouter.OrderType.EMPTY, parameters);
         
         assertEq(alice.balance, 100 ether);
     }
