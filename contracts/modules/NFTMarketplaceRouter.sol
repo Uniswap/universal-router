@@ -77,8 +77,7 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
 
             // if an order is empty revert
             if iszero(numberOfOrders) {
-                mstore(0, "No orders")
-                revert(0, ONE_WORD)
+                revert(0, 0)
             }
 
             /// @dev we branch for seaport separately because it will only be called once
@@ -190,8 +189,7 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
         assembly {
             // if not a single order was filled revert
             if iszero(fulfilledAnOrder) {
-                mstore(0, "No available orders")
-                revert(0, ONE_WORD)
+                revert(0, 0)
             }
 
             // refund user if available
