@@ -1,0 +1,7 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`V3SwapRouter #trade uniswap v3 with Weiroll gas: one trade, one hop, exactIn 1`] = `"112236"`;
+
+exports[`V3SwapRouter #trade uniswap v3 with Weiroll gas: six trades (all same), one hop, exactIn 1`] = `"310503"`;
+
+exports[`V3SwapRouter bytecode size 1`] = `8945`;

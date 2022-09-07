@@ -56,7 +56,7 @@ const V2_EVENTS = new Interface([
   'event Swap(address indexed sender, uint amount0In, uint amount1In, uint amount0Out, uint amount1Out, address indexed to)',
 ])
 
-describe('WeirollRouter', () => {
+describe('V2SwapRouter', () => {
   const slippageTolerance = new Percent(50, 100)
   const recipient = '0x0000000000000000000000000000000000000003'
   const deadline = 2000000000
@@ -121,13 +121,14 @@ describe('WeirollRouter', () => {
 
     describe('with Weiroll', () => {
       const amountIn: BigNumber = expandTo18DecimalsBN(5)
+      const amountOutMin: number = 1
       const addV2ExactInTrades = (planner: RouterPlanner, numTrades: number) => {
         for (let i = 0; i < numTrades; i++) {
           // transfer input tokens into the pair to trade
           planner.add(
             new TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn)
           )
-          planner.add(new V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
+          planner.add(new V2ExactInputCommand(amountOutMin, [DAI.address, WETH.address], alice.address))
         }
       }
 
@@ -144,7 +145,7 @@ describe('WeirollRouter', () => {
         planner.add(
           new TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn)
         )
-        planner.add(new V2ExactInputCommand(1, [DAI.address, WETH.address, USDC.address], alice.address))
+        planner.add(new V2ExactInputCommand(amountOutMin, [DAI.address, WETH.address, USDC.address], alice.address))
       }
 
       let planner: RouterPlanner
