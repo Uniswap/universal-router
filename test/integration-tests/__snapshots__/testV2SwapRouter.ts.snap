@@ -1,12 +1,14 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`WeirollRouter #trade uniswap v2 with Router02 gas: one trade, one hop, exactIn 1`] = `"121359"`;
+exports[`WeirollRouter #trade uniswap v2 with Router02 gas: one trade, one hop, exactIn 1`] = `"121407"`;
 
-exports[`WeirollRouter #trade uniswap v2 with Router02 gas: six trades (all same), one hop, exactIn 1`] = `"290065"`;
+exports[`WeirollRouter #trade uniswap v2 with Router02 gas: one trade, one hop, exactOut 1`] = `"122001"`;
+
+exports[`WeirollRouter #trade uniswap v2 with Router02 gas: six trades (all same), one hop, exactIn 1`] = `"290113"`;
 
 exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: one trade, one hop, exactIn 1`] = `"116066"`;
 
-exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: one trade, one hop, exactOut 1`] = `"112472"`;
+exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: one trade, one hop, exactOut 1`] = `"112291"`;
 
 exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: six trades (all same), one hop, exactIn 1`] = `"288116"`;
 
