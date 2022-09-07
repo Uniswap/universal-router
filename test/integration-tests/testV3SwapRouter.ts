@@ -6,7 +6,7 @@ import { encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { WETH, DAI } from './shared/mainnetForkHelpers'
+import { WETH, DAI, USDC } from './shared/mainnetForkHelpers'
 import { MAX_UINT } from './shared/constants'
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -37,7 +37,7 @@ describe('V3SwapRouter', () => {
   let weirollRouter: WeirollRouter
   let daiContract: Contract
   let wethContract: Contract
-  // let usdcContract: Contract
+  let usdcContract: Contract
 
   beforeEach(async () => {
     await hre.network.provider.request({
@@ -47,7 +47,7 @@ describe('V3SwapRouter', () => {
     alice = await ethers.getSigner('0xf977814e90da44bfa03b6295a0616a897441acec')
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
-    // usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
+    usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
     const weirollRouterFactory = await ethers.getContractFactory('WeirollRouter')
     weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)) as WeirollRouter
     await daiContract.connect(alice).approve(weirollRouter.address, MAX_UINT)
@@ -59,11 +59,10 @@ describe('V3SwapRouter', () => {
 
   describe('#trade uniswap v3', () => {
     const amountIn: BigNumber = expandTo18DecimalsBN(5)
-    const amountOutMin: number = 1
 
     describe('with Weiroll', () => {
-      const addV3ExactInTrades = (planner: RouterPlanner, numTrades: number) => {
-        const path = encodePath([DAI.address, WETH.address], [FeeAmount.MEDIUM])
+      const addV3ExactInTrades = (planner: RouterPlanner, numTrades: number, amountOutMin: number, tokens: string[] = [DAI.address, WETH.address]) => {
+        const path = encodePath(tokens, new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
         for (let i = 0; i < numTrades; i++) {
           planner.add(new V3ExactInputCommand(alice.address, false, amountIn, amountOutMin, path))
         }
@@ -81,7 +80,8 @@ describe('V3SwapRouter', () => {
       })
 
       it('completes a V3 exactIn swap', async () => {
-        addV3ExactInTrades(planner, 1)
+        const amountOutMin: number = 0.0005 * 10**18
+        addV3ExactInTrades(planner, 1, amountOutMin)
         const { commands, state } = planner.plan()
 
         const balanceWethBefore = await wethContract.balanceOf(alice.address)
@@ -94,8 +94,29 @@ describe('V3SwapRouter', () => {
         expect(balanceDaiBefore.sub(balanceDaiAfter)).to.eq(amountIn)
       })
 
+      it('completes a V3 exactIn swap with longer path', async () => {
+        const amountOutMin: number = 3 * 10**6
+        addV3ExactInTrades(planner, 1, amountOutMin, [DAI.address, WETH.address, USDC.address])
+        const { commands, state } = planner.plan()
+
+        const balanceWethBefore = await wethContract.balanceOf(alice.address)
+        const balanceDaiBefore = await daiContract.balanceOf(alice.address)
+        const balanceUsdcBefore = await usdcContract.balanceOf(alice.address)
+        
+        await weirollRouter.connect(alice).execute(commands, state)
+
+        const balanceWethAfter = await wethContract.balanceOf(alice.address)
+        const balanceDaiAfter = await daiContract.balanceOf(alice.address)
+        const balanceUsdcAfter = await usdcContract.balanceOf(alice.address)
+      
+        expect(balanceWethAfter).to.eq(balanceWethBefore)
+        expect(balanceDaiBefore.sub(balanceDaiAfter)).to.eq(amountIn)
+        expect(balanceUsdcAfter.sub(balanceUsdcBefore)).to.be.gte(amountOutMin)
+      })
+
       it('gas: one trade, one hop, exactIn', async () => {
-        addV3ExactInTrades(planner, 1)
+        const amountOutMin: number = 0.0005 * 10**18
+        addV3ExactInTrades(planner, 1, amountOutMin)
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.connect(alice).execute(commands, state)
         const receipt = await tx.wait()
@@ -103,7 +124,8 @@ describe('V3SwapRouter', () => {
       })
 
       it('gas: six trades (all same), one hop, exactIn', async () => {
-        addV3ExactInTrades(planner, 6)
+        const amountOutMin: number = 0.0005 * 10**18
+        addV3ExactInTrades(planner, 6, amountOutMin)
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.connect(alice).execute(commands, state)
         const receipt = await tx.wait()
