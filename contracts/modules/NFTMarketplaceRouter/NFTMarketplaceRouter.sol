@@ -63,7 +63,7 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
     ///      this contract to the user.
     function purchase(
         OrderType orderType,
-        PurchaseParameters[] calldata purchaseParameters
+        PurchaseParameters[] calldata /* purchaseParameters */
     ) external payable nonReentrant {
         uint256 numberOfOrders;
         uint256 containsSeaport;
