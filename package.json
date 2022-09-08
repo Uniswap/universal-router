@@ -58,6 +58,6 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "prettier": "prettier --write '**/*.sol' && prettier --write '**/*.ts'"
+    "prettier": "prettier --write '**/*.ts && forge fmt'"
   }
 }
