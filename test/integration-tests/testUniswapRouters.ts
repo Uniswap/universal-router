@@ -178,9 +178,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       it('completes a V2 exactIn swap', async () => {
-        planner.add(
-          TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn)
-        )
+        planner.add(TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
 
         const { commands, state } = planner.plan()
@@ -221,9 +219,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       it('completes a V2 exactIn swap with longer path', async () => {
-        planner.add(
-          TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn)
-        )
+        planner.add(TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address, USDC.address], alice.address))
         const { commands, state } = planner.plan()
 
@@ -237,9 +233,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       it('gas: one trade, one hop, exactIn', async () => {
-        planner.add(
-          TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn)
-        )
+        planner.add(TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.execute(commands, state)
@@ -248,9 +242,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       it('gas: one trade, two hops, exactIn', async () => {
-        planner.add(
-          TransferCommand(DAI.address, weirollRouter.address, pair_DAI_USDC.liquidityToken.address, amountIn)
-        )
+        planner.add(TransferCommand(DAI.address, weirollRouter.address, pair_DAI_USDC.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, USDC.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.execute(commands, state)
