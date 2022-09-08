@@ -39,3 +39,5 @@ jobs:
 
       - name: Run Integration tests
         run: yarn test
+        env:
+          INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
