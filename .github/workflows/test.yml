@@ -32,8 +32,6 @@ jobs:
         run: |
           npm config set '//registry.npmjs.org/:_authToken' "${{ secrets.NPM_AUTH_TOKEN }}" \
           && yarn install --frozen-lockfile
-        env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
       # This is required separately from yarn test because it generates the typechain definitions
       - name: Compile
