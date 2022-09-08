@@ -36,6 +36,10 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
         X2Y2
     }
 
+    error NoFillableOrders();
+    error UnableToRefund();
+    error NoOrders();
+
     address private constant SEAPORT_ADDRESS =
         0x00000000006c3852cbEf3e08E8dF289169EdE581;
     address private constant LOOKSRARE_ADDRESS =
@@ -77,7 +81,10 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
 
             // if an order is empty revert
             if iszero(numberOfOrders) {
-                revert(0, 0)
+                mstore(0, "NoOrders()")
+                let sig := keccak256(0, 0x0a)
+                mstore(0, sig)
+                revert(0, 0x04)
             }
 
             /// @dev we branch for seaport separately because it will only be called once
@@ -189,7 +196,10 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
         assembly {
             // if not a single order was filled revert
             if iszero(fulfilledAnOrder) {
-                revert(0, 0)
+                mstore(0, "NoFillableOrders()")
+                let sig := keccak256(0, 0x12)
+                mstore(0, sig)
+                revert(0, 0x04)
             }
 
             // refund user if available
@@ -205,8 +215,10 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
                 )
 
                 if iszero(returnCallStatus) {
-                    mstore(0, "Refund failed")
-                    revert(0, ONE_WORD)
+                    mstore(0, "UnableToRefund()")
+                    let sig := keccak256(0, 0x10)
+                    mstore(0, sig)
+                    revert(0, 0x04)
                 }
             }
         }

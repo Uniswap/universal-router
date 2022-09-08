@@ -74,7 +74,6 @@ contract NFTMarketplaceRouterTest is Test {
         
         NFTMarketplaceRouter.PurchaseParameters[] memory parameters = new NFTMarketplaceRouter.PurchaseParameters[](1);
         parameters[0] = seaportParameters;
-        
         vm.expectEmit(false, false, false, true);
         emit Purchased(5 ether, MockedMarketplace.SEAPORT, 0, address(token));
         vm.prank(alice);
@@ -366,7 +365,7 @@ contract NFTMarketplaceRouterTest is Test {
         parameters[2] = looksRareParameters;
         
         vm.prank(alice);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(NFTMarketplaceRouter.NoFillableOrders.selector));
         router.purchase{value: 15 ether}(NFTMarketplaceRouter.OrderType.BOTH, parameters);
         
         assertEq(alice.balance, 100 ether);
@@ -387,7 +386,7 @@ contract NFTMarketplaceRouterTest is Test {
         parameters[0] = seaportParameters;
         
         vm.prank(alice);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(NFTMarketplaceRouter.NoFillableOrders.selector));
         router.purchase{value: 15 ether}(NFTMarketplaceRouter.OrderType.EMPTY, parameters);
         
         assertEq(alice.balance, 100 ether);
@@ -397,7 +396,7 @@ contract NFTMarketplaceRouterTest is Test {
         NFTMarketplaceRouter.PurchaseParameters[] memory parameters = new NFTMarketplaceRouter.PurchaseParameters[](0);
         
         vm.prank(alice);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(NFTMarketplaceRouter.NoOrders.selector));
         router.purchase{value: 15 ether}(NFTMarketplaceRouter.OrderType.EMPTY, parameters);
         
         assertEq(alice.balance, 100 ether);
