@@ -36,11 +36,7 @@ abstract contract V3SwapRouter {
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
 
-    function uniswapV3SwapCallback(
-        int256 amount0Delta,
-        int256 amount1Delta,
-        bytes calldata pool
-    ) external {
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata pool) external {
         require(amount0Delta > 0 || amount1Delta > 0); // swaps entirely within 0-liquidity regions are not supported
 
         uint256 amountToPay = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
@@ -48,12 +44,10 @@ abstract contract V3SwapRouter {
         Payments.pay(pool.decodeFirstToken(), address(this), msg.sender, amountToPay);
     }
 
-    function v3SwapExactInput(
-        address recipient,
-        uint256 amountIn,
-        uint256 amountOutMinimum,
-        bytes memory path
-    ) internal returns (uint256 amountOut) {
+    function v3SwapExactInput(address recipient, uint256 amountIn, uint256 amountOutMinimum, bytes memory path)
+        internal
+        returns (uint256 amountOut)
+    {
         // use amountIn == Constants.CONTRACT_BALANCE as a flag to swap the entire balance of the contract
         if (amountIn == CONTRACT_BALANCE) {
             address tokenIn = path.decodeFirstToken();
@@ -84,29 +78,23 @@ abstract contract V3SwapRouter {
     }
 
     /// @dev Performs a single exact input swap
-    function exactInputInternal(
-        uint256 amountIn,
-        address recipient,
-        uint160 sqrtPriceLimitX96,
-        bytes memory pool
-    ) private returns (uint256 amountOut) {
+    function exactInputInternal(uint256 amountIn, address recipient, uint160 sqrtPriceLimitX96, bytes memory pool)
+        private
+        returns (uint256 amountOut)
+    {
         (address tokenIn, address tokenOut, uint24 fee) = pool.decodeFirstPool();
 
         bool zeroForOne = tokenIn < tokenOut;
 
         (int256 amount0, int256 amount1) = IUniswapV3Pool(
-            UniswapPoolHelper.computePoolAddress(
-                V3_FACTORY,
-                abi.encode(getPoolKey(tokenIn, tokenOut, fee)),
-                POOL_INIT_CODE_HASH_V3
-            )
+            UniswapPoolHelper.computePoolAddress(V3_FACTORY, abi.encode(getPoolKey(tokenIn, tokenOut, fee)), POOL_INIT_CODE_HASH_V3)
         ).swap(
-                recipient,
-                zeroForOne,
-                amountIn.toInt256(),
-                sqrtPriceLimitX96 == 0 ? (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1) : sqrtPriceLimitX96,
-                pool
-            );
+            recipient,
+            zeroForOne,
+            amountIn.toInt256(),
+            sqrtPriceLimitX96 == 0 ? (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1) : sqrtPriceLimitX96,
+            pool
+        );
 
         return uint256(-(zeroForOne ? amount1 : amount0));
     }
@@ -116,12 +104,10 @@ abstract contract V3SwapRouter {
     /// @param tokenB The second token of a pool, unsorted
     /// @param fee The fee level of the pool
     /// @return Poolkey The pool details with ordered token0 and token1 assignments
-    function getPoolKey(
-        address tokenA,
-        address tokenB,
-        uint24 fee
-    ) internal pure returns (PoolKey memory) {
-        if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA);
+    function getPoolKey(address tokenA, address tokenB, uint24 fee) internal pure returns (PoolKey memory) {
+        if (tokenA > tokenB) {
+            (tokenA, tokenB) = (tokenB, tokenA);
+        }
         return PoolKey({token0: tokenA, token1: tokenB, fee: fee});
     }
 }
