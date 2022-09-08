@@ -28,7 +28,8 @@
     "node": ">=10"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^v4.7.3"
+    "@openzeppelin/contracts": "^v4.7.3",
+    "solmate": "^6.6.1"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
