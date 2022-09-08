@@ -79,9 +79,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
   })
 
   afterEach(async () => {
-    console.log('resetting fork')
     await resetFork()
-    console.log('success')
   })
 
   it('bytecode size', async () => {
@@ -119,9 +117,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         })
 
         const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
-        console.log('writing snapshot')
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
-        console.log('complete')
 
       })
 
@@ -241,9 +237,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.execute(commands, state)
         const receipt = await tx.wait()
-        console.log('writing snapshot')
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
-        console.log('success')
       })
 
       it('gas: one trade, two hops, exactIn', async () => {
@@ -254,10 +248,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.execute(commands, state)
         const receipt = await tx.wait()
-        console.log('writing snapshot')
-
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
-        console.log('success')
 
       })
 
@@ -273,9 +264,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.connect(alice).execute(commands, state)
         const receipt = await tx.wait()
-        console.log('writing snapshot')
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
-        console.log('success')
       })
 
       it('gas: six trades (all same), one hop, exactIn', async () => {
@@ -289,9 +278,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.execute(commands, state)
         const receipt = await tx.wait()
-        console.log('writing snapshot')
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
-        console.log('success')
       })
     })
   })
