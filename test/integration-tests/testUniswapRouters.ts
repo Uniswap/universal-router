@@ -36,7 +36,8 @@ function parseEvents(iface: Interface, receipt: TransactionReceipt): (LogDescrip
         return undefined
       }
     })
-    .filter((n: LogDescription | undefined) => n)
+    .filter((
+      n: LogDescription | undefined) => n)
 }
 
 async function resetFork() {
