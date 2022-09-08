@@ -7,7 +7,9 @@ abstract contract Validation {
     error TransactionExpired(uint256 deadline);
 
     modifier checkDeadline(uint256 deadline) {
-        if (block.timestamp > deadline) revert TransactionExpired(deadline);
+        if (block.timestamp > deadline) {
+            revert TransactionExpired(deadline);
+        }
         _;
     }
 }
