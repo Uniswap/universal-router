@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  unit-tests:
+  integration-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
 
