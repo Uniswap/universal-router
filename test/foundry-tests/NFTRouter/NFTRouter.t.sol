@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
-import {NFTMarketplaceRouter} from "contracts/modules/NFTMarketplaceRouter.sol";
+import {NFTMarketplaceRouter} from "contracts/modules/NFTMarketplaceRouter/NFTMarketplaceRouter.sol";
 import {MockMarketplace, MockedMarketplace} from "test/foundry-tests/mocks/MockMarketplace.sol";
 import {MockERC721} from "test/foundry-tests/mocks/MockERC721.sol";
 
