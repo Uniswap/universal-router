@@ -91,11 +91,11 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 outdata = abi.encode(v2SwapExactOutput(amountOut, amountInMax, path, recipient));
             } else if (commandType == FLAG_CT_V3_SWAP_EXACT_IN) {
                 bytes memory inputs = state.buildInputs(indices);
-                (address recipient, bool payerIsRouter, uint256 amountIn, uint256 amountOutMin, bytes memory path) = abi.decode(
+                (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) = abi.decode(
                     inputs,
-                    (address, bool, uint256, uint256, bytes)
+                    (address, uint256, uint256, bytes)
                 );
-                outdata = abi.encode(v3SwapExactInput(recipient, payerIsRouter, amountIn, amountOutMin, path));
+                outdata = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, path));
             } else if (commandType == FLAG_CT_CHECK_AMT) {
                 (uint256 amountA, uint256 amountB) = abi.decode(state.buildInputs(indices), (uint256, uint256));
                 checkAmountGTE(amountA, amountB);

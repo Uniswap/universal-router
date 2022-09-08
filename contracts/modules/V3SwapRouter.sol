@@ -36,29 +36,20 @@ abstract contract V3SwapRouter {
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
 
-    struct SwapCallbackData {
-        bytes pool;
-        address payer;
-    }
-
     function uniswapV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
-        bytes calldata callbackData
+        bytes calldata pool
     ) external {
         require(amount0Delta > 0 || amount1Delta > 0); // swaps entirely within 0-liquidity regions are not supported
-        SwapCallbackData memory data = abi.decode(callbackData, (SwapCallbackData));
 
         uint256 amountToPay = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
-        // Pay the pool (msg.sender) - payer could be this contract or the user
-        Payments.pay(data.pool.decodeFirstToken(), data.payer, msg.sender, amountToPay);
+        // Pay the pool (msg.sender)
+        Payments.pay(pool.decodeFirstToken(), address(this), msg.sender, amountToPay);
     }
 
-    // adding field `payerIsRouter` from the previous router. We can't imply this from `amountIn==CONTRACTBALANCE`
-    // anymore as users might want to have a v3 trade with input from Router with amount < contract balance
     function v3SwapExactInput(
         address recipient,
-        bool payerIsRouter,
         uint256 amountIn,
         uint256 amountOutMinimum,
         bytes memory path
@@ -69,8 +60,6 @@ abstract contract V3SwapRouter {
             amountIn = IERC20(tokenIn).balanceOf(address(this));
         }
 
-        address payer = payerIsRouter ? address(this) : msg.sender;
-
         while (true) {
             bool hasMultiplePools = path.hasMultiplePools();
 
@@ -79,15 +68,11 @@ abstract contract V3SwapRouter {
                 amountIn,
                 hasMultiplePools ? address(this) : recipient, // for intermediate swaps, this contract custodies
                 0,
-                SwapCallbackData({
-                    pool: path.getFirstPool(), // only the first pool is needed
-                    payer: payer
-                })
+                path.getFirstPool() // only the first pool is needed
             );
 
             // decide whether to continue or terminate
             if (hasMultiplePools) {
-                payer = address(this);
                 path = path.skipToken();
             } else {
                 amountOut = amountIn;
@@ -103,9 +88,9 @@ abstract contract V3SwapRouter {
         uint256 amountIn,
         address recipient,
         uint160 sqrtPriceLimitX96,
-        SwapCallbackData memory data
+        bytes memory pool
     ) private returns (uint256 amountOut) {
-        (address tokenIn, address tokenOut, uint24 fee) = data.pool.decodeFirstPool();
+        (address tokenIn, address tokenOut, uint24 fee) = pool.decodeFirstPool();
 
         bool zeroForOne = tokenIn < tokenOut;
 
@@ -120,7 +105,7 @@ abstract contract V3SwapRouter {
                 zeroForOne,
                 amountIn.toInt256(),
                 sqrtPriceLimitX96 == 0 ? (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1) : sqrtPriceLimitX96,
-                abi.encode(data)
+                pool
             );
 
         return uint256(-(zeroForOne ? amount1 : amount0));
