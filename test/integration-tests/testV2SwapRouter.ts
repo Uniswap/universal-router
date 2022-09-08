@@ -12,7 +12,6 @@ import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { executeSwap, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
-import { MAX_UINT } from './shared/constants'
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -81,8 +80,6 @@ describe('WeirollRouter', () => {
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
     const weirollRouterFactory = await ethers.getContractFactory('WeirollRouter')
     weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)) as WeirollRouter
-    await daiContract.connect(alice).approve(weirollRouter.address, MAX_UINT)
-    await wethContract.connect(alice).approve(weirollRouter.address, MAX_UINT)
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
     pair_DAI_USDC = await makePair(alice, DAI, USDC)
     pair_USDC_WETH = await makePair(alice, USDC, WETH)
@@ -200,23 +197,24 @@ describe('WeirollRouter', () => {
         )
         const { commands, state } = planner.plan()
 
-        const balanceWethBefore = await wethContract.balanceOf(alice.address)
+        const balanceWethBefore = await wethContract.balanceOf(weirollRouter.address)
         const balanceDaiBefore = await daiContract.balanceOf(alice.address)
         const tx = await weirollRouter.connect(alice).execute(commands, state)
         const receipt = await tx.wait()
-        const balanceWethAfter = await wethContract.balanceOf(alice.address)
+        const balanceWethAfter = await wethContract.balanceOf(weirollRouter.address)
         const balanceDaiAfter = await daiContract.balanceOf(alice.address)
 
         const totalAmountIn = parseEvents(V2_EVENTS, receipt)
           .reduce((prev, current) => prev.add(current!.args.amount1In), expandTo18DecimalsBN(0))
           .mul(-1) // totalAmountIn will be negative
 
+        // TODO: when permitpost is ready, test this number against alice's EOA
         expect(balanceWethAfter.sub(balanceWethBefore)).to.equal(totalAmountIn)
         expect(balanceDaiBefore.sub(balanceDaiAfter)).to.be.lte(amountOut)
       })
 
       it('completes a V2 exactIn swap with longer path', async () => {
-        planner.add(new TransferCommand(DAI.address, alice.address, pair_DAI_WETH.liquidityToken.address, amountIn))
+        planner.add(new TransferCommand(DAI.address, weirollRouter.address, pair_DAI_WETH.liquidityToken.address, amountIn))
         planner.add(new V2ExactInputCommand(1, [DAI.address, WETH.address, USDC.address], alice.address))
         const { commands, state } = planner.plan()
 

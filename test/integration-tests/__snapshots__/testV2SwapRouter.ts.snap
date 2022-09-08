@@ -10,7 +10,7 @@ exports[`WeirollRouter #trade uniswap v2 with Router02 gas: six trades (all same
 
 exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: one trade, one hop, exactIn 1`] = `"116066"`;
 
-exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: one trade, one hop, exactOut 1`] = `"112291"`;
+exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: one trade, one hop, exactOut 1`] = `"110203"`;
 
 exports[`WeirollRouter #trade uniswap v2 with Weiroll gas: one trade, two hops, exactIn 1`] = `"188195"`;
 
