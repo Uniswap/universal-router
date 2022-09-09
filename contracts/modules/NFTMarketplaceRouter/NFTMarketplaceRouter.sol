@@ -44,6 +44,10 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
         0x00000000006c3852cbEf3e08E8dF289169EdE581;
     address private constant LOOKSRARE_ADDRESS =
         0x59728544B08AB483533076417FbBB2fD0B17CE3a;
+    address private constant LOOKSRARE_CLAIM_REWARDS_ADDRESS =
+        0x0554f068365eD43dcC98dcd7Fd7A8208a5638C72;
+    address private constant LOOKSRARE_TOKEN_ADDRESS =
+        0xf4d2888d29D722226FafA5d9B24F9164c092421E;
     address private constant X2Y2_ADDRESS =
         0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3;
 
@@ -236,10 +240,9 @@ contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
     receive() external payable {}
 
     function claimLooksRareRewards(bytes calldata claimData, address distributor) external nonReentrant onlyOwner {
-        address looksRareClaimRewards = 0x0554f068365eD43dcC98dcd7Fd7A8208a5638C72;
-        ERC20 looksRareToken = ERC20(0xf4d2888d29D722226FafA5d9B24F9164c092421E);
+        ERC20 looksRareToken = ERC20(LOOKSRARE_TOKEN_ADDRESS);
 
-        (bool success, ) = looksRareClaimRewards.call(claimData);
+        (bool success, ) = LOOKSRARE_CLAIM_REWARDS_ADDRESS.call(claimData);
         require(success, "Unable to claim");
         
         SafeTransferLib.safeTransfer(looksRareToken, distributor, looksRareToken.balanceOf(address(this)));
