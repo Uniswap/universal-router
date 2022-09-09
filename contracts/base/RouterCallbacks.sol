@@ -14,14 +14,19 @@ abstract contract RouterCallbacks {
         address payer;
     }
 
-    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) external {
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata _data
+    ) external {
         require(amount0Delta > 0 || amount1Delta > 0); // swaps entirely within 0-liquidity regions are not supported
         SwapCallbackData memory data = abi.decode(_data, (SwapCallbackData));
-        (address tokenIn, address tokenOut,) = data.path.decodeFirstPool();
+        (address tokenIn, address tokenOut, ) = data.path.decodeFirstPool();
         // verifyCallback(factory, tokenIn, tokenOut, fee);
 
-        (bool isExactInput, uint256 amountToPay) =
-            amount0Delta > 0 ? (tokenIn < tokenOut, uint256(amount0Delta)) : (tokenOut < tokenIn, uint256(amount1Delta));
+        (bool isExactInput, uint256 amountToPay) = amount0Delta > 0
+            ? (tokenIn < tokenOut, uint256(amount0Delta))
+            : (tokenOut < tokenIn, uint256(amount1Delta));
         if (isExactInput) {
             Payments.pay(tokenIn, data.payer, msg.sender, amountToPay);
         } else {

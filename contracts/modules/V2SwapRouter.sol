@@ -17,26 +17,33 @@ contract V2SwapRouter {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0, address token1) = UniswapPoolHelper.sortTokens(input, output);
             IUniswapV2Pair pair = IUniswapV2Pair(
-                UniswapPoolHelper.computePoolAddress(V2_FACTORY, abi.encodePacked(token0, token1), POOL_INIT_CODE_HASH_V2)
+                UniswapPoolHelper.computePoolAddress(
+                    V2_FACTORY,
+                    abi.encodePacked(token0, token1),
+                    POOL_INIT_CODE_HASH_V2
+                )
             );
             uint256 amountInput;
             uint256 amountOutput;
-            (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
-            (uint256 reserveInput, uint256 reserveOutput) =
-                input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+            (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
+            (uint256 reserveInput, uint256 reserveOutput) = input == token0
+                ? (reserve0, reserve1)
+                : (reserve1, reserve0);
             amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
             amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
-            (uint256 amount0Out, uint256 amount1Out) =
-                input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
+            (uint256 amount0Out, uint256 amount1Out) = input == token0
+                ? (uint256(0), amountOutput)
+                : (amountOutput, uint256(0));
             address to = i < path.length - 2 ? UniswapV2Library.pairFor(V2_FACTORY, output, path[i + 2]) : recipient;
             pair.swap(amount0Out, amount1Out, to, new bytes(0));
         }
     }
 
-    function v2SwapExactInput(uint256 amountOutMin, address[] memory path, address recipient)
-        internal
-        returns (uint256 amountOut)
-    {
+    function v2SwapExactInput(
+        uint256 amountOutMin,
+        address[] memory path,
+        address recipient
+    ) internal returns (uint256 amountOut) {
         uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(recipient);
 
         _v2Swap(path, recipient);
@@ -45,10 +52,12 @@ contract V2SwapRouter {
         require(amountOut >= amountOutMin, 'Too little received');
     }
 
-    function v2SwapExactOutput(uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient)
-        internal
-        returns (uint256 amountIn)
-    {
+    function v2SwapExactOutput(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] memory path,
+        address recipient
+    ) internal returns (uint256 amountIn) {
         amountIn = UniswapV2Library.getAmountsIn(V2_FACTORY, amountOut, path)[0];
         require(amountIn <= amountInMax, 'Too much requested');
 
