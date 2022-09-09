@@ -5,6 +5,7 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '../libraries/UniswapPoolHelper.sol';
 import '../libraries/UniswapV2Library.sol';
+import '../libraries/Constants.sol';
 import '../base/Payments.sol';
 
 contract V2SwapRouter {
@@ -52,7 +53,7 @@ contract V2SwapRouter {
         amountIn = UniswapV2Library.getAmountsIn(V2_FACTORY, amountOut, path)[0];
         require(amountIn <= amountInMax, 'Too much requested');
 
-        Payments.pay(path[0], address(this), UniswapV2Library.pairFor(V2_FACTORY, path[0], path[1]), amountIn);
+        Payments.pay(path[0], UniswapV2Library.pairFor(V2_FACTORY, path[0], path[1]), amountIn, Constants.NO_MINIMUM);
 
         _v2Swap(path, recipient);
     }

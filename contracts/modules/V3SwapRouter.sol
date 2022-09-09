@@ -4,6 +4,7 @@ pragma solidity ^0.8.15;
 import '../base/Payments.sol';
 import '../libraries/Path.sol';
 import '../libraries/UniswapPoolHelper.sol';
+import '../libraries/Constants.sol';
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
@@ -19,7 +20,6 @@ abstract contract V3SwapRouter {
     }
 
     address immutable V3_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-    uint256 internal constant CONTRACT_BALANCE = 0;
     bytes32 internal constant POOL_INIT_CODE_HASH_V3 =
         0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
@@ -41,7 +41,7 @@ abstract contract V3SwapRouter {
 
         uint256 amountToPay = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
         // Pay the pool (msg.sender)
-        Payments.pay(pool.decodeFirstToken(), address(this), msg.sender, amountToPay);
+        Payments.pay(pool.decodeFirstToken(), msg.sender, amountToPay, Constants.NO_MINIMUM);
     }
 
     function v3SwapExactInput(address recipient, uint256 amountIn, uint256 amountOutMinimum, bytes memory path)
@@ -49,7 +49,7 @@ abstract contract V3SwapRouter {
         returns (uint256 amountOut)
     {
         // use amountIn == Constants.CONTRACT_BALANCE as a flag to swap the entire balance of the contract
-        if (amountIn == CONTRACT_BALANCE) {
+        if (amountIn == Constants.CONTRACT_BALANCE) {
             address tokenIn = path.decodeFirstToken();
             amountIn = IERC20(tokenIn).balanceOf(address(this));
         }
