@@ -56,7 +56,7 @@ abstract contract V3SwapRouter {
         } else {
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
-                swapInternal(-amountToPay.toInt256(), msg.sender, path.skipToken());
+                swapPrivate(-amountToPay.toInt256(), msg.sender, path.skipToken());
             } else {
                 amountInCached = amountToPay;
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
@@ -81,7 +81,7 @@ abstract contract V3SwapRouter {
             bool hasMultiplePools = path.hasMultiplePools();
 
             // the outputs of prior swaps become the inputs to subsequent ones
-            (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = swapInternal(
+            (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = swapPrivate(
                 amountIn.toInt256(),
                 hasMultiplePools ? address(this) : recipient, // for intermediate swaps, this contract custodies
                 path.getFirstPool() // only the first pool is needed
@@ -104,7 +104,7 @@ abstract contract V3SwapRouter {
     /// @dev Performs a single exact input swap
     /// For both exactIn and exactOut
     /// For exactIn, `amount` is `amountIn`. For exactOut, `amount` is `-amountOut`
-    function swapInternal(
+    function swapPrivate(
         int256 amount,
         address recipient,
         bytes memory pool
@@ -135,7 +135,7 @@ abstract contract V3SwapRouter {
         uint256 amountInMaximum,
         bytes memory path
     ) internal returns (uint256 amountIn) {
-        (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = swapInternal(
+        (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = swapPrivate(
             -amountOut.toInt256(),
             recipient,
             path.getFirstPool()
