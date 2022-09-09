@@ -5,7 +5,6 @@ import './modules/V2SwapRouter.sol';
 import './modules/V3SwapRouter.sol';
 import './base/Payments.sol';
 import './libraries/CommandBuilder.sol';
-import 'hardhat/console.sol';
 
 contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     using CommandBuilder for bytes[];
