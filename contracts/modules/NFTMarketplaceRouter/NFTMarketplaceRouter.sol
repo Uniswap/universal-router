@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
 
-import {ERC721} from "solmate/tokens/ERC721.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {Owned} from "solmate/auth/Owned.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {ReentrancyGuard} from "solmate/utils/ReentrancyGuard.sol";
+import {ERC721} from "solmate/src/tokens/ERC721.sol";
+import {ERC20} from "solmate/src/tokens/ERC20.sol";
+import {Owned} from "solmate/src/auth/Owned.sol";
+import {SafeTransferLib} from "solmate/src/utils/SafeTransferLib.sol";
+import {ReentrancyGuard} from "solmate/src/utils/ReentrancyGuard.sol";
 
 contract NFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
     struct PurchaseParameters {
