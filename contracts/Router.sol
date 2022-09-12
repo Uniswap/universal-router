@@ -12,6 +12,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     error NotGreaterOrEqual(uint256 big, uint256 smol);
     error NotEqual(uint256 equal1, uint256 equal2);
     error ExecutionFailed(uint256 commandIndex, string message);
+    error ETHNotAccepted();
 
     // Command Types
     uint256 constant FLAG_CT_PERMIT = 0x00;
@@ -38,7 +39,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
 
     /// @param commands A set of concatenated commands, each 8 bytes in length
     /// @param state The state elements that should be used for the input and output of commands
-    function execute(bytes memory commands, bytes[] memory state) external returns (bytes[] memory) {
+    function execute(bytes memory commands, bytes[] memory state) external payable returns (bytes[] memory) {
         bytes8 command;
         uint256 commandType;
         uint256 flags;
@@ -118,5 +119,9 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
         }
 
         return state;
+    }
+
+    receive() external payable {
+        if (msg.sender != Payments.WETH9) revert ETHNotAccepted();
     }
 }
