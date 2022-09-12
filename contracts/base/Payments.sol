@@ -33,23 +33,21 @@ library Payments {
       }
     }
 
-    function wrapETH(address recipient, uint256 value, uint256 amountMin) internal {
-        if (value == CONTRACT_BALANCE) {
-            value = address(this).balance;
-            if (value < amountMin) {
-                revert InsufficientETH();
-            }
+    function wrapETH(address recipient, uint256 amountMin) internal {
+        uint256 value = address(this).balance;
+        if (value < amountMin) {
+            revert InsufficientETH();
         }
-        IWETH9(WETH9).deposit{value: value}();
-        IWETH9(WETH9).transfer(recipient, value);
+        if (value > 0) {
+          IWETH9(WETH9).deposit{value: value}();
+          IWETH9(WETH9).transfer(recipient, value);
+        }
     }
 
-    function unwrapWETH9(address recipient, uint256 value, uint256 amountMin) internal {
-        if (value == CONTRACT_BALANCE) {
-            value = IERC20(WETH9).balanceOf(address(this));
-            if (value < amountMin) {
-                revert InsufficientToken(WETH9);
-            }
+    function unwrapWETH9(address recipient, uint256 amountMin) internal {
+        uint256 value = IERC20(WETH9).balanceOf(address(this));
+        if (value < amountMin) {
+            revert InsufficientETH();
         }
         if (value > 0) {
             IWETH9(WETH9).withdraw(value);
