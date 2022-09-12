@@ -10,8 +10,8 @@ import {ReentrancyGuard} from "solmate/src/utils/ReentrancyGuard.sol";
 contract ReferenceNFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
     struct PurchaseParameters {
         uint256 amount;
-        Marketplace marketplace;
         uint256 tokenId;
+        Marketplace marketplace;
         address collection;
         bytes wishDetails;
     }
@@ -33,7 +33,8 @@ contract ReferenceNFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
     enum Marketplace {
         /// @dev Seaport is not in enum because its logic branch doesn't check for marketplace
         LooksRare,
-        X2Y2
+        X2Y2,
+        Seaport
     }
 
     error NoFillableOrders();

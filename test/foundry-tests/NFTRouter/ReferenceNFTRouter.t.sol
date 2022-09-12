@@ -66,8 +66,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory seaportCalldata = abi.encodeWithSelector(seaport.seaportPurchase.selector, 0, address(token), alice);
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory seaportParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             0,
+            ReferenceNFTMarketplaceRouter.Marketplace.Seaport,
             address(token),
             seaportCalldata
         );
@@ -83,8 +83,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory x2y2Calldata = abi.encodeWithSelector(x2y2.l2r2Purchase.selector, 50, address(token));
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             50,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             address(token),
             x2y2Calldata
         );
@@ -99,8 +99,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory looksRareCalldata = abi.encodeWithSelector(looksRare.l2r2Purchase.selector, 75, address(token));
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             75,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             address(token),
             looksRareCalldata
         );
@@ -124,8 +124,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory seaportCalldata = abi.encodeWithSelector(seaport.seaportPurchase.selector, 0, address(token), alice);
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory seaportParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             0,
+            ReferenceNFTMarketplaceRouter.Marketplace.Seaport,
             address(token),
             seaportCalldata
         );
@@ -135,8 +135,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory x2y2Calldata = abi.encodeWithSelector(x2y2.l2r2Purchase.selector, 50, address(token));
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             50,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             address(token),
             x2y2Calldata
         );
@@ -146,8 +146,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory looksRareCalldata = abi.encodeWithSelector(looksRare.l2r2Purchase.selector, 75, address(token));
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             75,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             address(token),
             looksRareCalldata
         );
@@ -169,8 +169,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory x2y2Calldata = abi.encodeWithSelector(x2y2.l2r2Purchase.selector, 50, address(token));
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             50,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             address(token),
             x2y2Calldata
         );
@@ -180,8 +180,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory looksRareCalldata = abi.encodeWithSelector(looksRare.l2r2Purchase.selector, 75, address(token));
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             75,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             address(token),
             looksRareCalldata
         );
@@ -202,8 +202,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory x2y2Calldata1 = abi.encodeWithSelector(x2y2.l2r2Purchase.selector, 50, address(token));
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters1 = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             50,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             address(token),
             x2y2Calldata1
         );
@@ -213,8 +213,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory x2y2Calldata2 = abi.encodeWithSelector(x2y2.l2r2Purchase.selector, 51, address(token));
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters2 = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             51,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             address(token),
             x2y2Calldata2
         );
@@ -224,8 +224,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory x2y2Calldata3 = abi.encodeWithSelector(x2y2.l2r2Purchase.selector, 52, address(token));
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters3 = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             52,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             address(token),
             x2y2Calldata3
         );
@@ -247,8 +247,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory looksRareCalldata1 = abi.encodeWithSelector(looksRare.l2r2Purchase.selector, 75, address(token));
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters1 = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             75,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             address(token),
             looksRareCalldata1
         );
@@ -258,8 +258,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory looksRareCalldata2 = abi.encodeWithSelector(looksRare.l2r2Purchase.selector, 76, address(token));
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters2 = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             76,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             address(token),
             looksRareCalldata2
         );
@@ -269,8 +269,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory looksRareCalldata3 = abi.encodeWithSelector(looksRare.l2r2Purchase.selector, 77, address(token));
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters3 = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             77,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             address(token),
             looksRareCalldata3
         );
@@ -292,8 +292,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory seaportCalldata = abi.encodeWithSelector(seaport.seaportPurchase.selector, 0, address(token), alice);
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory seaportParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             0,
+            ReferenceNFTMarketplaceRouter.Marketplace.Seaport,
             address(token),
             seaportCalldata
         );
@@ -303,8 +303,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory x2y2Calldata = abi.encodeWithSelector(x2y2.failPurchase.selector);
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             50,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             address(token),
             x2y2Calldata
         );
@@ -314,8 +314,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory looksRareCalldata = abi.encodeWithSelector(looksRare.failPurchase.selector);
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             75,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             address(token),
             looksRareCalldata
         );
@@ -335,8 +335,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory seaportCalldata = abi.encodeWithSelector(seaport.failPurchase.selector);
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory seaportParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             0,
+            ReferenceNFTMarketplaceRouter.Marketplace.Seaport,
             address(token),
             seaportCalldata
         );
@@ -346,8 +346,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory x2y2Calldata = abi.encodeWithSelector(x2y2.failPurchase.selector);
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory x2y2Parameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             50,
+            ReferenceNFTMarketplaceRouter.Marketplace.X2Y2,
             address(token),
             x2y2Calldata
         );
@@ -357,8 +357,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory looksRareCalldata = abi.encodeWithSelector(looksRare.failPurchase.selector);
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory looksRareParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             75,
+            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             address(token),
             looksRareCalldata
         );
@@ -378,8 +378,8 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         bytes memory seaportCalldata = abi.encodeWithSelector(seaport.failPurchase.selector);
         ReferenceNFTMarketplaceRouter.PurchaseParameters memory seaportParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
             5 ether,
-            ReferenceNFTMarketplaceRouter.Marketplace.LooksRare,
             0,
+            ReferenceNFTMarketplaceRouter.Marketplace.Seaport,
             address(token),
             seaportCalldata
         );
