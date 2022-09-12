@@ -76,11 +76,6 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 (address token, address recipient, uint256 value) =
                     abi.decode(inputs, (address, address, uint256));
                 Payments.pay(token, recipient, value);
-            } else if (commandType == FLAG_CT_SWEEP) {
-                bytes memory inputs = state.buildInputs(indices);
-                (address token, address recipient, uint256 minValue) =
-                    abi.decode(inputs, (address, address, uint256));
-                Payments.sweepToken(token, recipient, minValue);
             } else if (commandType == FLAG_CT_V2_SWAP_EXACT_IN) {
                 bytes memory inputs = state.buildInputs(indices);
                 (uint256 amountOutMin, address[] memory path, address recipient) =
@@ -96,6 +91,11 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                     abi.decode(inputs, (address, uint256, uint256, bytes));
                 outdata = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, path));
+            } else if (commandType == FLAG_CT_SWEEP) {
+                bytes memory inputs = state.buildInputs(indices);
+                (address token, address recipient, uint256 minValue) =
+                    abi.decode(inputs, (address, address, uint256));
+                Payments.sweepToken(token, recipient, minValue);
             } else if (commandType == FLAG_CT_WRAP_ETH) {
                 (address recipient, uint256 amountMin) =
                     abi.decode(state.buildInputs(indices), (address, uint256));
