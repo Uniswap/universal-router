@@ -1,32 +1,3 @@
-No files changed, compilation skipped
-
-Running 1 test for test/foundry-tests/Router.t.sol:RouterTest
-[32m[PASS][0m testCallModule() (gas: 6004)
-Test result: [32mok[0m. 1 passed; 0 failed; finished in 467.00µs
-
-Running 9 tests for test/foundry-tests/NFTRouter/ReferenceNFTRouter.t.sol:ReferenceNFTMarketplaceRouterTest
-[32m[PASS][0m testRefBuysAcrossAllMarketplaces() (gas: 158767)
-[32m[PASS][0m testRefEmptyOrder() (gas: 40639)
-[32m[PASS][0m testRefEmptyOrderArray() (gas: 26329)
-[32m[PASS][0m testRefOneBuyTwoRefund() (gas: 110989)
-[32m[PASS][0m testRefOnlyL2R2Buys() (gas: 130399)
-[32m[PASS][0m testRefOnlyLooksRareBuys() (gas: 161880)
-[32m[PASS][0m testRefOnlyX2Y2Buys() (gas: 162074)
-[32m[PASS][0m testRefSingleBuys() (gas: 184180)
-[32m[PASS][0m testRefThreeFailShouldRevert() (gas: 64299)
-Test result: [32mok[0m. 9 passed; 0 failed; finished in 1.66ms
-
-Running 9 tests for test/foundry-tests/NFTRouter/NFTRouter.t.sol:NFTMarketplaceRouterTest
-[32m[PASS][0m testBuysAcrossAllMarketplaces() (gas: 156094)
-[32m[PASS][0m testEmptyOrder() (gas: 29798)
-[32m[PASS][0m testEmptyOrderArray() (gas: 26354)
-[32m[PASS][0m testOneBuyTwoRefund() (gas: 108440)
-[32m[PASS][0m testOnlyL2R2Buys() (gas: 128458)
-[32m[PASS][0m testOnlyLooksRareBuys() (gas: 159224)
-[32m[PASS][0m testOnlyX2Y2Buys() (gas: 159194)
-[32m[PASS][0m testSingleBuys() (gas: 181074)
-[32m[PASS][0m testThreeFailShouldRevert() (gas: 61436)
-Test result: [32mok[0m. 9 passed; 0 failed; finished in 1.69ms
 ╭───────────────────────────────────────────────────────────────────────────────────────────────┬─────────────────┬───────┬────────┬────────┬─────────╮
 │ contracts/modules/NFTMarketplaceRouter/NFTMarketplaceRouter.sol:NFTMarketplaceRouter contract ┆                 ┆       ┆        ┆        ┆         │
 ╞═══════════════════════════════════════════════════════════════════════════════════════════════╪═════════════════╪═══════╪════════╪════════╪═════════╡
