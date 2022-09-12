@@ -41,7 +41,7 @@ abstract contract V3SwapRouter {
 
         uint256 amountToPay = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
         // Pay the pool (msg.sender)
-        Payments.pay(pool.decodeFirstToken(), msg.sender, amountToPay, Constants.NO_MINIMUM);
+        Payments.pay(pool.decodeFirstToken(), msg.sender, amountToPay);
     }
 
     function v3SwapExactInput(address recipient, uint256 amountIn, uint256 amountOutMinimum, bytes memory path)

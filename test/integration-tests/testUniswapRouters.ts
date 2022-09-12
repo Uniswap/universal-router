@@ -3,6 +3,7 @@ import { TransactionReceipt } from '@ethersproject/abstract-provider'
 import type { Contract } from '@ethersproject/contracts'
 import {
   RouterPlanner,
+  SweepCommand,
   TransferCommand,
   V2ExactInputCommand,
   V2ExactOutputCommand,
@@ -206,7 +207,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       it('completes a V2 exactIn swap', async () => {
-        planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn, NO_MINIMUM))
+        planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
 
         const { commands, state } = planner.plan()
@@ -256,7 +257,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(
           V2ExactOutputCommand(amountOut, expandTo18DecimalsBN(10000), [WETH.address, DAI.address], alice.address)
         )
-        planner.add(TransferCommand(WETH.address, alice.address, CONTRACT_BALANCE, NO_MINIMUM))
+        planner.add(SweepCommand(WETH.address, alice.address, NO_MINIMUM))
         const { commands, state } = planner.plan()
 
         const balanceWethBefore = await wethContract.balanceOf(alice.address)
@@ -294,7 +295,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       it('completes a V2 exactIn swap with longer path', async () => {
-        planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn, NO_MINIMUM))
+        planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address, USDC.address], alice.address))
         const { commands, state } = planner.plan()
 
@@ -308,7 +309,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       it('gas: one trade, one hop, exactIn', async () => {
-        planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn, NO_MINIMUM))
+        planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.execute(commands, state)
@@ -317,7 +318,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       it('gas: one trade, two hops, exactIn', async () => {
-        planner.add(TransferCommand(DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn, NO_MINIMUM))
+        planner.add(TransferCommand(DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, USDC.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.execute(commands, state)
@@ -354,7 +355,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       it('gas: one trade, one hop, exactOut ETH', async () => {
         planner.add(V2ExactOutputCommand(expandTo18DecimalsBN(1), expandTo18DecimalsBN(10000), [DAI.address, WETH.address], weirollRouter.address))
         planner.add(UnwrapWETHCommand(alice.address, CONTRACT_BALANCE, NO_MINIMUM))
-        planner.add(TransferCommand(DAI.address, alice.address, CONTRACT_BALANCE, NO_MINIMUM)) //exactOut will have to sweep tokens w/ PermitPost
+        planner.add(SweepCommand(DAI.address, alice.address, NO_MINIMUM)) //exactOut will have to sweep tokens w/ PermitPost
 
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.execute(commands, state)
@@ -366,7 +367,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       it('gas: six trades (all same), one hop, exactIn', async () => {
         for (let i = 0; i < 6; i++) {
           // transfer input tokens into the pair to trade
-          planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn, NO_MINIMUM))
+          planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn))
           planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
         }
         const { commands, state } = planner.plan()

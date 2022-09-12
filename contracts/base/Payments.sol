@@ -16,24 +16,21 @@ library Payments {
     /// @param token The token to pay
     /// @param recipient The entity that will receive payment
     /// @param value The amount to pay
-    function pay(address token, address recipient, uint256 value, uint256 amountMin) internal {
+    function pay(address token, address recipient, uint256 value) internal {
         if (token == ETH) {
-            if (value == CONTRACT_BALANCE) {
-                value = address(this).balance;
-                if (value < amountMin) {
-                    revert InsufficientETH();
-                }
-            }
             TransferHelper.safeTransferETH(recipient, value);
         } else {
-            if (value == CONTRACT_BALANCE) {
-                value = IERC20(token).balanceOf(address(this));
-                if (value < amountMin) {
-                    revert InsufficientToken(token);
-                }
-            }
             TransferHelper.safeTransfer(token, recipient, value);
         }
+    }
+
+    function sweepToken(address token, address recipient, uint256 amountMinimum) internal {
+      uint256 balanceToken = IERC20(token).balanceOf(address(this));
+      require(balanceToken >= amountMinimum, 'Insufficient token');
+
+      if (balanceToken > 0) {
+          TransferHelper.safeTransfer(token, recipient, balanceToken);
+      }
     }
 
     function wrapETH(address recipient, uint256 value, uint256 amountMin) internal {

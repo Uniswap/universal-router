@@ -23,6 +23,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     uint256 constant FLAG_CT_V2_SWAP_EXACT_OUT = 0x05;
     uint256 constant FLAG_CT_WRAP_ETH = 0x06;
     uint256 constant FLAG_CT_UNWRAP_WETH = 0x07;
+    uint256 constant FLAG_CT_SWEEP = 0x08;
 
     uint256 constant FLAG_CT_MASK = 0x0f;
     uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
@@ -72,9 +73,14 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
             } else if (commandType == FLAG_CT_TRANSFER) {
                 bytes memory inputs = state.buildInputs(indices);
-                (address token, address recipient, uint256 value, uint256 amountMin) =
-                    abi.decode(inputs, (address, address, uint256, uint256));
-                Payments.pay(token, recipient, value, amountMin);
+                (address token, address recipient, uint256 value) =
+                    abi.decode(inputs, (address, address, uint256));
+                Payments.pay(token, recipient, value);
+            } else if (commandType == FLAG_CT_SWEEP) {
+                bytes memory inputs = state.buildInputs(indices);
+                (address token, address recipient, uint256 minValue) =
+                    abi.decode(inputs, (address, address, uint256));
+                Payments.sweepToken(token, recipient, minValue);
             } else if (commandType == FLAG_CT_V2_SWAP_EXACT_IN) {
                 bytes memory inputs = state.buildInputs(indices);
                 (uint256 amountOutMin, address[] memory path, address recipient) =
