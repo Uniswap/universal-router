@@ -40,6 +40,7 @@ contract ReferenceNFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
     error NoFillableOrders();
     error UnableToRefund();
     error NoOrders();
+    error UnableToClaim();
 
     address private constant SEAPORT_ADDRESS =
         0x00000000006c3852cbEf3e08E8dF289169EdE581;
@@ -122,11 +123,9 @@ contract ReferenceNFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
     receive() external payable {}
 
     function claimLooksRareRewards(bytes calldata claimData, address distributor) external nonReentrant onlyOwner {
-        ERC20 looksRareToken = ERC20(LOOKSRARE_TOKEN_ADDRESS);
-
         (bool success, ) = LOOKSRARE_CLAIM_REWARDS_ADDRESS.call(claimData);
-        require(success, "Unable to claim");
+        if (!success) revert UnableToClaim();
         
-        SafeTransferLib.safeTransfer(looksRareToken, distributor, looksRareToken.balanceOf(address(this)));
+        SafeTransferLib.safeTransfer(ERC20(LOOKSRARE_TOKEN_ADDRESS), distributor, ERC20(LOOKSRARE_TOKEN_ADDRESS).balanceOf(address(this)));
     }
 }
