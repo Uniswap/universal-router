@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import {ReferenceNFTMarketplaceRouter} from "contracts/modules/NFTMarketplaceRouter/ReferenceNFTMarketplaceRouter.sol";
 import {MockMarketplace, MockedMarketplace} from "test/foundry-tests/mocks/MockMarketplace.sol";
 import {MockERC721} from "test/foundry-tests/mocks/MockERC721.sol";
+import {MockERC1155} from "test/foundry-tests/mocks/MockERC1155.sol";
 
 contract ReferenceNFTMarketplaceRouterTest is Test {
     event Purchased(uint256 amount, MockedMarketplace marketplace, uint256 tokenId, address collectionAddress);
@@ -370,6 +371,30 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
         refRouter.purchase{value: 15 ether}(ReferenceNFTMarketplaceRouter.OrderType.BOTH, parameters);
         
         assertEq(alice.balance, 100 ether);
+    }
+    
+    function testRef1155SeaportBuy() public {
+      MockERC1155 erc1155Token = new MockERC1155();
+      erc1155Token.mint(SEAPORT_ADDRESS, 42, 1, "");
+    
+      ReferenceNFTMarketplaceRouter.PurchaseParameters[] memory parameters = new ReferenceNFTMarketplaceRouter.PurchaseParameters[](1);
+     
+      bytes memory seaportCalldata = abi.encodeWithSelector(seaport.seaportERC1155Purchase.selector, 42, address(erc1155Token), alice);
+      ReferenceNFTMarketplaceRouter.PurchaseParameters memory seaportParameters = ReferenceNFTMarketplaceRouter.PurchaseParameters(
+          5 ether,
+          42,
+          ReferenceNFTMarketplaceRouter.Marketplace.Seaport,
+          address(erc1155Token),
+          seaportCalldata
+      );
+      
+      parameters[0] = seaportParameters;
+      
+      vm.prank(alice);
+      refRouter.purchase{value: 5 ether}(ReferenceNFTMarketplaceRouter.OrderType.SEAPORT, parameters);
+      
+      assertEq(erc1155Token.balanceOf(alice, 42), 1);
+      assertEq(alice.balance, 95 ether);
     }
     
     function testRefEmptyOrder() public {

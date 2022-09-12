@@ -8,9 +8,11 @@ enum MockedMarketplace {
 }
 
 import {MockERC721} from "test/foundry-tests/mocks/MockERC721.sol";
+import {MockERC1155} from "test/foundry-tests/mocks/MockERC1155.sol";
 
 contract MockMarketplace {
     event Purchased(uint256 amount, MockedMarketplace marketplace, uint256 tokenId, address collectionAddress);
+    event Here(uint256 amount);
 
     MockedMarketplace public marketplace;
 
@@ -28,11 +30,47 @@ contract MockMarketplace {
         emit Purchased(msg.value, marketplace, tokenId, collectionAddress);
     }
 
+    function seaportERC1155Purchase(uint256 tokenId, address collectionAddress, address to) public payable {
+        require(marketplace == MockedMarketplace.SEAPORT, "Not mocked seaport");
+
+        MockERC1155(collectionAddress).safeTransferFrom(address(this), to, tokenId, 1, "");
+        emit Purchased(msg.value, marketplace, tokenId, collectionAddress);
+    }
+
     function failPurchase() public payable {
         revert("REFUND");
     }
 
     function setMarketplace(MockedMarketplace _marketplace) public {
         marketplace = _marketplace;
+    }
+
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) external pure returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
+
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external virtual returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external virtual returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
     }
 }
