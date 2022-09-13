@@ -73,8 +73,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
             } else if (commandType == FLAG_CT_TRANSFER) {
                 bytes memory inputs = state.buildInputs(indices);
-                (address token, address recipient, uint256 value) =
-                    abi.decode(inputs, (address, address, uint256));
+                (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
                 Payments.pay(token, recipient, value);
             } else if (commandType == FLAG_CT_V2_SWAP_EXACT_IN) {
                 bytes memory inputs = state.buildInputs(indices);
@@ -93,16 +92,13 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 outdata = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, path));
             } else if (commandType == FLAG_CT_SWEEP) {
                 bytes memory inputs = state.buildInputs(indices);
-                (address token, address recipient, uint256 minValue) =
-                    abi.decode(inputs, (address, address, uint256));
+                (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
                 Payments.sweepToken(token, recipient, minValue);
             } else if (commandType == FLAG_CT_WRAP_ETH) {
-                (address recipient, uint256 amountMin) =
-                    abi.decode(state.buildInputs(indices), (address, uint256));
+                (address recipient, uint256 amountMin) = abi.decode(state.buildInputs(indices), (address, uint256));
                 Payments.wrapETH(recipient, amountMin);
             } else if (commandType == FLAG_CT_UNWRAP_WETH) {
-                (address recipient, uint256 amountMin) =
-                    abi.decode(state.buildInputs(indices), (address, uint256));
+                (address recipient, uint256 amountMin) = abi.decode(state.buildInputs(indices), (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
             } else {
                 revert('Invalid calltype');
@@ -128,6 +124,8 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     }
 
     receive() external payable {
-        if (msg.sender != Payments.WETH9) revert ETHNotAccepted();
+        if (msg.sender != Payments.WETH9) {
+            revert ETHNotAccepted();
+        }
     }
 }

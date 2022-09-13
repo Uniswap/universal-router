@@ -25,12 +25,12 @@ library Payments {
     }
 
     function sweepToken(address token, address recipient, uint256 amountMinimum) internal {
-      uint256 balanceToken = IERC20(token).balanceOf(address(this));
-      require(balanceToken >= amountMinimum, 'Insufficient token');
+        uint256 balanceToken = IERC20(token).balanceOf(address(this));
+        require(balanceToken >= amountMinimum, 'Insufficient token');
 
-      if (balanceToken > 0) {
-          TransferHelper.safeTransfer(token, recipient, balanceToken);
-      }
+        if (balanceToken > 0) {
+            TransferHelper.safeTransfer(token, recipient, balanceToken);
+        }
     }
 
     function wrapETH(address recipient, uint256 amountMin) internal {
@@ -39,8 +39,8 @@ library Payments {
             revert InsufficientETH();
         }
         if (value > 0) {
-          IWETH9(WETH9).deposit{value: value}();
-          IWETH9(WETH9).transfer(recipient, value);
+            IWETH9(WETH9).deposit{value: value}();
+            IWETH9(WETH9).transfer(recipient, value);
         }
     }
 

@@ -278,7 +278,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       it('completes a V2 exactOut swap ETH', async () => {
         const amountOut = expandTo18DecimalsBN(1)
-        planner.add(V2ExactOutputCommand(amountOut, expandTo18DecimalsBN(10000), [DAI.address, WETH.address], weirollRouter.address))
+        planner.add(
+          V2ExactOutputCommand(
+            amountOut,
+            expandTo18DecimalsBN(10000),
+            [DAI.address, WETH.address],
+            weirollRouter.address
+          )
+        )
         planner.add(UnwrapWETHCommand(alice.address, CONTRACT_BALANCE))
 
         const { commands, state } = planner.plan()
@@ -353,7 +360,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       it('gas: one trade, one hop, exactOut ETH', async () => {
-        planner.add(V2ExactOutputCommand(expandTo18DecimalsBN(1), expandTo18DecimalsBN(10000), [DAI.address, WETH.address], weirollRouter.address))
+        planner.add(
+          V2ExactOutputCommand(
+            expandTo18DecimalsBN(1),
+            expandTo18DecimalsBN(10000),
+            [DAI.address, WETH.address],
+            weirollRouter.address
+          )
+        )
         planner.add(UnwrapWETHCommand(alice.address, CONTRACT_BALANCE))
         planner.add(SweepCommand(DAI.address, alice.address, NO_MINIMUM)) //exactOut will have to sweep tokens w/ PermitPost
 
@@ -362,7 +376,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
-
 
       it('gas: six trades (all same), one hop, exactIn', async () => {
         for (let i = 0; i < 6; i++) {
