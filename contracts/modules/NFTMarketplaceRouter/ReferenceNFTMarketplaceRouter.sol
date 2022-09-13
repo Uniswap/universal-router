@@ -70,20 +70,18 @@ contract ReferenceNFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
             fulfilledAnOrder = success;
         }
 
-        for (uint256 i = containsSeaport ? 1 : 0; i < purchaseParameters.length;) {
-            address marketplace = (purchaseParameters[i].marketplace == Marketplace.LooksRare ? LOOKSRARE_ADDRESS : X2Y2_ADDRESS);
-            (bool success, ) = marketplace.call{value: purchaseParameters[i].amount}(purchaseParameters[i].wishDetails);
+        unchecked {
+          for (uint256 i = containsSeaport ? 1 : 0; i < purchaseParameters.length; ++i) {
+              address marketplace = (purchaseParameters[i].marketplace == Marketplace.LooksRare ? LOOKSRARE_ADDRESS : X2Y2_ADDRESS);
+              (bool success, ) = marketplace.call{value: purchaseParameters[i].amount}(purchaseParameters[i].wishDetails);
 
-            if (success) {
-                ERC721(purchaseParameters[i].collection)
-                    .transferFrom(address(this), msg.sender, purchaseParameters[i].tokenId);
-            }
+              if (success) {
+                  ERC721(purchaseParameters[i].collection)
+                      .transferFrom(address(this), msg.sender, purchaseParameters[i].tokenId);
+              }
 
-            fulfilledAnOrder = fulfilledAnOrder || success;
-
-            unchecked {
-                ++i;
-            }
+              fulfilledAnOrder = fulfilledAnOrder || success;
+          }
         }
 
         if (!fulfilledAnOrder) revert NoFillableOrders();
@@ -103,6 +101,7 @@ contract ReferenceNFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
 
                 if iszero(returnCallStatus) {
                     mstore(0, "UnableToRefund()")
+                    // 0x10 is the byte length of UnableToRefund()
                     let sig := keccak256(0, 0x10)
                     mstore(0, sig)
                     revert(0, 0x04)
