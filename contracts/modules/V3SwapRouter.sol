@@ -103,7 +103,9 @@ abstract contract V3SwapRouter {
 
         uint256 amountOutReceived;
         (amountIn, amountOutReceived) =
-            zeroForOne ? (uint256(amount0Delta), uint256(-amount1Delta)) : (uint256(amount1Delta), uint256(-amount0Delta));
+            zeroForOne
+            ? (uint256(amount0Delta), uint256(-amount1Delta))
+            : (uint256(amount1Delta), uint256(-amount0Delta));
 
         require(amountOutReceived == amountOut);
 
@@ -123,7 +125,9 @@ abstract contract V3SwapRouter {
         zeroForOne = tokenIn < tokenOut;
 
         (amount0Delta, amount1Delta) = IUniswapV3Pool(
-            UniswapPoolHelper.computePoolAddress(V3_FACTORY, abi.encode(getPoolKey(tokenIn, tokenOut, fee)), POOL_INIT_CODE_HASH_V3)
+            UniswapPoolHelper.computePoolAddress(
+                V3_FACTORY, abi.encode(getPoolKey(tokenIn, tokenOut, fee)), POOL_INIT_CODE_HASH_V3
+            )
         ).swap(recipient, zeroForOne, amount, (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1), pool);
     }
 

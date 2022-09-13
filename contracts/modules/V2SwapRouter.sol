@@ -17,7 +17,9 @@ contract V2SwapRouter {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0, address token1) = UniswapPoolHelper.sortTokens(input, output);
             IUniswapV2Pair pair = IUniswapV2Pair(
-                UniswapPoolHelper.computePoolAddress(V2_FACTORY, abi.encodePacked(token0, token1), POOL_INIT_CODE_HASH_V2)
+                UniswapPoolHelper.computePoolAddress(
+                    V2_FACTORY, abi.encodePacked(token0, token1), POOL_INIT_CODE_HASH_V2
+                )
             );
             uint256 amountInput;
             uint256 amountOutput;
