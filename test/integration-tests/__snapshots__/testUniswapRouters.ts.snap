@@ -18,6 +18,8 @@ exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: six trad
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: one trade, one hop, exactIn 1`] = `"104733"`;
 
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: one trade, one hop, exactOut 1`] = `"114904"`;
+
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: six trades (all same), one hop, exactIn 1`] = `"312749"`;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Weiroll. gas: one trade, one hop, exactIn 1`] = `"106963"`;
