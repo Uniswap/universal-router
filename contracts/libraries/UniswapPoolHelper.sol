@@ -10,8 +10,9 @@ library UniswapPoolHelper {
         pure
         returns (address pool)
     {
-        pool =
-            address(uint160(uint256(keccak256(abi.encodePacked(hex'ff', factory, keccak256(identifier), initCodeHash)))));
+        pool = address(
+            uint160(uint256(keccak256(abi.encodePacked(hex'ff', factory, keccak256(identifier), initCodeHash))))
+        );
     }
 
     function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
