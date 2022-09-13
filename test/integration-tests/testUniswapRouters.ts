@@ -392,7 +392,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // trade DAI in for WETH out
         const tokens = [DAI.address, WETH.address]
         const path = encodePathExactOutput(tokens)
-    
+
         planner.add(V3ExactOutputCommand(alice.address, amountOut, amountInMax, path))
         const { commands, state } = planner.plan()
 
@@ -402,12 +402,11 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(balanceWethAfter.sub(balanceWethBefore)).to.eq(amountOut)
       })
 
-
       it('completes a V3 exactOut swap with longer path', async () => {
         // trade DAI in for WETH out
         const tokens = [DAI.address, USDC.address, WETH.address]
         const path = encodePathExactOutput(tokens)
-    
+
         planner.add(V3ExactOutputCommand(alice.address, amountOut, amountInMax, path))
         const { commands, state } = planner.plan()
 
