@@ -51,7 +51,7 @@ abstract contract V3SwapRouter {
         } else {
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
-                swapPrivate(-amountToPay.toInt256(), msg.sender, path.skipToken());
+                swapPrivate(-amountToPay.toInt256(), msg.sender, path.skipToken(), false);
             } else {
                 amountInCached = amountToPay;
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
@@ -77,7 +77,8 @@ abstract contract V3SwapRouter {
             (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = swapPrivate(
                 amountIn.toInt256(),
                 hasMultiplePools ? address(this) : recipient, // for intermediate swaps, this contract custodies
-                path.getFirstPool() // only the first pool is needed
+                path.getFirstPool(), // only the first pool is needed
+                true
             );
 
             amountIn = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
@@ -99,7 +100,7 @@ abstract contract V3SwapRouter {
         returns (uint256 amountIn)
     {
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
-            swapPrivate(-amountOut.toInt256(), recipient, path);
+            swapPrivate(-amountOut.toInt256(), recipient, path, false);
 
         uint256 amountOutReceived;
         (amountIn, amountOutReceived) =
@@ -116,13 +117,13 @@ abstract contract V3SwapRouter {
 
     /// @dev Performs a single swap for both exactIn and exactOut
     /// For exactIn, `amount` is `amountIn`. For exactOut, `amount` is `-amountOut`
-    function swapPrivate(int256 amount, address recipient, bytes memory pool)
+    function swapPrivate(int256 amount, address recipient, bytes memory pool, bool isExactIn)
         private
         returns (int256 amount0Delta, int256 amount1Delta, bool zeroForOne)
     {
         (address tokenIn, address tokenOut, uint24 fee) = pool.decodeFirstPool();
 
-        zeroForOne = tokenIn < tokenOut;
+        zeroForOne = isExactIn ? tokenIn < tokenOut : tokenOut < tokenIn;
 
         (amount0Delta, amount1Delta) = IUniswapV3Pool(
             UniswapPoolHelper.computePoolAddress(
