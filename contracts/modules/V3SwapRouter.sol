@@ -19,7 +19,7 @@ abstract contract V3SwapRouter {
         uint24 fee;
     }
 
-    address immutable V3_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+    address constant V3_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
     bytes32 internal constant POOL_INIT_CODE_HASH_V3 =
         0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
@@ -36,12 +36,28 @@ abstract contract V3SwapRouter {
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
 
-    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata pool) external {
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external {
         require(amount0Delta > 0 || amount1Delta > 0); // swaps entirely within 0-liquidity regions are not supported
 
-        uint256 amountToPay = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
-        // Pay the pool (msg.sender)
-        Payments.pay(pool.decodeFirstToken(), msg.sender, amountToPay);
+        // because exact output swaps are executed in reverse order, in this case tokenOut is actually tokenIn
+        (address tokenIn, address tokenOut,) = path.decodeFirstPool();
+
+        (bool isExactInput, uint256 amountToPay) =
+            amount0Delta > 0 ? (tokenIn < tokenOut, uint256(amount0Delta)) : (tokenOut < tokenIn, uint256(amount1Delta));
+
+        if (isExactInput) {
+            // Pay the pool (msg.sender)
+            Payments.pay(tokenIn, msg.sender, amountToPay);
+        } else {
+            // either initiate the next swap or pay
+            if (path.hasMultiplePools()) {
+                _swap(-amountToPay.toInt256(), msg.sender, path.skipToken(), false);
+            } else {
+                amountInCached = amountToPay;
+                // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
+                Payments.pay(tokenOut, msg.sender, amountToPay);
+            }
+        }
     }
 
     function v3SwapExactInput(address recipient, uint256 amountIn, uint256 amountOutMinimum, bytes memory path)
@@ -58,12 +74,14 @@ abstract contract V3SwapRouter {
             bool hasMultiplePools = path.hasMultiplePools();
 
             // the outputs of prior swaps become the inputs to subsequent ones
-            amountIn = exactInputInternal(
-                amountIn,
+            (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = _swap(
+                amountIn.toInt256(),
                 hasMultiplePools ? address(this) : recipient, // for intermediate swaps, this contract custodies
-                0,
-                path.getFirstPool() // only the first pool is needed
+                path.getFirstPool(), // only the first pool is needed
+                true
             );
+
+            amountIn = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
 
             // decide whether to continue or terminate
             if (hasMultiplePools) {
@@ -77,28 +95,41 @@ abstract contract V3SwapRouter {
         require(amountOut >= amountOutMinimum, 'Too little received');
     }
 
-    /// @dev Performs a single exact input swap
-    function exactInputInternal(uint256 amountIn, address recipient, uint160 sqrtPriceLimitX96, bytes memory pool)
+    function v3SwapExactOutput(address recipient, uint256 amountOut, uint256 amountInMaximum, bytes memory path)
+        internal
+        returns (uint256 amountIn)
+    {
+        (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
+            _swap(-amountOut.toInt256(), recipient, path, false);
+
+        uint256 amountOutReceived;
+        (amountIn, amountOutReceived) =
+            zeroForOne
+            ? (uint256(amount0Delta), uint256(-amount1Delta))
+            : (uint256(amount1Delta), uint256(-amount0Delta));
+
+        require(amountOutReceived == amountOut);
+
+        amountIn = amountInCached;
+        require(amountIn <= amountInMaximum, 'Too much requested');
+        amountInCached = DEFAULT_AMOUNT_IN_CACHED;
+    }
+
+    /// @dev Performs a single swap for both exactIn and exactOut
+    /// For exactIn, `amount` is `amountIn`. For exactOut, `amount` is `-amountOut`
+    function _swap(int256 amount, address recipient, bytes memory pool, bool isExactIn)
         private
-        returns (uint256 amountOut)
+        returns (int256 amount0Delta, int256 amount1Delta, bool zeroForOne)
     {
         (address tokenIn, address tokenOut, uint24 fee) = pool.decodeFirstPool();
 
-        bool zeroForOne = tokenIn < tokenOut;
+        zeroForOne = isExactIn ? tokenIn < tokenOut : tokenOut < tokenIn;
 
-        (int256 amount0, int256 amount1) = IUniswapV3Pool(
+        (amount0Delta, amount1Delta) = IUniswapV3Pool(
             UniswapPoolHelper.computePoolAddress(
                 V3_FACTORY, abi.encode(getPoolKey(tokenIn, tokenOut, fee)), POOL_INIT_CODE_HASH_V3
             )
-        ).swap(
-            recipient,
-            zeroForOne,
-            amountIn.toInt256(),
-            sqrtPriceLimitX96 == 0 ? (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1) : sqrtPriceLimitX96,
-            pool
-        );
-
-        return uint256(-(zeroForOne ? amount1 : amount0));
+        ).swap(recipient, zeroForOne, amount, (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1), pool);
     }
 
     /// @notice Returns PoolKey: the ordered tokens with the matched fee levels
