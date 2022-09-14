@@ -12,6 +12,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     error NotGreaterOrEqual(uint256 big, uint256 smol);
     error NotEqual(uint256 equal1, uint256 equal2);
     error ExecutionFailed(uint256 commandIndex, string message);
+    error ETHNotAccepted();
 
     // Command Types
     uint256 constant FLAG_CT_PERMIT = 0x00;
@@ -20,7 +21,9 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     uint256 constant FLAG_CT_V3_SWAP_EXACT_OUT = 0x03;
     uint256 constant FLAG_CT_V2_SWAP_EXACT_IN = 0x04;
     uint256 constant FLAG_CT_V2_SWAP_EXACT_OUT = 0x05;
-    uint256 constant FLAG_CT_CHECK_AMT = 0x06;
+    uint256 constant FLAG_CT_WRAP_ETH = 0x06;
+    uint256 constant FLAG_CT_UNWRAP_WETH = 0x07;
+    uint256 constant FLAG_CT_SWEEP = 0x08;
 
     uint256 constant FLAG_CT_MASK = 0x0f;
     uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
@@ -37,7 +40,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
 
     /// @param commands A set of concatenated commands, each 8 bytes in length
     /// @param state The state elements that should be used for the input and output of commands
-    function execute(bytes memory commands, bytes[] memory state) external returns (bytes[] memory) {
+    function execute(bytes memory commands, bytes[] memory state) external payable returns (bytes[] memory) {
         bytes8 command;
         uint256 commandType;
         uint256 flags;
@@ -92,9 +95,16 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                     abi.decode(inputs, (address, uint256, uint256, bytes));
                 outdata = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
-            } else if (commandType == FLAG_CT_CHECK_AMT) {
-                (uint256 amountA, uint256 amountB) = abi.decode(state.buildInputs(indices), (uint256, uint256));
-                checkAmountGTE(amountA, amountB);
+            } else if (commandType == FLAG_CT_SWEEP) {
+                bytes memory inputs = state.buildInputs(indices);
+                (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
+                Payments.sweepToken(token, recipient, minValue);
+            } else if (commandType == FLAG_CT_WRAP_ETH) {
+                (address recipient, uint256 amountMin) = abi.decode(state.buildInputs(indices), (address, uint256));
+                Payments.wrapETH(recipient, amountMin);
+            } else if (commandType == FLAG_CT_UNWRAP_WETH) {
+                (address recipient, uint256 amountMin) = abi.decode(state.buildInputs(indices), (address, uint256));
+                Payments.unwrapWETH9(recipient, amountMin);
             } else {
                 revert('Invalid calltype');
             }
@@ -118,16 +128,9 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
         return state;
     }
 
-    // could combine with enum for operation.
-    function checkAmountGTE(uint256 a, uint256 b) private pure {
-        if (a < b) {
-            revert NotGreaterOrEqual(a, b);
-        }
-    }
-
-    function checkAmountEQ(uint256 a, uint256 b) private pure {
-        if (a != b) {
-            revert NotEqual(a, b);
+    receive() external payable {
+        if (msg.sender != Constants.WETH9) {
+            revert ETHNotAccepted();
         }
     }
 }
