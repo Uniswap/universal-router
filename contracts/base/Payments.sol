@@ -33,8 +33,7 @@ library Payments {
     function wrapETH(address recipient, uint256 amount) internal {
         if (amount == Constants.CONTRACT_BALANCE) {
             amount = address(this).balance;
-        }
-        if (amount > address(this).balance) {
+        } else if (amount > address(this).balance) {
             revert InsufficientETH();
         }
         if (amount > 0) {
