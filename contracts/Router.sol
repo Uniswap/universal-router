@@ -70,9 +70,8 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
             } else if (commandType == FLAG_CT_TRANSFER) {
                 bytes memory inputs = state.buildInputs(indices);
-                (address token, address payer, address recipient, uint256 value) =
-                    abi.decode(inputs, (address, address, address, uint256));
-                Payments.pay(token, payer, recipient, value);
+                (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
+                Payments.pay(token, recipient, value);
             } else if (commandType == FLAG_CT_V2_SWAP_EXACT_IN) {
                 bytes memory inputs = state.buildInputs(indices);
                 (uint256 amountOutMin, address[] memory path, address recipient) =
@@ -88,6 +87,11 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                     abi.decode(inputs, (address, uint256, uint256, bytes));
                 outdata = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, path));
+            } else if (commandType == FLAG_CT_V3_SWAP_EXACT_OUT) {
+                bytes memory inputs = state.buildInputs(indices);
+                (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
+                    abi.decode(inputs, (address, uint256, uint256, bytes));
+                outdata = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
             } else if (commandType == FLAG_CT_CHECK_AMT) {
                 (uint256 amountA, uint256 amountB) = abi.decode(state.buildInputs(indices), (uint256, uint256));
                 checkAmountGTE(amountA, amountB);

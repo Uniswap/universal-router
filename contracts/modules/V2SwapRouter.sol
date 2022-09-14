@@ -17,7 +17,9 @@ contract V2SwapRouter {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0, address token1) = UniswapPoolHelper.sortTokens(input, output);
             IUniswapV2Pair pair = IUniswapV2Pair(
-                UniswapPoolHelper.computePoolAddress(V2_FACTORY, abi.encodePacked(token0, token1), POOL_INIT_CODE_HASH_V2)
+                UniswapPoolHelper.computePoolAddress(
+                    V2_FACTORY, abi.encodePacked(token0, token1), POOL_INIT_CODE_HASH_V2
+                )
             );
             uint256 amountInput;
             uint256 amountOutput;
@@ -52,7 +54,7 @@ contract V2SwapRouter {
         amountIn = UniswapV2Library.getAmountsIn(V2_FACTORY, amountOut, path)[0];
         require(amountIn <= amountInMax, 'Too much requested');
 
-        Payments.pay(path[0], address(this), UniswapV2Library.pairFor(V2_FACTORY, path[0], path[1]), amountIn);
+        Payments.pay(path[0], UniswapV2Library.pairFor(V2_FACTORY, path[0], path[1]), amountIn);
 
         _v2Swap(path, recipient);
     }
