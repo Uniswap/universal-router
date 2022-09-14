@@ -98,7 +98,7 @@ function getOrderParams(apiOrder: any): Order {
   }
 }
 
-describe.only('Seaport', () => {
+describe('Seaport', () => {
   let alice: SignerWithAddress
   let weirollRouter: WeirollRouter
   let daiContract: Contract

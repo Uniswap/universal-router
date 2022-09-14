@@ -109,10 +109,6 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
             } else if (commandType == FLAG_CT_UNWRAP_WETH) {
                 (address recipient, uint256 amountMin) = abi.decode(state.buildInputs(indices), (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
-            } else if (commandType == FLAG_CT_SWEEP) {
-                bytes memory inputs = state.buildInputs(indices);
-                (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
-                Payments.sweepToken(token, recipient, minValue);
             } else {
                 revert('Invalid calltype');
             }
