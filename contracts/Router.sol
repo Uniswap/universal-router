@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
+// Routers inherited
 import './modules/V2SwapRouter.sol';
 import './modules/V3SwapRouter.sol';
-import './base/Payments.sol';
-import './libraries/CommandBuilder.sol';
+import './base/RouterCallbacks.sol';
 
-contract WeirollRouter is V2SwapRouter, V3SwapRouter {
+// Helper Libraries
+import './libraries/CommandBuilder.sol';
+import './base/Payments.sol';
+
+contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     using CommandBuilder for bytes[];
 
     error NotGreaterOrEqual(uint256 big, uint256 smol);
@@ -26,6 +30,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     uint256 constant FLAG_CT_WRAP_ETH = 0x07;
     uint256 constant FLAG_CT_UNWRAP_WETH = 0x08;
     uint256 constant FLAG_CT_SWEEP = 0x09;
+    uint256 constant FLAG_CT_LOOKSRARE = 0x0a;
 
     uint256 constant FLAG_CT_MASK = 0x0f;
     uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
@@ -113,6 +118,8 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
             } else if (commandType == FLAG_CT_UNWRAP_WETH) {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
+            } else if (commandType == FLAG_CT_LOOKSRARE) {
+
             } else {
                 revert('Invalid calltype');
             }
