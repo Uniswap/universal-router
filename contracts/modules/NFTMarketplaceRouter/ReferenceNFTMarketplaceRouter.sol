@@ -31,7 +31,6 @@ contract ReferenceNFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
     }
 
     enum Marketplace {
-        /// @dev Seaport is not in enum because its logic branch doesn't check for marketplace
         LooksRare,
         X2Y2,
         Seaport
