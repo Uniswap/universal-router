@@ -19,7 +19,7 @@ abstract contract V3SwapRouter {
         uint24 fee;
     }
 
-    address constant V3_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+    address internal constant V3_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
     bytes32 internal constant POOL_INIT_CODE_HASH_V3 =
         0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
