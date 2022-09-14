@@ -33,7 +33,7 @@ contract ReferenceNFTMarketplaceRouterTest is Test {
     }
 
     function deployContracts() internal {
-        refRouter = new ReferenceNFTMarketplaceRouter();
+        refRouter = new ReferenceNFTMarketplaceRouter(address(this));
 
         seaport = new MockMarketplace();
         x2y2 = new MockMarketplace();

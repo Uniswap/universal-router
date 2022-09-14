@@ -7,7 +7,7 @@ import {Owned} from "solmate/src/auth/Owned.sol";
 import {SafeTransferLib} from "solmate/src/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "solmate/src/utils/ReentrancyGuard.sol";
 
-contract ReferenceNFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
+contract ReferenceNFTMarketplaceRouter is ReentrancyGuard, Owned {
     struct PurchaseParameters {
         uint256 amount;
         uint256 tokenId;
@@ -15,6 +15,8 @@ contract ReferenceNFTMarketplaceRouter is ReentrancyGuard, Owned(msg.sender) {
         address collection;
         bytes wishDetails;
     }
+
+    constructor(address owner) Owned(owner) {}
 
     /// @dev pathing is determined in binary
     /// @dev if 1 in first position then order contains a seaport order
