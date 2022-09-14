@@ -3,8 +3,9 @@ pragma solidity ^0.8.4;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '../interfaces/external/IWETH9.sol';
-import '../libraries/TransferHelper.sol';
 import '../libraries/Constants.sol';
+import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
+import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
 library Payments {
     error InsufficientToken(address token);
@@ -15,9 +16,10 @@ library Payments {
     /// @param value The amount to pay
     function pay(address token, address recipient, uint256 value) internal {
         if (token == Constants.ETH) {
-            TransferHelper.safeTransferETH(recipient, value);
+            SafeTransferLib.safeTransferETH(recipient, value);
         } else {
-            TransferHelper.safeTransfer(token, recipient, value);
+            // pay with tokens already in the contract (for the exact input multihop case)
+            SafeTransferLib.safeTransfer(ERC20(token), recipient, value);
         }
     }
 
@@ -26,7 +28,7 @@ library Payments {
         require(balanceToken >= amountMinimum, 'Insufficient token');
 
         if (balanceToken > 0) {
-            TransferHelper.safeTransfer(token, recipient, balanceToken);
+            SafeTransferLib.safeTransfer(ERC20(token), recipient, balanceToken);
         }
     }
 
@@ -49,7 +51,7 @@ library Payments {
         }
         if (value > 0) {
             IWETH9(Constants.WETH9).withdraw(value);
-            TransferHelper.safeTransferETH(recipient, value);
+            SafeTransferLib.safeTransferETH(recipient, value);
         }
     }
 }
