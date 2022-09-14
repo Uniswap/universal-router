@@ -124,7 +124,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     }
 
     receive() external payable {
-        if (msg.sender != Payments.WETH9) {
+        if (msg.sender != Constants.WETH9) {
             revert ETHNotAccepted();
         }
     }

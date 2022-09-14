@@ -14,4 +14,8 @@ library Constants {
 
     /// @dev Used as a flag for identifying address(this), saves gas by sending more 0 bytes
     address internal constant ADDRESS_THIS = address(2);
+
+    address internal constant ETH = address(0);
+
+    address constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 }
