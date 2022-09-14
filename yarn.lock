@@ -8008,6 +8008,11 @@ solidity-comments-extractor@^0.0.7:
   resolved "https://registry.yarnpkg.com/solidity-comments-extractor/-/solidity-comments-extractor-0.0.7.tgz#99d8f1361438f84019795d928b931f4e5c39ca19"
   integrity sha512-wciNMLg/Irp8OKGrh3S2tfvZiZ0NEyILfcRCXCD4mp7SgK/i9gzLfhY2hY7VMCQJ3kH9UB9BzNdibIVMchzyYw==
 
+solmate@^6.6.1:
+  version "6.6.1"
+  resolved "https://registry.yarnpkg.com/solmate/-/solmate-6.6.1.tgz#f0907e1cdada6dd5fbfe11811ab545162b713197"
+  integrity sha512-WHvRXQvGtgR6R9nmkDTz/d+oULMqf/D33rlzQyadTX2SbuTmaW7ToEjGjGtWUVCQwZsZ/JP3vbOEVv7fB50btg==
+
 source-map-resolve@^0.5.0:
   version "0.5.3"
   resolved "https://registry.yarnpkg.com/source-map-resolve/-/source-map-resolve-0.5.3.tgz#190866bece7553e1f8f267a2ee82c606b5509a1a"

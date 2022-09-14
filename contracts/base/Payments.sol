@@ -2,7 +2,8 @@
 pragma solidity ^0.8.4;
 
 import '../interfaces/external/IWETH9.sol';
-import '../libraries/TransferHelper.sol';
+import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
+import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
 library Payments {
     address constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -17,7 +18,7 @@ library Payments {
             IWETH9(WETH9).transfer(recipient, value);
         } else {
             // pay with tokens already in the contract (for the exact input multihop case)
-            TransferHelper.safeTransfer(token, recipient, value);
+            SafeTransferLib.safeTransfer(ERC20(token), recipient, value);
         }
     }
 }
