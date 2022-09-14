@@ -1,0 +1,351 @@
+[
+  {
+    "created_date": "2022-07-09T00:15:21.108421",
+    "closing_date": "2023-01-05T01:14:17",
+    "listing_time": 1657325657,
+    "expiration_time": 1672881257,
+    "order_hash": "0xcc17c5349994eb3a5c3608f7f060913c822e3b17b45c104fddffa4bddf801357",
+    "protocol_data": {
+      "parameters": {
+        "offerer": "0x0f1fcc9da5db6753c90fbeb46024c056516fbc17",
+        "offer": [
+          {
+            "itemType": 2,
+            "token": "0x5180db8F5c931aaE63c74266b211F580155ecac8",
+            "identifierOrCriteria": "8271",
+            "startAmount": "1",
+            "endAmount": "1"
+          }
+        ],
+        "consideration": [
+          {
+            "itemType": 0,
+            "token": "0x0000000000000000000000000000000000000000",
+            "identifierOrCriteria": "0",
+            "startAmount": "30525000000000000000",
+            "endAmount": "30525000000000000000",
+            "recipient": "0x0f1fcc9DA5DB6753c90fBeB46024c056516FBC17"
+          },
+          {
+            "itemType": 0,
+            "token": "0x0000000000000000000000000000000000000000",
+            "identifierOrCriteria": "0",
+            "startAmount": "825000000000000000",
+            "endAmount": "825000000000000000",
+            "recipient": "0x8De9C5A032463C561423387a9648c5C7BCC5BC90"
+          },
+          {
+            "itemType": 0,
+            "token": "0x0000000000000000000000000000000000000000",
+            "identifierOrCriteria": "0",
+            "startAmount": "1650000000000000000",
+            "endAmount": "1650000000000000000",
+            "recipient": "0xac9d54ca08740A608B6C474e5CA07d51cA8117Fa"
+          }
+        ],
+        "startTime": "1657325657",
+        "endTime": "1672881257",
+        "orderType": 2,
+        "zone": "0x004C00500000aD104D7DBd00e3ae0A5C00560C00",
+        "zoneHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "salt": "196452098662466",
+        "conduitKey": "0x0000007b02230091a7ed01230072f7006a004d60a8d4e71d599b8104250f0000",
+        "totalOriginalConsiderationItems": 3,
+        "counter": 0
+      },
+      "signature": "0x58073c305ffa6daf8b6279050d9837d88040350a004efe3028fd6cda8aef41cd0819bb209b6ef3b3d6df717180677a3916c15ea669f8251471d3d39ee6abdac31b"
+    },
+    "protocol_address": "0x00000000006c3852cbef3e08e8df289169ede581",
+    "maker": {
+      "user": 1894162,
+      "profile_img_url": "https://storage.googleapis.com/opensea-static/opensea-profile/10.png",
+      "address": "0x0f1fcc9da5db6753c90fbeb46024c056516fbc17",
+      "config": ""
+    },
+    "taker": null,
+    "current_price": "33000000000000000000",
+    "maker_fees": [
+      {
+        "account": {
+          "user": 35166071,
+          "profile_img_url": "https://storage.googleapis.com/opensea-static/opensea-profile/31.png",
+          "address": "0x8de9c5a032463c561423387a9648c5c7bcc5bc90",
+          "config": ""
+        },
+        "basis_points": "250"
+      },
+      {
+        "account": {
+          "user": 5874671,
+          "profile_img_url": "https://storage.googleapis.com/opensea-static/opensea-profile/21.png",
+          "address": "0xac9d54ca08740a608b6c474e5ca07d51ca8117fa",
+          "config": "verified"
+        },
+        "basis_points": "500"
+      }
+    ],
+    "taker_fees": [],
+    "side": "ask",
+    "order_type": "basic",
+    "cancelled": false,
+    "finalized": false,
+    "marked_invalid": false,
+    "client_signature": "0x58073c305ffa6daf8b6279050d9837d88040350a004efe3028fd6cda8aef41cd0819bb209b6ef3b3d6df717180677a3916c15ea669f8251471d3d39ee6abdac31b",
+    "relay_id": "T3JkZXJWMlR5cGU6NjEwMzI4NDE5OA",
+    "criteria_proof": null,
+    "maker_asset_bundle": {
+      "assets": [
+        {
+          "id": 142680025,
+          "num_sales": 0,
+          "background_color": null,
+          "image_url": "https://lh3.googleusercontent.com/HSQ8T1InUbMpKNmpVPovqK9sxYrQg1V8TQ3l7QUAI8yultBRp_E4RmNX4vNYI96xILvP_C6W4bv0BV4VcPI0rT2N__y56D3QCZBYvg",
+          "image_preview_url": "https://lh3.googleusercontent.com/HSQ8T1InUbMpKNmpVPovqK9sxYrQg1V8TQ3l7QUAI8yultBRp_E4RmNX4vNYI96xILvP_C6W4bv0BV4VcPI0rT2N__y56D3QCZBYvg=s250",
+          "image_thumbnail_url": "https://lh3.googleusercontent.com/HSQ8T1InUbMpKNmpVPovqK9sxYrQg1V8TQ3l7QUAI8yultBRp_E4RmNX4vNYI96xILvP_C6W4bv0BV4VcPI0rT2N__y56D3QCZBYvg=s128",
+          "image_original_url": "https://cryptocoven.s3.amazonaws.com/9b00b96e68c98dd0a5c2f50903f7b532.png",
+          "animation_url": null,
+          "animation_original_url": null,
+          "name": "pummelo sea",
+          "description": "You are a WITCH unfathomably feared. You dance among flames, do-si-do and jitterbug in fire. Your magic spawns from a chickadee's song. You see factions and kingdoms shift in the leaves of your tea. THE UNIVERSE IS ASKING YOU TO AWAKEN!",
+          "external_link": "https://www.cryptocoven.xyz/witches/8271",
+          "asset_contract": {
+            "address": "0x5180db8f5c931aae63c74266b211f580155ecac8",
+            "asset_contract_type": "non-fungible",
+            "created_date": "2021-11-04T00:35:07.285763",
+            "name": "Crypto Coven",
+            "nft_version": "3.0",
+            "opensea_version": null,
+            "owner": 109596169,
+            "schema_name": "ERC721",
+            "symbol": "WITCH",
+            "total_supply": null,
+            "description": "it's the season of the witch. 🌙",
+            "external_link": "https://www.cryptocoven.xyz/",
+            "image_url": "https://lh3.googleusercontent.com/E8MVasG7noxC0Fa_duhnexc2xze1PzT1jzyeaHsytOC4722C2Zeo7EhUR8-T6mSem9-4XE5ylrCtoAsceZ_lXez_kTaMufV5pfLc3Fk=s120",
+            "default_to_fiat": false,
+            "dev_buyer_fee_basis_points": 0,
+            "dev_seller_fee_basis_points": 500,
+            "only_proxied_transfers": false,
+            "opensea_buyer_fee_basis_points": 0,
+            "opensea_seller_fee_basis_points": 250,
+            "buyer_fee_basis_points": 0,
+            "seller_fee_basis_points": 750,
+            "payout_address": "0xac9d54ca08740a608b6c474e5ca07d51ca8117fa"
+          },
+          "permalink": "https://opensea.io/assets/ethereum/0x5180db8f5c931aae63c74266b211f580155ecac8/8271",
+          "collection": {
+            "banner_image_url": "https://lh3.googleusercontent.com/M42Xf9Vbu_yodzKVFA1I6TYXIx5Hz699gEtp2lDg9vGT7g-S4z_5cx2iYPub1kytnOlexV5WDdGOmpGeuH4-N0CYXi7FaC_iqEm4gQ=s2500",
+            "chat_url": null,
+            "created_date": "2021-11-04T00:42:55.889500",
+            "default_to_fiat": false,
+            "description": "it's the season of the witch. 🌙",
+            "dev_buyer_fee_basis_points": "0",
+            "dev_seller_fee_basis_points": "500",
+            "discord_url": "https://discord.gg/cryptocoven",
+            "display_data": {
+              "card_display_style": "cover"
+            },
+            "external_url": "https://www.cryptocoven.xyz/",
+            "featured": false,
+            "featured_image_url": "https://lh3.googleusercontent.com/5_8So8vKCwnu2li2QNRd43zcPlKFtc3MeZIRiKrFRyDFOTK7MiPnn0EKTEySs1lhGDbSmgL0e_YNtdyAdGNF-dTlwcsYZjYwwL89=s300",
+            "hidden": false,
+            "safelist_request_status": "verified",
+            "image_url": "https://lh3.googleusercontent.com/E8MVasG7noxC0Fa_duhnexc2xze1PzT1jzyeaHsytOC4722C2Zeo7EhUR8-T6mSem9-4XE5ylrCtoAsceZ_lXez_kTaMufV5pfLc3Fk=s120",
+            "is_subject_to_whitelist": false,
+            "large_image_url": "https://lh3.googleusercontent.com/5_8So8vKCwnu2li2QNRd43zcPlKFtc3MeZIRiKrFRyDFOTK7MiPnn0EKTEySs1lhGDbSmgL0e_YNtdyAdGNF-dTlwcsYZjYwwL89=s300",
+            "medium_username": null,
+            "name": "Crypto Coven",
+            "only_proxied_transfers": false,
+            "opensea_buyer_fee_basis_points": "0",
+            "opensea_seller_fee_basis_points": "250",
+            "payout_address": "0xac9d54ca08740a608b6c474e5ca07d51ca8117fa",
+            "require_email": false,
+            "short_description": null,
+            "slug": "cryptocoven",
+            "telegram_url": null,
+            "twitter_username": "crypto_coven",
+            "instagram_username": "crypto_coven",
+            "wiki_url": null,
+            "is_nsfw": false,
+            "fees": {
+              "seller_fees": {
+                "0xac9d54ca08740a608b6c474e5ca07d51ca8117fa": 500
+              },
+              "opensea_fees": {
+                "0x0000a26b00c1f0df003000390027140000faa719": 250
+              }
+            }
+          },
+          "decimals": 0,
+          "token_metadata": "https://ipfs.io/ipfs/QmZHKZDavkvNfA9gSAg7HALv8jF7BJaKjUc9U2LSuvUySB/8271.json",
+          "is_nsfw": false,
+          "owner": {
+            "user": {
+              "username": "SodiKz125"
+            },
+            "profile_img_url": "https://storage.googleapis.com/opensea-static/opensea-profile/10.png",
+            "address": "0x0f1fcc9da5db6753c90fbeb46024c056516fbc17",
+            "config": ""
+          },
+          "token_id": "8271"
+        }
+      ],
+      "maker": null,
+      "slug": null,
+      "name": null,
+      "description": null,
+      "external_link": null,
+      "asset_contract": {
+        "address": "0x5180db8f5c931aae63c74266b211f580155ecac8",
+        "asset_contract_type": "non-fungible",
+        "created_date": "2021-11-04T00:35:07.285763",
+        "name": "Crypto Coven",
+        "nft_version": "3.0",
+        "opensea_version": null,
+        "owner": 109596169,
+        "schema_name": "ERC721",
+        "symbol": "WITCH",
+        "total_supply": null,
+        "description": "it's the season of the witch. 🌙",
+        "external_link": "https://www.cryptocoven.xyz/",
+        "image_url": "https://lh3.googleusercontent.com/E8MVasG7noxC0Fa_duhnexc2xze1PzT1jzyeaHsytOC4722C2Zeo7EhUR8-T6mSem9-4XE5ylrCtoAsceZ_lXez_kTaMufV5pfLc3Fk=s120",
+        "default_to_fiat": false,
+        "dev_buyer_fee_basis_points": 0,
+        "dev_seller_fee_basis_points": 500,
+        "only_proxied_transfers": false,
+        "opensea_buyer_fee_basis_points": 0,
+        "opensea_seller_fee_basis_points": 250,
+        "buyer_fee_basis_points": 0,
+        "seller_fee_basis_points": 750,
+        "payout_address": "0xac9d54ca08740a608b6c474e5ca07d51ca8117fa"
+      },
+      "permalink": "https://opensea.io/bundles/None",
+      "seaport_sell_orders": null
+    },
+    "taker_asset_bundle": {
+      "assets": [
+        {
+          "id": 13689077,
+          "num_sales": 0,
+          "background_color": null,
+          "image_url": "https://openseauserdata.com/files/6f8e2979d428180222796ff4a33ab929.svg",
+          "image_preview_url": "https://openseauserdata.com/files/6f8e2979d428180222796ff4a33ab929.svg",
+          "image_thumbnail_url": "https://openseauserdata.com/files/6f8e2979d428180222796ff4a33ab929.svg",
+          "image_original_url": "https://openseauserdata.com/files/6f8e2979d428180222796ff4a33ab929.svg",
+          "animation_url": null,
+          "animation_original_url": null,
+          "name": "Ether",
+          "description": "",
+          "external_link": null,
+          "asset_contract": {
+            "address": "0x0000000000000000000000000000000000000000",
+            "asset_contract_type": "fungible",
+            "created_date": "2019-08-02T23:41:09.503168",
+            "name": "Ether",
+            "nft_version": null,
+            "opensea_version": null,
+            "owner": null,
+            "schema_name": "ERC20",
+            "symbol": "ETH",
+            "total_supply": null,
+            "description": "This is the collection of owners of Ether",
+            "external_link": null,
+            "image_url": null,
+            "default_to_fiat": false,
+            "dev_buyer_fee_basis_points": 0,
+            "dev_seller_fee_basis_points": 0,
+            "only_proxied_transfers": false,
+            "opensea_buyer_fee_basis_points": 0,
+            "opensea_seller_fee_basis_points": 250,
+            "buyer_fee_basis_points": 0,
+            "seller_fee_basis_points": 250,
+            "payout_address": null
+          },
+          "permalink": "https://opensea.io/assets/ethereum/0x0000000000000000000000000000000000000000/0",
+          "collection": {
+            "banner_image_url": null,
+            "chat_url": null,
+            "created_date": "2019-08-02T23:41:09.501266",
+            "default_to_fiat": false,
+            "description": "This is the collection of owners of Ether",
+            "dev_buyer_fee_basis_points": "0",
+            "dev_seller_fee_basis_points": "0",
+            "discord_url": null,
+            "display_data": {},
+            "external_url": null,
+            "featured": false,
+            "featured_image_url": null,
+            "hidden": true,
+            "safelist_request_status": "not_requested",
+            "image_url": null,
+            "is_subject_to_whitelist": false,
+            "large_image_url": null,
+            "medium_username": null,
+            "name": "Ether",
+            "only_proxied_transfers": false,
+            "opensea_buyer_fee_basis_points": "0",
+            "opensea_seller_fee_basis_points": "250",
+            "payout_address": null,
+            "require_email": false,
+            "short_description": null,
+            "slug": "ether",
+            "telegram_url": null,
+            "twitter_username": null,
+            "instagram_username": null,
+            "wiki_url": null,
+            "is_nsfw": false,
+            "fees": {
+              "seller_fees": {},
+              "opensea_fees": {
+                "0x0000a26b00c1f0df003000390027140000faa719": 250
+              }
+            }
+          },
+          "decimals": 18,
+          "token_metadata": null,
+          "is_nsfw": false,
+          "owner": {
+            "user": {
+              "username": "NullAddress"
+            },
+            "profile_img_url": "https://storage.googleapis.com/opensea-static/opensea-profile/1.png",
+            "address": "0x0000000000000000000000000000000000000000",
+            "config": ""
+          },
+          "token_id": "0"
+        }
+      ],
+      "maker": null,
+      "slug": null,
+      "name": "Ether",
+      "description": null,
+      "external_link": null,
+      "asset_contract": {
+        "address": "0x0000000000000000000000000000000000000000",
+        "asset_contract_type": "fungible",
+        "created_date": "2019-08-02T23:41:09.503168",
+        "name": "Ether",
+        "nft_version": null,
+        "opensea_version": null,
+        "owner": null,
+        "schema_name": "ERC20",
+        "symbol": "ETH",
+        "total_supply": null,
+        "description": "This is the collection of owners of Ether",
+        "external_link": null,
+        "image_url": null,
+        "default_to_fiat": false,
+        "dev_buyer_fee_basis_points": 0,
+        "dev_seller_fee_basis_points": 0,
+        "only_proxied_transfers": false,
+        "opensea_buyer_fee_basis_points": 0,
+        "opensea_seller_fee_basis_points": 250,
+        "buyer_fee_basis_points": 0,
+        "seller_fee_basis_points": 250,
+        "payout_address": null
+      },
+      "permalink": "https://opensea.io/bundles/None",
+      "seaport_sell_orders": null
+    }
+  }
+]
