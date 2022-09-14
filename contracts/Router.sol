@@ -21,9 +21,10 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     uint256 constant FLAG_CT_V3_SWAP_EXACT_OUT = 0x03;
     uint256 constant FLAG_CT_V2_SWAP_EXACT_IN = 0x04;
     uint256 constant FLAG_CT_V2_SWAP_EXACT_OUT = 0x05;
-    uint256 constant FLAG_CT_WRAP_ETH = 0x06;
-    uint256 constant FLAG_CT_UNWRAP_WETH = 0x07;
-    uint256 constant FLAG_CT_SWEEP = 0x08;
+    uint256 constant FLAG_CT_SEAPORT = 0x06;
+    uint256 constant FLAG_CT_WRAP_ETH = 0x07;
+    uint256 constant FLAG_CT_UNWRAP_WETH = 0x08;
+    uint256 constant FLAG_CT_SWEEP = 0x09;
 
     uint256 constant FLAG_CT_MASK = 0x0f;
     uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
@@ -95,6 +96,9 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                     abi.decode(inputs, (address, uint256, uint256, bytes));
                 outdata = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
+            } else if (commandType == FLAG_CT_SEAPORT) {
+                (bytes memory data, uint256 value) = abi.decode(state.buildInputs(indices), (bytes, uint256));
+                (success, outdata) = Constants.SEAPORT.call{value: value}(data);
             } else if (commandType == FLAG_CT_SWEEP) {
                 bytes memory inputs = state.buildInputs(indices);
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
@@ -105,6 +109,10 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
             } else if (commandType == FLAG_CT_UNWRAP_WETH) {
                 (address recipient, uint256 amountMin) = abi.decode(state.buildInputs(indices), (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
+            } else if (commandType == FLAG_CT_SWEEP) {
+                bytes memory inputs = state.buildInputs(indices);
+                (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
+                Payments.sweepToken(token, recipient, minValue);
             } else {
                 revert('Invalid calltype');
             }
