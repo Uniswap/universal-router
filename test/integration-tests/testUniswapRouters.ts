@@ -22,7 +22,7 @@ import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { executeSwap, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, NO_MINIMUM, CONTRACT_BALANCE } from './shared/constants'
+import { ALICE_ADDRESS, CONTRACT_BALANCE } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 const { ethers } = hre
@@ -266,7 +266,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(
           V2ExactOutputCommand(amountOut, expandTo18DecimalsBN(10000), [WETH.address, DAI.address], alice.address)
         )
-        planner.add(SweepCommand(WETH.address, alice.address, NO_MINIMUM))
+        planner.add(SweepCommand(WETH.address, alice.address, 0))
         const { commands, state } = planner.plan()
 
         const balanceWethBefore = await wethContract.balanceOf(alice.address)
@@ -378,7 +378,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           )
         )
         planner.add(UnwrapWETHCommand(alice.address, CONTRACT_BALANCE))
-        planner.add(SweepCommand(DAI.address, alice.address, NO_MINIMUM)) //exactOut will have to sweep tokens w/ PermitPost
+        planner.add(SweepCommand(DAI.address, alice.address, 0)) //exactOut will have to sweep tokens w/ PermitPost
 
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.execute(commands, state)
