@@ -22,6 +22,10 @@ yarn link
 # from inside narwhal repo run:
 yarn link "@uniswap/narwhal-sdk"
 yarn test
+
+# if there are any changes to narwhal-sdk, you must rebuild to import those changes to linked repo
+# on any changes to the sdk, from inside narwhal-sdk repo run:
+yarn build
 ```
 
 
