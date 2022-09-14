@@ -47,7 +47,7 @@ abstract contract V3SwapRouter {
 
         if (isExactInput) {
             // Pay the pool (msg.sender)
-            Payments.pay(tokenIn, address(this), msg.sender, amountToPay);
+            Payments.pay(tokenIn, msg.sender, amountToPay);
         } else {
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
@@ -55,7 +55,7 @@ abstract contract V3SwapRouter {
             } else {
                 amountInCached = amountToPay;
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
-                Payments.pay(tokenOut, address(this), msg.sender, amountToPay);
+                Payments.pay(tokenOut, msg.sender, amountToPay);
             }
         }
     }
