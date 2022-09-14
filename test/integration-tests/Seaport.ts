@@ -3,6 +3,7 @@ import { TransactionReceipt } from '@ethersproject/abstract-provider'
 import type { Contract } from '@ethersproject/contracts'
 import {
   RouterPlanner,
+  SeaportCommand,
   SweepCommand,
   TransferCommand,
   V2ExactInputCommand,
@@ -16,6 +17,7 @@ import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
+import SEAPORT_ABI from './shared/abis/Seaport.json'
 import { executeSwap, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, OPENSEA_DEFAULT_ZONE, OPENSEA_CONDUIT, OPENSEA_CONDUIT_KEY} from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -23,7 +25,9 @@ import hre from 'hardhat'
 const { ethers } = hre
 import fs from 'fs'
 
-const seaportOrders = JSON.parse(fs.readFileSync('test/integration-tests/shared/seaport.json', { encoding: 'utf8' }))
+const seaportOrders = JSON.parse(fs.readFileSync('test/integration-tests/shared/seaportOrders.json', { encoding: 'utf8' }))
+const seaportInterface = new ethers.utils.Interface(SEAPORT_ABI);
+
 
 // type BasicOrderParameters = {
 //     considerationToken: string // address
@@ -98,7 +102,7 @@ function getOrderParams(apiOrder: any): Order {
   }
 }
 
-describe('Seaport', () => {
+describe.only('Seaport', () => {
   let alice: SignerWithAddress
   let weirollRouter: WeirollRouter
   let daiContract: Contract
@@ -117,10 +121,16 @@ describe('Seaport', () => {
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
     const weirollRouterFactory = await ethers.getContractFactory('WeirollRouter')
     weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)).connect(alice) as WeirollRouter
+    planner = new RouterPlanner()
   })
 
   it('completes a fulfillBasicOrder type', async () => {
     const orderParams: Order = getOrderParams(seaportOrders[0])
-    console.log(orderParams)
+    const calldata = seaportInterface.encodeFunctionData("fulfillOrder", [orderParams, OPENSEA_CONDUIT_KEY])
+    planner.add(SeaportCommand(BigNumber.from((3 * 10 ** 18).toString()), calldata))
+
+    const { commands, state } = planner.plan()
+    const tx = await weirollRouter.execute(commands, state, {value: BigNumber.from((3 * 10 ** 18).toString())})
+    const receipt = await tx.wait()
   })
 })
