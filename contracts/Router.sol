@@ -5,7 +5,6 @@ import './modules/V2SwapRouter.sol';
 import './modules/V3SwapRouter.sol';
 import './base/Payments.sol';
 import './libraries/CommandBuilder.sol';
-import 'hardhat/console.sol';
 
 contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     using CommandBuilder for bytes[];
@@ -43,7 +42,6 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     /// @param commands A set of concatenated commands, each 8 bytes in length
     /// @param state The state elements that should be used for the input and output of commands
     function execute(bytes memory commands, bytes[] memory state) external payable returns (bytes[] memory) {
-      console.log(msg.value);
         bytes8 command;
         uint256 commandType;
         uint256 flags;
@@ -100,7 +98,6 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 outdata = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
             } else if (commandType == FLAG_CT_SEAPORT) {
                 (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
-                console.log(value);
                 (success, outdata) = Constants.SEAPORT.call{value: value}(data);
             } else if (commandType == FLAG_CT_SWEEP) {
                 bytes memory inputs = state.buildInputs(indices);

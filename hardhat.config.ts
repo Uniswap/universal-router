@@ -26,9 +26,11 @@ export default {
   networks: {
     hardhat: {
       allowUnlimitedContractSize: false,
+      chainId: 1,
       forking: {
         url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-        blockNumber: 15360000,
+        chainId: 1,
+        blockNumber: 15539179,
       },
     },
     mainnet: {
