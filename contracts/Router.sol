@@ -31,6 +31,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant FLAG_CT_UNWRAP_WETH = 0x08;
     uint256 constant FLAG_CT_SWEEP = 0x09;
     uint256 constant FLAG_CT_LOOKSRARE = 0x0a;
+    uint256 constant FLAG_CT_NFT_TRANSFER = 0x0b;
 
     uint256 constant FLAG_CT_MASK = 0x0f;
     uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
@@ -62,7 +63,8 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         uint256 commandType;
         uint256 flags;
         bytes32 indices;
-        bool success;
+        bool success = true;
+        bytes memory inputs;
 
         bytes memory outdata;
 
@@ -92,7 +94,8 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
             } else if (commandType == FLAG_CT_TRANSFER) {
                 (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
-                Payments.pay(token, recipient, value);
+                Payments.payERC20(token, recipient, value);
+                outdata = '';
             } else if (commandType == FLAG_CT_V2_SWAP_EXACT_IN) {
                 (uint256 amountOutMin, address[] memory path, address recipient) =
                     abi.decode(inputs, (uint256, address[], address));
@@ -115,12 +118,19 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             } else if (commandType == FLAG_CT_SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
                 Payments.sweepToken(token, recipient, minValue);
+                outdata = '';
+            } else if (commandType == FLAG_CT_NFT_TRANSFER) {
+                (address token, address recipient, uint256 id, uint256 amount) = abi.decode(inputs, (address, address, uint256, uint256));
+                Payments.payNFT(token, recipient, id, amount);
+                outdata = '';
             } else if (commandType == FLAG_CT_WRAP_ETH) {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.wrapETH(recipient, amountMin);
+                outdata = '';
             } else if (commandType == FLAG_CT_UNWRAP_WETH) {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
+                outdata = '';
             } else if (commandType == FLAG_CT_LOOKSRARE) {
                 /// @dev LooksRare will send any tokens purchased to this contract. These then must
                 /// be traded onwards, or sent to a user using a further command. Any tokens left
