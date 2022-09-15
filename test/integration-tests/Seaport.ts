@@ -25,7 +25,7 @@ import hre from 'hardhat'
 const { ethers } = hre
 import fs from 'fs'
 
-const seaportOrders = JSON.parse(fs.readFileSync('test/integration-tests/shared/seaportOrders.json', { encoding: 'utf8' }))
+const seaportOrders = JSON.parse(fs.readFileSync('test/integration-tests/shared/orders/Seaport.json', { encoding: 'utf8' }))
 const seaportInterface = new ethers.utils.Interface(SEAPORT_ABI);
 
 
