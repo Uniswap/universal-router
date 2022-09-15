@@ -21,7 +21,7 @@ import { makePair, expandTo18Decimals, encodePath, pool_DAI_WETH } from './share
 import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { executeSwap, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
+import { executeSwap, resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, CONTRACT_BALANCE } from './shared/constants'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -46,20 +46,6 @@ function encodePathExactInput(tokens: string[]) {
 
 function encodePathExactOutput(tokens: string[]) {
   return encodePath(tokens.slice().reverse(), new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
-}
-
-async function resetFork() {
-  await hre.network.provider.request({
-    method: 'hardhat_reset',
-    params: [
-      {
-        forking: {
-          jsonRpcUrl: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-          blockNumber: 15360000,
-        },
-      },
-    ],
-  })
 }
 
 const V2_EVENTS = new Interface([

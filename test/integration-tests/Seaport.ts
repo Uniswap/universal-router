@@ -20,7 +20,7 @@ import { abi as ERC721_ABI } from '../../artifacts/@openzeppelin/contracts/token
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 
 import SEAPORT_ABI from './shared/abis/Seaport.json'
-import { executeSwap, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
+import { executeSwap, resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   OPENSEA_DEFAULT_ZONE,
@@ -39,20 +39,6 @@ const seaportOrders = JSON.parse(
   fs.readFileSync('test/integration-tests/shared/orders/Seaport.json', { encoding: 'utf8' })
 )
 const seaportInterface = new ethers.utils.Interface(SEAPORT_ABI)
-
-async function resetFork() {
-  await hre.network.provider.request({
-    method: 'hardhat_reset',
-    params: [
-      {
-        forking: {
-          jsonRpcUrl: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-          blockNumber: 15540514,
-        },
-      },
-    ],
-  })
-}
 
 type OfferItem = {
   itemType: BigNumber // enum
@@ -120,7 +106,7 @@ function calculateValue(considerations: ConsiderationItem[]): BigNumber {
   )
 }
 
-describe.only('Seaport', () => {
+describe('Seaport', () => {
   let alice: SignerWithAddress
   let weirollRouter: WeirollRouter
   let covenContract: Contract
@@ -137,6 +123,10 @@ describe.only('Seaport', () => {
     const weirollRouterFactory = await ethers.getContractFactory('WeirollRouter')
     weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)).connect(alice) as WeirollRouter
     planner = new RouterPlanner()
+  })
+
+  afterEach(async () => {
+    await resetFork()
   })
 
   it('completes a fulfillOrder type', async () => {
@@ -218,4 +208,23 @@ describe.only('Seaport', () => {
     const { commands, state } = planner.plan()
     await snapshotGasCost(weirollRouter.execute(commands, state, { value }))
   })
+
+
+    it('reverts if order does not go through', async () => {
+      const gasPrice = BigNumber.from(2000000000000)
+      const gasLimit = '10000000'
+      const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
+      advancedOrder.parameters.salt = BigNumber.from('6666666666666666')
+      const params = advancedOrder.parameters
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+        advancedOrder,
+        [],
+        OPENSEA_CONDUIT_KEY,
+        alice.address,
+      ])
+
+      planner.add(SeaportCommand(value.toString(), calldata))
+      const { commands, state } = planner.plan()
+      await expect(weirollRouter.execute(commands, state, { value, gasLimit })).to.be.revertedWith('ExecutionFailed(0, "0x815e1d64")')
+    })
 })

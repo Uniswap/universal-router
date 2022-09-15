@@ -11,7 +11,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
 
     error NotGreaterOrEqual(uint256 big, uint256 smol);
     error NotEqual(uint256 equal1, uint256 equal2);
-    error ExecutionFailed(uint256 commandIndex, string message);
+    error ExecutionFailed(uint256 commandIndex, bytes message);
     error ETHNotAccepted();
 
     // Command Types
@@ -114,12 +114,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
             }
 
             if (!success) {
-                if (outdata.length > 0) {
-                    assembly {
-                        outdata := add(outdata, 68)
-                    }
-                }
-                revert ExecutionFailed({commandIndex: 0, message: outdata.length > 0 ? string(outdata) : 'Unknown'});
+                revert ExecutionFailed({commandIndex: 0, message: outdata});
             }
 
             if (flags & FLAG_TUPLE_RETURN != 0) {
