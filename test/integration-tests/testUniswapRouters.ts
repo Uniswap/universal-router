@@ -17,7 +17,14 @@ import { Route as V2Route, Trade as V2Trade, Pair } from '@uniswap/v2-sdk'
 import { FeeAmount, Route as V3Route, Trade as V3Trade } from '@uniswap/v3-sdk'
 import { SwapRouter } from '@uniswap/router-sdk'
 import { expect } from './shared/expect'
-import { makePair, expandTo18Decimals, encodePath, pool_DAI_WETH, pool_DAI_USDC, pool_USDC_WETH } from './shared/swapRouter02Helpers'
+import {
+  makePair,
+  expandTo18Decimals,
+  encodePath,
+  pool_DAI_WETH,
+  pool_DAI_USDC,
+  pool_USDC_WETH,
+} from './shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
@@ -419,9 +426,15 @@ describe('Uniswap V2 and V3 Tests:', () => {
       const amountIn = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
       const amountOut = CurrencyAmount.fromRawAmount(WETH, expandTo18Decimals(1))
       const v3ExactInPromise = V3Trade.exactIn(new V3Route([pool_DAI_WETH], DAI, WETH), amountIn)
-      const v3ExactInMultihopPromise = V3Trade.exactIn(new V3Route([pool_DAI_USDC, pool_USDC_WETH], DAI, WETH), amountIn)
+      const v3ExactInMultihopPromise = V3Trade.exactIn(
+        new V3Route([pool_DAI_USDC, pool_USDC_WETH], DAI, WETH),
+        amountIn
+      )
       const v3ExactOutPromise = V3Trade.exactOut(new V3Route([pool_DAI_WETH], DAI, WETH), amountOut)
-      const v3ExactOutMultihopPromise = V3Trade.exactOut(new V3Route([pool_DAI_USDC, pool_USDC_WETH], DAI, WETH), amountOut)
+      const v3ExactOutMultihopPromise = V3Trade.exactOut(
+        new V3Route([pool_DAI_USDC, pool_USDC_WETH], DAI, WETH),
+        amountOut
+      )
       const slippageTolerance = new Percent(50, 100)
 
       it('gas: one trade, one hop, exactIn', async () => {
