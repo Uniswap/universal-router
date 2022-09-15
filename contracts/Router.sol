@@ -68,6 +68,8 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
 
         for (uint256 i; i < commands.length; i += 8) {
             success = true;
+            outdata = '';
+
             assembly {
                 command := mload(add(add(commands, 32), i))
             }
