@@ -20,4 +20,7 @@ library Constants {
 
     /// @dev WETH9 address on mainnet
     address internal constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
+    /// @dev The address of LooksRare on mainnet
+    address internal constant LOOKSRARE_EXCHANGE = 0x59728544B08AB483533076417FbBB2fD0B17CE3a;
 }

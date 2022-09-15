@@ -62,11 +62,12 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         uint256 commandType;
         uint256 flags;
         bytes32 indices;
-        bool success = true;
+        bool success;
 
         bytes memory outdata;
 
         for (uint256 i; i < commands.length; i += 8) {
+            success = true;
             assembly {
                 command := mload(add(add(commands, 32), i))
             }
@@ -79,7 +80,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             } else {
                 indices = bytes32((uint256(uint64(command)) << COMMAND_INDICES_OFFSET) | SHORT_COMMAND_FILL);
             }
-            bytes memory inputs = state.buildInputs(indices);
+
             if (commandType == FLAG_CT_PERMIT) {
                 // state[state.length] = abi.encode(msg.sender);
                 // (success, outdata) = permitPost.call(state[0]);
@@ -119,7 +120,11 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
             } else if (commandType == FLAG_CT_LOOKSRARE) {
-
+                /// @dev LooksRare will send any tokens purchased to this contract. These then must
+                /// be traded onwards, or sent to a user using a further command. Any tokens left
+                /// in this contract can be stolen.
+                (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
+                (success, outdata) = Constants.LOOKSRARE_EXCHANGE.call{value: value}(data);
             } else {
                 revert('Invalid calltype');
             }
