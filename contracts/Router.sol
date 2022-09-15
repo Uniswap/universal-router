@@ -120,7 +120,8 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 Payments.sweepToken(token, recipient, minValue);
                 outdata = '';
             } else if (commandType == FLAG_CT_NFT_TRANSFER) {
-                (address token, address recipient, uint256 id, uint256 amount) = abi.decode(inputs, (address, address, uint256, uint256));
+                (address token, address recipient, uint256 id, uint256 amount) =
+                    abi.decode(inputs, (address, address, uint256, uint256));
                 Payments.payNFT(token, recipient, id, amount);
                 outdata = '';
             } else if (commandType == FLAG_CT_WRAP_ETH) {

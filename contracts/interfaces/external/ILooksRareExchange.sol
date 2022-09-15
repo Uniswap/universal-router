@@ -2,7 +2,6 @@
 pragma solidity ^0.8.4;
 
 interface ILooksRareExchange {
-
     struct MakerOrder {
         bool isOrderAsk; // true --> ask / false --> bid
         address signer; // signer of the maker order
@@ -31,8 +30,7 @@ interface ILooksRareExchange {
         bytes params; // other params (e.g., tokenId)
     }
 
-    function matchAskWithTakerBidUsingETHAndWETH(
-        TakerOrder calldata takerBid,
-        MakerOrder calldata makerAsk
-    ) external payable;
+    function matchAskWithTakerBidUsingETHAndWETH(TakerOrder calldata takerBid, MakerOrder calldata makerAsk)
+        external
+        payable;
 }
