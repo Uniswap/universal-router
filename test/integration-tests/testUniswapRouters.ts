@@ -17,7 +17,7 @@ import { Route as V2Route, Trade as V2Trade, Pair } from '@uniswap/v2-sdk'
 import { FeeAmount, Route as V3Route, Trade as V3Trade } from '@uniswap/v3-sdk'
 import { SwapRouter } from '@uniswap/router-sdk'
 import { expect } from './shared/expect'
-import { makePair, expandTo18Decimals, encodePath, pool_DAI_WETH } from './shared/swapRouter02Helpers'
+import { makePair, expandTo18Decimals, encodePath, pool_DAI_WETH, pool_DAI_USDC, pool_USDC_WETH } from './shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
@@ -298,9 +298,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(UnwrapWETHCommand(alice.address, CONTRACT_BALANCE))
 
         const { commands, state } = planner.plan()
-
         const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
-
         const receipt = await (await weirollRouter.execute(commands, state)).wait()
 
         const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
@@ -342,6 +340,16 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
+      it('gas: one trade, one hop, exactIn ETH', async () => {
+        const pairAddress = Pair.getAddress(DAI, WETH)
+        planner.add(WrapETHCommand(pairAddress, amountIn))
+        planner.add(V2ExactInputCommand(amountIn, [WETH.address, DAI.address], alice.address))
+        const { commands, state } = planner.plan()
+        const tx = await weirollRouter.execute(commands, state, { value: amountIn })
+        const receipt = await tx.wait()
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+
       it('gas: one trade, one hop, exactOut', async () => {
         await wethContract.connect(alice).transfer(weirollRouter.address, expandTo18DecimalsBN(100))
         planner.add(
@@ -358,12 +366,18 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, one hop, exactIn ETH', async () => {
-        const pairAddress = Pair.getAddress(DAI, WETH)
-        planner.add(WrapETHCommand(pairAddress, amountIn))
-        planner.add(V2ExactInputCommand(amountIn, [WETH.address, DAI.address], alice.address))
+      it('gas: one trade, two hops, exactOut', async () => {
+        await wethContract.connect(alice).transfer(weirollRouter.address, expandTo18DecimalsBN(100))
+        planner.add(
+          V2ExactOutputCommand(
+            expandTo18DecimalsBN(5),
+            expandTo18DecimalsBN(100),
+            [WETH.address, USDC.address, DAI.address],
+            alice.address
+          )
+        )
         const { commands, state } = planner.plan()
-        const tx = await weirollRouter.execute(commands, state, { value: amountIn })
+        const tx = await weirollRouter.execute(commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -405,11 +419,26 @@ describe('Uniswap V2 and V3 Tests:', () => {
       const amountIn = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
       const amountOut = CurrencyAmount.fromRawAmount(WETH, expandTo18Decimals(1))
       const v3ExactInPromise = V3Trade.exactIn(new V3Route([pool_DAI_WETH], DAI, WETH), amountIn)
+      const v3ExactInMultihopPromise = V3Trade.exactIn(new V3Route([pool_DAI_USDC, pool_USDC_WETH], DAI, WETH), amountIn)
       const v3ExactOutPromise = V3Trade.exactOut(new V3Route([pool_DAI_WETH], DAI, WETH), amountOut)
+      const v3ExactOutMultihopPromise = V3Trade.exactOut(new V3Route([pool_DAI_USDC, pool_USDC_WETH], DAI, WETH), amountOut)
       const slippageTolerance = new Percent(50, 100)
 
       it('gas: one trade, one hop, exactIn', async () => {
         const v3Trade = await v3ExactInPromise
+        const trades = [v3Trade]
+        const { calldata } = SwapRouter.swapCallParameters(trades, {
+          slippageTolerance,
+          recipient: alice.address,
+          deadlineOrPreviousBlockhash: 2000000000,
+        })
+
+        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+
+      it('gas: one trade, two hops, exactIn', async () => {
+        const v3Trade = await v3ExactInMultihopPromise
         const trades = [v3Trade]
         const { calldata } = SwapRouter.swapCallParameters(trades, {
           slippageTolerance,
@@ -436,6 +465,19 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       it('gas: one trade, one hop, exactOut', async () => {
         const v3Trade = await v3ExactOutPromise
+        const trades = [v3Trade]
+        const { calldata } = SwapRouter.swapCallParameters(trades, {
+          slippageTolerance,
+          recipient: alice.address,
+          deadlineOrPreviousBlockhash: 2000000000,
+        })
+
+        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+
+      it('gas: one trade, two hops, exactOut', async () => {
+        const v3Trade = await v3ExactOutMultihopPromise
         const trades = [v3Trade]
         const { calldata } = SwapRouter.swapCallParameters(trades, {
           slippageTolerance,
@@ -535,6 +577,15 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
+      it('gas: one trade, two hops, exactIn', async () => {
+        const amountOutMin: number = 3 * 10 ** 6
+        addV3ExactInTrades(planner, 1, amountOutMin, [DAI.address, WETH.address, USDC.address])
+        const { commands, state } = planner.plan()
+        const tx = await weirollRouter.execute(commands, state)
+        const receipt = await tx.wait()
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+
       it('gas: six trades (all same), one hop, exactIn', async () => {
         const amountOutMin: number = 0.0005 * 10 ** 18
         addV3ExactInTrades(planner, 6, amountOutMin)
@@ -553,6 +604,31 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
+
+      it('gas: one trade, two hops, exactOut', async () => {
+        // trade DAI in for WETH out
+        const tokens = [DAI.address, USDC.address, WETH.address]
+        const path = encodePathExactOutput(tokens)
+
+        planner.add(V3ExactOutputCommand(alice.address, amountOut, amountInMax, path))
+        const { commands, state } = planner.plan()
+        const tx = await weirollRouter.connect(alice).execute(commands, state)
+        const receipt = await tx.wait()
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+    })
+  })
+
+  describe('Mixing V2 and V3', () => {
+    describe('with Router02.', () => {
+      it('gas: V3, then V2')
+      it('gas: V2, then V3')
+      it('gas: split V2 and V3, one hop')
+    })
+    describe('with Weiroll.', () => {
+      it('gas: V3, then V2')
+      it('gas: V2, then V3')
+      it('gas: split V2 and V3, one hop')
     })
   })
 })

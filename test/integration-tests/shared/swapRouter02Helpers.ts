@@ -3,7 +3,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigintIsh, CurrencyAmount, Token } from '@uniswap/sdk-core'
 import { Pair } from '@uniswap/v2-sdk'
 import { encodeSqrtRatioX96, FeeAmount, nearestUsableTick, Pool, TickMath, TICK_SPACINGS } from '@uniswap/v3-sdk'
-import { getV2PoolReserves, WETH, DAI } from './mainnetForkHelpers'
+import { getV2PoolReserves, WETH, DAI, USDC } from './mainnetForkHelpers'
 import { BigNumber } from 'ethers'
 
 const feeAmount = FeeAmount.MEDIUM
@@ -36,6 +36,8 @@ export const makePair = async (alice: SignerWithAddress, token0: Token, token1: 
 }
 
 export const pool_DAI_WETH = makePool(DAI, WETH, liquidity)
+export const pool_DAI_USDC = makePool(USDC, DAI, liquidity)
+export const pool_USDC_WETH = makePool(USDC, WETH, liquidity)
 
 const FEE_SIZE = 3
 
