@@ -692,9 +692,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
         planner.add(V2ExactInputCommand(v2AmountOutMin, tokens, alice.address))
         // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
-        planner.add(
-          V3ExactInputCommand(alice.address, CONTRACT_BALANCE, v3AmountOutMin, encodePathExactInput(tokens))
-        )
+        planner.add(V3ExactInputCommand(alice.address, CONTRACT_BALANCE, v3AmountOutMin, encodePathExactInput(tokens)))
 
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.connect(alice).execute(commands, state)
