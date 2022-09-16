@@ -12,10 +12,10 @@ import {
   UnwrapWETHCommand,
   WrapETHCommand,
 } from '@uniswap/narwhal-sdk'
-import { CurrencyAmount, Ether, Percent, Token } from '@uniswap/sdk-core'
+import { CurrencyAmount, Ether, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import { Route as V2Route, Trade as V2Trade, Pair } from '@uniswap/v2-sdk'
 import { FeeAmount, Route as V3Route, Trade as V3Trade } from '@uniswap/v3-sdk'
-import { SwapRouter } from '@uniswap/router-sdk'
+import { SwapRouter, MixedRouteSDK, Trade as MixedTrade } from '@uniswap/router-sdk'
 import { expect } from './shared/expect'
 import {
   makePair,
@@ -634,10 +634,37 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
   describe('Mixing V2 and V3', () => {
     describe('with Router02.', () => {
-      it('gas: V3, then V2')
+      let amountIn: CurrencyAmount<Token>
+      let mixedRoute: any
+      let mixedTradeExactIn: any
+
+      const slippageTolerance = new Percent(50, 100)
+      const recipient = '0x0000000000000000000000000000000000000003'
+      const deadline = 2000000000
+
+      it.only('gas: V3, then V2', async () => {
+        amountIn = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
+
+        // trades a v3 pool then a v2 pair
+        mixedRoute = new MixedRouteSDK([pool_DAI_USDC, pair_USDC_WETH], DAI, WETH)
+        mixedTradeExactIn = await MixedTrade.fromRoute(mixedRoute, amountIn, TradeType.EXACT_INPUT)
+        
+        
+        const trades = [mixedTradeExactIn]
+        const { calldata } = SwapRouter.swapCallParameters(trades, {
+          slippageTolerance,
+          recipient,
+          deadlineOrPreviousBlockhash: deadline,
+        })
+
+        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+
       it('gas: V2, then V3')
       it('gas: split V2 and V3, one hop')
     })
+
     describe('with Weiroll.', () => {
       beforeEach(async () => {
         planner = new RouterPlanner()
