@@ -1,5 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Weiroll. gas: V2, then V3 1`] = `"208075"`;
+
 exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Weiroll. gas: V3, then V2 1`] = `"194526"`;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: one trade, one hop, exactIn 1`] = `"121407"`;

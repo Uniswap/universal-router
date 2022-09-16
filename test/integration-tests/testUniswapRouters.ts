@@ -646,13 +646,16 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       it('gas: V3, then V2', async () => {
         const v3Tokens = [DAI.address, USDC.address]
+        const v2Tokens = [USDC.address, WETH.address]
         const v3AmountIn: BigNumber = expandTo18DecimalsBN(5)
         const v3AmountOutMin = 0 // doesnt matter how much USDC it is, what matters is the end of the trade
         const v2AmountOutMin = 0.0005 * 10 ** 18
         // V3 trades DAI for USDC, recipient of first trade is the v2 pool for second trade
-        planner.add(V3ExactInputCommand(Pair.getAddress(USDC, WETH), v3AmountIn, v3AmountOutMin, encodePathExactInput(v3Tokens)))
+        planner.add(
+          V3ExactInputCommand(Pair.getAddress(USDC, WETH), v3AmountIn, v3AmountOutMin, encodePathExactInput(v3Tokens))
+        )
         // V2 trades USDC for WETH, sending the tokens to Alice again
-        planner.add(V2ExactInputCommand(v2AmountOutMin, [USDC.address, WETH.address], alice.address))
+        planner.add(V2ExactInputCommand(v2AmountOutMin, v2Tokens, alice.address))
 
         const { commands, state } = planner.plan()
         const tx = await weirollRouter.connect(alice).execute(commands, state)
@@ -660,7 +663,25 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: V2, then V3')
+      it('gas: V2, then V3', async () => {
+        const v2Tokens = [DAI.address, USDC.address]
+        const v3Tokens = [USDC.address, WETH.address]
+        const v2AmountIn: BigNumber = expandTo18DecimalsBN(5)
+        const v2AmountOutMin = 0 // doesnt matter how much USDC it is, what matters is the end of the trade
+        const v3AmountOutMin = 0.0005 * 10 ** 18
+        planner.add(TransferCommand(DAI.address, Pair.getAddress(DAI, USDC), v2AmountIn))
+        // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
+        planner.add(V2ExactInputCommand(v2AmountOutMin, v2Tokens, weirollRouter.address))
+        // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
+        planner.add(
+          V3ExactInputCommand(alice.address, CONTRACT_BALANCE, v3AmountOutMin, encodePathExactInput(v3Tokens))
+        )
+
+        const { commands, state } = planner.plan()
+        const tx = await weirollRouter.connect(alice).execute(commands, state)
+        const receipt = await tx.wait()
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
       it('gas: split V2 and V3, one hop')
     })
   })
