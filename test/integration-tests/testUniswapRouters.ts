@@ -639,7 +639,27 @@ describe('Uniswap V2 and V3 Tests:', () => {
       it('gas: split V2 and V3, one hop')
     })
     describe('with Weiroll.', () => {
-      it('gas: V3, then V2')
+      beforeEach(async () => {
+        planner = new RouterPlanner()
+        await daiContract.transfer(weirollRouter.address, expandTo18DecimalsBN(1000000))
+      })
+
+      it('gas: V3, then V2', async () => {
+        const v3Tokens = [DAI.address, USDC.address]
+        const v3AmountIn: BigNumber = expandTo18DecimalsBN(5)
+        const v3AmountOutMin = 0 // doesnt matter how much USDC it is, what matters is the end of the trade
+        const v2AmountOutMin = 0.0005 * 10 ** 18
+        // V3 trades DAI for USDC, recipient of first trade is the v2 pool for second trade
+        planner.add(V3ExactInputCommand(Pair.getAddress(USDC, WETH), v3AmountIn, v3AmountOutMin, encodePathExactInput(v3Tokens)))
+        // V2 trades USDC for WETH, sending the tokens to Alice again
+        planner.add(V2ExactInputCommand(v2AmountOutMin, [USDC.address, WETH.address], alice.address))
+
+        const { commands, state } = planner.plan()
+        const tx = await weirollRouter.connect(alice).execute(commands, state)
+        const receipt = await tx.wait()
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+
       it('gas: V2, then V3')
       it('gas: split V2 and V3, one hop')
     })

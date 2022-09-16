@@ -26,6 +26,10 @@ export const makePool = (token0: Token, token1: Token, liquidity: number) => {
   ])
 }
 
+export const pool_DAI_WETH = makePool(DAI, WETH, liquidity)
+export const pool_DAI_USDC = makePool(USDC, DAI, liquidity)
+export const pool_USDC_WETH = makePool(USDC, WETH, liquidity)
+
 // v2
 export const makePair = async (alice: SignerWithAddress, token0: Token, token1: Token) => {
   const reserves = await getV2PoolReserves(alice, token0, token1)
@@ -34,10 +38,6 @@ export const makePair = async (alice: SignerWithAddress, token0: Token, token1: 
 
   return new Pair(reserve0, reserve1)
 }
-
-export const pool_DAI_WETH = makePool(DAI, WETH, liquidity)
-export const pool_DAI_USDC = makePool(USDC, DAI, liquidity)
-export const pool_USDC_WETH = makePool(USDC, WETH, liquidity)
 
 const FEE_SIZE = 3
 
