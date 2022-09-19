@@ -1,30 +1,18 @@
-import { Interface, LogDescription } from '@ethersproject/abi'
-import { TransactionReceipt } from '@ethersproject/abstract-provider'
 import type { Contract } from '@ethersproject/contracts'
 import {
   RouterPlanner,
   SeaportCommand,
-  SweepCommand,
-  TransferCommand,
-  V2ExactInputCommand,
-  V2ExactOutputCommand,
-  V3ExactInputCommand,
-  UnwrapWETHCommand,
-  WrapETHCommand,
 } from '@uniswap/narwhal-sdk'
-import { CurrencyAmount, Ether, Percent, Token } from '@uniswap/sdk-core'
 import { expect } from './shared/expect'
-import { BigNumber, Contract as EthersContract } from 'ethers'
+import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as ERC721_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC721/IERC721.sol/IERC721.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 
 import SEAPORT_ABI from './shared/abis/Seaport.json'
-import { executeSwap, resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
+import { resetFork } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
-  OPENSEA_DEFAULT_ZONE,
-  OPENSEA_CONDUIT,
   OPENSEA_CONDUIT_KEY,
   COVEN_ADDRESS,
 } from './shared/constants'
@@ -33,7 +21,6 @@ import { expandTo18DecimalsBN } from './shared/helpers'
 import hre from 'hardhat'
 const { ethers } = hre
 import fs from 'fs'
-import util from 'util'
 
 const seaportOrders = JSON.parse(
   fs.readFileSync('test/integration-tests/shared/orders/Seaport.json', { encoding: 'utf8' })
@@ -130,8 +117,6 @@ describe('Seaport', () => {
   })
 
   it('completes a fulfillOrder type', async () => {
-    const gasPrice = BigNumber.from(2000000000000)
-    const gasLimit = '10000000'
     const { order, value } = getOrderParams(seaportOrders[0])
     const params = order.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillOrder', [order, OPENSEA_CONDUIT_KEY])
@@ -153,8 +138,6 @@ describe('Seaport', () => {
   })
 
   it('completes a fulfillAdvancedOrder type', async () => {
-    const gasPrice = BigNumber.from(2000000000000)
-    const gasLimit = '10000000'
     const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
     const params = advancedOrder.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
@@ -181,10 +164,7 @@ describe('Seaport', () => {
   })
 
   it('gas fulfillOrder', async () => {
-    const gasPrice = BigNumber.from(2000000000000)
-    const gasLimit = '10000000'
     const { order, value } = getOrderParams(seaportOrders[0])
-    const params = order.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillOrder', [order, OPENSEA_CONDUIT_KEY])
 
     planner.add(SeaportCommand(value.toString(), calldata))
@@ -193,10 +173,7 @@ describe('Seaport', () => {
   })
 
   it('gas fulfillAdvancedOrder', async () => {
-    const gasPrice = BigNumber.from(2000000000000)
-    const gasLimit = '10000000'
     const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
-    const params = advancedOrder.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
       [],
@@ -210,11 +187,8 @@ describe('Seaport', () => {
   })
 
   it('reverts if order does not go through', async () => {
-    const gasPrice = BigNumber.from(2000000000000)
-    const gasLimit = '10000000'
     const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
     advancedOrder.parameters.salt = BigNumber.from('6666666666666666')
-    const params = advancedOrder.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
       [],
@@ -224,7 +198,7 @@ describe('Seaport', () => {
 
     planner.add(SeaportCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-    await expect(weirollRouter.execute(commands, state, { value, gasLimit })).to.be.revertedWith(
+    await expect(weirollRouter.execute(commands, state, { value })).to.be.revertedWith(
       'ExecutionFailed(0, "0x815e1d64")'
     )
   })
