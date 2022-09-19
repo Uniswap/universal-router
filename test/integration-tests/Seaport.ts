@@ -6,7 +6,7 @@ import {
 import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
-import { abi as ERC721_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC721/IERC721.sol/IERC721.json'
+import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 
 import SEAPORT_ABI from './shared/abis/Seaport.json'
