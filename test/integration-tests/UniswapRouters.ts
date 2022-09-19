@@ -83,10 +83,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
     await resetFork()
   })
 
-  it('bytecode size', async () => {
-    expect(((await weirollRouter.provider.getCode(weirollRouter.address)).length - 2) / 2).to.matchSnapshot()
-  })
-
   describe('Trade on UniswapV2', () => {
     describe('with Router02.', () => {
       const slippageTolerance = new Percent(50, 100)

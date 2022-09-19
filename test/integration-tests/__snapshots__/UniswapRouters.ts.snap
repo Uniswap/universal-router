@@ -35,5 +35,3 @@ exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Weiroll. gas: one trad
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Weiroll. gas: one trade, one hop, exactOut 1`] = `"116289"`;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Weiroll. gas: six trades (all same), one hop, exactIn 1`] = `"289527"`;
-
-exports[`Uniswap V2 and V3 Tests: bytecode size 1`] = `9564`;
