@@ -209,22 +209,23 @@ describe('Seaport', () => {
     await snapshotGasCost(weirollRouter.execute(commands, state, { value }))
   })
 
+  it('reverts if order does not go through', async () => {
+    const gasPrice = BigNumber.from(2000000000000)
+    const gasLimit = '10000000'
+    const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
+    advancedOrder.parameters.salt = BigNumber.from('6666666666666666')
+    const params = advancedOrder.parameters
+    const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+      advancedOrder,
+      [],
+      OPENSEA_CONDUIT_KEY,
+      alice.address,
+    ])
 
-    it('reverts if order does not go through', async () => {
-      const gasPrice = BigNumber.from(2000000000000)
-      const gasLimit = '10000000'
-      const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
-      advancedOrder.parameters.salt = BigNumber.from('6666666666666666')
-      const params = advancedOrder.parameters
-      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
-        advancedOrder,
-        [],
-        OPENSEA_CONDUIT_KEY,
-        alice.address,
-      ])
-
-      planner.add(SeaportCommand(value.toString(), calldata))
-      const { commands, state } = planner.plan()
-      await expect(weirollRouter.execute(commands, state, { value, gasLimit })).to.be.revertedWith('ExecutionFailed(0, "0x815e1d64")')
-    })
+    planner.add(SeaportCommand(value.toString(), calldata))
+    const { commands, state } = planner.plan()
+    await expect(weirollRouter.execute(commands, state, { value, gasLimit })).to.be.revertedWith(
+      'ExecutionFailed(0, "0x815e1d64")'
+    )
+  })
 })
