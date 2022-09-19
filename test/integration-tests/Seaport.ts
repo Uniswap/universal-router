@@ -1,8 +1,5 @@
 import type { Contract } from '@ethersproject/contracts'
-import {
-  RouterPlanner,
-  SeaportCommand,
-} from '@uniswap/narwhal-sdk'
+import { RouterPlanner, SeaportCommand } from '@uniswap/narwhal-sdk'
 import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
@@ -11,11 +8,7 @@ import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 
 import SEAPORT_ABI from './shared/abis/Seaport.json'
 import { resetFork } from './shared/mainnetForkHelpers'
-import {
-  ALICE_ADDRESS,
-  OPENSEA_CONDUIT_KEY,
-  COVEN_ADDRESS,
-} from './shared/constants'
+import { ALICE_ADDRESS, OPENSEA_CONDUIT_KEY, COVEN_ADDRESS } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import hre from 'hardhat'
