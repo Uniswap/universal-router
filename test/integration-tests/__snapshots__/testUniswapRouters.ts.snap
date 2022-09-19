@@ -1,5 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Router02. gas: V2, then V3 1`] = `"214826"`;
+
 exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Router02. gas: V3, then V2 1`] = `"218356"`;
 
 exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Weiroll. gas: V2, then V3 1`] = `"208075"`;
@@ -26,30 +28,36 @@ exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: one trad
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: one trade, one hop, exactOut ETH 1`] = `"139468"`;
 
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: one trade, three hops, exactIn 1`] = `"253999"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: one trade, three hops, exactOut 1`] = `"256129"`;
+
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: one trade, two hops, exactIn 1`] = `"185233"`;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: one trade, two hops, exactOut 1`] = `"184492"`;
-
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: six trades (all same), one hop, exactIn 1`] = `"278043"`;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: one trade, one hop, exactIn 1`] = `"104733"`;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: one trade, one hop, exactOut 1`] = `"114904"`;
 
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: one trade, three hops, exactIn 1`] = `"284015"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: one trade, three hops, exactOut 1`] = `"423372"`;
+
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: one trade, two hops, exactIn 1`] = `"196837"`;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: one trade, two hops, exactOut 1`] = `"313985"`;
-
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: six trades (all same), one hop, exactIn 1`] = `"104733"`;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Weiroll. gas: one trade, one hop, exactIn 1`] = `"106191"`;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Weiroll. gas: one trade, one hop, exactOut 1`] = `"116257"`;
 
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Weiroll. gas: one trade, three hops, exactIn 1`] = `"259801"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Weiroll. gas: one trade, three hops, exactOut 1`] = `"420610"`;
+
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Weiroll. gas: one trade, two hops, exactIn 1`] = `"182032"`;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Weiroll. gas: one trade, two hops, exactOut 1`] = `"313421"`;
-
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Weiroll. gas: six trades (all same), one hop, exactIn 1`] = `"289320"`;
 
 exports[`Uniswap V2 and V3 Tests: bytecode size 1`] = `9315`;
