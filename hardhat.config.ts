@@ -29,7 +29,6 @@ export default {
       chainId: 1,
       forking: {
         url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-        chainId: 1,
         blockNumber: 15539179,
       },
     },
