@@ -11,7 +11,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
 
     error NotGreaterOrEqual(uint256 big, uint256 smol);
     error NotEqual(uint256 equal1, uint256 equal2);
-    error ExecutionFailed(uint256 commandIndex, string message);
+    error ExecutionFailed(uint256 commandIndex, bytes message);
     error ETHNotAccepted();
 
     // Command Types
@@ -21,9 +21,10 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     uint256 constant FLAG_CT_V3_SWAP_EXACT_OUT = 0x03;
     uint256 constant FLAG_CT_V2_SWAP_EXACT_IN = 0x04;
     uint256 constant FLAG_CT_V2_SWAP_EXACT_OUT = 0x05;
-    uint256 constant FLAG_CT_WRAP_ETH = 0x06;
-    uint256 constant FLAG_CT_UNWRAP_WETH = 0x07;
-    uint256 constant FLAG_CT_SWEEP = 0x08;
+    uint256 constant FLAG_CT_SEAPORT = 0x06;
+    uint256 constant FLAG_CT_WRAP_ETH = 0x07;
+    uint256 constant FLAG_CT_UNWRAP_WETH = 0x08;
+    uint256 constant FLAG_CT_SWEEP = 0x09;
 
     uint256 constant FLAG_CT_MASK = 0x0f;
     uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
@@ -89,6 +90,9 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                     abi.decode(inputs, (address, uint256, uint256, bytes));
                 outdata = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
+            } else if (commandType == FLAG_CT_SEAPORT) {
+                (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
+                (success, outdata) = Constants.SEAPORT.call{value: value}(data);
             } else if (commandType == FLAG_CT_SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
                 Payments.sweepToken(token, recipient, minValue);
@@ -103,12 +107,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
             }
 
             if (!success) {
-                if (outdata.length > 0) {
-                    assembly {
-                        outdata := add(outdata, 68)
-                    }
-                }
-                revert ExecutionFailed({commandIndex: 0, message: outdata.length > 0 ? string(outdata) : 'Unknown'});
+                revert ExecutionFailed({commandIndex: 0, message: outdata});
             }
 
             if (flags & FLAG_TUPLE_RETURN != 0) {

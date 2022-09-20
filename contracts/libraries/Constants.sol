@@ -4,6 +4,8 @@ pragma solidity ^0.8.15;
 /// @title Constant state
 /// @notice Constant state used by the swap router
 library Constants {
+    address internal constant SEAPORT = 0x00000000006c3852cbEf3e08E8dF289169EdE581;
+
     /// @dev Used for identifying cases when this contract's balance of a token is to be used
     uint256 internal constant CONTRACT_BALANCE = 0;
 

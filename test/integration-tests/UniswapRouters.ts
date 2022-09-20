@@ -30,15 +30,12 @@ import {
 import { BigNumber } from 'ethers'
 import { WeirollRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { executeSwap, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
+import { executeSwap, resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, CONTRACT_BALANCE } from './shared/constants'
+import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 const { ethers } = hre
-
-function expandTo18DecimalsBN(n: number): BigNumber {
-  return BigNumber.from(n).mul(BigNumber.from(10).pow(18))
-}
 
 function parseEvents(iface: Interface, receipt: TransactionReceipt): (LogDescription | undefined)[] {
   return receipt.logs
@@ -58,20 +55,6 @@ function encodePathExactInput(tokens: string[]) {
 
 function encodePathExactOutput(tokens: string[]) {
   return encodePath(tokens.slice().reverse(), new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
-}
-
-async function resetFork() {
-  await hre.network.provider.request({
-    method: 'hardhat_reset',
-    params: [
-      {
-        forking: {
-          jsonRpcUrl: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-          blockNumber: 15360000,
-        },
-      },
-    ],
-  })
 }
 
 const V2_EVENTS = new Interface([
@@ -109,10 +92,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
   afterEach(async () => {
     await resetFork()
-  })
-
-  it('bytecode size', async () => {
-    expect(((await weirollRouter.provider.getCode(weirollRouter.address)).length - 2) / 2).to.matchSnapshot()
   })
 
   describe('Trade on UniswapV2', () => {

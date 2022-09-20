@@ -66,3 +66,17 @@ export const executeSwap = async (
 
   return receipt
 }
+
+export const resetFork = async () => {
+  await hre.network.provider.request({
+    method: 'hardhat_reset',
+    params: [
+      {
+        forking: {
+          jsonRpcUrl: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+          blockNumber: 15360000,
+        },
+      },
+    ],
+  })
+}
