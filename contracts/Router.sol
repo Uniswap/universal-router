@@ -13,6 +13,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     error NotEqual(uint256 equal1, uint256 equal2);
     error ExecutionFailed(uint256 commandIndex, bytes message);
     error ETHNotAccepted();
+    error TransactionDeadlinePassed();
 
     // Command Types
     uint256 constant FLAG_CT_PERMIT = 0x00;
@@ -35,13 +36,18 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
 
     address immutable permitPost;
 
+    modifier checkDeadline(uint256 deadline) {
+      if (block.timestamp > deadline) revert TransactionDeadlinePassed();
+      _;
+    }
+
     constructor(address _permitPost) {
         permitPost = _permitPost;
     }
 
     /// @param commands A set of concatenated commands, each 8 bytes in length
     /// @param state The state elements that should be used for the input and output of commands
-    function execute(bytes memory commands, bytes[] memory state) external payable returns (bytes[] memory) {
+    function execute(uint256 deadline, bytes memory commands, bytes[] memory state) public checkDeadline(deadline) payable returns (bytes[] memory) {
         bytes8 command;
         uint256 commandType;
         uint256 flags;
