@@ -137,7 +137,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         await resetFork()
       })
 
-      it('gas: one trade, one hop, exactIn', async () => {
+      it('gas: exactIn, one trade, one hop', async () => {
         v2TradeExactIn = await Trade.fromRoute(
           new V2RouteSDK([pair_DAI_WETH], DAI, WETH),
           amountInDAI,
@@ -153,7 +153,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, two hops, exactIn', async () => {
+      it('gas: exactIn, one trade, two hops', async () => {
         v2TradeExactIn = await Trade.fromRoute(
           new V2RouteSDK([pair_DAI_USDC, pair_USDC_WETH], DAI, WETH),
           amountInDAI,
@@ -169,7 +169,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, one hop, exactIn ETH', async () => {
+      it('gas: exactIn ETH, one trade, one hop', async () => {
         const trade = await Trade.fromRoute(
           new V2RouteSDK([pair_DAI_WETH], Ether.onChain(1), DAI),
           amountInETH,
@@ -185,7 +185,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, one hop, exactOut', async () => {
+      it('gas: exactOut, one trade, one hop', async () => {
         v2TradeExactOut = await Trade.fromRoute(
           new V2RouteSDK([pair_DAI_WETH], WETH, DAI),
           amountOut,
@@ -201,7 +201,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, one hop, exactOut ETH', async () => {
+      it('gas: exactOut ETH, one trade, one hop', async () => {
         const amountOutETH = CurrencyAmount.fromRawAmount(Ether.onChain(1), expandTo18Decimals(5))
         const trade = await Trade.fromRoute(
           new V2RouteSDK([pair_DAI_WETH], DAI, Ether.onChain(1)),
@@ -340,7 +340,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(balanceAfter.sub(balanceBefore)).to.equal(amountOut)
       })
 
-      it('gas: one trade, one hop, exactIn', async () => {
+      it('gas: exactIn, one trade, one hop', async () => {
         planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
@@ -349,7 +349,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, two hops, exactIn', async () => {
+      it('gas: exactIn, one trade, two hops', async () => {
         planner.add(TransferCommand(DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, USDC.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
@@ -358,7 +358,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, three hops, exactIn', async () => {
+      it('gas: exactIn, one trade, three hops', async () => {
         planner.add(TransferCommand(DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, USDC.address, USDT.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
@@ -367,7 +367,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, one hop, exactIn ETH', async () => {
+      it('gas: exactIn ETH, one trade, one hop', async () => {
         const pairAddress = Pair.getAddress(DAI, WETH)
         planner.add(WrapETHCommand(pairAddress, amountIn))
         planner.add(V2ExactInputCommand(amountIn, [WETH.address, DAI.address], alice.address))
@@ -377,7 +377,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, one hop, exactOut', async () => {
+      it('gas: exactOut, one trade, one hop', async () => {
         await wethContract.connect(alice).transfer(weirollRouter.address, expandTo18DecimalsBN(100))
         planner.add(
           V2ExactOutputCommand(
@@ -393,7 +393,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, two hops, exactOut', async () => {
+      it('gas: exactOut, one trade, two hops', async () => {
         await wethContract.connect(alice).transfer(weirollRouter.address, expandTo18DecimalsBN(100))
         planner.add(
           V2ExactOutputCommand(
@@ -409,7 +409,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, three hops, exactOut', async () => {
+      it('gas: exactOut, one trade, three hops', async () => {
         await wethContract.connect(alice).transfer(weirollRouter.address, expandTo18DecimalsBN(100))
         planner.add(
           V2ExactOutputCommand(
@@ -425,7 +425,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, one hop, exactOut ETH', async () => {
+      it('gas: exactOut ETH, one trade, one hop', async () => {
         planner.add(
           V2ExactOutputCommand(
             expandTo18DecimalsBN(1),
@@ -465,7 +465,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         )
       })
 
-      it('gas: one trade, one hop, exactIn', async () => {
+      it('gas: exactIn, one trade, one hop', async () => {
         const { calldata } = SwapRouter.swapCallParameters(v3ExactIn, {
           slippageTolerance,
           recipient: alice.address,
@@ -476,7 +476,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, two hops, exactIn', async () => {
+      it('gas: exactIn, one trade, two hops', async () => {
         v3ExactInMultihop = await Trade.fromRoute(
           new V3RouteSDK([pool_DAI_USDC, pool_USDC_WETH], DAI, WETH),
           amountIn,
@@ -492,7 +492,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, three hops, exactIn', async () => {
+      it('gas: exactIn, one trade, three hops', async () => {
         v3ExactInMultihop = await Trade.fromRoute(
           new V3RouteSDK([pool_DAI_USDC, pool_USDC_USDT, pool_WETH_USDT], DAI, WETH),
           amountIn,
@@ -508,7 +508,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, one hop, exactOut', async () => {
+      it('gas: exactOut, one trade, one hop', async () => {
         const { calldata } = SwapRouter.swapCallParameters(v3ExactOut, {
           slippageTolerance,
           recipient: alice.address,
@@ -519,7 +519,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, two hops, exactOut', async () => {
+      it('gas: exactOut, one trade, two hops', async () => {
         v3ExactOutMultihop = await Trade.fromRoute(
           new V3RouteSDK([pool_DAI_USDC, pool_USDC_WETH], DAI, WETH),
           amountOut,
@@ -535,7 +535,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, three hops, exactOut', async () => {
+      it('gas: exactOut, one trade, three hops', async () => {
         v3ExactOutMultihop = await Trade.fromRoute(
           new V3RouteSDK([pool_DAI_USDC, pool_USDC_USDT, pool_WETH_USDT], DAI, WETH),
           amountOut,
@@ -630,7 +630,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(balanceWethAfter.sub(balanceWethBefore)).to.eq(amountOut)
       })
 
-      it('gas: one trade, one hop, exactIn', async () => {
+      it('gas: exactIn, one trade, one hop', async () => {
         const amountOutMin: number = 0.0005 * 10 ** 18
         addV3ExactInTrades(planner, 1, amountOutMin)
         const { commands, state } = planner.plan()
@@ -639,7 +639,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, two hops, exactIn', async () => {
+      it('gas: exactIn, one trade, two hops', async () => {
         const amountOutMin: number = 3 * 10 ** 6
         addV3ExactInTrades(planner, 1, amountOutMin, [DAI.address, WETH.address, USDC.address])
         const { commands, state } = planner.plan()
@@ -648,7 +648,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, three hops, exactIn', async () => {
+      it('gas: exactIn, one trade, three hops', async () => {
         const amountOutMin: number = 3 * 10 ** 6
         addV3ExactInTrades(planner, 1, amountOutMin, [DAI.address, WETH.address, USDT.address, USDC.address])
         const { commands, state } = planner.plan()
@@ -657,7 +657,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, one hop, exactOut', async () => {
+      it('gas: exactOut, one trade, one hop', async () => {
         const tokens = [DAI.address, WETH.address]
         const path = encodePathExactOutput(tokens)
         planner.add(V3ExactOutputCommand(alice.address, amountOut, amountInMax, path))
@@ -667,7 +667,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, two hops, exactOut', async () => {
+      it('gas: exactOut, one trade, two hops', async () => {
         // trade DAI in for WETH out
         const tokens = [DAI.address, USDC.address, WETH.address]
         const path = encodePathExactOutput(tokens)
@@ -679,7 +679,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
-      it('gas: one trade, three hops, exactOut', async () => {
+      it('gas: exactOut, one trade, three hops', async () => {
         // trade DAI in for WETH out
         const tokens = [DAI.address, USDC.address, USDT.address, WETH.address]
         const path = encodePathExactOutput(tokens)
