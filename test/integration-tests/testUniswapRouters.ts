@@ -117,7 +117,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
   describe('Trade on UniswapV2', () => {
     describe('with Router02.', () => {
-      let slippageTolerance = new Percent(50, 100)
+      const slippageTolerance = new Percent(10, 100)
       const recipient = '0x0000000000000000000000000000000000000003'
       const deadline = 2000000000
 
@@ -446,9 +446,10 @@ describe('Uniswap V2 and V3 Tests:', () => {
   })
 
   describe('Trade on UniswapV3', () => {
-    describe('with Router02.', async () => {
+    describe('with Router02.', () => {
       const amountIn = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
       const amountOut = CurrencyAmount.fromRawAmount(WETH, expandTo18Decimals(1))
+      const slippageTolerance = new Percent(10, 100)
 
       let v3ExactIn: Trade<Token, Token, TradeType.EXACT_INPUT>
       let v3ExactInMultihop: Trade<Token, Token, TradeType.EXACT_INPUT>
@@ -463,8 +464,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
           TradeType.EXACT_OUTPUT
         )
       })
-
-      const slippageTolerance = new Percent(50, 100)
 
       it('gas: one trade, one hop, exactIn', async () => {
         const { calldata } = SwapRouter.swapCallParameters(v3ExactIn, {
@@ -700,7 +699,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       let mixedRoute: MixedRouteSDK<Token, Token>
       let mixedTradeExactIn: Trade<Token, Token, TradeType.EXACT_INPUT>
 
-      const slippageTolerance = new Percent(50, 100)
+      const slippageTolerance = new Percent(10, 100)
       const recipient = '0x0000000000000000000000000000000000000003'
       const deadline = 2000000000
 
