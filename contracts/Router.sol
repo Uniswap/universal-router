@@ -37,8 +37,8 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     address immutable permitPost;
 
     modifier checkDeadline(uint256 deadline) {
-      if (block.timestamp > deadline) revert TransactionDeadlinePassed();
-      _;
+        if (block.timestamp > deadline) revert TransactionDeadlinePassed();
+        _;
     }
 
     constructor(address _permitPost) {
@@ -47,7 +47,12 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
 
     /// @param commands A set of concatenated commands, each 8 bytes in length
     /// @param state The state elements that should be used for the input and output of commands
-    function execute(uint256 deadline, bytes memory commands, bytes[] memory state) public checkDeadline(deadline) payable returns (bytes[] memory) {
+    function execute(uint256 deadline, bytes memory commands, bytes[] memory state)
+        public
+        payable
+        checkDeadline(deadline)
+        returns (bytes[] memory)
+    {
         bytes8 command;
         uint256 commandType;
         uint256 flags;

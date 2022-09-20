@@ -5,11 +5,7 @@ import { expect } from './shared/expect'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
 import { WETH, DAI } from './shared/mainnetForkHelpers'
-import {
-  RouterPlanner,
-  TransferCommand,
-  V2ExactInputCommand,
-} from '@uniswap/narwhal-sdk'
+import { RouterPlanner, TransferCommand, V2ExactInputCommand } from '@uniswap/narwhal-sdk'
 import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
@@ -51,7 +47,7 @@ describe('Router', () => {
       planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
 
       const { commands, state } = planner.plan()
-      const returnVal =  await weirollRouter.callStatic.execute(DEADLINE, commands, state)
+      const returnVal = await weirollRouter.callStatic.execute(DEADLINE, commands, state)
       expect(returnVal).to.eql(state)
     })
 
@@ -61,7 +57,9 @@ describe('Router', () => {
       const invalidDeadline = 10
 
       const { commands, state } = planner.plan()
-      await expect(weirollRouter.execute(invalidDeadline, commands, state)).to.be.revertedWith('TransactionDeadlinePassed()')
+      await expect(weirollRouter.execute(invalidDeadline, commands, state)).to.be.revertedWith(
+        'TransactionDeadlinePassed()'
+      )
     })
   })
 })
