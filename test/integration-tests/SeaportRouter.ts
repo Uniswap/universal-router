@@ -8,7 +8,7 @@ import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 
 import SEAPORT_ABI from './shared/abis/Seaport.json'
 import { resetFork } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, OPENSEA_CONDUIT_KEY, COVEN_ADDRESS } from './shared/constants'
+import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import hre from 'hardhat'
@@ -119,7 +119,7 @@ describe('Seaport', () => {
 
     const ownerBefore = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await weirollRouter.execute(commands, state, { value })).wait()
+    const receipt = await (await weirollRouter.execute(DEADLINE, commands, state, { value })).wait()
     const ownerAfter = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
@@ -145,7 +145,7 @@ describe('Seaport', () => {
 
     const ownerBefore = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await weirollRouter.execute(commands, state, { value })).wait()
+    const receipt = await (await weirollRouter.execute(DEADLINE, commands, state, { value })).wait()
     const ownerAfter = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
@@ -162,7 +162,7 @@ describe('Seaport', () => {
 
     planner.add(SeaportCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-    await snapshotGasCost(weirollRouter.execute(commands, state, { value }))
+    await snapshotGasCost(weirollRouter.execute(DEADLINE, commands, state, { value }))
   })
 
   it('gas fulfillAdvancedOrder', async () => {
@@ -176,7 +176,7 @@ describe('Seaport', () => {
 
     planner.add(SeaportCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-    await snapshotGasCost(weirollRouter.execute(commands, state, { value }))
+    await snapshotGasCost(weirollRouter.execute(DEADLINE, commands, state, { value }))
   })
 
   it('reverts if order does not go through', async () => {
@@ -191,7 +191,7 @@ describe('Seaport', () => {
 
     planner.add(SeaportCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-    await expect(weirollRouter.execute(commands, state, { value })).to.be.revertedWith(
+    await expect(weirollRouter.execute(DEADLINE, commands, state, { value })).to.be.revertedWith(
       'ExecutionFailed(0, "0x815e1d64")'
     )
   })
