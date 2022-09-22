@@ -103,8 +103,7 @@ abstract contract V3SwapRouter {
             _swap(-amountOut.toInt256(), recipient, path, false);
 
         uint256 amountOutReceived;
-        (amountIn, amountOutReceived) =
-            zeroForOne
+        (amountIn, amountOutReceived) = zeroForOne
             ? (uint256(amount0Delta), uint256(-amount1Delta))
             : (uint256(amount1Delta), uint256(-amount0Delta));
 
