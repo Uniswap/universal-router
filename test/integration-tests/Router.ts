@@ -42,7 +42,7 @@ describe('Router', () => {
       await daiContract.transfer(weirollRouter.address, expandTo18DecimalsBN(5000))
     })
 
-    it.only('returns state', async () => {
+    it('returns state', async () => {
       planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, expandTo18DecimalsBN(1)))
       planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
 
