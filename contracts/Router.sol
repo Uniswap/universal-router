@@ -108,7 +108,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                     abi.decode(inputs, (address, uint256, uint256, bytes));
                 outdata = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
             } else if (commandType == FLAG_CT_NFT_MARKETPLACE) {
-                (uint256 value, NFTMarketPlaces marketPlace, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, NFTMarketPlaces, bytes));
+                (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
                 (success, outdata) = Constants.SEAPORT.call{value: value}(data);
             } else if (commandType == FLAG_CT_SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
