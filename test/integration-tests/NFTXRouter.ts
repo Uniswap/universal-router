@@ -92,7 +92,7 @@ describe('NFTX', () => {
   it('returns all extra ETH when sending too much', async () => {
     const value = expandTo18DecimalsBN(10)
     const numCovens = 2
-    const saleCost = '491004376066835296'
+    const saleCost = '476686977628668346'
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
       COVEN_VAULT_ID,
       numCovens,
@@ -107,9 +107,9 @@ describe('NFTX', () => {
     const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
     const receipt = await (await weirollRouter.execute(DEADLINE, commands, state, { value })).wait()
     const ethDelta = ethBalanceBefore.sub(await ethers.provider.getBalance(alice.address))
-    const gasUsed = receipt.gasUsed
+    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
-    expect(ethDelta.add(gasUsed)).to.eq(saleCost)
+    expect(ethDelta.sub(gasSpent)).to.eq(saleCost)
   })
 
   it('gas: buyAndRedeem w/ random selection', async () => {
@@ -141,7 +141,6 @@ describe('NFTX', () => {
 
     planner.add(NFTXCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-
     await snapshotGasCost(weirollRouter.execute(DEADLINE, commands, state, { value }))
   })
 })
