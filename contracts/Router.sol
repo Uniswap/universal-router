@@ -16,8 +16,6 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     error ETHNotAccepted();
     error TransactionDeadlinePassed();
 
-    address[2] internal MARKETPLACES = [Constants.SEAPORT, Constants.NFTX_ZAP];
-
     enum MarketPlaces {
         SEAPORT,
         NFTX_ZAP
@@ -110,8 +108,8 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                     abi.decode(inputs, (address, uint256, uint256, bytes));
                 outdata = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
             } else if (commandType == FLAG_CT_SEAPORT) {
-                (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
-                (success, outdata) = MARKETPLACES[uint256(MarketPlaces.SEAPORT)].call{value: value}(data);
+                (uint256 value, MarketPlaces marketPlace, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, MarketPlaces, bytes));
+                (success, outdata) = destination(marketPlace).call{value: value}(data);
             } else if (commandType == FLAG_CT_SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
                 Payments.sweepToken(token, recipient, minValue);
@@ -137,6 +135,16 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
         }
 
         return state;
+    }
+
+    function destination(MarketPlaces marketPlace) internal pure returns (address) {
+      if (marketPlace == MarketPlaces.SEAPORT) {
+        return Constants.SEAPORT;
+      } else if (marketPlace == MarketPlaces.NFTX_ZAP) {
+        return Constants.NFTX_ZAP;
+      } else {
+        revert('bad marketplace');
+      }
     }
 
     receive() external payable {
