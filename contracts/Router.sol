@@ -5,6 +5,7 @@ import './modules/V2SwapRouter.sol';
 import './modules/V3SwapRouter.sol';
 import './base/Payments.sol';
 import './libraries/CommandBuilder.sol';
+import './libraries/Constants.sol';
 
 contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     using CommandBuilder for bytes[];
@@ -14,6 +15,13 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     error ExecutionFailed(uint256 commandIndex, bytes message);
     error ETHNotAccepted();
     error TransactionDeadlinePassed();
+
+    address[2] internal MARKETPLACES = [Constants.SEAPORT, Constants.NFTX_ZAP];
+
+    enum MarketPlaces {
+        SEAPORT,
+        NFTX_ZAP
+    }
 
     // Command Types
     uint256 constant FLAG_CT_PERMIT = 0x00;
@@ -103,7 +111,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 outdata = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
             } else if (commandType == FLAG_CT_SEAPORT) {
                 (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
-                (success, outdata) = Constants.SEAPORT.call{value: value}(data);
+                (success, outdata) = MARKETPLACES[uint256(MarketPlaces.SEAPORT)].call{value: value}(data);
             } else if (commandType == FLAG_CT_SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
                 Payments.sweepToken(token, recipient, minValue);
