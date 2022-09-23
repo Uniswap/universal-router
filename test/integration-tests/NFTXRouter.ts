@@ -21,7 +21,7 @@ const COVEN_VAULT = '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'
 const COVEN_VAULT_ID = '333'
 
 
-describe.only('NFTX', () => {
+describe('NFTX', () => {
   let alice: SignerWithAddress
   let weirollRouter: WeirollRouter
   let covenContract: Contract
@@ -84,6 +84,8 @@ describe.only('NFTX', () => {
     planner.add(NFTXCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
 
+    const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
+
     const covenBalanceBefore = await covenContract.balanceOf(alice.address)
     const covenOwner584Before = await covenContract.ownerOf(584)
     const covenOwner3033Before = await covenContract.ownerOf(3033)
@@ -92,11 +94,37 @@ describe.only('NFTX', () => {
     const covenOwner584After = await covenContract.ownerOf(584)
     const covenOwner3033After = await covenContract.ownerOf(3033)
 
+    const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
+    const gasUsed = receipt.gasUsed
+
     expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
     expect(covenOwner584Before).to.not.eq(alice.address)
     expect(covenOwner3033Before).to.not.eq(alice.address)
     expect(covenOwner584After).to.eq(alice.address)
     expect(covenOwner3033After).to.eq(alice.address)
+  })
+
+  it('returns all extra ETH when sending too much', async () => {
+    const value = expandTo18DecimalsBN(10)
+    const numCovens = 2
+    const saleCost = '491004376066835296'
+    const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
+      COVEN_VAULT_ID,
+      numCovens,
+      [584, 3033],
+      [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
+      alice.address
+    ])
+
+    planner.add(NFTXCommand(value.toString(), calldata))
+    const { commands, state } = planner.plan()
+
+    const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
+    const receipt = await (await weirollRouter.execute(DEADLINE, commands, state, { value })).wait()
+    const ethDelta = ethBalanceBefore.sub(await ethers.provider.getBalance(alice.address))
+    const gasUsed = receipt.gasUsed
+
+    expect(ethDelta.add(gasUsed)).to.eq(saleCost)
   })
 
   it('gas: buyAndRedeem w/ random selection', async () => {
