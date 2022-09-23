@@ -3,13 +3,13 @@
 exports[`Seaport gas fulfillAdvancedOrder 1`] = `
 Object {
   "calldataByteLength": 2084,
-  "gasUsed": 212062,
+  "gasUsed": 212066,
 }
 `;
 
 exports[`Seaport gas fulfillOrder 1`] = `
 Object {
   "calldataByteLength": 1828,
-  "gasUsed": 205201,
+  "gasUsed": 205205,
 }
 `;

@@ -16,11 +16,6 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     error ETHNotAccepted();
     error TransactionDeadlinePassed();
 
-    enum NFTMarketPlaces {
-        SEAPORT,
-        NFTX
-    }
-
     // Command Types
     uint256 constant FLAG_CT_PERMIT = 0x00;
     uint256 constant FLAG_CT_TRANSFER = 0x01;
@@ -28,7 +23,8 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     uint256 constant FLAG_CT_V3_SWAP_EXACT_OUT = 0x03;
     uint256 constant FLAG_CT_V2_SWAP_EXACT_IN = 0x04;
     uint256 constant FLAG_CT_V2_SWAP_EXACT_OUT = 0x05;
-    uint256 constant FLAG_CT_NFT_MARKETPLACE = 0x06;
+    uint256 constant FLAG_CT_SEAPORT = 0x06;
+    uint256 constant FLAG_CT_NFTX = 0x0a;
     uint256 constant FLAG_CT_WRAP_ETH = 0x07;
     uint256 constant FLAG_CT_UNWRAP_WETH = 0x08;
     uint256 constant FLAG_CT_SWEEP = 0x09;
@@ -107,7 +103,10 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                     abi.decode(inputs, (address, uint256, uint256, bytes));
                 outdata = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
-            } else if (commandType == FLAG_CT_NFT_MARKETPLACE) {
+            } else if (commandType == FLAG_CT_NFTX) {
+                (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
+                (success, outdata) = Constants.NFTX_ZAP.call{value: value}(data);
+            } else if (commandType == FLAG_CT_SEAPORT) {
                 (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
                 (success, outdata) = Constants.SEAPORT.call{value: value}(data);
             } else if (commandType == FLAG_CT_SWEEP) {
@@ -135,16 +134,6 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
         }
 
         return state;
-    }
-
-    function destination(NFTMarketPlaces marketPlace) internal pure returns (address) {
-      if (marketPlace == NFTMarketPlaces.SEAPORT) {
-        return Constants.SEAPORT;
-      } else if (marketPlace == NFTMarketPlaces.NFTX) {
-        return Constants.NFTX_ZAP;
-      } else {
-        revert('bad marketplace');
-      }
     }
 
     receive() external payable {

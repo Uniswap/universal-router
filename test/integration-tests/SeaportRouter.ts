@@ -86,7 +86,7 @@ function calculateValue(considerations: ConsiderationItem[]): BigNumber {
   )
 }
 
-describe.only('Seaport', () => {
+describe('Seaport', () => {
   let alice: SignerWithAddress
   let weirollRouter: WeirollRouter
   let covenContract: Contract
