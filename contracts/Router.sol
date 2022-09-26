@@ -112,11 +112,11 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
             } else {
-                revert InvalidCommandType((i - 32)/8);
+                revert InvalidCommandType((i - 32) / 8);
             }
 
             if (!success) {
-                revert ExecutionFailed({commandIndex: (i - 32)/8, message: output});
+                revert ExecutionFailed({commandIndex: (i - 32) / 8, message: output});
             }
 
             unchecked {

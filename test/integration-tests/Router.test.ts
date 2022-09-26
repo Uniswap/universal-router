@@ -66,9 +66,7 @@ describe('Router', () => {
       const commands = '0xffffffffffffffffffffffffffffffff'
       const state: string[] = []
 
-      await expect(weirollRouter.execute(DEADLINE, commands, state)).to.be.revertedWith(
-        'InvalidCommandType(0)'
-      )
+      await expect(weirollRouter.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(0)')
     })
 
     it('reverts for an invalid command at index 1', async () => {
@@ -76,9 +74,7 @@ describe('Router', () => {
       planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, expandTo18DecimalsBN(1)))
       let { commands, state } = planner.plan()
       commands = commands.concat(invalidCommand)
-      await expect(weirollRouter.execute(DEADLINE, commands, state)).to.be.revertedWith(
-        'InvalidCommandType(1)'
-      )
+      await expect(weirollRouter.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(1)')
     })
   })
 })
