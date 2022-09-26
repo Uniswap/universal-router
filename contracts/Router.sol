@@ -27,11 +27,11 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     uint256 constant FLAG_CT_UNWRAP_WETH = 0x08;
     uint256 constant FLAG_CT_SWEEP = 0x09;
 
-    uint256 constant FLAG_CT_MASK = 0x0f;
-    uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
-    uint256 constant FLAG_TUPLE_RETURN = 0x40;
-    uint256 constant COMMAND_INDICES_OFFSET = 200;
-    uint256 constant PARAMS_LENGTH_OFFSET = 32;
+    uint8 constant FLAG_CT_MASK = 0x0f;
+    uint8 constant FLAG_EXTENDED_COMMAND = 0x80;
+    uint8 constant FLAG_TUPLE_RETURN = 0x40;
+    uint8 constant COMMAND_INDICES_OFFSET = 8;
+    uint8 constant PARAMS_LENGTH_OFFSET = 32;
 
     address immutable permitPost;
 
@@ -53,9 +53,9 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
         returns (bytes[] memory)
     {
         bytes8 command;
-        uint256 commandType;
-        uint256 flags;
-        bytes32 indices;
+        uint8 commandType;
+        uint8 flags;
+        bytes8 indices;
         bool success = true;
 
         bytes memory outdata;
@@ -64,18 +64,18 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
           maxIteration = commands.length + PARAMS_LENGTH_OFFSET;
         }
 
-        for (uint256 i = PARAMS_LENGTH_OFFSET; i < maxIteration; i += 8) {
+        for (uint8 i = PARAMS_LENGTH_OFFSET; i < maxIteration; i += 8) {
             assembly {
                 command := mload(add(commands, i))
             }
 
-            flags = uint256(uint8(bytes1(command)));
+            flags = uint8(bytes1(command));
             commandType = flags & FLAG_CT_MASK;
 
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
                 indices = commands[i++];
             } else {
-                indices = bytes32(uint256(uint64(command)) << COMMAND_INDICES_OFFSET);
+                indices = bytes8(uint64(command) << COMMAND_INDICES_OFFSET);
             }
 
             bytes memory inputs = state.buildInputs(indices);
