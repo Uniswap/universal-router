@@ -9,8 +9,6 @@ import './libraries/CommandBuilder.sol';
 contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     using CommandBuilder for bytes[];
 
-    error NotGreaterOrEqual(uint256 big, uint256 smol);
-    error NotEqual(uint256 equal1, uint256 equal2);
     error ExecutionFailed(uint256 commandIndex, bytes message);
     error ETHNotAccepted();
     error TransactionDeadlinePassed();
@@ -106,7 +104,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                     abi.decode(inputs, (address, uint256, uint256, bytes));
                 outdata = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
             } else if (commandType == FLAG_CT_SEAPORT) {
-                (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
+                (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
                 (success, outdata) = Constants.SEAPORT.call{value: value}(data);
             } else if (commandType == FLAG_CT_SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
