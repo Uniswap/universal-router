@@ -131,8 +131,9 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 state = state.writeOutputs(bytes1(command << 56), outdata);
             }
 
-            unchecked { i += 8; }
-
+            unchecked {
+                i += 8;
+            }
         }
 
         return state;
