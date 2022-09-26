@@ -4,7 +4,7 @@ import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
-import { WETH, DAI } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI } from './shared/mainnetForkHelpers'
 import { RouterPlanner, TransferCommand, V2ExactInputCommand } from '@uniswap/narwhal-sdk'
 import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -19,6 +19,7 @@ describe('Router', () => {
   let pair_DAI_WETH: Pair
 
   beforeEach(async () => {
+    await resetFork()
     alice = await ethers.getSigner(ALICE_ADDRESS)
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',

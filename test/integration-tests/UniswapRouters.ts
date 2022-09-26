@@ -75,6 +75,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
   let pair_USDC_WETH: Pair
 
   beforeEach(async () => {
+    await resetFork()
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
@@ -88,10 +89,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
     pair_DAI_USDC = await makePair(alice, DAI, USDC)
     pair_USDC_WETH = await makePair(alice, USDC, WETH)
-  })
-
-  afterEach(async () => {
-    await resetFork()
   })
 
   describe('Trade on UniswapV2', () => {
@@ -110,10 +107,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
         amountInDAI = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
         amountInETH = CurrencyAmount.fromRawAmount(Ether.onChain(1), expandTo18Decimals(5))
         amountOut = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
-      })
-
-      afterEach(async () => {
-        await resetFork()
       })
 
       it('gas: exactIn, one trade, one hop', async () => {
@@ -206,10 +199,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner = new RouterPlanner()
         await daiContract.transfer(weirollRouter.address, expandTo18DecimalsBN(5000))
         await wethContract.connect(alice).approve(weirollRouter.address, expandTo18DecimalsBN(5000))
-      })
-
-      afterEach(async () => {
-        await resetFork()
       })
 
       it('completes a V2 exactIn swap', async () => {

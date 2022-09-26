@@ -6,8 +6,6 @@ import '../interfaces/external/IWETH9.sol';
 import '../libraries/Constants.sol';
 import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
-import {ERC721} from 'solmate/src/tokens/ERC721.sol';
-import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
 library Payments {
     error InsufficientToken(address token);
@@ -22,14 +20,6 @@ library Payments {
         } else {
             // pay with tokens already in the contract (for the exact input multihop case)
             SafeTransferLib.safeTransfer(ERC20(token), recipient, value);
-        }
-    }
-
-    function payNFT(address token, address recipient, uint256 id, uint256 amount) internal {
-        if (amount == 0) {
-            ERC721(token).safeTransferFrom(address(this), recipient, id);
-        } else {
-            ERC1155(token).safeTransferFrom(address(this), recipient, id, amount, '0x');
         }
     }
 

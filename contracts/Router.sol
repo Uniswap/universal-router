@@ -9,6 +9,8 @@ import './base/RouterCallbacks.sol';
 // Helper Libraries
 import './libraries/CommandBuilder.sol';
 import './base/Payments.sol';
+import {ERC721} from 'solmate/src/tokens/ERC721.sol';
+import {console} from 'hardhat/console.sol';
 
 contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     using CommandBuilder for bytes[];
@@ -30,8 +32,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant FLAG_CT_WRAP_ETH = 0x07;
     uint256 constant FLAG_CT_UNWRAP_WETH = 0x08;
     uint256 constant FLAG_CT_SWEEP = 0x09;
-    uint256 constant FLAG_CT_LOOKSRARE = 0x0a;
-    uint256 constant FLAG_CT_NFT_TRANSFER = 0x0b;
+    uint256 constant FLAG_CT_LOOKSRARE = 0x0b;
 
     uint256 constant FLAG_CT_MASK = 0x0f;
     uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
@@ -115,10 +116,6 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             } else if (commandType == FLAG_CT_SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
                 Payments.sweepToken(token, recipient, minValue);
-            } else if (commandType == FLAG_CT_NFT_TRANSFER) {
-                (address token, address recipient, uint256 id, uint256 amount) =
-                    abi.decode(inputs, (address, address, uint256, uint256));
-                Payments.payNFT(token, recipient, id, amount);
             } else if (commandType == FLAG_CT_WRAP_ETH) {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.wrapETH(recipient, amountMin);
@@ -126,18 +123,16 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
             } else if (commandType == FLAG_CT_LOOKSRARE) {
-                /// @dev LooksRare will send any tokens purchased to this contract. These then must
-                /// be traded onwards, or sent to a user using a further command. Any tokens left
-                /// in this contract can be stolen.
-                (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
+                (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
+                    abi.decode(inputs, (uint256, bytes, address, address, uint256));
                 (success, outdata) = Constants.LOOKSRARE_EXCHANGE.call{value: value}(data);
+                if (!success) revert ExecutionFailed({commandIndex: FLAG_CT_LOOKSRARE, message: outdata});
+                ERC721(token).safeTransferFrom(address(this), recipient, id);
             } else {
                 revert('Invalid calltype');
             }
 
-            if (!success) {
-                revert ExecutionFailed({commandIndex: 0, message: outdata});
-            }
+            if (!success) revert ExecutionFailed({commandIndex: commandType, message: outdata});
 
             if (flags & FLAG_TUPLE_RETURN != 0) {
                 state.writeTuple(bytes1(command << 56), outdata);
