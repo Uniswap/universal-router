@@ -30,9 +30,8 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     uint256 constant FLAG_CT_MASK = 0x0f;
     uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
     uint256 constant FLAG_TUPLE_RETURN = 0x40;
-    uint256 constant SHORT_COMMAND_FILL = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
-
     uint256 constant COMMAND_INDICES_OFFSET = 200;
+    uint256 constant PARAMS_LENGTH_OFFSET = 32;
 
     address immutable permitPost;
 
@@ -60,10 +59,14 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
         bool success = true;
 
         bytes memory outdata;
+        uint256 maxIteration;
+        unchecked {
+          maxIteration = commands.length + PARAMS_LENGTH_OFFSET;
+        }
 
-        for (uint256 i; i < commands.length; i += 8) {
+        for (uint256 i = PARAMS_LENGTH_OFFSET; i < maxIteration; i += 8) {
             assembly {
-                command := mload(add(add(commands, 32), i))
+                command := mload(add(commands, i))
             }
 
             flags = uint256(uint8(bytes1(command)));
@@ -72,8 +75,9 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
             if (flags & FLAG_EXTENDED_COMMAND != 0) {
                 indices = commands[i++];
             } else {
-                indices = bytes32((uint256(uint64(command)) << COMMAND_INDICES_OFFSET) | SHORT_COMMAND_FILL);
+                indices = bytes32(uint256(uint64(command)) << COMMAND_INDICES_OFFSET);
             }
+
             bytes memory inputs = state.buildInputs(indices);
             if (commandType == FLAG_CT_PERMIT) {
                 // state[state.length] = abi.encode(msg.sender);
