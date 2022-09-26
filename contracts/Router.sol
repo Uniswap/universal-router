@@ -12,6 +12,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     error ExecutionFailed(uint256 commandIndex, bytes message);
     error ETHNotAccepted();
     error TransactionDeadlinePassed();
+    error InvalidCommandType(uint256 commandIndex);
 
     // Command Types
     uint256 constant FLAG_CT_PERMIT = 0x00;
@@ -26,9 +27,9 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
     uint256 constant FLAG_CT_SWEEP = 0x09;
 
     uint8 constant FLAG_CT_MASK = 0x0f;
-    uint8 constant FLAG_EXTENDED_COMMAND = 0x80;
     uint8 constant FLAG_TUPLE_RETURN = 0x40;
     uint8 constant COMMAND_INDICES_OFFSET = 8;
+    // the first 32 bytes of a dynamic parameters specify the param length
     uint8 constant PARAMS_LENGTH_OFFSET = 32;
 
     address immutable permitPost;
@@ -69,12 +70,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
 
             flags = uint8(bytes1(command));
             commandType = flags & FLAG_CT_MASK;
-
-            if (flags & FLAG_EXTENDED_COMMAND != 0) {
-                indices = commands[i++];
-            } else {
-                indices = bytes8(uint64(command) << COMMAND_INDICES_OFFSET);
-            }
+            indices = bytes8(uint64(command) << COMMAND_INDICES_OFFSET);
 
             bytes memory inputs = state.buildInputs(indices);
             if (commandType == FLAG_CT_PERMIT) {
@@ -116,11 +112,11 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
             } else {
-                revert('Invalid calltype');
+                revert InvalidCommandType((i - 32)/8);
             }
 
             if (!success) {
-                revert ExecutionFailed({commandIndex: 0, message: outdata});
+                revert ExecutionFailed({commandIndex: (i - 32)/8, message: outdata});
             }
 
             if (flags & FLAG_TUPLE_RETURN != 0) {

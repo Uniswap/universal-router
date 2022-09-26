@@ -53,7 +53,7 @@ This simple architecture makes it possible for the output of one operation to be
 Each command is a `bytes8` containing the following fields (MSB first):
 
 ```         
- 0 1 2 3 4 5 6 7 
+ 0 1 2 3 4 5 6 7
 ┌─┬───────────┬─┐
 │f│    in     │o│
 └─┴───────────┴─┘
@@ -68,14 +68,12 @@ The 1-byte flags argument `f` has the following field structure:
 
 ```
   0   1    2   3   4   5   6   7
-┌───┬───┬────────┬──────────────┐
-│tup│ext│reserved│  calltype    │
-└───┴───┴────────┴──────────────┘
+┌───┬────────────┬──────────────┐
+│tup│  reserved  │  calltype    │
+└───┴────────────┴──────────────┘
 ```
 
 If `tup` is set, the return for this command will be assigned to the state slot directly, without any attempt at processing or decoding.
-
-The `ext` bit signifies that this is an extended command, and as such the next command should be treated as 32-byte `in` list of indices, rather than the 6-byte list in the packed command struct.
 
 Bits 2-5 are reserved for future use.
 
@@ -125,4 +123,3 @@ There are two special values `idx` can equal to which modify the encoder behavio
 If `idx` equals `USE_STATE` inside of an `in` list byte, then the parameter at that position is constructed by feeding the entire state array into `abi.encode` and passing it to the function as a single argument. If it's specified as part of the `o` output target, then the output of that command is written directly to the state instead via `abi.decode`.
 
 The special `idx` value `END_OF_ARGS` indicates the end of the parameter list, no encoding action will be taken, and all further bytes in the list will be ignored. If the first byte in the input list is `END_OF_ARGS`, then the function will be called with no parameters. If `o` equals `END_OF_ARGS`, then it specifies that the command's return should be ignored.
-
