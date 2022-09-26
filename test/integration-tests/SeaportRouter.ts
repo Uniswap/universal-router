@@ -188,7 +188,7 @@ describe('Seaport', () => {
     planner.add(SeaportCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
     await expect(weirollRouter.execute(DEADLINE, commands, state, { value })).to.be.revertedWith(
-      'ExecutionFailed(0, "0x815e1d64")'
+      'ExecutionFailed(6, "0x815e1d64")'
     )
   })
 })
