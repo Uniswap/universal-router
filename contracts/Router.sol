@@ -61,7 +61,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
         bytes memory outdata;
         uint256 maxIteration;
         unchecked {
-          maxIteration = commands.length + PARAMS_LENGTH_OFFSET;
+            maxIteration = commands.length + PARAMS_LENGTH_OFFSET;
         }
 
         for (uint256 i = PARAMS_LENGTH_OFFSET; i < maxIteration; i += 8) {

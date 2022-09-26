@@ -18,7 +18,7 @@ contract V2SwapRouter {
         address nextPair = UniswapV2Library.pairFor(V2_FACTORY, path[0], path[1]);
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            (address token0, ) = UniswapPoolHelper.sortTokens(input, output);
+            (address token0,) = UniswapPoolHelper.sortTokens(input, output);
             address pair = nextPair;
             uint256 amountInput;
             uint256 amountOutput;
