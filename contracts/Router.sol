@@ -57,7 +57,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
         bytes8 indices;
         bool success = true;
 
-        bytes memory outdata;
+        bytes memory output;
         uint256 maxIteration;
         unchecked {
             maxIteration = commands.length + PARAMS_LENGTH_OFFSET;
@@ -75,7 +75,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
             bytes memory inputs = state.buildInputs(indices);
             if (commandType == FLAG_CT_PERMIT) {
                 // state[state.length] = abi.encode(msg.sender);
-                // (success, outdata) = permitPost.call(state[0]);
+                // (success, output) = permitPost.call(state[0]);
                 // bytes memory inputs = state.build(bytes4(0), indices);
                 // (address some, address parameters, uint256 forPermit) = abi.decode(inputs, (address, address, uint));
                 //
@@ -86,22 +86,22 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
             } else if (commandType == FLAG_CT_V2_SWAP_EXACT_IN) {
                 (uint256 amountOutMin, address[] memory path, address recipient) =
                     abi.decode(inputs, (uint256, address[], address));
-                outdata = abi.encode(v2SwapExactInput(amountOutMin, path, recipient));
+                output = abi.encode(v2SwapExactInput(amountOutMin, path, recipient));
             } else if (commandType == FLAG_CT_V2_SWAP_EXACT_OUT) {
                 (uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient) =
                     abi.decode(inputs, (uint256, uint256, address[], address));
-                outdata = abi.encode(v2SwapExactOutput(amountOut, amountInMax, path, recipient));
+                output = abi.encode(v2SwapExactOutput(amountOut, amountInMax, path, recipient));
             } else if (commandType == FLAG_CT_V3_SWAP_EXACT_IN) {
                 (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                     abi.decode(inputs, (address, uint256, uint256, bytes));
-                outdata = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, path));
+                output = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, path));
             } else if (commandType == FLAG_CT_V3_SWAP_EXACT_OUT) {
                 (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                     abi.decode(inputs, (address, uint256, uint256, bytes));
-                outdata = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
+                output = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
             } else if (commandType == FLAG_CT_SEAPORT) {
                 (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
-                (success, outdata) = Constants.SEAPORT.call{value: value}(data);
+                (success, output) = Constants.SEAPORT.call{value: value}(data);
             } else if (commandType == FLAG_CT_SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
                 Payments.sweepToken(token, recipient, minValue);
@@ -116,13 +116,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
             }
 
             if (!success) {
-                revert ExecutionFailed({commandIndex: (i - 32)/8, message: outdata});
-            }
-
-            if (flags & FLAG_TUPLE_RETURN != 0) {
-                state.writeTuple(bytes1(command << 56), outdata);
-            } else {
-                state = state.writeOutputs(bytes1(command << 56), outdata);
+                revert ExecutionFailed({commandIndex: (i - 32)/8, message: output});
             }
 
             unchecked {
