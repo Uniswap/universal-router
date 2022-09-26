@@ -64,7 +64,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
             maxIteration = commands.length + PARAMS_LENGTH_OFFSET;
         }
 
-        for (uint8 i = PARAMS_LENGTH_OFFSET; i < maxIteration; i += 8) {
+        for (uint256 i = PARAMS_LENGTH_OFFSET; i < maxIteration; i += 8) {
             assembly {
                 command := mload(add(commands, i))
             }
