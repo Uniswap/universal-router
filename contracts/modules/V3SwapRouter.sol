@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
-import '../base/Payments.sol';
+import './Payments.sol';
 import '../libraries/Path.sol';
 import '../libraries/UniswapPoolHelper.sol';
 import '../libraries/Constants.sol';

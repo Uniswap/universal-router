@@ -3,7 +3,7 @@ pragma solidity ^0.8.15;
 
 import './modules/V2SwapRouter.sol';
 import './modules/V3SwapRouter.sol';
-import './base/Payments.sol';
+import './modules/Payments.sol';
 import './libraries/CommandBuilder.sol';
 
 contract WeirollRouter is V2SwapRouter, V3SwapRouter {

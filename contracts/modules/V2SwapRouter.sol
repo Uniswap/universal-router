@@ -6,7 +6,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '../libraries/UniswapPoolHelper.sol';
 import '../libraries/UniswapV2Library.sol';
 import '../libraries/Constants.sol';
-import '../base/Payments.sol';
+import './Payments.sol';
 
 contract V2SwapRouter {
     address internal constant V2_FACTORY = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
