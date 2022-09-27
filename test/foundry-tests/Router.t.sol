@@ -10,7 +10,7 @@ contract RouterTest is Test {
     ExampleModule testModule;
 
     function setUp() public {
-        router = new Router(address(0), address(0), address(0), bytes32(0));
+        router = new Router(address(0), address(0), address(0), bytes32(0), bytes32(0));
         testModule = new ExampleModule();
     }
 
