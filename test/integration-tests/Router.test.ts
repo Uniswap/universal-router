@@ -20,7 +20,7 @@ const { ethers } = hre
 
 describe('Router', () => {
   let alice: SignerWithAddress
-  let Router: Router
+  let router: Router
   let daiContract: Contract
   let pair_DAI_WETH: Pair
 
@@ -33,7 +33,7 @@ describe('Router', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
     const RouterFactory = await ethers.getContractFactory('Router')
-    Router = (
+    router = (
       await RouterFactory.deploy(
         ethers.constants.AddressZero,
         V2_FACTORY_MAINNET,
@@ -44,7 +44,7 @@ describe('Router', () => {
   })
 
   it('bytecode size', async () => {
-    expect(((await Router.provider.getCode(Router.address)).length - 2) / 2).to.matchSnapshot()
+    expect(((await router.provider.getCode(router.address)).length - 2) / 2).to.matchSnapshot()
   })
 
   describe('#execute', async () => {
@@ -52,7 +52,7 @@ describe('Router', () => {
 
     beforeEach(async () => {
       planner = new RouterPlanner()
-      await daiContract.transfer(Router.address, expandTo18DecimalsBN(5000))
+      await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
     })
 
     it('returns state', async () => {
@@ -60,7 +60,7 @@ describe('Router', () => {
       planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
 
       const { commands, state } = planner.plan()
-      const returnVal = await Router.callStatic.execute(DEADLINE, commands, state)
+      const returnVal = await router.callStatic.execute(DEADLINE, commands, state)
       expect(returnVal).to.eql(state)
     })
 
@@ -70,14 +70,14 @@ describe('Router', () => {
       const invalidDeadline = 10
 
       const { commands, state } = planner.plan()
-      await expect(Router.execute(invalidDeadline, commands, state)).to.be.revertedWith('TransactionDeadlinePassed()')
+      await expect(router.execute(invalidDeadline, commands, state)).to.be.revertedWith('TransactionDeadlinePassed()')
     })
 
     it('reverts for an invalid command at index 0', async () => {
       const commands = '0xffffffffffffffffffffffffffffffff'
       const state: string[] = []
 
-      await expect(Router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(0)')
+      await expect(router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(0)')
     })
 
     it('reverts for an invalid command at index 1', async () => {
@@ -85,7 +85,7 @@ describe('Router', () => {
       planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, expandTo18DecimalsBN(1)))
       let { commands, state } = planner.plan()
       commands = commands.concat(invalidCommand)
-      await expect(Router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(1)')
+      await expect(router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(1)')
     })
   })
 })

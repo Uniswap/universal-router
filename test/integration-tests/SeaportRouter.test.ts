@@ -96,7 +96,7 @@ function calculateValue(considerations: ConsiderationItem[]): BigNumber {
 
 describe('Seaport', () => {
   let alice: SignerWithAddress
-  let Router: Router
+  let router: Router
   let covenContract: Contract
   let planner: RouterPlanner
 
@@ -109,7 +109,7 @@ describe('Seaport', () => {
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
     const RouterFactory = await ethers.getContractFactory('Router')
-    Router = (
+    router = (
       await RouterFactory.deploy(
         ethers.constants.AddressZero,
         V2_FACTORY_MAINNET,
@@ -134,14 +134,14 @@ describe('Seaport', () => {
 
     const ownerBefore = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await Router.execute(DEADLINE, commands, state, { value })).wait()
+    const receipt = await (await router.execute(DEADLINE, commands, state, { value })).wait()
     const ownerAfter = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
     const ethDelta = ethBefore.sub(ethAfter)
 
     expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
-    expect(ownerAfter).to.eq(Router.address)
+    expect(ownerAfter).to.eq(router.address)
     expect(ethDelta.sub(gasSpent)).to.eq(value)
   })
 
@@ -160,7 +160,7 @@ describe('Seaport', () => {
 
     const ownerBefore = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await Router.execute(DEADLINE, commands, state, { value })).wait()
+    const receipt = await (await router.execute(DEADLINE, commands, state, { value })).wait()
     const ownerAfter = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
@@ -177,7 +177,7 @@ describe('Seaport', () => {
 
     planner.add(SeaportCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-    await snapshotGasCost(Router.execute(DEADLINE, commands, state, { value }))
+    await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
   })
 
   it('gas fulfillAdvancedOrder', async () => {
@@ -191,7 +191,7 @@ describe('Seaport', () => {
 
     planner.add(SeaportCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-    await snapshotGasCost(Router.execute(DEADLINE, commands, state, { value }))
+    await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
   })
 
   it('reverts if order does not go through', async () => {
@@ -206,7 +206,7 @@ describe('Seaport', () => {
 
     planner.add(SeaportCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-    await expect(Router.execute(DEADLINE, commands, state, { value })).to.be.revertedWith(
+    await expect(router.execute(DEADLINE, commands, state, { value })).to.be.revertedWith(
       'ExecutionFailed(0, "0x815e1d64")'
     )
   })

@@ -70,7 +70,7 @@ const V2_EVENTS = new Interface([
 
 describe('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
-  let Router: Router
+  let router: Router
   let daiContract: Contract
   let wethContract: Contract
   let usdcContract: Contract
@@ -91,7 +91,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
     const RouterFactory = await ethers.getContractFactory('Router')
-    Router = (
+    router = (
       await RouterFactory.deploy(
         ethers.constants.AddressZero,
         V2_FACTORY_MAINNET,
@@ -218,8 +218,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       beforeEach(async () => {
         planner = new RouterPlanner()
-        await daiContract.transfer(Router.address, expandTo18DecimalsBN(5000))
-        await wethContract.connect(alice).approve(Router.address, expandTo18DecimalsBN(5000))
+        await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
+        await wethContract.connect(alice).approve(router.address, expandTo18DecimalsBN(5000))
       })
 
       afterEach(async () => {
@@ -233,7 +233,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, state } = planner.plan()
 
         const balanceBefore = await wethContract.balanceOf(alice.address)
-        const tx = await Router.execute(DEADLINE, commands, state)
+        const tx = await router.execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         const balanceAfter = await wethContract.balanceOf(alice.address)
         const amountOut = parseEvents(V2_EVENTS, receipt).reduce(
@@ -253,7 +253,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const daiBalanceBefore = await daiContract.balanceOf(alice.address)
         const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
 
-        const receipt = await (await Router.execute(DEADLINE, commands, state, { value: amountIn.toString() })).wait()
+        const receipt = await (await router.execute(DEADLINE, commands, state, { value: amountIn.toString() })).wait()
 
         const daiBalanceAfter = await daiContract.balanceOf(alice.address)
         const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
@@ -282,8 +282,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         const balanceWethBefore = await wethContract.balanceOf(alice.address)
         const balanceDaiBefore = await daiContract.balanceOf(alice.address)
-        await wethContract.connect(alice).transfer(Router.address, expandTo18DecimalsBN(100)) // TODO: permitPost
-        const receipt = await (await Router.execute(DEADLINE, commands, state)).wait()
+        await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100)) // TODO: permitPost
+        const receipt = await (await router.execute(DEADLINE, commands, state)).wait()
         const balanceWethAfter = await wethContract.balanceOf(alice.address)
         const balanceDaiAfter = await daiContract.balanceOf(alice.address)
 
@@ -299,13 +299,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
       it('completes a V2 exactOut swap ETH', async () => {
         const amountOut = expandTo18DecimalsBN(1)
         planner.add(
-          V2ExactOutputCommand(amountOut, expandTo18DecimalsBN(10000), [DAI.address, WETH.address], Router.address)
+          V2ExactOutputCommand(amountOut, expandTo18DecimalsBN(10000), [DAI.address, WETH.address], router.address)
         )
         planner.add(UnwrapWETHCommand(alice.address, CONTRACT_BALANCE))
 
         const { commands, state } = planner.plan()
         const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
-        const receipt = await (await Router.execute(DEADLINE, commands, state)).wait()
+        const receipt = await (await router.execute(DEADLINE, commands, state)).wait()
 
         const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
         const ethDelta = ethBalanceAfter.sub(ethBalanceBefore)
@@ -320,7 +320,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, state } = planner.plan()
 
         const balanceBefore = await usdcContract.balanceOf(alice.address)
-        const tx = await Router.execute(DEADLINE, commands, state)
+        const tx = await router.execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         const balanceAfter = await usdcContract.balanceOf(alice.address)
         const events = parseEvents(V2_EVENTS, receipt)
@@ -332,7 +332,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
-        const tx = await Router.execute(DEADLINE, commands, state)
+        const tx = await router.execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -341,7 +341,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(TransferCommand(DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, USDC.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
-        const tx = await Router.execute(DEADLINE, commands, state)
+        const tx = await router.execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -350,7 +350,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(TransferCommand(DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, USDC.address, USDT.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
-        const tx = await Router.execute(DEADLINE, commands, state)
+        const tx = await router.execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -360,13 +360,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(WrapETHCommand(pairAddress, amountIn))
         planner.add(V2ExactInputCommand(amountIn, [WETH.address, DAI.address], alice.address))
         const { commands, state } = planner.plan()
-        const tx = await Router.execute(DEADLINE, commands, state, { value: amountIn })
+        const tx = await router.execute(DEADLINE, commands, state, { value: amountIn })
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
       it('gas: exactOut, one trade, one hop', async () => {
-        await wethContract.connect(alice).transfer(Router.address, expandTo18DecimalsBN(100))
+        await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100))
         planner.add(
           V2ExactOutputCommand(
             expandTo18DecimalsBN(5),
@@ -376,13 +376,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
           )
         )
         const { commands, state } = planner.plan()
-        const tx = await Router.execute(DEADLINE, commands, state)
+        const tx = await router.execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
       it('gas: exactOut, one trade, two hops', async () => {
-        await wethContract.connect(alice).transfer(Router.address, expandTo18DecimalsBN(100))
+        await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100))
         planner.add(
           V2ExactOutputCommand(
             expandTo18DecimalsBN(5),
@@ -392,13 +392,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
           )
         )
         const { commands, state } = planner.plan()
-        const tx = await Router.execute(DEADLINE, commands, state)
+        const tx = await router.execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
 
       it('gas: exactOut, one trade, three hops', async () => {
-        await wethContract.connect(alice).transfer(Router.address, expandTo18DecimalsBN(100))
+        await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100))
         planner.add(
           V2ExactOutputCommand(
             expandTo18DecimalsBN(5),
@@ -408,7 +408,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           )
         )
         const { commands, state } = planner.plan()
-        const tx = await Router.execute(DEADLINE, commands, state)
+        const tx = await router.execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -419,14 +419,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
             expandTo18DecimalsBN(1),
             expandTo18DecimalsBN(10000),
             [DAI.address, WETH.address],
-            Router.address
+            router.address
           )
         )
         planner.add(UnwrapWETHCommand(alice.address, CONTRACT_BALANCE))
         planner.add(SweepCommand(DAI.address, alice.address, 0)) //exactOut will have to sweep tokens w/ PermitPost
 
         const { commands, state } = planner.plan()
-        const tx = await Router.execute(DEADLINE, commands, state)
+        const tx = await router.execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -559,7 +559,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       beforeEach(async () => {
         planner = new RouterPlanner()
-        await daiContract.transfer(Router.address, expandTo18DecimalsBN(1000000))
+        await daiContract.transfer(router.address, expandTo18DecimalsBN(1000000))
       })
 
       it('completes a V3 exactIn swap', async () => {
@@ -568,7 +568,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, state } = planner.plan()
 
         const balanceWethBefore = await wethContract.balanceOf(alice.address)
-        await Router.execute(DEADLINE, commands, state)
+        await router.execute(DEADLINE, commands, state)
         const balanceWethAfter = await wethContract.balanceOf(alice.address)
         expect(balanceWethAfter.sub(balanceWethBefore)).to.be.gte(amountOutMin)
       })
@@ -581,7 +581,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const balanceWethBefore = await wethContract.balanceOf(alice.address)
         const balanceUsdcBefore = await usdcContract.balanceOf(alice.address)
 
-        await Router.execute(DEADLINE, commands, state)
+        await router.execute(DEADLINE, commands, state)
 
         const balanceWethAfter = await wethContract.balanceOf(alice.address)
         const balanceUsdcAfter = await usdcContract.balanceOf(alice.address)
@@ -599,7 +599,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, state } = planner.plan()
 
         const balanceWethBefore = await wethContract.balanceOf(alice.address)
-        await Router.connect(alice).execute(DEADLINE, commands, state)
+        await router.connect(alice).execute(DEADLINE, commands, state)
         const balanceWethAfter = await wethContract.balanceOf(alice.address)
         expect(balanceWethAfter.sub(balanceWethBefore)).to.eq(amountOut)
       })
@@ -613,7 +613,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, state } = planner.plan()
 
         const balanceWethBefore = await wethContract.balanceOf(alice.address)
-        await Router.connect(alice).execute(DEADLINE, commands, state)
+        await router.connect(alice).execute(DEADLINE, commands, state)
         const balanceWethAfter = await wethContract.balanceOf(alice.address)
         expect(balanceWethAfter.sub(balanceWethBefore)).to.eq(amountOut)
       })
@@ -622,7 +622,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const amountOutMin: number = 0.0005 * 10 ** 18
         addV3ExactInTrades(planner, 1, amountOutMin)
         const { commands, state } = planner.plan()
-        const tx = await Router.execute(DEADLINE, commands, state)
+        const tx = await router.execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -631,7 +631,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const amountOutMin: number = 3 * 10 ** 6
         addV3ExactInTrades(planner, 1, amountOutMin, [DAI.address, WETH.address, USDC.address])
         const { commands, state } = planner.plan()
-        const tx = await Router.execute(DEADLINE, commands, state)
+        const tx = await router.execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -640,7 +640,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const amountOutMin: number = 3 * 10 ** 6
         addV3ExactInTrades(planner, 1, amountOutMin, [DAI.address, WETH.address, USDT.address, USDC.address])
         const { commands, state } = planner.plan()
-        const tx = await Router.execute(DEADLINE, commands, state)
+        const tx = await router.execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -650,7 +650,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const path = encodePathExactOutput(tokens)
         planner.add(V3ExactOutputCommand(alice.address, amountOut, amountInMax, path))
         const { commands, state } = planner.plan()
-        const tx = await Router.connect(alice).execute(DEADLINE, commands, state)
+        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -662,7 +662,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         planner.add(V3ExactOutputCommand(alice.address, amountOut, amountInMax, path))
         const { commands, state } = planner.plan()
-        const tx = await Router.connect(alice).execute(DEADLINE, commands, state)
+        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -674,7 +674,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         planner.add(V3ExactOutputCommand(alice.address, amountOut, amountInMax, path))
         const { commands, state } = planner.plan()
-        const tx = await Router.connect(alice).execute(DEADLINE, commands, state)
+        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -729,7 +729,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     describe('with Narwhal Router.', () => {
       beforeEach(async () => {
         planner = new RouterPlanner()
-        await daiContract.transfer(Router.address, expandTo18DecimalsBN(1000000))
+        await daiContract.transfer(router.address, expandTo18DecimalsBN(1000000))
       })
 
       it('gas: V3, then V2', async () => {
@@ -746,7 +746,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(V2ExactInputCommand(v2AmountOutMin, v2Tokens, alice.address))
 
         const { commands, state } = planner.plan()
-        const tx = await Router.connect(alice).execute(DEADLINE, commands, state)
+        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -759,14 +759,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const v3AmountOutMin = 0.0005 * 10 ** 18
         planner.add(TransferCommand(DAI.address, Pair.getAddress(DAI, USDC), v2AmountIn))
         // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
-        planner.add(V2ExactInputCommand(v2AmountOutMin, v2Tokens, Router.address))
+        planner.add(V2ExactInputCommand(v2AmountOutMin, v2Tokens, router.address))
         // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
         planner.add(
           V3ExactInputCommand(alice.address, CONTRACT_BALANCE, v3AmountOutMin, encodePathExactInput(v3Tokens))
         )
 
         const { commands, state } = planner.plan()
-        const tx = await Router.connect(alice).execute(DEADLINE, commands, state)
+        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
@@ -783,7 +783,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(V3ExactInputCommand(alice.address, CONTRACT_BALANCE, v3AmountOutMin, encodePathExactInput(tokens)))
 
         const { commands, state } = planner.plan()
-        const tx = await Router.connect(alice).execute(DEADLINE, commands, state)
+        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
