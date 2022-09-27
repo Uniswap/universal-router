@@ -5,7 +5,8 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import './UniswapPoolHelper.sol';
 
 library UniswapV2Library {
-    bytes32 internal constant POOL_INIT_CODE_HASH_V2 =
+    // This might change across chains but we cannot add a constructor as this is a library!
+    bytes32 internal constant PAIR_INIT_CODE_HASH_V2 =
         0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
     // calculates the CREATE2 address for a pair without making any external calls
@@ -25,7 +26,7 @@ library UniswapV2Library {
     }
 
     function pairForPreSorted(address factory, address token0, address token1) internal pure returns (address pair) {
-        return UniswapPoolHelper.computePoolAddress(factory, abi.encodePacked(token0, token1), POOL_INIT_CODE_HASH_V2);
+        return UniswapPoolHelper.computePoolAddress(factory, abi.encodePacked(token0, token1), PAIR_INIT_CODE_HASH_V2);
     }
 
     // fetches and sorts the reserves for a pair

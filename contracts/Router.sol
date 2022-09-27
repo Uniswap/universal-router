@@ -6,7 +6,7 @@ import './modules/V3SwapRouter.sol';
 import './modules/Payments.sol';
 import './libraries/CommandBuilder.sol';
 
-contract WeirollRouter is V2SwapRouter, V3SwapRouter {
+contract Router is V2SwapRouter, V3SwapRouter {
     using CommandBuilder for bytes[];
 
     error ExecutionFailed(uint256 commandIndex, bytes message);
@@ -38,7 +38,10 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
         _;
     }
 
-    constructor(address _permitPost) {
+    constructor(address _permitPost, address _v2Factory, address _v3Factory, bytes32 _poolInitCodeHash)
+        V2SwapRouter(_v2Factory)
+        V3SwapRouter(_v3Factory, _poolInitCodeHash)
+    {
         permitPost = _permitPost;
     }
 

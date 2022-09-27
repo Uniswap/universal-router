@@ -19,9 +19,8 @@ abstract contract V3SwapRouter {
         uint24 fee;
     }
 
-    address internal constant V3_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-    bytes32 internal constant POOL_INIT_CODE_HASH_V3 =
-        0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+    address internal immutable V3_FACTORY;
+    bytes32 internal immutable POOL_INIT_CODE_HASH_V3;
 
     /// @dev Used as the placeholder value for amountInCached, because the computed amount in for an exact output swap
     /// can never actually be this value
@@ -35,6 +34,11 @@ abstract contract V3SwapRouter {
 
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
+
+    constructor(address v3Factory, bytes32 poolInitCodeHash) {
+        V3_FACTORY = v3Factory;
+        POOL_INIT_CODE_HASH_V3 = poolInitCodeHash;
+    }
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external {
         require(amount0Delta > 0 || amount1Delta > 0); // swaps entirely within 0-liquidity regions are not supported

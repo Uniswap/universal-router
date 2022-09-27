@@ -9,9 +9,11 @@ import '../libraries/Constants.sol';
 import './Payments.sol';
 
 contract V2SwapRouter {
-    address internal constant V2_FACTORY = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
-    bytes32 internal constant POOL_INIT_CODE_HASH_V2 =
-        0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+    address internal immutable V2_FACTORY;
+
+    constructor(address v2Factory) {
+        V2_FACTORY = v2Factory;
+    }
 
     function _v2Swap(address[] memory path, address recipient) private {
         // cached to save on duplicate operations

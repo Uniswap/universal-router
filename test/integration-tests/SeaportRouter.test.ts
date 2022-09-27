@@ -2,13 +2,21 @@ import type { Contract } from '@ethersproject/contracts'
 import { RouterPlanner, SeaportCommand } from '@uniswap/narwhal-sdk'
 import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
-import { WeirollRouter } from '../../typechain'
+import { Router } from '../../typechain'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 
 import SEAPORT_ABI from './shared/abis/Seaport.json'
 import { resetFork } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
+import {
+  ALICE_ADDRESS,
+  COVEN_ADDRESS,
+  DEADLINE,
+  OPENSEA_CONDUIT_KEY,
+  V2_FACTORY_MAINNET,
+  V3_FACTORY_MAINNET,
+  V3_INIT_CODE_HASH_MAINNET,
+} from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import hre from 'hardhat'
@@ -88,7 +96,7 @@ function calculateValue(considerations: ConsiderationItem[]): BigNumber {
 
 describe('Seaport', () => {
   let alice: SignerWithAddress
-  let weirollRouter: WeirollRouter
+  let Router: Router
   let covenContract: Contract
   let planner: RouterPlanner
 
@@ -100,8 +108,15 @@ describe('Seaport', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
-    const weirollRouterFactory = await ethers.getContractFactory('WeirollRouter')
-    weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)).connect(alice) as WeirollRouter
+    const RouterFactory = await ethers.getContractFactory('Router')
+    Router = (
+      await RouterFactory.deploy(
+        ethers.constants.AddressZero,
+        V2_FACTORY_MAINNET,
+        V3_FACTORY_MAINNET,
+        V3_INIT_CODE_HASH_MAINNET
+      )
+    ).connect(alice) as Router
     planner = new RouterPlanner()
   })
 
@@ -119,14 +134,14 @@ describe('Seaport', () => {
 
     const ownerBefore = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await weirollRouter.execute(DEADLINE, commands, state, { value })).wait()
+    const receipt = await (await Router.execute(DEADLINE, commands, state, { value })).wait()
     const ownerAfter = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
     const ethDelta = ethBefore.sub(ethAfter)
 
     expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
-    expect(ownerAfter).to.eq(weirollRouter.address)
+    expect(ownerAfter).to.eq(Router.address)
     expect(ethDelta.sub(gasSpent)).to.eq(value)
   })
 
@@ -145,7 +160,7 @@ describe('Seaport', () => {
 
     const ownerBefore = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await weirollRouter.execute(DEADLINE, commands, state, { value })).wait()
+    const receipt = await (await Router.execute(DEADLINE, commands, state, { value })).wait()
     const ownerAfter = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
@@ -162,7 +177,7 @@ describe('Seaport', () => {
 
     planner.add(SeaportCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-    await snapshotGasCost(weirollRouter.execute(DEADLINE, commands, state, { value }))
+    await snapshotGasCost(Router.execute(DEADLINE, commands, state, { value }))
   })
 
   it('gas fulfillAdvancedOrder', async () => {
@@ -176,7 +191,7 @@ describe('Seaport', () => {
 
     planner.add(SeaportCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-    await snapshotGasCost(weirollRouter.execute(DEADLINE, commands, state, { value }))
+    await snapshotGasCost(Router.execute(DEADLINE, commands, state, { value }))
   })
 
   it('reverts if order does not go through', async () => {
@@ -191,7 +206,7 @@ describe('Seaport', () => {
 
     planner.add(SeaportCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-    await expect(weirollRouter.execute(DEADLINE, commands, state, { value })).to.be.revertedWith(
+    await expect(Router.execute(DEADLINE, commands, state, { value })).to.be.revertedWith(
       'ExecutionFailed(0, "0x815e1d64")'
     )
   })
