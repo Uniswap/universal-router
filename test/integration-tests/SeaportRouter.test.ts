@@ -108,9 +108,9 @@ describe('Seaport', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
-    const RouterFactory = await ethers.getContractFactory('Router')
+    const routerFactory = await ethers.getContractFactory('Router')
     router = (
-      await RouterFactory.deploy(
+      await routerFactory.deploy(
         ethers.constants.AddressZero,
         V2_FACTORY_MAINNET,
         V3_FACTORY_MAINNET,

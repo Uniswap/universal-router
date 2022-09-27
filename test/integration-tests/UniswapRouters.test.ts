@@ -90,9 +90,9 @@ describe('Uniswap V2 and V3 Tests:', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
-    const RouterFactory = await ethers.getContractFactory('Router')
+    const routerFactory = await ethers.getContractFactory('Router')
     router = (
-      await RouterFactory.deploy(
+      await routerFactory.deploy(
         ethers.constants.AddressZero,
         V2_FACTORY_MAINNET,
         V3_FACTORY_MAINNET,

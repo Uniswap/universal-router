@@ -32,9 +32,9 @@ describe('Router', () => {
     })
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
-    const RouterFactory = await ethers.getContractFactory('Router')
+    const routerFactory = await ethers.getContractFactory('Router')
     router = (
-      await RouterFactory.deploy(
+      await routerFactory.deploy(
         ethers.constants.AddressZero,
         V2_FACTORY_MAINNET,
         V3_FACTORY_MAINNET,
