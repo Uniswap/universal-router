@@ -28,7 +28,7 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
 
     uint8 constant FLAG_COMMAND_TYPE_MASK = 0x0f;
     uint8 constant COMMAND_INDICES_OFFSET = 8;
-    // the first 32 bytes of a dynamic parameter specify the param length
+    // the first 32 bytes of a dynamic parameter specify the parameter length
     uint8 constant PARAMS_LENGTH_OFFSET = 32;
 
     address immutable permitPost;
@@ -57,14 +57,19 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
         bool success = true;
 
         bytes memory output;
-        uint256 maxIteration;
+        uint256 totalBytes;
         unchecked {
-            maxIteration = commands.length + PARAMS_LENGTH_OFFSET;
+            // Calculates the full length of the `commands` parameter
+            totalBytes = commands.length + PARAMS_LENGTH_OFFSET;
         }
 
-        for (uint256 i = PARAMS_LENGTH_OFFSET; i < maxIteration;) {
+        // starts from the 32nd byte, as the first 32 hold the length of `bytes commands`
+        // terminates when it has passed the final byte of `commands`
+        // each command is 8 bytes, so the end of the loop increments by 8
+        for (uint256 byteIndex = PARAMS_LENGTH_OFFSET; byteIndex < totalBytes;) {
             assembly {
-                command := mload(add(commands, i))
+                // loads the command at byte number `byteIndex` to process
+                command := mload(add(commands, byteIndex))
             }
 
             flags = uint8(bytes1(command));
@@ -111,15 +116,15 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
             } else {
-                revert InvalidCommandType((i - 32) / 8);
+                revert InvalidCommandType({commandIndex: (byteIndex - 32) / 8});
             }
 
             if (!success) {
-                revert ExecutionFailed({commandIndex: (i - 32) / 8, message: output});
+                revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
             }
 
             unchecked {
-                i += 8;
+                byteIndex += 8;
             }
         }
 
