@@ -1,0 +1,3 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LooksRare gas: buy 1 NFT on looks rare 1`] = `"243396"`;

@@ -75,4 +75,19 @@ describe('LooksRare', () => {
 
     await expect((await DYSTOMICE_NFT.ownerOf(TOKEN_ID)).toLowerCase()).to.eq(ALICE_ADDRESS)
   })
+
+  it('gas: buy 1 NFT on looks rare', async () => {
+    const calldata = looksRareInterface.encodeFunctionData('matchAskWithTakerBidUsingETHAndWETH', [
+      takerOrder1016,
+      makerOrder1016,
+    ])
+    const value = ethers.utils.parseEther('0.05')
+
+    planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, DYSTOMICE_NFT.address, TOKEN_ID))
+    const { commands, state } = planner.plan()
+
+    const tx = await weirollRouter.execute(DEADLINE, commands, state, { value: value })
+    const receipt = await tx.wait()
+    expect(receipt.gasUsed.toString()).to.matchSnapshot()
+  })
 })
