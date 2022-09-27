@@ -59,10 +59,6 @@ describe('NFTX', () => {
     planner = new RouterPlanner()
   })
 
-  afterEach(async () => {
-    await resetFork()
-  })
-
   it('completes an ERC-721 buyAndRedeem order with random selection', async () => {
     const value = expandTo18DecimalsBN(4)
     const numCovens = 2
