@@ -1,8 +1,15 @@
 import { RouterPlanner, LooksRareCommand } from '@uniswap/narwhal-sdk'
-import { WeirollRouter } from '../../typechain'
+import { Router } from '../../typechain'
 import LOOKS_RARE_ABI from './shared/abis/LooksRare.json'
 import { resetFork, DYSTOMICE_NFT, WETH } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
+import {
+  ALICE_ADDRESS,
+  DEADLINE,
+  V2_FACTORY_MAINNET,
+  V3_FACTORY_MAINNET,
+  V2_INIT_CODE_HASH_MAINNET,
+  V3_INIT_CODE_HASH_MAINNET,
+} from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { expect } from 'chai'
@@ -10,7 +17,7 @@ const { ethers } = hre
 
 describe('LooksRare', () => {
   let alice: SignerWithAddress
-  let weirollRouter: WeirollRouter
+  let router: Router
   let planner: RouterPlanner
   let takerOrder1016: any
   let makerOrder1016: any
@@ -29,14 +36,21 @@ describe('LooksRare', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
 
-    const weirollRouterFactory = await ethers.getContractFactory('WeirollRouter')
-    weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)).connect(alice) as WeirollRouter
+    const routerFactory = await ethers.getContractFactory('Router')
+    router = (await routerFactory.deploy(
+      ethers.constants.AddressZero,
+      V2_FACTORY_MAINNET,
+      V3_FACTORY_MAINNET,
+      V2_INIT_CODE_HASH_MAINNET,
+      V3_INIT_CODE_HASH_MAINNET
+    )
+  ).connect(alice) as Router
     planner = new RouterPlanner()
 
     takerOrder1016 = {
       minPercentageToAsk: ethers.BigNumber.from(8500),
       price: ethers.BigNumber.from('50000000000000000'),
-      taker: weirollRouter.address,
+      taker: router.address,
       tokenId: ethers.BigNumber.from(1016),
       isOrderAsk: false,
       params: '0x',
@@ -71,7 +85,7 @@ describe('LooksRare', () => {
 
     planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, DYSTOMICE_NFT.address, TOKEN_ID))
     const { commands, state } = planner.plan()
-    await weirollRouter.execute(DEADLINE, commands, state, { value: value })
+    await router.execute(DEADLINE, commands, state, { value: value })
 
     await expect((await DYSTOMICE_NFT.ownerOf(TOKEN_ID)).toLowerCase()).to.eq(ALICE_ADDRESS)
   })
@@ -86,7 +100,7 @@ describe('LooksRare', () => {
     planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, DYSTOMICE_NFT.address, TOKEN_ID))
     const { commands, state } = planner.plan()
 
-    const tx = await weirollRouter.execute(DEADLINE, commands, state, { value: value })
+    const tx = await router.execute(DEADLINE, commands, state, { value: value })
     const receipt = await tx.wait()
     expect(receipt.gasUsed.toString()).to.matchSnapshot()
   })

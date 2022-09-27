@@ -6,33 +6,36 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '../libraries/UniswapPoolHelper.sol';
 import '../libraries/UniswapV2Library.sol';
 import '../libraries/Constants.sol';
-import '../base/Payments.sol';
+import './Payments.sol';
 
 contract V2SwapRouter {
-    address internal constant V2_FACTORY = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
-    bytes32 internal constant POOL_INIT_CODE_HASH_V2 =
-        0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+    address internal immutable V2_FACTORY;
+    bytes32 internal immutable PAIR_INIT_CODE_HASH;
+
+    constructor(address v2Factory, bytes32 pairInitCodeHash) {
+        V2_FACTORY = v2Factory;
+        PAIR_INIT_CODE_HASH = pairInitCodeHash;
+    }
 
     function _v2Swap(address[] memory path, address recipient) private {
+        // cached to save on duplicate operations
+        (address pair, address token0) =
+            UniswapV2Library.pairAndToken0For(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]);
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            (address token0, address token1) = UniswapPoolHelper.sortTokens(input, output);
-            IUniswapV2Pair pair = IUniswapV2Pair(
-                UniswapPoolHelper.computePoolAddress(
-                    V2_FACTORY, abi.encodePacked(token0, token1), POOL_INIT_CODE_HASH_V2
-                )
-            );
-            uint256 amountInput;
-            uint256 amountOutput;
-            (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+            (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
             (uint256 reserveInput, uint256 reserveOutput) =
                 input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
-            amountInput = IERC20(input).balanceOf(address(pair)) - reserveInput;
-            amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
+            uint256 amountInput = IERC20(input).balanceOf(pair) - reserveInput;
+            uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
             (uint256 amount0Out, uint256 amount1Out) =
                 input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
-            address to = i < path.length - 2 ? UniswapV2Library.pairFor(V2_FACTORY, output, path[i + 2]) : recipient;
-            pair.swap(amount0Out, amount1Out, to, new bytes(0));
+            address nextPair;
+            (nextPair, token0) = i < path.length - 2
+                ? UniswapV2Library.pairAndToken0For(V2_FACTORY, PAIR_INIT_CODE_HASH, output, path[i + 2])
+                : (recipient, address(0));
+            IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
+            pair = nextPair;
         }
     }
 
@@ -52,10 +55,10 @@ contract V2SwapRouter {
         internal
         returns (uint256 amountIn)
     {
-        amountIn = UniswapV2Library.getAmountsIn(V2_FACTORY, amountOut, path)[0];
+        amountIn = UniswapV2Library.getAmountsIn(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path)[0];
         require(amountIn <= amountInMax, 'Too much requested');
 
-        Payments.payERC20(path[0], UniswapV2Library.pairFor(V2_FACTORY, path[0], path[1]), amountIn);
+        Payments.payERC20(path[0], UniswapV2Library.pairFor(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]), amountIn);
 
         _v2Swap(path, recipient);
     }

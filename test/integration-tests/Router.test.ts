@@ -1,9 +1,16 @@
-import { WeirollRouter } from '../../typechain'
+import { Router } from '../../typechain'
 import type { Contract } from '@ethersproject/contracts'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
+import {
+  ALICE_ADDRESS,
+  DEADLINE,
+  V2_FACTORY_MAINNET,
+  V3_FACTORY_MAINNET,
+  V2_INIT_CODE_HASH_MAINNET,
+  V3_INIT_CODE_HASH_MAINNET,
+} from './shared/constants'
 import { resetFork, WETH, DAI } from './shared/mainnetForkHelpers'
 import { RouterPlanner, TransferCommand, V2ExactInputCommand } from '@uniswap/narwhal-sdk'
 import { makePair } from './shared/swapRouter02Helpers'
@@ -14,7 +21,7 @@ const { ethers } = hre
 
 describe('Router', () => {
   let alice: SignerWithAddress
-  let weirollRouter: WeirollRouter
+  let router: Router
   let daiContract: Contract
   let pair_DAI_WETH: Pair
 
@@ -27,12 +34,20 @@ describe('Router', () => {
     })
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
-    const weirollRouterFactory = await ethers.getContractFactory('WeirollRouter')
-    weirollRouter = (await weirollRouterFactory.deploy(ethers.constants.AddressZero)).connect(alice) as WeirollRouter
+    const routerFactory = await ethers.getContractFactory('Router')
+    router = (
+      await routerFactory.deploy(
+        ethers.constants.AddressZero,
+        V2_FACTORY_MAINNET,
+        V3_FACTORY_MAINNET,
+        V2_INIT_CODE_HASH_MAINNET,
+        V3_INIT_CODE_HASH_MAINNET
+      )
+    ).connect(alice) as Router
   })
 
   it('bytecode size', async () => {
-    expect(((await weirollRouter.provider.getCode(weirollRouter.address)).length - 2) / 2).to.matchSnapshot()
+    expect(((await router.provider.getCode(router.address)).length - 2) / 2).to.matchSnapshot()
   })
 
   describe('#execute', async () => {
@@ -40,7 +55,7 @@ describe('Router', () => {
 
     beforeEach(async () => {
       planner = new RouterPlanner()
-      await daiContract.transfer(weirollRouter.address, expandTo18DecimalsBN(5000))
+      await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
     })
 
     it('returns state', async () => {
@@ -48,7 +63,7 @@ describe('Router', () => {
       planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
 
       const { commands, state } = planner.plan()
-      const returnVal = await weirollRouter.callStatic.execute(DEADLINE, commands, state)
+      const returnVal = await router.callStatic.execute(DEADLINE, commands, state)
       expect(returnVal).to.eql(state)
     })
 
@@ -58,9 +73,22 @@ describe('Router', () => {
       const invalidDeadline = 10
 
       const { commands, state } = planner.plan()
-      await expect(weirollRouter.execute(invalidDeadline, commands, state)).to.be.revertedWith(
-        'TransactionDeadlinePassed()'
-      )
+      await expect(router.execute(invalidDeadline, commands, state)).to.be.revertedWith('TransactionDeadlinePassed()')
+    })
+
+    it('reverts for an invalid command at index 0', async () => {
+      const commands = '0xffffffffffffffffffffffffffffffff'
+      const state: string[] = []
+
+      await expect(router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(0)')
+    })
+
+    it('reverts for an invalid command at index 1', async () => {
+      const invalidCommand = 'ffffffffffffffffffffffffffffffff'
+      planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, expandTo18DecimalsBN(1)))
+      let { commands, state } = planner.plan()
+      commands = commands.concat(invalidCommand)
+      await expect(router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(1)')
     })
   })
 })
