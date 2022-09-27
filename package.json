@@ -1,5 +1,5 @@
 {
-  "name": "@ewilz/narwhal",
+  "name": "@uniswap/narwhal",
   "description": "Smart contracts for Narwhal",
   "license": "GPL-2.0-or-later",
   "publishConfig": {
