@@ -23,10 +23,10 @@ contract Router is V2SwapRouter, V3SwapRouter {
     uint256 constant V2_SWAP_EXACT_IN = 0x04;
     uint256 constant V2_SWAP_EXACT_OUT = 0x05;
     uint256 constant SEAPORT = 0x06;
-    uint256 constant NFTX = 0x0a;
     uint256 constant WRAP_ETH = 0x07;
     uint256 constant UNWRAP_WETH = 0x08;
     uint256 constant SWEEP = 0x09;
+    uint256 constant NFTX = 0x0a;
 
     uint8 constant FLAG_COMMAND_TYPE_MASK = 0x0f;
     uint8 constant COMMAND_INDICES_OFFSET = 8;
