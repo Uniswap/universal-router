@@ -31,18 +31,18 @@ contract Router is V2SwapRouter, V3SwapRouter {
     // the first 32 bytes of a dynamic parameter specify the parameter length
     uint8 constant PARAMS_LENGTH_OFFSET = 32;
 
-    address immutable permitPost;
+    address immutable PERMIT_POST;
 
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
     }
 
-    constructor(address _permitPost, address _v2Factory, address _v3Factory, bytes32 _poolInitCodeHash)
-        V2SwapRouter(_v2Factory)
-        V3SwapRouter(_v3Factory, _poolInitCodeHash)
+    constructor(address permitPost, address v2Factory, address v3Factory, bytes32 pairInitCodeHash, bytes32 poolInitCodeHash)
+        V2SwapRouter(v2Factory, pairInitCodeHash)
+        V3SwapRouter(v3Factory, poolInitCodeHash)
     {
-        permitPost = _permitPost;
+        PERMIT_POST = permitPost;
     }
 
     /// @param commands A set of concatenated commands, each 8 bytes in length

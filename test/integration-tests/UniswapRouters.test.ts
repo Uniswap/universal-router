@@ -37,6 +37,7 @@ import {
   DEADLINE,
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
+  V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
 import { expandTo18DecimalsBN } from './shared/helpers'
@@ -96,6 +97,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         ethers.constants.AddressZero,
         V2_FACTORY_MAINNET,
         V3_FACTORY_MAINNET,
+        V2_INIT_CODE_HASH_MAINNET,
         V3_INIT_CODE_HASH_MAINNET
       )
     ).connect(alice) as Router

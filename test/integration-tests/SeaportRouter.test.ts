@@ -15,6 +15,7 @@ import {
   OPENSEA_CONDUIT_KEY,
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
+  V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -114,6 +115,7 @@ describe('Seaport', () => {
         ethers.constants.AddressZero,
         V2_FACTORY_MAINNET,
         V3_FACTORY_MAINNET,
+        V2_INIT_CODE_HASH_MAINNET,
         V3_INIT_CODE_HASH_MAINNET
       )
     ).connect(alice) as Router

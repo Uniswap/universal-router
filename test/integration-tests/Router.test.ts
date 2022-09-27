@@ -8,6 +8,7 @@ import {
   DEADLINE,
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
+  V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
 import { WETH, DAI } from './shared/mainnetForkHelpers'
@@ -38,6 +39,7 @@ describe('Router', () => {
         ethers.constants.AddressZero,
         V2_FACTORY_MAINNET,
         V3_FACTORY_MAINNET,
+        V2_INIT_CODE_HASH_MAINNET,
         V3_INIT_CODE_HASH_MAINNET
       )
     ).connect(alice) as Router

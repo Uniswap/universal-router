@@ -10,14 +10,16 @@ import './Payments.sol';
 
 contract V2SwapRouter {
     address internal immutable V2_FACTORY;
+    bytes32 internal immutable PAIR_INIT_CODE_HASH;
 
-    constructor(address v2Factory) {
+    constructor(address v2Factory, bytes32 pairInitCodeHash) {
         V2_FACTORY = v2Factory;
+        PAIR_INIT_CODE_HASH = pairInitCodeHash;
     }
 
     function _v2Swap(address[] memory path, address recipient) private {
         // cached to save on duplicate operations
-        (address pair, address token0) = UniswapV2Library.pairAndToken0For(V2_FACTORY, path[0], path[1]);
+        (address pair, address token0) = UniswapV2Library.pairAndToken0For(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]);
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
             (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
@@ -29,7 +31,7 @@ contract V2SwapRouter {
                 input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
             address nextPair;
             (nextPair, token0) = i < path.length - 2
-                ? UniswapV2Library.pairAndToken0For(V2_FACTORY, output, path[i + 2])
+                ? UniswapV2Library.pairAndToken0For(V2_FACTORY, PAIR_INIT_CODE_HASH, output, path[i + 2])
                 : (recipient, address(0));
             IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
             pair = nextPair;
@@ -52,10 +54,10 @@ contract V2SwapRouter {
         internal
         returns (uint256 amountIn)
     {
-        amountIn = UniswapV2Library.getAmountsIn(V2_FACTORY, amountOut, path)[0];
+        amountIn = UniswapV2Library.getAmountsIn(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path)[0];
         require(amountIn <= amountInMax, 'Too much requested');
 
-        Payments.pay(path[0], UniswapV2Library.pairFor(V2_FACTORY, path[0], path[1]), amountIn);
+        Payments.pay(path[0], UniswapV2Library.pairFor(V2_FACTORY, PAIR_INIT_CODE_HASH,  path[0], path[1]), amountIn);
 
         _v2Swap(path, recipient);
     }
