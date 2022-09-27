@@ -37,14 +37,15 @@ describe('LooksRare', () => {
     alice = await ethers.getSigner(ALICE_ADDRESS)
 
     const routerFactory = await ethers.getContractFactory('Router')
-    router = (await routerFactory.deploy(
-      ethers.constants.AddressZero,
-      V2_FACTORY_MAINNET,
-      V3_FACTORY_MAINNET,
-      V2_INIT_CODE_HASH_MAINNET,
-      V3_INIT_CODE_HASH_MAINNET
-    )
-  ).connect(alice) as Router
+    router = (
+      await routerFactory.deploy(
+        ethers.constants.AddressZero,
+        V2_FACTORY_MAINNET,
+        V3_FACTORY_MAINNET,
+        V2_INIT_CODE_HASH_MAINNET,
+        V3_INIT_CODE_HASH_MAINNET
+      )
+    ).connect(alice) as Router
     planner = new RouterPlanner()
 
     takerOrder1016 = {
