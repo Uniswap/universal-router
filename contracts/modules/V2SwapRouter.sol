@@ -19,7 +19,8 @@ contract V2SwapRouter {
 
     function _v2Swap(address[] memory path, address recipient) private {
         // cached to save on duplicate operations
-        (address pair, address token0) = UniswapV2Library.pairAndToken0For(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]);
+        (address pair, address token0) =
+            UniswapV2Library.pairAndToken0For(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]);
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
             (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
@@ -57,7 +58,7 @@ contract V2SwapRouter {
         amountIn = UniswapV2Library.getAmountsIn(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path)[0];
         require(amountIn <= amountInMax, 'Too much requested');
 
-        Payments.pay(path[0], UniswapV2Library.pairFor(V2_FACTORY, PAIR_INIT_CODE_HASH,  path[0], path[1]), amountIn);
+        Payments.pay(path[0], UniswapV2Library.pairFor(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]), amountIn);
 
         _v2Swap(path, recipient);
     }

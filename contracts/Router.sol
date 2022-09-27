@@ -38,10 +38,13 @@ contract Router is V2SwapRouter, V3SwapRouter {
         _;
     }
 
-    constructor(address permitPost, address v2Factory, address v3Factory, bytes32 pairInitCodeHash, bytes32 poolInitCodeHash)
-        V2SwapRouter(v2Factory, pairInitCodeHash)
-        V3SwapRouter(v3Factory, poolInitCodeHash)
-    {
+    constructor(
+        address permitPost,
+        address v2Factory,
+        address v3Factory,
+        bytes32 pairInitCodeHash,
+        bytes32 poolInitCodeHash
+    ) V2SwapRouter(v2Factory, pairInitCodeHash) V3SwapRouter(v3Factory, poolInitCodeHash) {
         PERMIT_POST = permitPost;
     }
 
