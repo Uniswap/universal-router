@@ -3,48 +3,51 @@ pragma solidity ^0.8.15;
 
 import './modules/V2SwapRouter.sol';
 import './modules/V3SwapRouter.sol';
-import './base/Payments.sol';
+import './modules/Payments.sol';
 import './libraries/CommandBuilder.sol';
 import './libraries/Constants.sol';
 
-contract WeirollRouter is V2SwapRouter, V3SwapRouter {
+contract Router is V2SwapRouter, V3SwapRouter {
     using CommandBuilder for bytes[];
 
-    error NotGreaterOrEqual(uint256 big, uint256 smol);
-    error NotEqual(uint256 equal1, uint256 equal2);
     error ExecutionFailed(uint256 commandIndex, bytes message);
     error ETHNotAccepted();
     error TransactionDeadlinePassed();
+    error InvalidCommandType(uint256 commandIndex);
 
     // Command Types
-    uint256 constant FLAG_CT_PERMIT = 0x00;
-    uint256 constant FLAG_CT_TRANSFER = 0x01;
-    uint256 constant FLAG_CT_V3_SWAP_EXACT_IN = 0x02;
-    uint256 constant FLAG_CT_V3_SWAP_EXACT_OUT = 0x03;
-    uint256 constant FLAG_CT_V2_SWAP_EXACT_IN = 0x04;
-    uint256 constant FLAG_CT_V2_SWAP_EXACT_OUT = 0x05;
-    uint256 constant FLAG_CT_SEAPORT = 0x06;
-    uint256 constant FLAG_CT_NFTX = 0x0a;
-    uint256 constant FLAG_CT_WRAP_ETH = 0x07;
-    uint256 constant FLAG_CT_UNWRAP_WETH = 0x08;
-    uint256 constant FLAG_CT_SWEEP = 0x09;
+    uint256 constant PERMIT = 0x00;
+    uint256 constant TRANSFER = 0x01;
+    uint256 constant V3_SWAP_EXACT_IN = 0x02;
+    uint256 constant V3_SWAP_EXACT_OUT = 0x03;
+    uint256 constant V2_SWAP_EXACT_IN = 0x04;
+    uint256 constant V2_SWAP_EXACT_OUT = 0x05;
+    uint256 constant SEAPORT = 0x06;
+    uint256 constant NFTX = 0x0a;
+    uint256 constant WRAP_ETH = 0x07;
+    uint256 constant UNWRAP_WETH = 0x08;
+    uint256 constant SWEEP = 0x09;
 
-    uint256 constant FLAG_CT_MASK = 0x0f;
-    uint256 constant FLAG_EXTENDED_COMMAND = 0x80;
-    uint256 constant FLAG_TUPLE_RETURN = 0x40;
-    uint256 constant SHORT_COMMAND_FILL = 0x000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+    uint8 constant FLAG_COMMAND_TYPE_MASK = 0x0f;
+    uint8 constant COMMAND_INDICES_OFFSET = 8;
+    // the first 32 bytes of a dynamic parameter specify the parameter length
+    uint8 constant PARAMS_LENGTH_OFFSET = 32;
 
-    uint256 constant COMMAND_INDICES_OFFSET = 200;
-
-    address immutable permitPost;
+    address immutable PERMIT_POST;
 
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
     }
 
-    constructor(address _permitPost) {
-        permitPost = _permitPost;
+    constructor(
+        address permitPost,
+        address v2Factory,
+        address v3Factory,
+        bytes32 pairInitCodeHash,
+        bytes32 poolInitCodeHash
+    ) V2SwapRouter(v2Factory, pairInitCodeHash) V3SwapRouter(v3Factory, poolInitCodeHash) {
+        PERMIT_POST = permitPost;
     }
 
     /// @param commands A set of concatenated commands, each 8 bytes in length
@@ -56,80 +59,83 @@ contract WeirollRouter is V2SwapRouter, V3SwapRouter {
         returns (bytes[] memory)
     {
         bytes8 command;
-        uint256 commandType;
-        uint256 flags;
-        bytes32 indices;
+        uint8 commandType;
+        uint8 flags;
+        bytes8 indices;
         bool success = true;
 
-        bytes memory outdata;
+        bytes memory output;
+        uint256 totalBytes;
+        unchecked {
+            // Calculates the full length of the `commands` parameter
+            totalBytes = commands.length + PARAMS_LENGTH_OFFSET;
+        }
 
-        for (uint256 i; i < commands.length; i += 8) {
+        // starts from the 32nd byte, as the first 32 hold the length of `bytes commands`
+        // terminates when it has passed the final byte of `commands`
+        // each command is 8 bytes, so the end of the loop increments by 8
+        for (uint256 byteIndex = PARAMS_LENGTH_OFFSET; byteIndex < totalBytes;) {
             assembly {
-                command := mload(add(add(commands, 32), i))
+                // loads the command at byte number `byteIndex` to process
+                command := mload(add(commands, byteIndex))
             }
 
-            flags = uint256(uint8(bytes1(command)));
-            commandType = flags & FLAG_CT_MASK;
+            flags = uint8(bytes1(command));
+            commandType = flags & FLAG_COMMAND_TYPE_MASK;
+            indices = bytes8(uint64(command) << COMMAND_INDICES_OFFSET);
 
-            if (flags & FLAG_EXTENDED_COMMAND != 0) {
-                indices = commands[i++];
-            } else {
-                indices = bytes32((uint256(uint64(command)) << COMMAND_INDICES_OFFSET) | SHORT_COMMAND_FILL);
-            }
             bytes memory inputs = state.buildInputs(indices);
-            if (commandType == FLAG_CT_PERMIT) {
+            if (commandType == PERMIT) {
                 // state[state.length] = abi.encode(msg.sender);
-                // (success, outdata) = permitPost.call(state[0]);
+                // (success, output) = permitPost.call(state[0]);
                 // bytes memory inputs = state.build(bytes4(0), indices);
                 // (address some, address parameters, uint256 forPermit) = abi.decode(inputs, (address, address, uint));
                 //
                 // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
-            } else if (commandType == FLAG_CT_TRANSFER) {
+            } else if (commandType == TRANSFER) {
                 (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
                 Payments.pay(token, recipient, value);
-            } else if (commandType == FLAG_CT_V2_SWAP_EXACT_IN) {
+            } else if (commandType == V2_SWAP_EXACT_IN) {
                 (uint256 amountOutMin, address[] memory path, address recipient) =
                     abi.decode(inputs, (uint256, address[], address));
-                outdata = abi.encode(v2SwapExactInput(amountOutMin, path, recipient));
-            } else if (commandType == FLAG_CT_V2_SWAP_EXACT_OUT) {
+                output = abi.encode(v2SwapExactInput(amountOutMin, path, recipient));
+            } else if (commandType == V2_SWAP_EXACT_OUT) {
                 (uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient) =
                     abi.decode(inputs, (uint256, uint256, address[], address));
-                outdata = abi.encode(v2SwapExactOutput(amountOut, amountInMax, path, recipient));
-            } else if (commandType == FLAG_CT_V3_SWAP_EXACT_IN) {
+                output = abi.encode(v2SwapExactOutput(amountOut, amountInMax, path, recipient));
+            } else if (commandType == V3_SWAP_EXACT_IN) {
                 (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                     abi.decode(inputs, (address, uint256, uint256, bytes));
-                outdata = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, path));
-            } else if (commandType == FLAG_CT_V3_SWAP_EXACT_OUT) {
+                output = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, path));
+            } else if (commandType == V3_SWAP_EXACT_OUT) {
                 (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                     abi.decode(inputs, (address, uint256, uint256, bytes));
-                outdata = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
-            } else if (commandType == FLAG_CT_SEAPORT) {
+                output = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
+            } else if (commandType == SEAPORT) {
+                (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
+                (success, output) = Constants.SEAPORT.call{value: value}(data);
+            } else if (commandType == NFTX) {
                 (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
-                (success, outdata) = Constants.SEAPORT.call{value: value}(data);
-            } else if (commandType == FLAG_CT_NFTX) {
-                (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
-                (success, outdata) = Constants.NFTX_ZAP.call{value: value}(data);
-            } else if (commandType == FLAG_CT_SWEEP) {
+                (success, output) = Constants.NFTX_ZAP.call{value: value}(data);
+            } else if (commandType == SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
                 Payments.sweepToken(token, recipient, minValue);
-            } else if (commandType == FLAG_CT_WRAP_ETH) {
+            } else if (commandType == WRAP_ETH) {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.wrapETH(recipient, amountMin);
-            } else if (commandType == FLAG_CT_UNWRAP_WETH) {
+            } else if (commandType == UNWRAP_WETH) {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
             } else {
-                revert('Invalid calltype');
+                revert InvalidCommandType({commandIndex: (byteIndex - 32) / 8});
             }
 
             if (!success) {
-                revert ExecutionFailed({commandIndex: 0, message: outdata});
+                revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
             }
 
-            if (flags & FLAG_TUPLE_RETURN != 0) {
-                state.writeTuple(bytes1(command << 56), outdata);
-            } else {
-                state = state.writeOutputs(bytes1(command << 56), outdata);
+            unchecked {
+                byteIndex += 8;
             }
         }
 

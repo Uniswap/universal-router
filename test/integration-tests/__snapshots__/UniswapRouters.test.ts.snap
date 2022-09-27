@@ -1,0 +1,61 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Narwhal Router. gas: V2, then V3 1`] = `"207900"`;
+
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Narwhal Router. gas: V3, then V2 1`] = `"194614"`;
+
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Narwhal Router. gas: split V2 and V3, one hop 1`] = `"311298"`;
+
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Router02. gas: V2, then V3 1`] = `"214826"`;
+
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Router02. gas: V3, then V2 1`] = `"218356"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn ETH, one trade, one hop 1`] = `"116817"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn, one trade, one hop 1`] = `"113246"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn, one trade, three hops 1`] = `"252695"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn, one trade, two hops 1`] = `"184654"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut ETH, one trade, one hop 1`] = `"139571"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut, one trade, one hop 1`] = `"109806"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut, one trade, three hops 1`] = `"255010"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut, one trade, two hops 1`] = `"184124"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactIn ETH, one trade, one hop 1`] = `"124889"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactIn, one trade, one hop 1`] = `"121407"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactIn, one trade, two hops 1`] = `"193278"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactOut ETH, one trade, one hop 1`] = `"122933"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactOut, one trade, one hop 1`] = `"122001"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactIn, one trade, one hop 1`] = `"106432"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactIn, one trade, three hops 1`] = `"260056"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactIn, one trade, two hops 1`] = `"182280"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactOut, one trade, one hop 1`] = `"116498"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactOut, one trade, three hops 1`] = `"420865"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactOut, one trade, two hops 1`] = `"313669"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactIn, one trade, one hop 1`] = `"104733"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactIn, one trade, three hops 1`] = `"284015"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactIn, one trade, two hops 1`] = `"196837"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactOut, one trade, one hop 1`] = `"114904"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactOut, one trade, three hops 1`] = `"423372"`;
+
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactOut, one trade, two hops 1`] = `"313985"`;
