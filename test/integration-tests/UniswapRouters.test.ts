@@ -1,6 +1,6 @@
-import { Interface, LogDescription } from '@ethersproject/abi'
-import { TransactionReceipt } from '@ethersproject/abstract-provider'
+import { Interface } from '@ethersproject/abi'
 import type { Contract } from '@ethersproject/contracts'
+import parseEvents from './shared/parseEvents'
 import {
   RouterPlanner,
   SweepCommand,
@@ -44,18 +44,6 @@ import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 const { ethers } = hre
-
-function parseEvents(iface: Interface, receipt: TransactionReceipt): (LogDescription | undefined)[] {
-  return receipt.logs
-    .map((log: { topics: Array<string>; data: string }) => {
-      try {
-        return iface.parseLog(log)
-      } catch (e) {
-        return undefined
-      }
-    })
-    .filter((n: LogDescription | undefined) => n)
-}
 
 function encodePathExactInput(tokens: string[]) {
   return encodePath(tokens, new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))

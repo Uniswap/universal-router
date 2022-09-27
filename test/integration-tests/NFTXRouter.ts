@@ -129,7 +129,7 @@ describe('NFTX', () => {
 
     const tx = await router.execute(DEADLINE, commands, state, { value })
     const receipt = await tx.wait()
-    const tokenIds = parseEvents(twerkyContract.interface, receipt).map(event => event!.args.id)
+    const tokenIds = parseEvents(twerkyContract.interface, receipt).map((event) => event!.args.id)
     expect(await twerkyContract.balanceOf(alice.address, tokenIds[0])).to.eq(1)
     expect(await twerkyContract.balanceOf(alice.address, tokenIds[1])).to.eq(1)
   })
@@ -154,7 +154,6 @@ describe('NFTX', () => {
 
     expect(twerkyBalanceAfter.sub(twerkyBalanceBefore)).to.eq(numTwerkys)
   })
-
 
   it('returns all extra ETH when sending too much', async () => {
     const value = expandTo18DecimalsBN(10)
