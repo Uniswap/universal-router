@@ -7,6 +7,7 @@ import '../libraries/Constants.sol';
 import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
+import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
 library Payments {
     error InsufficientToken(address token);

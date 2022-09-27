@@ -3,9 +3,10 @@ import { RouterPlanner, NFTXCommand } from '@uniswap/narwhal-sdk'
 import { expect } from './shared/expect'
 import { Router } from '../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-
+import parseEvents from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import { abi as ERC1155_ABI } from '../../artifacts/solmate/src/tokens/ERC1155.sol/ERC1155.json'
 import { resetFork, WETH } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
@@ -29,7 +30,7 @@ const COVEN_VAULT_ID = '333'
 const ERC_1155_VAULT = '0x78e09c5ec42d505742a52fd10078a57ea186002a'
 const ERC_1155_VAULT_ID = '61'
 
-describe.only('NFTX', () => {
+describe('NFTX', () => {
   let alice: SignerWithAddress
   let router: Router
   let covenContract: Contract
@@ -44,7 +45,7 @@ describe.only('NFTX', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
-    twerkyContract = new ethers.Contract('0xf4680c917a873e2dd6ead72f9f433e74eb9c623c', ERC721_ABI, alice)
+    twerkyContract = new ethers.Contract('0xf4680c917a873e2dd6ead72f9f433e74eb9c623c', ERC1155_ABI, alice)
     const routerFactory = await ethers.getContractFactory('Router')
     router = (
       await routerFactory.deploy(
@@ -126,20 +127,20 @@ describe.only('NFTX', () => {
     planner.add(NFTXCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
 
-    const covenBalanceBefore = await twerkyContract.balanceOf(alice.address)
-    await router.execute(DEADLINE, commands, state, { value })
-    const covenBalanceAfter = await twerkyContract.balanceOf(alice.address)
-
-    expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numTwerkys)
+    const tx = await router.execute(DEADLINE, commands, state, { value })
+    const receipt = await tx.wait()
+    const tokenIds = parseEvents(twerkyContract.interface, receipt).map(event => event!.args.id)
+    expect(await twerkyContract.balanceOf(alice.address, tokenIds[0])).to.eq(1)
+    expect(await twerkyContract.balanceOf(alice.address, tokenIds[1])).to.eq(1)
   })
 
   it('completes an ERC-1155 buyAndRedeem order with specific selection', async () => {
     const value = expandTo18DecimalsBN(4)
-    const numTwerkys = 2
+    const numTwerkys = 1
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
       ERC_1155_VAULT_ID,
       numTwerkys,
-      [584, 3033],
+      [44],
       [WETH.address, ERC_1155_VAULT],
       alice.address,
     ])
@@ -147,19 +148,11 @@ describe.only('NFTX', () => {
     planner.add(NFTXCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
 
-    const covenBalanceBefore = await twerkyContract.balanceOf(alice.address)
-    const covenOwner584Before = await twerkyContract.ownerOf(584)
-    const covenOwner3033Before = await twerkyContract.ownerOf(3033)
+    const twerkyBalanceBefore = await twerkyContract.balanceOf(alice.address, 44)
     await (await router.execute(DEADLINE, commands, state, { value })).wait()
-    const covenBalanceAfter = await twerkyContract.balanceOf(alice.address)
-    const covenOwner584After = await twerkyContract.ownerOf(584)
-    const covenOwner3033After = await twerkyContract.ownerOf(3033)
+    const twerkyBalanceAfter = await twerkyContract.balanceOf(alice.address, 44)
 
-    expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numTwerkys)
-    expect(covenOwner584Before).to.not.eq(alice.address)
-    expect(covenOwner3033Before).to.not.eq(alice.address)
-    expect(covenOwner584After).to.eq(alice.address)
-    expect(covenOwner3033After).to.eq(alice.address)
+    expect(twerkyBalanceAfter.sub(twerkyBalanceBefore)).to.eq(numTwerkys)
   })
 
 
