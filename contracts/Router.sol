@@ -10,7 +10,6 @@ import './base/RouterCallbacks.sol';
 import './libraries/CommandBuilder.sol';
 import './base/Payments.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
-import {console} from 'hardhat/console.sol';
 
 contract WeirollRouter is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     using CommandBuilder for bytes[];
