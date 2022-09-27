@@ -9,6 +9,16 @@ library UniswapV2Library {
         0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
     // calculates the CREATE2 address for a pair without making any external calls
+    function pairAndTokensFor(address factory, address tokenA, address tokenB)
+        internal
+        pure
+        returns (address pair, address token0, address token1)
+    {
+        (token0, token1) = UniswapPoolHelper.sortTokens(tokenA, tokenB);
+        return (pairForPreSorted(factory, token0, token1), token0, token1);
+    }
+
+    // calculates the CREATE2 address for a pair without making any external calls
     function pairFor(address factory, address tokenA, address tokenB) internal pure returns (address pair) {
         (address token0, address token1) = UniswapPoolHelper.sortTokens(tokenA, tokenB);
         return pairForPreSorted(factory, token0, token1);

@@ -4,11 +4,11 @@ exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Router02. gas: V2, then 
 
 exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Router02. gas: V3, then V2 1`] = `"218356"`;
 
-exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Weiroll. gas: V2, then V3 1`] = `"207840"`;
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Weiroll. gas: V2, then V3 1`] = `"207819"`;
 
-exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Weiroll. gas: V3, then V2 1`] = `"194564"`;
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Weiroll. gas: V3, then V2 1`] = `"194543"`;
 
-exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Weiroll. gas: split V2 and V3, one hop 1`] = `"311238"`;
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Weiroll. gas: split V2 and V3, one hop 1`] = `"311217"`;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactIn ETH, one trade, one hop 1`] = `"124889"`;
 
@@ -20,21 +20,21 @@ exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactOu
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactOut, one trade, one hop 1`] = `"122001"`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactIn ETH, one trade, one hop 1`] = `"116726"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactIn ETH, one trade, one hop 1`] = `"116701"`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactIn, one trade, one hop 1`] = `"113213"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactIn, one trade, one hop 1`] = `"113192"`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactIn, one trade, three hops 1`] = `"252678"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactIn, one trade, three hops 1`] = `"252613"`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactIn, one trade, two hops 1`] = `"184627"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactIn, one trade, two hops 1`] = `"184586"`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactOut ETH, one trade, one hop 1`] = `"139298"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactOut ETH, one trade, one hop 1`] = `"139288"`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactOut, one trade, one hop 1`] = `"109681"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactOut, one trade, one hop 1`] = `"109667"`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactOut, one trade, three hops 1`] = `"254827"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactOut, one trade, three hops 1`] = `"254769"`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactOut, one trade, two hops 1`] = `"183972"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Weiroll. gas: exactOut, one trade, two hops 1`] = `"183934"`;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactIn, one trade, one hop 1`] = `"104733"`;
 

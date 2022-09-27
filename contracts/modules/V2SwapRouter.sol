@@ -15,10 +15,9 @@ contract V2SwapRouter {
 
     function _v2Swap(address[] memory path, address recipient) private {
         // cached to save on duplicate operations
-        address nextAddress = UniswapV2Library.pairFor(V2_FACTORY, path[0], path[1]);
+        (address nextAddress, address token0,) = UniswapV2Library.pairAndTokensFor(V2_FACTORY, path[0], path[1]);
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            (address token0,) = UniswapPoolHelper.sortTokens(input, output);
             address pair = nextAddress;
             uint256 amountInput;
             uint256 amountOutput;
@@ -29,7 +28,9 @@ contract V2SwapRouter {
             amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
             (uint256 amount0Out, uint256 amount1Out) =
                 input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
-            nextAddress = i < path.length - 2 ? UniswapV2Library.pairFor(V2_FACTORY, output, path[i + 2]) : recipient;
+            (nextAddress, token0,) = i < path.length - 2
+                ? UniswapV2Library.pairAndTokensFor(V2_FACTORY, output, path[i + 2])
+                : (recipient, address(0), address(0));
             IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextAddress, new bytes(0));
         }
     }
