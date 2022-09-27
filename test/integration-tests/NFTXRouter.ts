@@ -22,12 +22,18 @@ import hre from 'hardhat'
 const { ethers } = hre
 
 const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
+
+const COVEN_VAULT = '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'
 const COVEN_VAULT_ID = '333'
 
-describe('NFTX', () => {
+const ERC_1155_VAULT = '0x78e09c5ec42d505742a52fd10078a57ea186002a'
+const ERC_1155_VAULT_ID = '61'
+
+describe.only('NFTX', () => {
   let alice: SignerWithAddress
   let router: Router
   let covenContract: Contract
+  let twerkyContract: Contract
   let planner: RouterPlanner
 
   beforeEach(async () => {
@@ -38,6 +44,7 @@ describe('NFTX', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
+    twerkyContract = new ethers.Contract('0xf4680c917a873e2dd6ead72f9f433e74eb9c623c', ERC721_ABI, alice)
     const routerFactory = await ethers.getContractFactory('Router')
     router = (
       await routerFactory.deploy(
@@ -55,14 +62,14 @@ describe('NFTX', () => {
     await resetFork()
   })
 
-  it('completes a buyAndRedeem order with random selection', async () => {
+  it('completes an ERC-721 buyAndRedeem order with random selection', async () => {
     const value = expandTo18DecimalsBN(4)
     const numCovens = 2
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
       COVEN_VAULT_ID,
       numCovens,
       [],
-      [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
+      [WETH.address, COVEN_VAULT],
       alice.address,
     ])
 
@@ -76,14 +83,14 @@ describe('NFTX', () => {
     expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
   })
 
-  it('completes a buyAndRedeem order with specific selection', async () => {
+  it('completes an ERC-721 buyAndRedeem order with specific selection', async () => {
     const value = expandTo18DecimalsBN(4)
     const numCovens = 2
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
       COVEN_VAULT_ID,
       numCovens,
       [584, 3033],
-      [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
+      [WETH.address, COVEN_VAULT],
       alice.address,
     ])
 
@@ -104,6 +111,57 @@ describe('NFTX', () => {
     expect(covenOwner584After).to.eq(alice.address)
     expect(covenOwner3033After).to.eq(alice.address)
   })
+
+  it('completes an ERC-1155 buyAndRedeem order with random selection', async () => {
+    const value = expandTo18DecimalsBN(4)
+    const numTwerkys = 2
+    const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
+      ERC_1155_VAULT_ID,
+      numTwerkys,
+      [],
+      [WETH.address, ERC_1155_VAULT],
+      alice.address,
+    ])
+
+    planner.add(NFTXCommand(value.toString(), calldata))
+    const { commands, state } = planner.plan()
+
+    const covenBalanceBefore = await twerkyContract.balanceOf(alice.address)
+    await router.execute(DEADLINE, commands, state, { value })
+    const covenBalanceAfter = await twerkyContract.balanceOf(alice.address)
+
+    expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numTwerkys)
+  })
+
+  it('completes an ERC-1155 buyAndRedeem order with specific selection', async () => {
+    const value = expandTo18DecimalsBN(4)
+    const numTwerkys = 2
+    const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
+      ERC_1155_VAULT_ID,
+      numTwerkys,
+      [584, 3033],
+      [WETH.address, ERC_1155_VAULT],
+      alice.address,
+    ])
+
+    planner.add(NFTXCommand(value.toString(), calldata))
+    const { commands, state } = planner.plan()
+
+    const covenBalanceBefore = await twerkyContract.balanceOf(alice.address)
+    const covenOwner584Before = await twerkyContract.ownerOf(584)
+    const covenOwner3033Before = await twerkyContract.ownerOf(3033)
+    await (await router.execute(DEADLINE, commands, state, { value })).wait()
+    const covenBalanceAfter = await twerkyContract.balanceOf(alice.address)
+    const covenOwner584After = await twerkyContract.ownerOf(584)
+    const covenOwner3033After = await twerkyContract.ownerOf(3033)
+
+    expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numTwerkys)
+    expect(covenOwner584Before).to.not.eq(alice.address)
+    expect(covenOwner3033Before).to.not.eq(alice.address)
+    expect(covenOwner584After).to.eq(alice.address)
+    expect(covenOwner3033After).to.eq(alice.address)
+  })
+
 
   it('returns all extra ETH when sending too much', async () => {
     const value = expandTo18DecimalsBN(10)
