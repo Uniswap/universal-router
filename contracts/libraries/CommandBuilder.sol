@@ -81,7 +81,6 @@ library CommandBuilder {
             return state;
         }
 
-
         if (idx & IDX_VARIABLE_LENGTH != 0) {
             // Check the first field is 0x20 (because we have only a single return value)
             uint256 argptr;

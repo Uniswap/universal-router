@@ -1,6 +1,5 @@
-import { Interface } from '@ethersproject/abi'
 import type { Contract } from '@ethersproject/contracts'
-import parseEvents from './shared/parseEvents'
+import { parseEvents, V2_EVENTS } from './shared/parseEvents'
 import {
   RouterPlanner,
   SweepCommand,
@@ -52,10 +51,6 @@ function encodePathExactInput(tokens: string[]) {
 function encodePathExactOutput(tokens: string[]) {
   return encodePath(tokens.slice().reverse(), new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
 }
-
-const V2_EVENTS = new Interface([
-  'event Swap(address indexed sender, uint amount0In, uint amount1In, uint amount0Out, uint amount1Out, address indexed to)',
-])
 
 describe('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
@@ -749,6 +744,27 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
+
+      it('gas: V2, then V3 using output instead of contract balance', async () => {
+        const v2Tokens = [DAI.address, USDC.address]
+        const v3Tokens = [USDC.address, WETH.address]
+        const v2AmountIn: BigNumber = expandTo18DecimalsBN(5)
+        const v2AmountOutMin = 0 // doesnt matter how much USDC it is, what matters is the end of the trade
+        const v3AmountOutMin = 0.0005 * 10 ** 18
+        planner.add(TransferCommand(DAI.address, Pair.getAddress(DAI, USDC), v2AmountIn))
+        // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
+        const amountOutV2 = planner.add(V2ExactInputCommand(v2AmountOutMin, v2Tokens, router.address))
+        // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
+        planner.add(
+          V3ExactInputCommand(alice.address, amountOutV2, v3AmountOutMin, encodePathExactInput(v3Tokens))
+        )
+
+        const { commands, state } = planner.plan()
+        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
+        const receipt = await tx.wait()
+        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+      })
+
 
       it('gas: split V2 and V3, one hop', async () => {
         const tokens = [DAI.address, WETH.address]
