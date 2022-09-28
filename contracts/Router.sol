@@ -27,10 +27,11 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant V2_SWAP_EXACT_IN = 0x04;
     uint256 constant V2_SWAP_EXACT_OUT = 0x05;
     uint256 constant SEAPORT = 0x06;
+    uint256 constant LOOKS_RARE = 0x0b;
+    uint256 constant X2Y2 = 0x0c;
     uint256 constant WRAP_ETH = 0x07;
     uint256 constant UNWRAP_WETH = 0x08;
     uint256 constant SWEEP = 0x09;
-    uint256 constant LOOKS_RARE = 0x0b;
 
     uint8 constant FLAG_COMMAND_TYPE_MASK = 0x0f;
     uint8 constant COMMAND_INDICES_OFFSET = 8;
@@ -118,6 +119,18 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             } else if (commandType == SEAPORT) {
                 (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
                 (success, output) = Constants.SEAPORT.call{value: value}(data);
+            } else if (commandType == LOOKS_RARE) {
+                (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
+                    abi.decode(inputs, (uint256, bytes, address, address, uint256));
+                (success, output) = Constants.LOOKS_RARE.call{value: value}(data);
+                if (!success) revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
+                ERC721(token).safeTransferFrom(address(this), recipient, id);
+            } else if (commandType == X2Y2) {
+                (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
+                    abi.decode(inputs, (uint256, bytes, address, address, uint256));
+                (success, output) = Constants.X2Y2.call{value: value}(data);
+                if (!success) revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
+                ERC721(token).safeTransferFrom(address(this), recipient, id);
             } else if (commandType == SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
                 Payments.sweepToken(token, recipient, minValue);
@@ -127,12 +140,6 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             } else if (commandType == UNWRAP_WETH) {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
-            } else if (commandType == LOOKS_RARE) {
-                (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
-                    abi.decode(inputs, (uint256, bytes, address, address, uint256));
-                (success, output) = Constants.LOOKSRARE_EXCHANGE.call{value: value}(data);
-                if (!success) revert ExecutionFailed({commandIndex: LOOKS_RARE, message: output});
-                ERC721(token).safeTransferFrom(address(this), recipient, id);
             } else {
                 revert InvalidCommandType({commandIndex: (byteIndex - 32) / 8});
             }
