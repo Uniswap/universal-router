@@ -13,10 +13,10 @@ library Payments {
     error InsufficientToken(address token);
     error InsufficientETH();
 
-    /// @param token The token to pay
+    /// @param token The token to pay (can be ETH using Constants.ETH)
     /// @param recipient The entity that will receive payment
     /// @param value The amount to pay
-    function pay(address token, address recipient, uint256 value) internal {
+    function payERC20(address token, address recipient, uint256 value) internal {
         if (token == Constants.ETH) {
             SafeTransferLib.safeTransferETH(recipient, value);
         } else {

@@ -122,10 +122,6 @@ describe('Seaport', () => {
     planner = new RouterPlanner()
   })
 
-  afterEach(async () => {
-    await resetFork()
-  })
-
   it('completes a fulfillOrder type', async () => {
     const { order, value } = getOrderParams(seaportOrders[0])
     const params = order.parameters
