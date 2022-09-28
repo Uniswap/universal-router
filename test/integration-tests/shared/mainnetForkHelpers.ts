@@ -1,7 +1,7 @@
 import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
-import { TransactionReceipt } from '@ethersproject/abstract-provider'
+import { TransactionResponse } from '@ethersproject/abstract-provider'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber, constants, Contract as EthersContract } from 'ethers'
 import hre from 'hardhat'
@@ -47,7 +47,7 @@ export const executeSwap = async (
   tokenIn: Currency,
   tokenOut: Currency,
   alice: SignerWithAddress
-): Promise<TransactionReceipt> => {
+): Promise<TransactionResponse> => {
   if (tokenIn.symbol == tokenOut.symbol) throw 'Cannot trade token for itself'
   await approveToken(alice, SWAP_ROUTER_V2, tokenIn)
 
@@ -60,11 +60,8 @@ export const executeSwap = async (
     type: 1,
   }
 
-  let transactionResponse = await alice.sendTransaction(transaction)
-  const receipt = await transactionResponse.wait()
-  if (receipt.status != 1) throw 'transaction failed'
-
-  return receipt
+  const transactionResponse = await alice.sendTransaction(transaction)
+  return transactionResponse
 }
 
 export const resetFork = async () => {

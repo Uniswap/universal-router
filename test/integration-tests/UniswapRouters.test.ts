@@ -17,6 +17,7 @@ import { Route as V2RouteSDK, Pair } from '@uniswap/v2-sdk'
 import { Route as V3RouteSDK, FeeAmount } from '@uniswap/v3-sdk'
 import { SwapRouter, MixedRouteSDK, Trade } from '@uniswap/router-sdk'
 import { expect } from './shared/expect'
+import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import {
   makePair,
   expandTo18Decimals,
@@ -144,8 +145,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: deadline,
         })
 
-        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: exactIn, one trade, two hops', async () => {
@@ -160,8 +160,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: deadline,
         })
 
-        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: exactIn ETH, one trade, one hop', async () => {
@@ -176,8 +175,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: deadline,
         })
 
-        const receipt = await executeSwap({ value, calldata }, DAI, WETH, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value, calldata }, DAI, WETH, alice))
       })
 
       it('gas: exactOut, one trade, one hop', async () => {
@@ -192,8 +190,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: deadline,
         })
 
-        const receipt = await executeSwap({ value: '0', calldata }, WETH, DAI, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value: '0', calldata }, WETH, DAI, alice))
       })
 
       it('gas: exactOut ETH, one trade, one hop', async () => {
@@ -209,8 +206,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: deadline,
         })
 
-        const receipt = await executeSwap({ value, calldata }, DAI, WETH, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value, calldata }, DAI, WETH, alice))
       })
     })
 
@@ -235,8 +231,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, state } = planner.plan()
 
         const balanceBefore = await wethContract.balanceOf(alice.address)
-        const tx = await router.execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
+        const receipt = await (await router.execute(DEADLINE, commands, state)).wait()
         const balanceAfter = await wethContract.balanceOf(alice.address)
         const amountOut = parseEvents(V2_EVENTS, receipt).reduce(
           (prev, current) => prev.add(current!.args.amount1Out),
@@ -322,8 +317,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, state } = planner.plan()
 
         const balanceBefore = await usdcContract.balanceOf(alice.address)
-        const tx = await router.execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
+        const receipt = await (await router.execute(DEADLINE, commands, state)).wait()
         const balanceAfter = await usdcContract.balanceOf(alice.address)
         const events = parseEvents(V2_EVENTS, receipt)
         const amountOut = events[events.length - 1]!.args.amount0Out
@@ -334,27 +328,21 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
-        const tx = await router.execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: exactIn, one trade, two hops', async () => {
         planner.add(TransferCommand(DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, USDC.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
-        const tx = await router.execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: exactIn, one trade, three hops', async () => {
         planner.add(TransferCommand(DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn))
         planner.add(V2ExactInputCommand(1, [DAI.address, USDC.address, USDT.address, WETH.address], alice.address))
         const { commands, state } = planner.plan()
-        const tx = await router.execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: exactIn ETH, one trade, one hop', async () => {
@@ -362,9 +350,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(WrapETHCommand(pairAddress, amountIn))
         planner.add(V2ExactInputCommand(amountIn, [WETH.address, DAI.address], alice.address))
         const { commands, state } = planner.plan()
-        const tx = await router.execute(DEADLINE, commands, state, { value: amountIn })
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state, { value: amountIn }))
       })
 
       it('gas: exactOut, one trade, one hop', async () => {
@@ -378,9 +364,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           )
         )
         const { commands, state } = planner.plan()
-        const tx = await router.execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: exactOut, one trade, two hops', async () => {
@@ -394,9 +378,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           )
         )
         const { commands, state } = planner.plan()
-        const tx = await router.execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: exactOut, one trade, three hops', async () => {
@@ -410,9 +392,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           )
         )
         const { commands, state } = planner.plan()
-        const tx = await router.execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: exactOut ETH, one trade, one hop', async () => {
@@ -428,9 +408,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(SweepCommand(DAI.address, alice.address, 0)) //exactOut will have to sweep tokens w/ PermitPost
 
         const { commands, state } = planner.plan()
-        const tx = await router.execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
     })
   })
@@ -462,8 +440,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: 2000000000,
         })
 
-        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: exactIn, one trade, two hops', async () => {
@@ -478,8 +455,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: 2000000000,
         })
 
-        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: exactIn, one trade, three hops', async () => {
@@ -494,8 +470,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: 2000000000,
         })
 
-        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: exactOut, one trade, one hop', async () => {
@@ -505,8 +480,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: 2000000000,
         })
 
-        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: exactOut, one trade, two hops', async () => {
@@ -521,8 +495,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: 2000000000,
         })
 
-        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: exactOut, one trade, three hops', async () => {
@@ -537,8 +510,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: 2000000000,
         })
 
-        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
     })
 
@@ -624,27 +596,21 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const amountOutMin: number = 0.0005 * 10 ** 18
         addV3ExactInTrades(planner, 1, amountOutMin)
         const { commands, state } = planner.plan()
-        const tx = await router.execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: exactIn, one trade, two hops', async () => {
         const amountOutMin: number = 3 * 10 ** 6
         addV3ExactInTrades(planner, 1, amountOutMin, [DAI.address, WETH.address, USDC.address])
         const { commands, state } = planner.plan()
-        const tx = await router.execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: exactIn, one trade, three hops', async () => {
         const amountOutMin: number = 3 * 10 ** 6
         addV3ExactInTrades(planner, 1, amountOutMin, [DAI.address, WETH.address, USDT.address, USDC.address])
         const { commands, state } = planner.plan()
-        const tx = await router.execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: exactOut, one trade, one hop', async () => {
@@ -652,9 +618,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const path = encodePathExactOutput(tokens)
         planner.add(V3ExactOutputCommand(alice.address, amountOut, amountInMax, path))
         const { commands, state } = planner.plan()
-        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: exactOut, one trade, two hops', async () => {
@@ -664,9 +628,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         planner.add(V3ExactOutputCommand(alice.address, amountOut, amountInMax, path))
         const { commands, state } = planner.plan()
-        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: exactOut, one trade, three hops', async () => {
@@ -676,9 +638,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         planner.add(V3ExactOutputCommand(alice.address, amountOut, amountInMax, path))
         const { commands, state } = planner.plan()
-        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
     })
   })
@@ -706,8 +666,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: deadline,
         })
 
-        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: V2, then V3', async () => {
@@ -723,8 +682,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           deadlineOrPreviousBlockhash: deadline,
         })
 
-        const receipt = await executeSwap({ value: '0', calldata }, DAI, WETH, alice)
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
     })
 
@@ -748,9 +706,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(V2ExactInputCommand(v2AmountOutMin, v2Tokens, alice.address))
 
         const { commands, state } = planner.plan()
-        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: V2, then V3', async () => {
@@ -768,9 +724,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         )
 
         const { commands, state } = planner.plan()
-        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: split V2 and V3, one hop', async () => {
@@ -785,9 +739,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(V3ExactInputCommand(alice.address, CONTRACT_BALANCE, v3AmountOutMin, encodePathExactInput(tokens)))
 
         const { commands, state } = planner.plan()
-        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
     })
   })
