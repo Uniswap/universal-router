@@ -10,6 +10,7 @@ import {
   V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
+import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { expect } from 'chai'
@@ -101,8 +102,6 @@ describe('LooksRare', () => {
     planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, DYSTOMICE_NFT.address, TOKEN_ID))
     const { commands, state } = planner.plan()
 
-    const tx = await router.execute(DEADLINE, commands, state, { value: value })
-    const receipt = await tx.wait()
-    expect(receipt.gasUsed.toString()).to.matchSnapshot()
+    await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
   })
 })
