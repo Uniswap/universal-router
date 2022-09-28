@@ -14,12 +14,7 @@ import {
   V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
 import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
-import {
-  RouterPlanner,
-  TransferCommand,
-  V2ExactInputCommand,
-  V3ExactInputCommand,
-} from '@uniswap/narwhal-sdk'
+import { RouterPlanner, TransferCommand, V2ExactInputCommand, V3ExactInputCommand } from '@uniswap/narwhal-sdk'
 import { makePair, encodePath } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'

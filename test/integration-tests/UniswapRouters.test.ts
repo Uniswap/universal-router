@@ -755,16 +755,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
         const amountOutV2 = planner.add(V2ExactInputCommand(v2AmountOutMin, v2Tokens, router.address))
         // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
-        planner.add(
-          V3ExactInputCommand(alice.address, amountOutV2, v3AmountOutMin, encodePathExactInput(v3Tokens))
-        )
+        planner.add(V3ExactInputCommand(alice.address, amountOutV2, v3AmountOutMin, encodePathExactInput(v3Tokens)))
 
         const { commands, state } = planner.plan()
         const tx = await router.connect(alice).execute(DEADLINE, commands, state)
         const receipt = await tx.wait()
         expect(receipt.gasUsed.toString()).to.matchSnapshot()
       })
-
 
       it('gas: split V2 and V3, one hop', async () => {
         const tokens = [DAI.address, WETH.address]
