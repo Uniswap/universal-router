@@ -5,8 +5,13 @@ import { BigNumber } from 'ethers'
 import { Router } from '../../typechain'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
+import {
+  seaportOrders,
+  seaportInterface,
+  getAdvancedOrderParams,
+  getOrderParams,
+} from './shared/protocolHelpers/seaport'
 
-import SEAPORT_ABI from './shared/abis/Seaport.json'
 import { resetFork } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
@@ -19,81 +24,8 @@ import {
   V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { expandTo18DecimalsBN } from './shared/helpers'
 import hre from 'hardhat'
 const { ethers } = hre
-import fs from 'fs'
-
-const seaportOrders = JSON.parse(
-  fs.readFileSync('test/integration-tests/shared/orders/Seaport.json', { encoding: 'utf8' })
-)
-const seaportInterface = new ethers.utils.Interface(SEAPORT_ABI)
-
-type OfferItem = {
-  itemType: BigNumber // enum
-  token: string // address
-  identifierOrCriteria: BigNumber
-  startAmount: BigNumber
-  endAmount: BigNumber
-}
-
-type ConsiderationItem = OfferItem & {
-  recipient: string
-}
-
-type OrderParameters = {
-  offerer: string // address,
-  offer: OfferItem[]
-  consideration: ConsiderationItem[]
-  orderType: BigNumber // enum
-  startTime: BigNumber
-  endTime: BigNumber
-  zoneHash: string // bytes32
-  salt: BigNumber
-  conduitKey: string // bytes32,
-  totalOriginalConsiderationItems: BigNumber
-}
-
-type Order = {
-  parameters: OrderParameters
-  signature: string
-}
-
-type AdvancedOrder = Order & {
-  numerator: BigNumber // uint120
-  denominator: BigNumber // uint120
-  extraData: string // bytes
-}
-
-function getOrderParams(apiOrder: any): { order: Order; value: BigNumber } {
-  delete apiOrder.protocol_data.parameters.counter
-  const order = {
-    parameters: apiOrder.protocol_data.parameters,
-    signature: apiOrder.protocol_data.signature,
-  }
-  const value = calculateValue(apiOrder.protocol_data.parameters.consideration)
-  return { order, value }
-}
-
-function getAdvancedOrderParams(apiOrder: any): { advancedOrder: AdvancedOrder; value: BigNumber } {
-  delete apiOrder.protocol_data.parameters.counter
-  const advancedOrder = {
-    parameters: apiOrder.protocol_data.parameters,
-    numerator: BigNumber.from('1'),
-    denominator: BigNumber.from('1'),
-    signature: apiOrder.protocol_data.signature,
-    extraData: '0x00',
-  }
-  const value = calculateValue(apiOrder.protocol_data.parameters.consideration)
-  return { advancedOrder, value }
-}
-
-function calculateValue(considerations: ConsiderationItem[]): BigNumber {
-  return considerations.reduce(
-    (amt: BigNumber, consideration: ConsiderationItem) => amt.add(consideration.startAmount),
-    expandTo18DecimalsBN(0)
-  )
-}
 
 describe('Seaport', () => {
   let alice: SignerWithAddress

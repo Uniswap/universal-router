@@ -90,5 +90,11 @@ describe('Router', () => {
       commands = commands.concat(invalidCommand)
       await expect(router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(1)')
     })
+
+    describe('partial fills', async () => {
+      it('reverts if no commands are allowed to revert', async () => {
+
+      })
+    })
   })
 })

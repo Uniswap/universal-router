@@ -36,6 +36,7 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant LOOKS_RARE = 0x0b;
 
     uint8 constant FLAG_COMMAND_TYPE_MASK = 0x0f;
+    uint8 constant FLAG_ALLOW_REVERT = 0x80;
     uint8 constant COMMAND_INDICES_OFFSET = 8;
     // the first 32 bytes of a dynamic parameter specify the parameter length
     uint8 constant PARAMS_LENGTH_OFFSET = 32;
@@ -69,7 +70,7 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         uint8 commandType;
         uint8 flags;
         bytes8 indices;
-        bool success = true;
+        bool success;
 
         bytes memory output;
         uint256 totalBytes;
@@ -82,6 +83,7 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         // terminates when it has passed the final byte of `commands`
         // each command is 8 bytes, so the end of the loop increments by 8
         for (uint256 byteIndex = PARAMS_LENGTH_OFFSET; byteIndex < totalBytes;) {
+            success = true; // true until false
             assembly {
                 // loads the command at byte number `byteIndex` to process
                 command := mload(add(commands, byteIndex))
@@ -137,13 +139,14 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
                     abi.decode(inputs, (uint256, bytes, address, address, uint256));
                 (success, output) = Constants.LOOKSRARE_EXCHANGE.call{value: value}(data);
-                if (!success) revert ExecutionFailed({commandIndex: LOOKS_RARE, message: output});
-                ERC721(token).safeTransferFrom(address(this), recipient, id);
+                if (success) ERC721(token).safeTransferFrom(address(this), recipient, id);
             } else {
                 revert InvalidCommandType({commandIndex: (byteIndex - 32) / 8});
             }
 
-            if (!success) revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
+            if (!success && successRequired(flags)) {
+              revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
+            }
 
             unchecked {
                 byteIndex += 8;
@@ -151,6 +154,10 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         }
 
         return state;
+    }
+
+    function successRequired(uint8 flags) internal pure returns (bool) {
+      return flags & FLAG_ALLOW_REVERT == 0;
     }
 
     receive() external payable {
