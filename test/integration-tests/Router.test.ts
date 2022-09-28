@@ -11,7 +11,7 @@ import {
   V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
-import { WETH, DAI } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI } from './shared/mainnetForkHelpers'
 import { RouterPlanner, TransferCommand, V2ExactInputCommand } from '@uniswap/narwhal-sdk'
 import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -26,6 +26,7 @@ describe('Router', () => {
   let pair_DAI_WETH: Pair
 
   beforeEach(async () => {
+    await resetFork()
     alice = await ethers.getSigner(ALICE_ADDRESS)
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
