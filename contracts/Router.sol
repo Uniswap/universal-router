@@ -125,9 +125,8 @@ contract Router is V2SwapRouter, V3SwapRouter {
                 revert InvalidCommandType({commandIndex: (byteIndex - 32) / 8});
             }
 
-            if (!success) {
-                revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
-            }
+            if (!success) revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
+            state = state.writeOutputs(bytes1(command << 56), output);
 
             unchecked {
                 byteIndex += 8;
