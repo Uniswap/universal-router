@@ -58,7 +58,9 @@ contract V2SwapRouter {
         amountIn = UniswapV2Library.getAmountsIn(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path)[0];
         require(amountIn <= amountInMax, 'Too much requested');
 
-        Payments.pay(path[0], UniswapV2Library.pairFor(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]), amountIn);
+        Payments.payERC20(
+            path[0], UniswapV2Library.pairFor(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]), amountIn
+        );
 
         _v2Swap(path, recipient);
     }

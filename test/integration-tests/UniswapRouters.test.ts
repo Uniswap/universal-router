@@ -1,6 +1,6 @@
-import { Interface, LogDescription } from '@ethersproject/abi'
-import { TransactionReceipt } from '@ethersproject/abstract-provider'
+import { Interface } from '@ethersproject/abi'
 import type { Contract } from '@ethersproject/contracts'
+import parseEvents from './shared/parseEvents'
 import {
   RouterPlanner,
   SweepCommand,
@@ -45,18 +45,6 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 const { ethers } = hre
 
-function parseEvents(iface: Interface, receipt: TransactionReceipt): (LogDescription | undefined)[] {
-  return receipt.logs
-    .map((log: { topics: Array<string>; data: string }) => {
-      try {
-        return iface.parseLog(log)
-      } catch (e) {
-        return undefined
-      }
-    })
-    .filter((n: LogDescription | undefined) => n)
-}
-
 function encodePathExactInput(tokens: string[]) {
   return encodePath(tokens, new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
 }
@@ -83,6 +71,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
   let pair_USDC_WETH: Pair
 
   beforeEach(async () => {
+    await resetFork()
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
@@ -106,10 +95,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
     pair_USDC_WETH = await makePair(alice, USDC, WETH)
   })
 
-  afterEach(async () => {
-    await resetFork()
-  })
-
   describe('Trade on UniswapV2', () => {
     describe('with Router02.', () => {
       const slippageTolerance = new Percent(10, 100)
@@ -126,10 +111,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
         amountInDAI = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
         amountInETH = CurrencyAmount.fromRawAmount(Ether.onChain(1), expandTo18Decimals(5))
         amountOut = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
-      })
-
-      afterEach(async () => {
-        await resetFork()
       })
 
       it('gas: exactIn, one trade, one hop', async () => {
@@ -222,10 +203,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner = new RouterPlanner()
         await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
         await wethContract.connect(alice).approve(router.address, expandTo18DecimalsBN(5000))
-      })
-
-      afterEach(async () => {
-        await resetFork()
       })
 
       it('completes a V2 exactIn swap', async () => {

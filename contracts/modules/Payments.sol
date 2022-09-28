@@ -7,15 +7,16 @@ import '../libraries/Constants.sol';
 import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
+import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
 library Payments {
     error InsufficientToken(address token);
     error InsufficientETH();
 
-    /// @param token The token to pay
+    /// @param token The token to pay (can be ETH using Constants.ETH)
     /// @param recipient The entity that will receive payment
     /// @param value The amount to pay
-    function pay(address token, address recipient, uint256 value) internal {
+    function payERC20(address token, address recipient, uint256 value) internal {
         if (token == Constants.ETH) {
             SafeTransferLib.safeTransferETH(recipient, value);
         } else {
