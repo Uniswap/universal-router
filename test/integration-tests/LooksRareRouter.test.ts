@@ -1,9 +1,10 @@
 import { RouterPlanner, LooksRareCommand } from '@uniswap/narwhal-sdk'
-import { Router } from '../../typechain'
+import { Router, ERC721 } from '../../typechain'
 import LOOKS_RARE_ABI from './shared/abis/LooksRare.json'
-import { resetFork, DYSTOMICE_NFT, WETH } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, COVEN_NFT } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
+  COVEN_ADDRESS,
   DEADLINE,
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
@@ -16,20 +17,21 @@ import hre from 'hardhat'
 import { expect } from 'chai'
 const { ethers } = hre
 
-describe('LooksRare', () => {
+describe.only('LooksRare', () => {
   let alice: SignerWithAddress
   let router: Router
   let planner: RouterPlanner
-  let takerOrder1016: any
-  let makerOrder1016: any
-  const TOKEN_ID = ethers.BigNumber.from(1016)
+  let covenContract: ERC721
+  let takerOrder4331: any
+  let makerOrder4331: any
+  const TOKEN_ID = ethers.BigNumber.from(4331)
 
   const looksRareInterface = new ethers.utils.Interface(LOOKS_RARE_ABI)
 
   beforeEach(async () => {
     // in beforeEach not afterEach as these tests use a different block
-    const looksRareBlock = 14488154
-    await resetFork(looksRareBlock)
+    await resetFork()
+    covenContract = COVEN_NFT.connect(alice)
 
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
@@ -49,57 +51,57 @@ describe('LooksRare', () => {
     ).connect(alice) as Router
     planner = new RouterPlanner()
 
-    takerOrder1016 = {
+    takerOrder4331 = {
       minPercentageToAsk: ethers.BigNumber.from(8500),
-      price: ethers.BigNumber.from('50000000000000000'),
+      price: ethers.BigNumber.from('32000000000000000000'),
       taker: router.address,
-      tokenId: ethers.BigNumber.from(1016),
+      tokenId: ethers.BigNumber.from(4331),
       isOrderAsk: false,
       params: '0x',
     }
 
-    makerOrder1016 = {
+    makerOrder4331 = {
       amount: ethers.BigNumber.from(1),
-      collection: DYSTOMICE_NFT.address,
+      collection: '0x5180db8F5c931aaE63c74266b211F580155ecac8',
       currency: WETH.address,
-      endTime: ethers.BigNumber.from('1651243016'),
       isOrderAsk: true,
       minPercentageToAsk: ethers.BigNumber.from(8500),
-      nonce: ethers.BigNumber.from(10),
-      price: ethers.BigNumber.from('50000000000000000'),
-      r: '0x69ffd53834c4f27378fb62e6782fb74cb8b48d1a556030b7b99d9e670f9e79a1',
-      s: '0x3e2df8c6d30dcc177741bd9501d9f160caa647a92415a053dd31977169aabf72',
-      signer: '0xaac27a7e079ea4949d558fd1748956eb1b86f70b',
-      startTime: ethers.BigNumber.from('1648651040'),
-      strategy: '0x56244bb70cbd3ea9dc8007399f61dfc065190031',
-      tokenId: ethers.BigNumber.from(1016),
-      v: ethers.BigNumber.from(28),
+      nonce: ethers.BigNumber.from(45),
+      price: ethers.BigNumber.from('32000000000000000000'),
+      r: '0x2d89300623b02e6305d770925d6a34006de07723fd0910a0b1f7780c6964a41b',
+      s: '0x1430768f23a5ad85c14de1a97fcc428fd001944dfcb659fd73f3f70e653e4507',
+      signer: '0x22E86ab483084053562cE713e94431C29D1Adb8b',
+      startTime: ethers.BigNumber.from('1650697012'),
+      endTime: ethers.BigNumber.from('1666245407'),
+      strategy: '0x56244Bb70CbD3EA9Dc8007399F61dFC065190031',
+      tokenId: ethers.BigNumber.from(4331),
+      v: ethers.BigNumber.from(27),
       params: '0x',
     }
   })
 
-  it('Buy a DystoMice', async () => {
+  it('Buy a Coven', async () => {
     const calldata = looksRareInterface.encodeFunctionData('matchAskWithTakerBidUsingETHAndWETH', [
-      takerOrder1016,
-      makerOrder1016,
+      takerOrder4331,
+      makerOrder4331,
     ])
-    const value = ethers.utils.parseEther('0.05')
+    const value = ethers.utils.parseEther('32')
 
-    planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, DYSTOMICE_NFT.address, TOKEN_ID))
+    planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, COVEN_ADDRESS, 4331))
     const { commands, state } = planner.plan()
     await router.execute(DEADLINE, commands, state, { value: value })
 
-    await expect((await DYSTOMICE_NFT.ownerOf(TOKEN_ID)).toLowerCase()).to.eq(ALICE_ADDRESS)
+    await expect((await covenContract.connect(alice).ownerOf(TOKEN_ID)).toLowerCase()).to.eq(ALICE_ADDRESS)
   })
 
   it('gas: buy 1 NFT on looks rare', async () => {
     const calldata = looksRareInterface.encodeFunctionData('matchAskWithTakerBidUsingETHAndWETH', [
-      takerOrder1016,
-      makerOrder1016,
+      takerOrder4331,
+      makerOrder4331,
     ])
-    const value = ethers.utils.parseEther('0.05')
+    const value = ethers.utils.parseEther('32')
 
-    planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, DYSTOMICE_NFT.address, TOKEN_ID))
+    planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, COVEN_ADDRESS, TOKEN_ID))
     const { commands, state } = planner.plan()
 
     await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
