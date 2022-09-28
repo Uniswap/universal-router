@@ -37,6 +37,7 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
 
     uint8 constant FLAG_COMMAND_TYPE_MASK = 0x0f;
     uint8 constant COMMAND_INDICES_OFFSET = 8;
+    uint8 constant COMMAND_OUTPUTS_OFFSET = 56;
     // the first 32 bytes of a dynamic parameter specify the parameter length
     uint8 constant PARAMS_LENGTH_OFFSET = 32;
 
@@ -144,7 +145,7 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             }
 
             if (!success) revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
-            state = state.writeOutputs(bytes1(command << 56), output);
+            state = state.writeOutputs(bytes1(command << COMMAND_OUTPUTS_OFFSET), output);
 
             unchecked {
                 byteIndex += 8;
