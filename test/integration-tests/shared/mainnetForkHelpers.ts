@@ -64,16 +64,30 @@ export const executeSwap = async (
   return transactionResponse
 }
 
-export const resetFork = async () => {
+export const resetFork = async (block: number = 15360000) => {
   await hre.network.provider.request({
     method: 'hardhat_reset',
     params: [
       {
         forking: {
           jsonRpcUrl: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-          blockNumber: 15360000,
+          blockNumber: block,
         },
       },
     ],
   })
 }
+
+export const DYSTOMICE_NFT = new ethers.Contract(
+  '0xe440654A00B757446B4914C56aD56A804a6BC6af',
+  [
+    {
+      inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
+      name: 'ownerOf',
+      outputs: [{ internalType: 'address', name: '', type: 'address' }],
+      stateMutability: 'view',
+      type: 'function',
+    },
+  ],
+  ethers.provider
+)

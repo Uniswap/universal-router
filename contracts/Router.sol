@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
+// Routers inherited
 import './modules/V2SwapRouter.sol';
 import './modules/V3SwapRouter.sol';
 import './modules/Payments.sol';
-import './libraries/CommandBuilder.sol';
+import './base/RouterCallbacks.sol';
 
-contract Router is V2SwapRouter, V3SwapRouter {
+// Helper Libraries
+import './libraries/CommandBuilder.sol';
+import {ERC721} from 'solmate/src/tokens/ERC721.sol';
+
+contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     using CommandBuilder for bytes[];
 
     error ExecutionFailed(uint256 commandIndex, bytes message);
@@ -25,6 +30,7 @@ contract Router is V2SwapRouter, V3SwapRouter {
     uint256 constant WRAP_ETH = 0x07;
     uint256 constant UNWRAP_WETH = 0x08;
     uint256 constant SWEEP = 0x09;
+    uint256 constant LOOKS_RARE = 0x0b;
 
     uint8 constant FLAG_COMMAND_TYPE_MASK = 0x0f;
     uint8 constant COMMAND_INDICES_OFFSET = 8;
@@ -92,7 +98,7 @@ contract Router is V2SwapRouter, V3SwapRouter {
                 // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
             } else if (commandType == TRANSFER) {
                 (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
-                Payments.pay(token, recipient, value);
+                Payments.payERC20(token, recipient, value);
             } else if (commandType == V2_SWAP_EXACT_IN) {
                 (uint256 amountOutMin, address[] memory path, address recipient) =
                     abi.decode(inputs, (uint256, address[], address));
@@ -121,13 +127,17 @@ contract Router is V2SwapRouter, V3SwapRouter {
             } else if (commandType == UNWRAP_WETH) {
                 (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                 Payments.unwrapWETH9(recipient, amountMin);
+            } else if (commandType == LOOKS_RARE) {
+                (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
+                    abi.decode(inputs, (uint256, bytes, address, address, uint256));
+                (success, output) = Constants.LOOKSRARE_EXCHANGE.call{value: value}(data);
+                if (!success) revert ExecutionFailed({commandIndex: LOOKS_RARE, message: output});
+                ERC721(token).safeTransferFrom(address(this), recipient, id);
             } else {
                 revert InvalidCommandType({commandIndex: (byteIndex - 32) / 8});
             }
 
-            if (!success) {
-                revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
-            }
+            if (!success) revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
 
             unchecked {
                 byteIndex += 8;

@@ -24,4 +24,7 @@ library Constants {
 
     /// @dev The address of Seaport on mainnet
     address internal constant SEAPORT = 0x00000000006c3852cbEf3e08E8dF289169EdE581;
+
+    /// @dev The address of LooksRare on mainnet
+    address internal constant LOOKSRARE_EXCHANGE = 0x59728544B08AB483533076417FbBB2fD0B17CE3a;
 }
