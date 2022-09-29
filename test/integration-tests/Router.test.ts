@@ -20,7 +20,7 @@ import {
 } from './shared/constants'
 import { seaportOrders, seaportInterface, getOrderParams } from './shared/protocolHelpers/seaport'
 import { resetFork, WETH, DAI } from './shared/mainnetForkHelpers'
-import { RouterPlanner, SeaportCommand, NFTXCommand, TransferCommand, V2ExactInputCommand } from '@uniswap/narwhal-sdk'
+import { RouterCommand, RouterPlanner, SeaportCommand, NFTXCommand, TransferCommand, V2ExactInputCommand } from '@uniswap/narwhal-sdk'
 import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
@@ -105,6 +105,8 @@ describe('Router', () => {
       let covenContract: ERC721
       let nftxValue: BigNumber
       let numCovens: number
+      let invalidSeaportCommand: RouterCommand
+      let value: BigNumber
 
       beforeEach(async () => {
         covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice) as ERC721
@@ -119,34 +121,31 @@ describe('Router', () => {
           alice.address,
         ])
         planner.add(NFTXCommand(nftxValue, calldata))
-      })
 
-      it('reverts if no commands are allowed to revert', async () => {
-        // add invalid seaport order to planner
         let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
         invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
         const { order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder)
         const seaportCalldata = seaportInterface.encodeFunctionData('fulfillOrder', [seaportOrder, OPENSEA_CONDUIT_KEY])
-        planner.add(SeaportCommand(seaportValue, seaportCalldata))
+        invalidSeaportCommand = SeaportCommand(seaportValue, seaportCalldata)
+
+        value = seaportValue.add(nftxValue)
+      })
+
+      it('reverts if no commands are allowed to revert', async () => {
+        planner.add(invalidSeaportCommand)
 
         const { commands, state } = planner.plan()
         await expect(
-          router.execute(DEADLINE, commands, state, { value: nftxValue.add(seaportValue) })
+          router.execute(DEADLINE, commands, state, { value })
         ).to.be.revertedWith('ExecutionFailed(1, "0x8baa579f")')
       })
 
       it('does not revert if invalid seaport transaction allowed to fail', async () => {
-        // add invalid seaport order to planner
-        let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
-        invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
-        const { order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder)
-        const seaportCalldata = seaportInterface.encodeFunctionData('fulfillOrder', [seaportOrder, OPENSEA_CONDUIT_KEY])
-        planner.add(SeaportCommand(seaportValue, seaportCalldata).allowRevert())
-
+        planner.add(invalidSeaportCommand.allowRevert())
         const { commands, state } = planner.plan()
 
         const covenBalanceBefore = await covenContract.balanceOf(alice.address)
-        await router.execute(DEADLINE, commands, state, { value: nftxValue.add(seaportValue) })
+        await router.execute(DEADLINE, commands, state, { value })
         const covenBalanceAfter = await covenContract.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
       })
