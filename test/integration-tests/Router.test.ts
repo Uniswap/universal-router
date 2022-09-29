@@ -123,9 +123,9 @@ describe('Router', () => {
 
       it('reverts if no commands are allowed to revert', async () => {
         // add invalid seaport order to planner
-        let invalidSeaportOrder = seaportOrders[0]
+        let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
         invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
-        const { order: seaportOrder, value: seaportValue } = getOrderParams(seaportOrders[0])
+        const { order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder)
         const seaportCalldata = seaportInterface.encodeFunctionData('fulfillOrder', [seaportOrder, OPENSEA_CONDUIT_KEY])
         planner.add(SeaportCommand(seaportValue, seaportCalldata))
 
@@ -137,9 +137,9 @@ describe('Router', () => {
 
       it('does not revert if invalid seaport transaction allowed to fail', async () => {
         // add invalid seaport order to planner
-        let invalidSeaportOrder = seaportOrders[0]
+        let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
         invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
-        const { order: seaportOrder, value: seaportValue } = getOrderParams(seaportOrders[0])
+        const { order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder)
         const seaportCalldata = seaportInterface.encodeFunctionData('fulfillOrder', [seaportOrder, OPENSEA_CONDUIT_KEY])
         planner.add(SeaportCommand(seaportValue, seaportCalldata).allowRevert())
 
