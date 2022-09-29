@@ -24,7 +24,8 @@ library Constants {
 
     /// @dev The address of Seaport on mainnet
     address internal constant SEAPORT = 0x00000000006c3852cbEf3e08E8dF289169EdE581;
-
+    /// @dev The address of NFTX zap contract on mainnet for interfacing with vaults
+    address constant NFTX_ZAP = 0x0fc584529a2AEfA997697FAfAcbA5831faC0c22d;
     /// @dev The address of LooksRare on mainnet
     address internal constant LOOKS_RARE = 0x59728544B08AB483533076417FbBB2fD0B17CE3a;
 

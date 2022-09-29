@@ -54,6 +54,10 @@ type OrderParameters = {
   totalOriginalConsiderationItems: BigNumber
 }
 
+type APIOrder = {
+  protocol_data: { parameters: OrderParameters & { counter: number }; signature: string }
+}
+
 type Order = {
   parameters: OrderParameters
   signature: string
@@ -65,7 +69,7 @@ type AdvancedOrder = Order & {
   extraData: string // bytes
 }
 
-function getOrderParams(apiOrder: any): { order: Order; value: BigNumber } {
+function getOrderParams(apiOrder: APIOrder): { order: Order; value: BigNumber } {
   delete apiOrder.protocol_data.parameters.counter
   const order = {
     parameters: apiOrder.protocol_data.parameters,
@@ -75,7 +79,7 @@ function getOrderParams(apiOrder: any): { order: Order; value: BigNumber } {
   return { order, value }
 }
 
-function getAdvancedOrderParams(apiOrder: any): { advancedOrder: AdvancedOrder; value: BigNumber } {
+function getAdvancedOrderParams(apiOrder: APIOrder): { advancedOrder: AdvancedOrder; value: BigNumber } {
   delete apiOrder.protocol_data.parameters.counter
   const advancedOrder = {
     parameters: apiOrder.protocol_data.parameters,

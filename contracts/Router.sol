@@ -9,6 +9,8 @@ import './base/RouterCallbacks.sol';
 
 // Helper Libraries
 import './libraries/CommandBuilder.sol';
+import './libraries/Constants.sol';
+
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 
 contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
@@ -27,6 +29,7 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant V2_SWAP_EXACT_IN = 0x04;
     uint256 constant V2_SWAP_EXACT_OUT = 0x05;
     uint256 constant SEAPORT = 0x06;
+    uint256 constant NFTX = 0x0a;
     uint256 constant LOOKS_RARE = 0x0b;
     uint256 constant X2Y2 = 0x0c;
     uint256 constant WRAP_ETH = 0x07;
@@ -119,6 +122,9 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             } else if (commandType == SEAPORT) {
                 (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
                 (success, output) = Constants.SEAPORT.call{value: value}(data);
+            } else if (commandType == NFTX) {
+                (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
+                (success, output) = Constants.NFTX_ZAP.call{value: value}(data);
             } else if (commandType == LOOKS_RARE) {
                 (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
                     abi.decode(inputs, (uint256, bytes, address, address, uint256));

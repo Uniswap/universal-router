@@ -1,61 +1,211 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Narwhal Router. gas: V2, then V3 1`] = `"207835"`;
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Narwhal Router. gas: V2, then V3 1`] = `
+Object {
+  "calldataByteLength": 1188,
+  "gasUsed": 207971,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Narwhal Router. gas: V3, then V2 1`] = `"194587"`;
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Narwhal Router. gas: V3, then V2 1`] = `
+Object {
+  "calldataByteLength": 996,
+  "gasUsed": 194685,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Narwhal Router. gas: split V2 and V3, one hop 1`] = `"311233"`;
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Narwhal Router. gas: split V2 and V3, one hop 1`] = `
+Object {
+  "calldataByteLength": 1188,
+  "gasUsed": 311369,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Router02. gas: V2, then V3 1`] = `"214826"`;
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Router02. gas: V2, then V3 1`] = `
+Object {
+  "calldataByteLength": 772,
+  "gasUsed": 214826,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Router02. gas: V3, then V2 1`] = `"218356"`;
+exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Router02. gas: V3, then V2 1`] = `
+Object {
+  "calldataByteLength": 772,
+  "gasUsed": 218356,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn ETH, one trade, one hop 1`] = `"116813"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn ETH, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 644,
+  "gasUsed": 116941,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn, one trade, one hop 1`] = `"113204"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 836,
+  "gasUsed": 113285,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn, one trade, three hops 1`] = `"252653"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn, one trade, three hops 1`] = `
+Object {
+  "calldataByteLength": 900,
+  "gasUsed": 252734,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn, one trade, two hops 1`] = `"184612"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn, one trade, two hops 1`] = `
+Object {
+  "calldataByteLength": 868,
+  "gasUsed": 184693,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut ETH, one trade, one hop 1`] = `"139543"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut ETH, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 932,
+  "gasUsed": 139780,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut, one trade, one hop 1`] = `"109790"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 644,
+  "gasUsed": 109845,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut, one trade, three hops 1`] = `"254994"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut, one trade, three hops 1`] = `
+Object {
+  "calldataByteLength": 708,
+  "gasUsed": 255049,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut, one trade, two hops 1`] = `"184108"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut, one trade, two hops 1`] = `
+Object {
+  "calldataByteLength": 676,
+  "gasUsed": 184163,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactIn ETH, one trade, one hop 1`] = `"124889"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactIn ETH, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 420,
+  "gasUsed": 124889,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactIn, one trade, one hop 1`] = `"121407"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactIn, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 420,
+  "gasUsed": 121407,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactIn, one trade, two hops 1`] = `"193278"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactIn, one trade, two hops 1`] = `
+Object {
+  "calldataByteLength": 452,
+  "gasUsed": 193278,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactOut ETH, one trade, one hop 1`] = `"122933"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactOut ETH, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 580,
+  "gasUsed": 122933,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactOut, one trade, one hop 1`] = `"122001"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Router02. gas: exactOut, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 420,
+  "gasUsed": 122001,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactIn, one trade, one hop 1`] = `"106449"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactIn, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 644,
+  "gasUsed": 106504,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactIn, one trade, three hops 1`] = `"260139"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactIn, one trade, three hops 1`] = `
+Object {
+  "calldataByteLength": 676,
+  "gasUsed": 260194,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactIn, one trade, two hops 1`] = `"182330"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactIn, one trade, two hops 1`] = `
+Object {
+  "calldataByteLength": 676,
+  "gasUsed": 182385,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactOut, one trade, one hop 1`] = `"116520"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactOut, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 644,
+  "gasUsed": 116575,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactOut, one trade, three hops 1`] = `"420953"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactOut, one trade, three hops 1`] = `
+Object {
+  "calldataByteLength": 676,
+  "gasUsed": 421008,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactOut, one trade, two hops 1`] = `"313724"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactOut, one trade, two hops 1`] = `
+Object {
+  "calldataByteLength": 676,
+  "gasUsed": 313779,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactIn, one trade, one hop 1`] = `"104733"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactIn, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 420,
+  "gasUsed": 104733,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactIn, one trade, three hops 1`] = `"284015"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactIn, one trade, three hops 1`] = `
+Object {
+  "calldataByteLength": 484,
+  "gasUsed": 284015,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactIn, one trade, two hops 1`] = `"196837"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactIn, one trade, two hops 1`] = `
+Object {
+  "calldataByteLength": 484,
+  "gasUsed": 196837,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactOut, one trade, one hop 1`] = `"114904"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactOut, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 420,
+  "gasUsed": 114904,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactOut, one trade, three hops 1`] = `"423372"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactOut, one trade, three hops 1`] = `
+Object {
+  "calldataByteLength": 484,
+  "gasUsed": 423372,
+}
+`;
 
-exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactOut, one trade, two hops 1`] = `"313985"`;
+exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Router02. gas: exactOut, one trade, two hops 1`] = `
+Object {
+  "calldataByteLength": 484,
+  "gasUsed": 313985,
+}
+`;

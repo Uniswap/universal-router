@@ -34,7 +34,7 @@ const TRANSFER_EVENT = new Interface([
     'event Transfer(address indexed _from, address indexed _to, uint256 indexed _tokenId)',
   ])
 
-describe.only('X2Y2', () => {
+describe('X2Y2', () => {
   let alice: SignerWithAddress
   let router: Router
   let planner: RouterPlanner
