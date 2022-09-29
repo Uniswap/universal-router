@@ -126,17 +126,9 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
                 (success, output) = Constants.NFTX_ZAP.call{value: value}(data);
             } else if (commandType == LOOKS_RARE) {
-                (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
-                    abi.decode(inputs, (uint256, bytes, address, address, uint256));
-                (success, output) = Constants.LOOKS_RARE.call{value: value}(data);
-                if (!success) revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
-                ERC721(token).safeTransferFrom(address(this), recipient, id);
+                callProtocolWithNFTTransfer(inputs, Constants.LOOKS_RARE, byteIndex);
             } else if (commandType == X2Y2) {
-                (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
-                    abi.decode(inputs, (uint256, bytes, address, address, uint256));
-                (success, output) = Constants.X2Y2.call{value: value}(data);
-                if (!success) revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
-                ERC721(token).safeTransferFrom(address(this), recipient, id);
+                callProtocolWithNFTTransfer(inputs, Constants.X2Y2, byteIndex);
             } else if (commandType == SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
                 Payments.sweepToken(token, recipient, minValue);
@@ -158,6 +150,14 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         }
 
         return state;
+    }
+
+    function callProtocolWithNFTTransfer(bytes memory inputs, address protocol, uint256 byteIndex) internal {
+        (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
+            abi.decode(inputs, (uint256, bytes, address, address, uint256));
+        (bool success, bytes memory output) = protocol.call{value: value}(data);
+        if (!success) revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
+        ERC721(token).safeTransferFrom(address(this), recipient, id);
     }
 
     receive() external payable {
