@@ -16,20 +16,75 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { expect } from 'chai'
 const { ethers } = hre
+import { BigNumber } from 'ethers'
+import fs from 'fs'
+
+const looksRareOrders = JSON.parse(
+  fs.readFileSync('test/integration-tests/shared/orders/LooksRare.json', { encoding: 'utf8' })
+)
+
+type MakeOrder = {
+  collection: string
+  tokenId: BigNumber
+  isOrderAsk: true
+  signer: string
+  strategy: string
+  currency: string
+  amount: BigNumber
+  price: BigNumber
+  minPercentageToAsk: BigNumber
+  nonce: BigNumber
+  startTime: BigNumber
+  endTime: BigNumber
+  v: BigNumber
+  r: string
+  s: string
+  params: string
+}
+
+type TakeOrder = {
+  minPercentageToAsk: BigNumber
+  price: BigNumber
+  taker: string,
+  tokenId: BigNumber
+  isOrderAsk: boolean,
+  params: string,
+}
+
+function createLooksRareOrders(apiOrder: any, taker: string): { makerOrder: MakeOrder, takerOrder: TakeOrder, value: BigNumber } {
+  const collection = apiOrder.collectionAddress
+  const currency = apiOrder.currencyAddress
+  if (apiOrder.params == '') apiOrder.params = '0x'
+
+  const makerOrder = { ...apiOrder, collection, currency, }
+
+  const takerOrder = {
+    minPercentageToAsk: apiOrder.minPercentageToAsk,
+    price: apiOrder.price,
+    taker,
+    tokenId: apiOrder.tokenId,
+    isOrderAsk: false,
+    params: apiOrder.params,
+  }
+
+  const value = BigNumber.from(apiOrder.price)
+
+  return { makerOrder, takerOrder, value }
+}
 
 describe.only('LooksRare', () => {
   let alice: SignerWithAddress
   let router: Router
+  let value: BigNumber
   let planner: RouterPlanner
   let covenContract: ERC721
-  let takerOrder4331: any
-  let makerOrder4331: any
+  let takerOrder: TakeOrder
+  let makerOrder: MakeOrder
   const TOKEN_ID = ethers.BigNumber.from(4331)
 
   const looksRareInterface = new ethers.utils.Interface(LOOKS_RARE_ABI)
 
   beforeEach(async () => {
-    // in beforeEach not afterEach as these tests use a different block
     await resetFork()
     covenContract = COVEN_NFT.connect(alice)
 
@@ -50,42 +105,14 @@ describe.only('LooksRare', () => {
       )
     ).connect(alice) as Router
     planner = new RouterPlanner()
-
-    takerOrder4331 = {
-      minPercentageToAsk: ethers.BigNumber.from(8500),
-      price: ethers.BigNumber.from('32000000000000000000'),
-      taker: router.address,
-      tokenId: ethers.BigNumber.from(4331),
-      isOrderAsk: false,
-      params: '0x',
-    }
-
-    makerOrder4331 = {
-      amount: ethers.BigNumber.from(1),
-      collection: '0x5180db8F5c931aaE63c74266b211F580155ecac8',
-      currency: WETH.address,
-      isOrderAsk: true,
-      minPercentageToAsk: ethers.BigNumber.from(8500),
-      nonce: ethers.BigNumber.from(45),
-      price: ethers.BigNumber.from('32000000000000000000'),
-      r: '0x2d89300623b02e6305d770925d6a34006de07723fd0910a0b1f7780c6964a41b',
-      s: '0x1430768f23a5ad85c14de1a97fcc428fd001944dfcb659fd73f3f70e653e4507',
-      signer: '0x22E86ab483084053562cE713e94431C29D1Adb8b',
-      startTime: ethers.BigNumber.from('1650697012'),
-      endTime: ethers.BigNumber.from('1666245407'),
-      strategy: '0x56244Bb70CbD3EA9Dc8007399F61dFC065190031',
-      tokenId: ethers.BigNumber.from(4331),
-      v: ethers.BigNumber.from(27),
-      params: '0x',
-    }
+    ;({ makerOrder, takerOrder, value } = createLooksRareOrders(looksRareOrders[0], router.address))
   })
 
   it('Buy a Coven', async () => {
     const calldata = looksRareInterface.encodeFunctionData('matchAskWithTakerBidUsingETHAndWETH', [
-      takerOrder4331,
-      makerOrder4331,
+      takerOrder,
+      makerOrder,
     ])
-    const value = ethers.utils.parseEther('32')
 
     planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, COVEN_ADDRESS, 4331))
     const { commands, state } = planner.plan()
@@ -96,10 +123,9 @@ describe.only('LooksRare', () => {
 
   it('gas: buy 1 NFT on looks rare', async () => {
     const calldata = looksRareInterface.encodeFunctionData('matchAskWithTakerBidUsingETHAndWETH', [
-      takerOrder4331,
-      makerOrder4331,
+      takerOrder,
+      makerOrder,
     ])
-    const value = ethers.utils.parseEther('32')
 
     planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, COVEN_ADDRESS, TOKEN_ID))
     const { commands, state } = planner.plan()
