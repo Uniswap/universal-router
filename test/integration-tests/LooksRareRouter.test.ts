@@ -45,18 +45,21 @@ type MakeOrder = {
 type TakeOrder = {
   minPercentageToAsk: BigNumber
   price: BigNumber
-  taker: string,
+  taker: string
   tokenId: BigNumber
-  isOrderAsk: boolean,
-  params: string,
+  isOrderAsk: boolean
+  params: string
 }
 
-function createLooksRareOrders(apiOrder: any, taker: string): { makerOrder: MakeOrder, takerOrder: TakeOrder, value: BigNumber } {
+function createLooksRareOrders(
+  apiOrder: any,
+  taker: string
+): { makerOrder: MakeOrder; takerOrder: TakeOrder; value: BigNumber } {
   const collection = apiOrder.collectionAddress
   const currency = apiOrder.currencyAddress
   if (apiOrder.params == '') apiOrder.params = '0x'
 
-  const makerOrder = { ...apiOrder, collection, currency, }
+  const makerOrder = { ...apiOrder, collection, currency }
 
   const takerOrder = {
     minPercentageToAsk: apiOrder.minPercentageToAsk,

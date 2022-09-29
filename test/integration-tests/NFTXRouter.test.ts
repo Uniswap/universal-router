@@ -69,7 +69,6 @@ describe('NFTX', () => {
       [WETH.address, COVEN_VAULT],
       alice.address,
     ])
-    console.log(COVEN_NFT.address)
 
     planner.add(NFTXCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
