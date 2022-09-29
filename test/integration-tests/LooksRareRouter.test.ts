@@ -1,7 +1,7 @@
 import { RouterPlanner, LooksRareCommand } from '@uniswap/narwhal-sdk'
 import { Router, ERC721 } from '../../typechain'
 import LOOKS_RARE_ABI from './shared/abis/LooksRare.json'
-import { resetFork, WETH, COVEN_NFT } from './shared/mainnetForkHelpers'
+import { resetFork, COVEN_NFT } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   COVEN_ADDRESS,

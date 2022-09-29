@@ -5,12 +5,10 @@ import { Router, ERC721 } from '../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import parseEvents from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC1155_ABI } from '../../artifacts/solmate/src/tokens/ERC1155.sol/ERC1155.json'
 import { COVEN_NFT, resetFork, WETH } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
-  COVEN_ADDRESS,
   DEADLINE,
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
