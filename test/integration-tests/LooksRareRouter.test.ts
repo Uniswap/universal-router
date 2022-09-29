@@ -23,7 +23,12 @@ const looksRareOrders = JSON.parse(
   fs.readFileSync('test/integration-tests/shared/orders/LooksRare.json', { encoding: 'utf8' })
 )
 
-type MakeOrder = {
+type APIOrder = Omit<MakerOrder, 'collection' | 'currency'> & {
+  collectionAddress: string
+  currencyAddress: string
+}
+
+type MakerOrder = {
   collection: string
   tokenId: BigNumber
   isOrderAsk: true
@@ -42,7 +47,7 @@ type MakeOrder = {
   params: string
 }
 
-type TakeOrder = {
+type TakerOrder = {
   minPercentageToAsk: BigNumber
   price: BigNumber
   taker: string
@@ -52,9 +57,9 @@ type TakeOrder = {
 }
 
 function createLooksRareOrders(
-  apiOrder: any,
+  apiOrder: APIOrder,
   taker: string
-): { makerOrder: MakeOrder; takerOrder: TakeOrder; value: BigNumber } {
+): { makerOrder: MakerOrder; takerOrder: TakerOrder; value: BigNumber } {
   const collection = apiOrder.collectionAddress
   const currency = apiOrder.currencyAddress
   if (apiOrder.params == '') apiOrder.params = '0x'
@@ -81,9 +86,9 @@ describe('LooksRare', () => {
   let value: BigNumber
   let planner: RouterPlanner
   let covenContract: ERC721
-  let takerOrder: TakeOrder
-  let makerOrder: MakeOrder
-  const TOKEN_ID = ethers.BigNumber.from(4331)
+  let takerOrder: TakerOrder
+  let makerOrder: MakerOrder
+  let tokenId: BigNumber
 
   const looksRareInterface = new ethers.utils.Interface(LOOKS_RARE_ABI)
 
@@ -109,6 +114,7 @@ describe('LooksRare', () => {
     ).connect(alice) as Router
     planner = new RouterPlanner()
     ;({ makerOrder, takerOrder, value } = createLooksRareOrders(looksRareOrders[0], router.address))
+    tokenId = makerOrder.tokenId
   })
 
   it('Buy a Coven', async () => {
@@ -117,11 +123,11 @@ describe('LooksRare', () => {
       makerOrder,
     ])
 
-    planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, COVEN_ADDRESS, 4331))
+    planner.add(LooksRareCommand(value, calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId))
     const { commands, state } = planner.plan()
     await router.execute(DEADLINE, commands, state, { value: value })
 
-    await expect((await covenContract.connect(alice).ownerOf(TOKEN_ID)).toLowerCase()).to.eq(ALICE_ADDRESS)
+    await expect((await covenContract.connect(alice).ownerOf(tokenId)).toLowerCase()).to.eq(ALICE_ADDRESS)
   })
 
   it('gas: buy 1 NFT on looks rare', async () => {
@@ -130,7 +136,7 @@ describe('LooksRare', () => {
       makerOrder,
     ])
 
-    planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, COVEN_ADDRESS, TOKEN_ID))
+    planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId))
     const { commands, state } = planner.plan()
 
     await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
