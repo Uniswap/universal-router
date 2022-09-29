@@ -1,4 +1,7 @@
+import { ERC721 } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
+import { abi as ERC721_ABI } from '../../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import { COVEN_ADDRESS } from './constants'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
 import { TransactionResponse } from '@ethersproject/abstract-provider'
@@ -78,16 +81,5 @@ export const resetFork = async (block: number = 15360000) => {
   })
 }
 
-export const DYSTOMICE_NFT = new ethers.Contract(
-  '0xe440654A00B757446B4914C56aD56A804a6BC6af',
-  [
-    {
-      inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
-      name: 'ownerOf',
-      outputs: [{ internalType: 'address', name: '', type: 'address' }],
-      stateMutability: 'view',
-      type: 'function',
-    },
-  ],
-  ethers.provider
-)
+export const COVEN_NFT = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI) as ERC721
+export const DYSTOMICE_NFT = new ethers.Contract('0xe440654A00B757446B4914C56aD56A804a6BC6af', ERC721_ABI) as ERC721
