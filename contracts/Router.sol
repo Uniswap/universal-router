@@ -145,7 +145,7 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             }
 
             if (!success && successRequired(flags)) {
-              revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
+                revert ExecutionFailed({commandIndex: (byteIndex - 32) / 8, message: output});
             }
 
             unchecked {
@@ -157,7 +157,7 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     }
 
     function successRequired(uint8 flags) internal pure returns (bool) {
-      return flags & FLAG_ALLOW_REVERT == 0;
+        return flags & FLAG_ALLOW_REVERT == 0;
     }
 
     receive() external payable {
