@@ -16,12 +16,12 @@ enum CommandType {
     V2_SWAP_EXACT_IN,
     V2_SWAP_EXACT_OUT,
     SEAPORT,
-    NFTX,
-    LOOKS_RARE,
-    X2Y2,
     WRAP_ETH,
     UNWRAP_WETH,
-    SWEEP
+    SWEEP,
+    NFTX,
+    LOOKS_RARE,
+    X2Y2
 }
 
 contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {

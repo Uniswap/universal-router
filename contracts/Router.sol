@@ -59,9 +59,6 @@ contract Router is Commands {
             if (!success && successRequired(flags)) {
                 revert ExecutionFailed({commandIndex: commandIndex, message: output});
             }
-
-            commands = commands.skipCommand();
-            commandIndex++;
         }
 
         return state;
