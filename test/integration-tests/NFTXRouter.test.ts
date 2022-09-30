@@ -14,6 +14,10 @@ import {
   V3_FACTORY_MAINNET,
   V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
+  NFTX_COVEN_VAULT,
+  NFTX_COVEN_VAULT_ID,
+  NFTX_ERC_1155_VAULT,
+  NFTX_ERC_1155_VAULT_ID,
 } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
@@ -21,12 +25,6 @@ import hre from 'hardhat'
 const { ethers } = hre
 
 const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
-
-const COVEN_VAULT = '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'
-const COVEN_VAULT_ID = '333'
-
-const ERC_1155_VAULT = '0x78e09c5ec42d505742a52fd10078a57ea186002a'
-const ERC_1155_VAULT_ID = '61'
 
 describe('NFTX', () => {
   let alice: SignerWithAddress
@@ -61,10 +59,10 @@ describe('NFTX', () => {
     const value = expandTo18DecimalsBN(4)
     const numCovens = 2
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      COVEN_VAULT_ID,
+      NFTX_COVEN_VAULT_ID,
       numCovens,
       [],
-      [WETH.address, COVEN_VAULT],
+      [WETH.address, NFTX_COVEN_VAULT],
       alice.address,
     ])
 
@@ -82,10 +80,10 @@ describe('NFTX', () => {
     const value = expandTo18DecimalsBN(4)
     const numCovens = 2
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      COVEN_VAULT_ID,
+      NFTX_COVEN_VAULT_ID,
       numCovens,
       [584, 3033],
-      [WETH.address, COVEN_VAULT],
+      [WETH.address, NFTX_COVEN_VAULT],
       alice.address,
     ])
 
@@ -111,10 +109,10 @@ describe('NFTX', () => {
     const value = expandTo18DecimalsBN(4)
     const numTwerkys = 2
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      ERC_1155_VAULT_ID,
+      NFTX_ERC_1155_VAULT_ID,
       numTwerkys,
       [],
-      [WETH.address, ERC_1155_VAULT],
+      [WETH.address, NFTX_ERC_1155_VAULT],
       alice.address,
     ])
 
@@ -132,10 +130,10 @@ describe('NFTX', () => {
     const value = expandTo18DecimalsBN(4)
     const numTwerkys = 1
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      ERC_1155_VAULT_ID,
+      NFTX_ERC_1155_VAULT_ID,
       numTwerkys,
       [44],
-      [WETH.address, ERC_1155_VAULT],
+      [WETH.address, NFTX_ERC_1155_VAULT],
       alice.address,
     ])
 
@@ -154,7 +152,7 @@ describe('NFTX', () => {
     const numCovens = 2
     const saleCost = '476686977628668346'
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      COVEN_VAULT_ID,
+      NFTX_COVEN_VAULT_ID,
       numCovens,
       [584, 3033],
       [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
@@ -176,7 +174,7 @@ describe('NFTX', () => {
     const value = expandTo18DecimalsBN(4)
     const numCovens = 2
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      COVEN_VAULT_ID,
+      NFTX_COVEN_VAULT_ID,
       numCovens,
       [],
       [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
@@ -192,7 +190,7 @@ describe('NFTX', () => {
     const value = expandTo18DecimalsBN(4)
     const numCovens = 2
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      COVEN_VAULT_ID,
+      NFTX_COVEN_VAULT_ID,
       numCovens,
       [584, 3033],
       [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
