@@ -1,16 +1,14 @@
 import type { Contract } from '@ethersproject/contracts'
 import { RouterPlanner, NFTXCommand } from '@uniswap/narwhal-sdk'
 import { expect } from './shared/expect'
-import { Router } from '../../typechain'
+import { Router, ERC721 } from '../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import parseEvents from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC1155_ABI } from '../../artifacts/solmate/src/tokens/ERC1155.sol/ERC1155.json'
-import { resetFork, WETH } from './shared/mainnetForkHelpers'
+import { COVEN_NFT, resetFork, WETH } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
-  COVEN_ADDRESS,
   DEADLINE,
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
@@ -31,7 +29,7 @@ const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
 describe('NFTX', () => {
   let alice: SignerWithAddress
   let router: Router
-  let covenContract: Contract
+  let covenContract: ERC721
   let twerkyContract: Contract
   let planner: RouterPlanner
 
@@ -42,7 +40,7 @@ describe('NFTX', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
+    covenContract = COVEN_NFT.connect(alice)
     twerkyContract = new ethers.Contract('0xf4680c917a873e2dd6ead72f9f433e74eb9c623c', ERC1155_ABI, alice)
     const routerFactory = await ethers.getContractFactory('Router')
     router = (
@@ -71,9 +69,9 @@ describe('NFTX', () => {
     planner.add(NFTXCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
 
-    const covenBalanceBefore = await covenContract.balanceOf(alice.address)
+    const covenBalanceBefore = await COVEN_NFT.connect(alice).balanceOf(alice.address)
     await router.execute(DEADLINE, commands, state, { value })
-    const covenBalanceAfter = await covenContract.balanceOf(alice.address)
+    const covenBalanceAfter = await COVEN_NFT.connect(alice).balanceOf(alice.address)
 
     expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
   })
