@@ -42,10 +42,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     /// @param inputs The inputs to execute the command with
     /// @return success true on success, false on failure
     /// @return output The outputs, if any from the command
-    function dispatch(CommandType command, bytes memory inputs)
-        internal
-        returns (bool success, bytes memory output)
-    {
+    function dispatch(CommandType command, bytes memory inputs) internal returns (bool success, bytes memory output) {
         success = true;
         if (command == CommandType.PERMIT) {
             // state[state.length] = abi.encode(msg.sender);
