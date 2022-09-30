@@ -10,23 +10,6 @@ import './libraries/Constants.sol';
 
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 
-// Command Types
-enum CommandType {
-    PERMIT,
-    TRANSFER,
-    V3_SWAP_EXACT_IN,
-    V3_SWAP_EXACT_OUT,
-    V2_SWAP_EXACT_IN,
-    V2_SWAP_EXACT_OUT,
-    SEAPORT,
-    NFTX,
-    LOOKS_RARE,
-    X2Y2,
-    WRAP_ETH,
-    UNWRAP_WETH,
-    SWEEP
-}
-
 contract Router is Commands {
     using CommandBuilder for bytes[];
     using CommandLib for bytes;

@@ -3,6 +3,7 @@ pragma solidity ^0.8.15;
 
 import './BytesLib.sol';
 import '../Router.sol';
+import '../base/Commands.sol';
 
 library CommandLib {
     using BytesLib for bytes;

@@ -7,6 +7,23 @@ import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
 import '../Router.sol';
 
+// Command Types
+enum CommandType {
+    PERMIT,
+    TRANSFER,
+    V3_SWAP_EXACT_IN,
+    V3_SWAP_EXACT_OUT,
+    V2_SWAP_EXACT_IN,
+    V2_SWAP_EXACT_OUT,
+    SEAPORT,
+    NFTX,
+    LOOKS_RARE,
+    X2Y2,
+    WRAP_ETH,
+    UNWRAP_WETH,
+    SWEEP
+}
+
 contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     error InvalidCommandType(uint256 commandIndex);
 
