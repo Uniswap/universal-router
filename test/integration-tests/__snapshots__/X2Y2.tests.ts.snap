@@ -1,0 +1,8 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`X2Y2 gas purchases 1 NFT on X2Y2 1`] = `
+Object {
+  "calldataByteLength": 2436,
+  "gasUsed": 226354,
+}
+`;
