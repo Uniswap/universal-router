@@ -20,7 +20,7 @@ library CommandLib {
     /// @notice Returns the number of commands in the list
     /// @param commands The encoded commands list
     /// @return The number of commands in the list
-    function numCommands(bytes memory commands) internal view returns (uint256) {
+    function numCommands(bytes memory commands) internal pure returns (uint256) {
         return commands.length / COMMAND_LENGTH_BYTES;
     }
 
@@ -34,7 +34,7 @@ library CommandLib {
     /// @notice Fetch the data for the first command in the command bytes
     function decodeCommand(bytes memory commands, uint256 index)
         internal
-        view
+        pure
         returns (uint8 flags, CommandType commandType, bytes8 indices)
     {
         bytes8 command;
