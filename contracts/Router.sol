@@ -12,6 +12,7 @@ import './libraries/CommandBuilder.sol';
 import './libraries/Constants.sol';
 
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
+import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
 contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     using CommandBuilder for bytes[];
@@ -164,10 +165,16 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         internal
         returns (bool success, bytes memory output)
     {
-        (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
-            abi.decode(inputs, (uint256, bytes, address, address, uint256));
+        (uint256 value, bytes memory data, address recipient, address token, uint256 id, uint256 amount) =
+            abi.decode(inputs, (uint256, bytes, address, address, uint256, uint256));
         (success, output) = protocol.call{value: value}(data);
-        if (success) ERC721(token).safeTransferFrom(address(this), recipient, id);
+        if (success) {
+            if (amount == 0) {
+                ERC721(token).safeTransferFrom(address(this), recipient, id);
+            } else {
+                ERC1155(token).safeTransferFrom(address(this), recipient, id, amount, new bytes(0));
+            }
+        }
     }
 
     receive() external payable {

@@ -1,8 +1,9 @@
 import { RouterPlanner, X2Y2Command } from '@uniswap/narwhal-sdk'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import { abi as ERC1155_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import X2Y2_ABI from './shared/abis/X2Y2.json'
 import { Router } from '../../typechain'
-import { resetFork, ENS_NFT } from './shared/mainnetForkHelpers'
+import { resetFork, ENS_NFT_721, CAMEO_NFT_1155 } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   DEADLINE,
@@ -37,56 +38,101 @@ describe('X2Y2', () => {
   let planner: RouterPlanner
 
   beforeEach(async () => {
-    // in beforeEach not afterEach as these tests use a different block
-    await resetFork()
-
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [ALICE_ADDRESS],
-    })
-    alice = await ethers.getSigner(ALICE_ADDRESS)
-
-    const routerFactory = await ethers.getContractFactory('Router')
-    router = (
-      await routerFactory.deploy(
-        ethers.constants.AddressZero,
-        V2_FACTORY_MAINNET,
-        V3_FACTORY_MAINNET,
-        V2_INIT_CODE_HASH_MAINNET,
-        V3_INIT_CODE_HASH_MAINNET
-      )
-    ).connect(alice) as Router
     planner = new RouterPlanner()
+    alice = await ethers.getSigner(ALICE_ADDRESS)
   })
 
-  it('purchases 1 NFT on X2Y2', async () => {
-    const x2y2Order: X2Y2Order = x2y2Orders[0].data[0]
+  describe('ERC-721 purchase', () => {
+    let commands: string
+    let state: string[]
+    let erc721Order: X2Y2Order
 
-    const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
-    const calldata = functionSelector + x2y2Order.input.slice(2)
+    beforeEach(async () => {
+      await resetFork()
+      await hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [ALICE_ADDRESS],
+      })
+      const routerFactory = await ethers.getContractFactory('Router')
+      router = (
+        await routerFactory.deploy(
+          ethers.constants.AddressZero,
+          V2_FACTORY_MAINNET,
+          V3_FACTORY_MAINNET,
+          V2_INIT_CODE_HASH_MAINNET,
+          V3_INIT_CODE_HASH_MAINNET
+        )
+      ).connect(alice) as Router
 
-    planner.add(X2Y2Command(x2y2Order.price, calldata, ALICE_ADDRESS, ENS_NFT.address, x2y2Order.token_id))
-    const { commands, state } = planner.plan()
+      erc721Order = x2y2Orders[0]
+      const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
+      const calldata = functionSelector + erc721Order.input.slice(2)
+      planner.add(X2Y2Command(erc721Order.price, calldata, ALICE_ADDRESS, ENS_NFT_721.address, erc721Order.token_id, 0))
+      ;({ commands, state } = planner.plan())
+    })
 
-    const receipt = await (await router.execute(DEADLINE, commands, state, { value: x2y2Order.price })).wait()
-    const events = parseEvents(ERC721_INTERFACE, receipt)
+    it('purchases 1 ERC-721 on X2Y2', async () => {
+      const receipt = await (await router.execute(DEADLINE, commands, state, { value: erc721Order.price })).wait()
+      const erc721TransferEvent = parseEvents(ERC721_INTERFACE, receipt)[1]?.args!
 
-    const newOwner = await ENS_NFT.connect(alice).ownerOf(x2y2Order.token_id)
-    await expect(newOwner.toLowerCase()).to.eq(ALICE_ADDRESS)
+      const newOwner = await ENS_NFT_721.connect(alice).ownerOf(erc721Order.token_id)
+      await expect(newOwner.toLowerCase()).to.eq(ALICE_ADDRESS)
+      await expect(erc721TransferEvent.from).to.be.eq(router.address)
+      await expect(erc721TransferEvent.to.toLowerCase()).to.be.eq(ALICE_ADDRESS)
+      await expect(erc721TransferEvent.id).to.be.eq(erc721Order.token_id)
+    })
 
-    await expect(events[1]?.args.from).to.be.eq(router.address)
-    await expect(events[1]?.args.to.toLowerCase()).to.be.eq(ALICE_ADDRESS)
-    await expect(events[1]?.args.id).to.be.eq(x2y2Order.token_id)
+    it('gas purchases 1 ERC-721 on X2Y2', async () => {
+      await snapshotGasCost(router.execute(DEADLINE, commands, state, { value: erc721Order.price }))
+    })
   })
 
-  it('gas purchases 1 NFT on X2Y2', async () => {
-    const x2y2Order: X2Y2Order = x2y2Orders[0].data[0]
+  describe('ERC-1155 purchase', () => {
+    let commands: string
+    let state: string[]
+    let erc1155Order: X2Y2Order
 
-    const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
-    const calldata = functionSelector + x2y2Order.input.slice(2)
+    beforeEach(async () => {
+      await resetFork(15650000)
+      await hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [ALICE_ADDRESS],
+      })
+      const routerFactory = await ethers.getContractFactory('Router')
+      router = (
+        await routerFactory.deploy(
+          ethers.constants.AddressZero,
+          V2_FACTORY_MAINNET,
+          V3_FACTORY_MAINNET,
+          V2_INIT_CODE_HASH_MAINNET,
+          V3_INIT_CODE_HASH_MAINNET
+        )
+      ).connect(alice) as Router
 
-    planner.add(X2Y2Command(x2y2Order.price, calldata, ALICE_ADDRESS, ENS_NFT.address, x2y2Order.token_id))
-    const { commands, state } = planner.plan()
-    await snapshotGasCost(router.execute(DEADLINE, commands, state, { value: x2y2Order.price }))
+      erc1155Order = x2y2Orders[1]
+      const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
+      const calldata = functionSelector + erc1155Order.input.slice(2)
+      planner.add(
+        X2Y2Command(
+          erc1155Order.price,
+          calldata,
+          ALICE_ADDRESS,
+          '0x93317E87a3a47821803CAADC54Ae418Af80603DA',
+          erc1155Order.token_id,
+          1
+        )
+      )
+      ;({ commands, state } = planner.plan())
+    })
+
+    it('purchases 1 ERC-1155 on X2Y2', async () => {
+      await expect(await CAMEO_NFT_1155.connect(alice).balanceOf(alice.address, erc1155Order.token_id)).to.eq(0)
+      await (await router.execute(DEADLINE, commands, state, { value: erc1155Order.price })).wait()
+      await expect(await CAMEO_NFT_1155.connect(alice).balanceOf(alice.address, erc1155Order.token_id)).to.eq(1)
+    })
+
+    it('gas purchases 1 ERC-1155 on X2Y2', async () => {
+      await snapshotGasCost(router.execute(DEADLINE, commands, state, { value: erc1155Order.price }))
+    })
   })
 })
