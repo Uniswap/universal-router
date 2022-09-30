@@ -19,8 +19,6 @@ contract Router is Commands {
     error TransactionDeadlinePassed();
 
     uint8 constant FLAG_ALLOW_REVERT = 0x80;
-    // the first 32 bytes of a dynamic parameter specify the parameter length
-    uint8 constant PARAMS_LENGTH_OFFSET = 32;
 
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
@@ -46,9 +44,7 @@ contract Router is Commands {
         bool success;
         bytes memory output;
 
-        // starts from the 32nd byte, as the first 32 hold the length of `bytes commands`
-        // terminates when it has passed the final byte of `commands`
-        // each command is 8 bytes, so the end of the loop increments by 8
+        // loop through all given commands, execute them and pass along outputs as defined
         for (uint256 commandIndex = 0; commandIndex < commands.numCommands(); commandIndex++) {
             (uint8 flags, CommandType commandType, bytes8 indices) = commands.decodeCommand(commandIndex);
 
