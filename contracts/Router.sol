@@ -50,7 +50,7 @@ contract Router is Commands {
 
             bytes memory inputs = state.buildInputs(indices);
 
-            (success, output) = dispatch(commandType, inputs, commandIndex);
+            (success, output) = dispatch(commandType, inputs);
 
             if (!success && successRequired(flags)) {
                 revert ExecutionFailed({commandIndex: commandIndex, message: output});
