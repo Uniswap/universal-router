@@ -20,7 +20,14 @@ import {
 } from './shared/constants'
 import { seaportOrders, seaportInterface, getOrderParams } from './shared/protocolHelpers/seaport'
 import { resetFork, WETH, DAI } from './shared/mainnetForkHelpers'
-import { RouterCommand, RouterPlanner, SeaportCommand, NFTXCommand, TransferCommand, V2ExactInputCommand } from '@uniswap/narwhal-sdk'
+import {
+  RouterCommand,
+  RouterPlanner,
+  SeaportCommand,
+  NFTXCommand,
+  TransferCommand,
+  V2ExactInputCommand,
+} from '@uniswap/narwhal-sdk'
 import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
@@ -135,9 +142,9 @@ describe('Router', () => {
         planner.add(invalidSeaportCommand)
 
         const { commands, state } = planner.plan()
-        await expect(
-          router.execute(DEADLINE, commands, state, { value })
-        ).to.be.revertedWith('ExecutionFailed(1, "0x8baa579f")')
+        await expect(router.execute(DEADLINE, commands, state, { value })).to.be.revertedWith(
+          'ExecutionFailed(1, "0x8baa579f")'
+        )
       })
 
       it('does not revert if invalid seaport transaction allowed to fail', async () => {
