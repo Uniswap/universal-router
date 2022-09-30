@@ -6,6 +6,8 @@ import '../Router.sol';
 import '../base/Commands.sol';
 
 library CommandLib {
+    error InvalidCommandType(uint256 commandIndex);
+
     using BytesLib for bytes;
 
     /// @notice mask for parsing command type
@@ -44,7 +46,12 @@ library CommandLib {
         }
 
         flags = uint8(bytes1(command));
-        commandType = CommandType(flags & FLAG_COMMAND_TYPE_MASK);
+        uint8 commandTypeNum = flags & FLAG_COMMAND_TYPE_MASK;
+        if (commandTypeNum > uint8(type(CommandType).max)) {
+            revert InvalidCommandType(index);
+        }
+
+        commandType = CommandType(commandTypeNum);
         indices = bytes8(uint64(command) << COMMAND_INDICES_OFFSET);
     }
 }

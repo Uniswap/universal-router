@@ -25,8 +25,6 @@ enum CommandType {
 }
 
 contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
-    error InvalidCommandType(uint256 commandIndex);
-
     address immutable PERMIT_POST;
 
     constructor(
@@ -94,8 +92,6 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         } else if (command == CommandType.UNWRAP_WETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.unwrapWETH9(recipient, amountMin);
-        } else {
-            revert InvalidCommandType({commandIndex: commandIndex});
         }
     }
 
