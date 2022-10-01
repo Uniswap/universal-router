@@ -3,21 +3,21 @@
 exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Narwhal Router. gas: V2, then V3 1`] = `
 Object {
   "calldataByteLength": 1188,
-  "gasUsed": 208096,
+  "gasUsed": 208095,
 }
 `;
 
 exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Narwhal Router. gas: V3, then V2 1`] = `
 Object {
   "calldataByteLength": 996,
-  "gasUsed": 194779,
+  "gasUsed": 194778,
 }
 `;
 
 exports[`Uniswap V2 and V3 Tests: Mixing V2 and V3 with Narwhal Router. gas: split V2 and V3, one hop 1`] = `
 Object {
   "calldataByteLength": 1188,
-  "gasUsed": 311494,
+  "gasUsed": 311493,
 }
 `;
 
@@ -38,7 +38,7 @@ Object {
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactIn ETH, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 644,
-  "gasUsed": 116956,
+  "gasUsed": 117002,
 }
 `;
 
@@ -66,7 +66,7 @@ Object {
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV2 with Narwhal Router. gas: exactOut ETH, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 932,
-  "gasUsed": 139769,
+  "gasUsed": 139861,
 }
 `;
 
@@ -129,42 +129,42 @@ Object {
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactIn, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 644,
-  "gasUsed": 106544,
+  "gasUsed": 106543,
 }
 `;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactIn, one trade, three hops 1`] = `
 Object {
   "calldataByteLength": 676,
-  "gasUsed": 260278,
+  "gasUsed": 260275,
 }
 `;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactIn, one trade, two hops 1`] = `
 Object {
   "calldataByteLength": 676,
-  "gasUsed": 182447,
+  "gasUsed": 182445,
 }
 `;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactOut, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 644,
-  "gasUsed": 116615,
+  "gasUsed": 116592,
 }
 `;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactOut, one trade, three hops 1`] = `
 Object {
   "calldataByteLength": 676,
-  "gasUsed": 421092,
+  "gasUsed": 421067,
 }
 `;
 
 exports[`Uniswap V2 and V3 Tests: Trade on UniswapV3 with Narwhal Router. gas: exactOut, one trade, two hops 1`] = `
 Object {
   "calldataByteLength": 676,
-  "gasUsed": 313841,
+  "gasUsed": 313817,
 }
 `;
 

@@ -1,4 +1,4 @@
-import { RouterPlanner, LooksRareCommand } from '@uniswap/narwhal-sdk'
+import { RouterPlanner, LooksRareCommand721, LooksRareCommand1155 } from '@uniswap/narwhal-sdk'
 import { Router, ERC721, ERC1155 } from '../../typechain'
 import LOOKS_RARE_ABI from './shared/abis/LooksRare.json'
 import { resetFork, COVEN_NFT_721, TWERKY_NFT_1155 } from './shared/mainnetForkHelpers'
@@ -133,7 +133,7 @@ describe('LooksRare', () => {
         makerOrder,
       ])
 
-      planner.add(LooksRareCommand(value, calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId, 0))
+      planner.add(LooksRareCommand721(value, calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId))
       const { commands, state } = planner.plan()
       await router.execute(DEADLINE, commands, state, { value: value })
 
@@ -146,7 +146,7 @@ describe('LooksRare', () => {
         makerOrder,
       ])
 
-      planner.add(LooksRareCommand(value.toString(), calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId, 0))
+      planner.add(LooksRareCommand721(value.toString(), calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId))
       const { commands, state } = planner.plan()
 
       await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
@@ -171,7 +171,7 @@ describe('LooksRare', () => {
         takerOrder,
         makerOrder,
       ])
-      planner.add(LooksRareCommand(value, calldata, ALICE_ADDRESS, TWERKY_ADDRESS, tokenId, 1))
+      planner.add(LooksRareCommand1155(value, calldata, ALICE_ADDRESS, TWERKY_ADDRESS, tokenId, 1))
       ;({ commands, state } = planner.plan())
     })
 

@@ -31,8 +31,10 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant V2_SWAP_EXACT_OUT = 0x05;
     uint256 constant SEAPORT = 0x06;
     uint256 constant NFTX = 0x0a;
-    uint256 constant LOOKS_RARE = 0x0b;
-    uint256 constant X2Y2 = 0x0c;
+    uint256 constant LOOKS_RARE_721 = 0x0b;
+    uint256 constant X2Y2_721 = 0x0c;
+    uint256 constant LOOKS_RARE_1155 = 0x0d;
+    uint256 constant X2Y2_1155 = 0x0e;
     uint256 constant WRAP_ETH = 0x07;
     uint256 constant UNWRAP_WETH = 0x08;
     uint256 constant SWEEP = 0x09;
@@ -128,10 +130,14 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             } else if (commandType == NFTX) {
                 (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
                 (success, output) = Constants.NFTX_ZAP.call{value: value}(data);
-            } else if (commandType == LOOKS_RARE) {
-                (success, output) = callProtocolWithNFTTransfer(inputs, Constants.LOOKS_RARE);
-            } else if (commandType == X2Y2) {
-                (success, output) = callProtocolWithNFTTransfer(inputs, Constants.X2Y2);
+            } else if (commandType == LOOKS_RARE_721) {
+                (success, output) = callAnd721Transfer(inputs, Constants.LOOKS_RARE);
+            } else if (commandType == X2Y2_721) {
+                (success, output) = callAnd721Transfer(inputs, Constants.X2Y2);
+            } else if (commandType == LOOKS_RARE_1155) {
+                (success, output) = callAnd1155Transfer(inputs, Constants.LOOKS_RARE);
+            } else if (commandType == X2Y2_1155) {
+                (success, output) = callAnd1155Transfer(inputs, Constants.X2Y2);
             } else if (commandType == SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
                 Payments.sweepToken(token, recipient, minValue);
@@ -161,20 +167,24 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         return flags & FLAG_ALLOW_REVERT == 0;
     }
 
-    function callProtocolWithNFTTransfer(bytes memory inputs, address protocol)
+    function callAnd721Transfer(bytes memory inputs, address protocol)
+        internal
+        returns (bool success, bytes memory output)
+    {
+        (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
+            abi.decode(inputs, (uint256, bytes, address, address, uint256));
+        (success, output) = protocol.call{value: value}(data);
+        if (success) ERC721(token).safeTransferFrom(address(this), recipient, id);
+    }
+
+    function callAnd1155Transfer(bytes memory inputs, address protocol)
         internal
         returns (bool success, bytes memory output)
     {
         (uint256 value, bytes memory data, address recipient, address token, uint256 id, uint256 amount) =
             abi.decode(inputs, (uint256, bytes, address, address, uint256, uint256));
         (success, output) = protocol.call{value: value}(data);
-        if (success) {
-            if (amount == 0) {
-                ERC721(token).safeTransferFrom(address(this), recipient, id);
-            } else {
-                ERC1155(token).safeTransferFrom(address(this), recipient, id, amount, new bytes(0));
-            }
-        }
+        if (success) ERC1155(token).safeTransferFrom(address(this), recipient, id, amount, new bytes(0));
     }
 
     receive() external payable {

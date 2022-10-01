@@ -1,4 +1,4 @@
-import { RouterPlanner, X2Y2Command } from '@uniswap/narwhal-sdk'
+import { RouterPlanner, X2Y2Command721, X2Y2Command1155 } from '@uniswap/narwhal-sdk'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC1155_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import X2Y2_ABI from './shared/abis/X2Y2.json'
@@ -67,7 +67,7 @@ describe('X2Y2', () => {
       erc721Order = x2y2Orders[0]
       const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
       const calldata = functionSelector + erc721Order.input.slice(2)
-      planner.add(X2Y2Command(erc721Order.price, calldata, ALICE_ADDRESS, ENS_NFT_721.address, erc721Order.token_id, 0))
+      planner.add(X2Y2Command721(erc721Order.price, calldata, ALICE_ADDRESS, ENS_NFT_721.address, erc721Order.token_id))
       ;({ commands, state } = planner.plan())
     })
 
@@ -113,7 +113,7 @@ describe('X2Y2', () => {
       const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
       const calldata = functionSelector + erc1155Order.input.slice(2)
       planner.add(
-        X2Y2Command(
+        X2Y2Command1155(
           erc1155Order.price,
           calldata,
           ALICE_ADDRESS,
