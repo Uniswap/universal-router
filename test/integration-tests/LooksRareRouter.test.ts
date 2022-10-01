@@ -1,7 +1,7 @@
 import { RouterPlanner, LooksRareCommand721, LooksRareCommand1155 } from '@uniswap/narwhal-sdk'
 import { Router, ERC721, ERC1155 } from '../../typechain'
 import LOOKS_RARE_ABI from './shared/abis/LooksRare.json'
-import { resetFork, COVEN_NFT_721, TWERKY_NFT_1155 } from './shared/mainnetForkHelpers'
+import { resetFork, COVEN_721, TWERKY_1155 } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   COVEN_ADDRESS,
@@ -95,8 +95,8 @@ describe('LooksRare', () => {
 
   beforeEach(async () => {
     await resetFork()
-    covenContract = COVEN_NFT_721.connect(alice)
-    twerkyContract = TWERKY_NFT_1155.connect(alice)
+    covenContract = COVEN_721.connect(alice)
+    twerkyContract = TWERKY_1155.connect(alice)
 
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',

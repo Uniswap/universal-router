@@ -4,7 +4,7 @@ import { Router, ERC721, ERC1155 } from '../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import parseEvents from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
-import { COVEN_NFT_721, TWERKY_NFT_1155, resetFork, WETH } from './shared/mainnetForkHelpers'
+import { COVEN_721, TWERKY_1155, resetFork, WETH } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   DEADLINE,
@@ -38,8 +38,8 @@ describe('NFTX', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    covenContract = COVEN_NFT_721.connect(alice)
-    twerkyContract = TWERKY_NFT_1155.connect(alice)
+    covenContract = COVEN_721.connect(alice)
+    twerkyContract = TWERKY_1155.connect(alice)
     const routerFactory = await ethers.getContractFactory('Router')
     router = (
       await routerFactory.deploy(
@@ -67,9 +67,9 @@ describe('NFTX', () => {
     planner.add(NFTXCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
 
-    const covenBalanceBefore = await COVEN_NFT_721.connect(alice).balanceOf(alice.address)
+    const covenBalanceBefore = await COVEN_721.connect(alice).balanceOf(alice.address)
     await router.execute(DEADLINE, commands, state, { value })
-    const covenBalanceAfter = await COVEN_NFT_721.connect(alice).balanceOf(alice.address)
+    const covenBalanceAfter = await COVEN_721.connect(alice).balanceOf(alice.address)
 
     expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
   })

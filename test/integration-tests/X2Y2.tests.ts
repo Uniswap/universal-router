@@ -3,7 +3,7 @@ import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol
 import { abi as ERC1155_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import X2Y2_ABI from './shared/abis/X2Y2.json'
 import { Router } from '../../typechain'
-import { resetFork, ENS_NFT_721, CAMEO_NFT_1155 } from './shared/mainnetForkHelpers'
+import { resetFork, ENS_721, CAMEO_1155 } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   DEADLINE,
@@ -67,7 +67,7 @@ describe('X2Y2', () => {
       erc721Order = x2y2Orders[0]
       const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
       const calldata = functionSelector + erc721Order.input.slice(2)
-      planner.add(X2Y2Command721(erc721Order.price, calldata, ALICE_ADDRESS, ENS_NFT_721.address, erc721Order.token_id))
+      planner.add(X2Y2Command721(erc721Order.price, calldata, ALICE_ADDRESS, ENS_721.address, erc721Order.token_id))
       ;({ commands, state } = planner.plan())
     })
 
@@ -75,7 +75,7 @@ describe('X2Y2', () => {
       const receipt = await (await router.execute(DEADLINE, commands, state, { value: erc721Order.price })).wait()
       const erc721TransferEvent = parseEvents(ERC721_INTERFACE, receipt)[1]?.args!
 
-      const newOwner = await ENS_NFT_721.connect(alice).ownerOf(erc721Order.token_id)
+      const newOwner = await ENS_721.connect(alice).ownerOf(erc721Order.token_id)
       await expect(newOwner.toLowerCase()).to.eq(ALICE_ADDRESS)
       await expect(erc721TransferEvent.from).to.be.eq(router.address)
       await expect(erc721TransferEvent.to.toLowerCase()).to.be.eq(ALICE_ADDRESS)
@@ -126,9 +126,9 @@ describe('X2Y2', () => {
     })
 
     it('purchases 1 ERC-1155 on X2Y2', async () => {
-      await expect(await CAMEO_NFT_1155.connect(alice).balanceOf(alice.address, erc1155Order.token_id)).to.eq(0)
+      await expect(await CAMEO_1155.connect(alice).balanceOf(alice.address, erc1155Order.token_id)).to.eq(0)
       await (await router.execute(DEADLINE, commands, state, { value: erc1155Order.price })).wait()
-      await expect(await CAMEO_NFT_1155.connect(alice).balanceOf(alice.address, erc1155Order.token_id)).to.eq(1)
+      await expect(await CAMEO_1155.connect(alice).balanceOf(alice.address, erc1155Order.token_id)).to.eq(1)
     })
 
     it('gas purchases 1 ERC-1155 on X2Y2', async () => {

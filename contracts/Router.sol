@@ -131,13 +131,13 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 (uint256 value, bytes memory data) = abi.decode(state.buildInputs(indices), (uint256, bytes));
                 (success, output) = Constants.NFTX_ZAP.call{value: value}(data);
             } else if (commandType == LOOKS_RARE_721) {
-                (success, output) = callAnd721Transfer(inputs, Constants.LOOKS_RARE);
+                (success, output) = callAndTransfer721(inputs, Constants.LOOKS_RARE);
             } else if (commandType == X2Y2_721) {
-                (success, output) = callAnd721Transfer(inputs, Constants.X2Y2);
+                (success, output) = callAndTransfer721(inputs, Constants.X2Y2);
             } else if (commandType == LOOKS_RARE_1155) {
-                (success, output) = callAnd1155Transfer(inputs, Constants.LOOKS_RARE);
+                (success, output) = callAndTransfer1155(inputs, Constants.LOOKS_RARE);
             } else if (commandType == X2Y2_1155) {
-                (success, output) = callAnd1155Transfer(inputs, Constants.X2Y2);
+                (success, output) = callAndTransfer1155(inputs, Constants.X2Y2);
             } else if (commandType == SWEEP) {
                 (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
                 Payments.sweepToken(token, recipient, minValue);
@@ -167,7 +167,7 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         return flags & FLAG_ALLOW_REVERT == 0;
     }
 
-    function callAnd721Transfer(bytes memory inputs, address protocol)
+    function callAndTransfer721(bytes memory inputs, address protocol)
         internal
         returns (bool success, bytes memory output)
     {
@@ -177,7 +177,7 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         if (success) ERC721(token).safeTransferFrom(address(this), recipient, id);
     }
 
-    function callAnd1155Transfer(bytes memory inputs, address protocol)
+    function callAndTransfer1155(bytes memory inputs, address protocol)
         internal
         returns (bool success, bytes memory output)
     {
