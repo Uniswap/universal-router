@@ -1,4 +1,5 @@
 solmate/=lib/solmate/
+permitpost/=lib/permitpost/
 forge-std/=lib/forge-std/src/
 @openzeppelin/=lib/openzeppelin-contracts/
 @uniswap/v2-core=lib/v2-core

@@ -6,6 +6,7 @@ import './modules/V2SwapRouter.sol';
 import './modules/V3SwapRouter.sol';
 import './modules/Payments.sol';
 import './base/RouterCallbacks.sol';
+import '../lib/permitpost/src/interfaces/IPermitPost.sol';
 
 // Helper Libraries
 import './libraries/CommandBuilder.sol';
@@ -93,12 +94,12 @@ contract Router is V2SwapRouter, V3SwapRouter, RouterCallbacks {
 
             bytes memory inputs = state.buildInputs(indices);
             if (commandType == PERMIT) {
-                // state[state.length] = abi.encode(msg.sender);
-                // (success, output) = permitPost.call(state[0]);
-                // bytes memory inputs = state.build(bytes4(0), indices);
-                // (address some, address parameters, uint256 forPermit) = abi.decode(inputs, (address, address, uint));
-                //
-                // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
+                (bytes memory data) = abi.decode(inputs, (bytes));
+                // pass in the msg.sender as the first parameter `from`
+                data = bytes.concat(
+                    IPermitPost.transferFrom.selector, abi.encodePacked(uint256(uint160(msg.sender))), data
+                );
+                (success, output) = PERMIT_POST.call(data);
             } else if (commandType == TRANSFER) {
                 (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
                 Payments.payERC20(token, recipient, value);

@@ -16,3 +16,6 @@
 [submodule "lib/solmate"]
 	path = lib/solmate
 	url = https://github.com/transmissions11/solmate
+[submodule "lib/permitpost"]
+	path = lib/permitpost
+	url = git@github.com:Uniswap/permitpost.git
