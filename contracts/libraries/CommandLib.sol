@@ -37,7 +37,7 @@ library CommandLib {
     function decodeCommand(bytes memory commands, uint256 index)
         internal
         pure
-        returns (uint8 flags, CommandType commandType, bytes8 indices)
+        returns (uint8 flags, uint256 commandType, bytes8 indices)
     {
         bytes8 command;
         assembly {
@@ -46,12 +46,7 @@ library CommandLib {
         }
 
         flags = uint8(bytes1(command));
-        uint8 commandTypeNum = flags & FLAG_COMMAND_TYPE_MASK;
-        if (commandTypeNum > uint8(type(CommandType).max)) {
-            revert InvalidCommandType(index);
-        }
-
-        commandType = CommandType(commandTypeNum);
+        commandType = flags & FLAG_COMMAND_TYPE_MASK;
         indices = bytes8(uint64(command) << COMMAND_INDICES_OFFSET);
     }
 }

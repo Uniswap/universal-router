@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
-
 import './base/Commands.sol';
 
 // Helper Libraries
@@ -47,7 +46,7 @@ contract Router is Commands {
 
         // loop through all given commands, execute them and pass along outputs as defined
         for (uint256 commandIndex = 0; commandIndex < numCommands; commandIndex++) {
-            (uint8 flags, CommandType commandType, bytes8 indices) = commands.decodeCommand(commandIndex);
+            (uint8 flags, uint256 commandType, bytes8 indices) = commands.decodeCommand(commandIndex);
 
             bytes memory inputs = state.buildInputs(indices);
 
