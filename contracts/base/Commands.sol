@@ -90,7 +90,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.unwrapWETH9(recipient, amountMin);
         } else {
-          revert InvalidCommandType(command);
+            revert InvalidCommandType(command);
         }
     }
 
