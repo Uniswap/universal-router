@@ -43,10 +43,11 @@ contract Router is Commands {
     {
         bool success;
         bytes memory output;
+        uint256 numCommands = commands.numCommands();
 
         // loop through all given commands, execute them and pass along outputs as defined
-        for (uint256 commandIndex = 0; commandIndex < commands.numCommands(); commandIndex++) {
-            (uint8 flags, CommandType commandType, bytes8 indices) = commands.decodeCommand(commandIndex);
+        for (uint256 commandIndex = 0; commandIndex < numCommands; commandIndex++) {
+            (uint8 flags, uint256 commandType, bytes8 indices) = commands.decodeCommand(commandIndex);
 
             bytes memory inputs = state.buildInputs(indices);
 
