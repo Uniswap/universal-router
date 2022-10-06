@@ -37,10 +37,7 @@ describe('NFTX', () => {
 
   beforeEach(async () => {
     await resetFork()
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [ALICE_ADDRESS],
-    })
+
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = COVEN_NFT.connect(alice)
     twerkyContract = new ethers.Contract('0xf4680c917a873e2dd6ead72f9f433e74eb9c623c', ERC1155_ABI, alice)

@@ -73,10 +73,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
   beforeEach(async () => {
     await resetFork()
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [ALICE_ADDRESS],
-    })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)

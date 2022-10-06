@@ -95,10 +95,6 @@ describe('LooksRare', () => {
   beforeEach(async () => {
     await resetFork()
 
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [ALICE_ADDRESS],
-    })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = COVEN_NFT.connect(alice)
 

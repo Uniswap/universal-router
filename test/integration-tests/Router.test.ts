@@ -28,10 +28,7 @@ describe('Router', () => {
   beforeEach(async () => {
     await resetFork()
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [ALICE_ADDRESS],
-    })
+
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
     const routerFactory = await ethers.getContractFactory('Router')

@@ -1,7 +1,7 @@
 import { ERC721 } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { abi as ERC721_ABI } from '../../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
-import { COVEN_ADDRESS } from './constants'
+import { COVEN_ADDRESS, ALICE_ADDRESS } from './constants'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
 import { TransactionResponse } from '@ethersproject/abstract-provider'
@@ -78,6 +78,10 @@ export const resetFork = async (block: number = 15360000) => {
         },
       },
     ],
+  })
+  await hre.network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [ALICE_ADDRESS],
   })
 }
 

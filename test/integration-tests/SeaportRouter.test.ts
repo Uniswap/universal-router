@@ -107,10 +107,6 @@ describe('Seaport', () => {
 
   beforeEach(async () => {
     await resetFork()
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [ALICE_ADDRESS],
-    })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
     const routerFactory = await ethers.getContractFactory('Router')
