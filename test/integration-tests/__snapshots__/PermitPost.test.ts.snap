@@ -1,0 +1,8 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`PermitPost gas: transfer ERC20 into router 1`] = `
+Object {
+  "calldataByteLength": 900,
+  "gasUsed": 106947,
+}
+`;
