@@ -101,6 +101,51 @@ describe('Seaport', () => {
     expect(ethDelta.sub(gasSpent)).to.eq(value)
   })
 
+  it('completes a fulfillAvailableAdvancedOrders type', async () => {
+    const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
+    const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
+    const params0 = advancedOrder0.parameters
+    const params1 = advancedOrder1.parameters
+    const value = value1.add(value2)
+    const considerationFulfillment = [
+      [[0, 0]],
+      [[0, 1],[1, 1]],
+      [[0, 2], [1, 2]],
+      [[1, 0]]
+    ]
+
+    const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
+      [advancedOrder0, advancedOrder1],
+      [],
+      [[[0, 0]], [[1, 0]]],
+      considerationFulfillment,
+      OPENSEA_CONDUIT_KEY,
+      alice.address,
+      100
+    ])
+
+    planner.add(SeaportCommand(value.toString(), calldata))
+    const { commands, state } = planner.plan()
+
+    const owner0Before = await covenContract.ownerOf(params0.offer[0].identifierOrCriteria)
+    const owner1Before = await covenContract.ownerOf(params1.offer[0].identifierOrCriteria)
+    const ethBefore = await ethers.provider.getBalance(alice.address)
+
+    const receipt = await (await router.execute(DEADLINE, commands, state, { value })).wait()
+
+    const owner0After = await covenContract.ownerOf(params0.offer[0].identifierOrCriteria)
+    const owner1After = await covenContract.ownerOf(params1.offer[0].identifierOrCriteria)
+    const ethAfter = await ethers.provider.getBalance(alice.address)
+    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+    const ethDelta = ethBefore.sub(ethAfter)
+
+    expect(owner0Before.toLowerCase()).to.eq(params0.offerer)
+    expect(owner1Before.toLowerCase()).to.eq(params1.offerer)
+    expect(owner0After).to.eq(alice.address)
+    expect(owner1After).to.eq(alice.address)
+    expect(ethDelta.sub(gasSpent)).to.eq(value)
+  })
+
   it('gas fulfillOrder', async () => {
     const { order, value } = getOrderParams(seaportOrders[0])
     const calldata = seaportInterface.encodeFunctionData('fulfillOrder', [order, OPENSEA_CONDUIT_KEY])
@@ -120,6 +165,32 @@ describe('Seaport', () => {
     ])
 
     planner.add(SeaportCommand(value.toString(), calldata))
+    const { commands, state } = planner.plan()
+    await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
+  })
+
+  it('gas fulfillAvailableAdvancedOrders 1 orders', async () => {
+    const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
+    const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
+    const value = value1.add(value2)
+    const considerationFulfillment = [
+      [[0, 0]],
+      [[0, 1],[1, 1]],
+      [[0, 2], [1, 2]],
+      [[1, 0]]
+    ]
+
+    const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
+      [advancedOrder0, advancedOrder1],
+      [],
+      [[[0, 0]], [[1, 0]]],
+      considerationFulfillment,
+      OPENSEA_CONDUIT_KEY,
+      alice.address,
+      100
+    ])
+
+    planner.add(SeaportCommand(value, calldata))
     const { commands, state } = planner.plan()
     await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
   })
