@@ -57,7 +57,7 @@
     "typescript": "^3.7.3"
   },
   "scripts": {
-    "compile": "cd lib/permitpost && forge build && cd ../.. && hardhat compile",
+    "compile": "hardhat compile && cd lib/permitpost && forge build",
     "test": "hardhat test",
     "prettier:fix": "prettier --write '**/*.ts' && forge fmt",
     "prettier": "prettier --check '**/*.ts' && forge fmt --check"
