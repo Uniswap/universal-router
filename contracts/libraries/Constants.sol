@@ -27,5 +27,8 @@ library Constants {
     /// @dev The address of NFTX zap contract on mainnet for interfacing with vaults
     address constant NFTX_ZAP = 0x0fc584529a2AEfA997697FAfAcbA5831faC0c22d;
     /// @dev The address of LooksRare on mainnet
-    address internal constant LOOKSRARE_EXCHANGE = 0x59728544B08AB483533076417FbBB2fD0B17CE3a;
+    address internal constant LOOKS_RARE = 0x59728544B08AB483533076417FbBB2fD0B17CE3a;
+
+    /// @dev The address of LooksRare on mainnet
+    address internal constant X2Y2 = 0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3;
 }
