@@ -8,9 +8,6 @@ import './libraries/CommandBuilder.sol';
 import './libraries/CommandLib.sol';
 import './libraries/Constants.sol';
 
-import {ERC721} from 'solmate/src/tokens/ERC721.sol';
-import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
-
 contract Router is Commands {
     using CommandBuilder for bytes[];
     using CommandLib for bytes;
