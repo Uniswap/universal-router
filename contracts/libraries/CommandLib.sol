@@ -26,13 +26,6 @@ library CommandLib {
         return commands.length / COMMAND_LENGTH_BYTES;
     }
 
-    /// @notice Returns true iff the commands bytes contains another command
-    /// @param commands The encoded commands
-    /// @return True if commands bytes contains another command, else false
-    function hasNextCommand(bytes memory commands) internal pure returns (bool) {
-        return commands.length >= COMMAND_LENGTH_BYTES;
-    }
-
     /// @notice Fetch the data for the first command in the command bytes
     function decodeCommand(bytes memory commands, uint256 index)
         internal
