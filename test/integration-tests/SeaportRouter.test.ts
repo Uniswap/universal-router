@@ -109,9 +109,15 @@ describe('Seaport', () => {
     const value = value1.add(value2)
     const considerationFulfillment = [
       [[0, 0]],
-      [[0, 1],[1, 1]],
-      [[0, 2], [1, 2]],
-      [[1, 0]]
+      [
+        [0, 1],
+        [1, 1],
+      ],
+      [
+        [0, 2],
+        [1, 2],
+      ],
+      [[1, 0]],
     ]
 
     const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
@@ -121,7 +127,7 @@ describe('Seaport', () => {
       considerationFulfillment,
       OPENSEA_CONDUIT_KEY,
       alice.address,
-      100
+      100,
     ])
 
     planner.add(SeaportCommand(value.toString(), calldata))
@@ -175,9 +181,15 @@ describe('Seaport', () => {
     const value = value1.add(value2)
     const considerationFulfillment = [
       [[0, 0]],
-      [[0, 1],[1, 1]],
-      [[0, 2], [1, 2]],
-      [[1, 0]]
+      [
+        [0, 1],
+        [1, 1],
+      ],
+      [
+        [0, 2],
+        [1, 2],
+      ],
+      [[1, 0]],
     ]
 
     const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
@@ -187,7 +199,7 @@ describe('Seaport', () => {
       considerationFulfillment,
       OPENSEA_CONDUIT_KEY,
       alice.address,
-      100
+      100,
     ])
 
     planner.add(SeaportCommand(value, calldata))
