@@ -2,7 +2,6 @@
 pragma solidity ^0.8.15;
 
 import './base/Commands.sol';
-import '../lib/permitpost/src/interfaces/IPermitPost.sol';
 
 // Helper Libraries
 import './libraries/CommandBuilder.sol';
