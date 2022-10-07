@@ -1,6 +1,20 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`PermitPost gas: transfer ERC20 into router 1`] = `
+exports[`PermitPost gas: permit post, uniswap v2 single hop 1`] = `
+Object {
+  "calldataByteLength": 1252,
+  "gasUsed": 139835,
+}
+`;
+
+exports[`PermitPost gas: transfer ERC20 into Uniswap Pair nonce 1 1`] = `
+Object {
+  "calldataByteLength": 900,
+  "gasUsed": 72792,
+}
+`;
+
+exports[`PermitPost gas: transfer ERC20 into router nonce 0 1`] = `
 Object {
   "calldataByteLength": 900,
   "gasUsed": 106992,
