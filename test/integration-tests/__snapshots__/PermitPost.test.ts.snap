@@ -3,6 +3,6 @@
 exports[`PermitPost gas: transfer ERC20 into router 1`] = `
 Object {
   "calldataByteLength": 900,
-  "gasUsed": 106947,
+  "gasUsed": 106992,
 }
 `;

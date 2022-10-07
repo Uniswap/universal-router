@@ -6,6 +6,7 @@ import '../modules/V3SwapRouter.sol';
 import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
 import '../Router.sol';
+import '../../lib/permitpost/src/interfaces/IPermitPost.sol';
 
 // Command Types
 uint256 constant PERMIT = 0x00;
@@ -44,7 +45,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     /// @return output The outputs, if any from the command
     function dispatch(uint256 command, bytes memory inputs) internal returns (bool success, bytes memory output) {
         success = true;
-        if (commandType == PERMIT) {
+        if (command == PERMIT) {
             (bytes memory data) = abi.decode(inputs, (bytes));
             // pass in the msg.sender as the first parameter `from`
             data = bytes.concat(
