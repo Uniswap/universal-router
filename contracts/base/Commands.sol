@@ -48,9 +48,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         if (command == PERMIT) {
             (bytes memory data) = abi.decode(inputs, (bytes));
             // pass in the msg.sender as the first parameter `from`
-            data = bytes.concat(
-                IPermitPost.transferFrom.selector, abi.encodePacked(uint256(uint160(msg.sender))), data
-            );
+            data = bytes.concat(IPermitPost.transferFrom.selector, abi.encodePacked(uint256(uint160(msg.sender))), data);
             (success, output) = PERMIT_POST.call(data);
         } else if (command == TRANSFER) {
             (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));

@@ -60,14 +60,14 @@ describe('PermitPost', () => {
     version: '1',
     chainId: hre.network.config.chainId,
     verifyingContract: ethers.constants.AddressZero,
-  };
+  }
 
   const eip712Types = {
     TokenDetails: [
       { name: 'tokenType', type: 'uint8' },
       { name: 'token', type: 'address' },
       { name: 'maxAmount', type: 'uint256' },
-      { name: 'id', type: 'uint256' }
+      { name: 'id', type: 'uint256' },
     ],
     Permit: [
       { name: 'sigType', type: 'uint8' },
@@ -75,16 +75,11 @@ describe('PermitPost', () => {
       { name: 'spender', type: 'address' },
       { name: 'deadline', type: 'uint256' },
       { name: 'witness', type: 'bytes32' },
-      { name: 'nonce', type: 'uint256' }
-    ]
-  };
+      { name: 'nonce', type: 'uint256' },
+    ],
+  }
 
-  function constructData(
-    permit: Permit,
-    to: string[],
-    amounts: BigNumber[],
-    signature: Signature
-  ): string {
+  function constructData(permit: Permit, to: string[], amounts: BigNumber[], signature: Signature): string {
     const calldata = permitPostInterface.encodeFunctionData('transferFrom', [
       ethers.constants.AddressZero,
       permit,
@@ -96,14 +91,19 @@ describe('PermitPost', () => {
     return '0x' + calldata.slice(74)
   }
 
-  async function signPermit(permit: Permit, signatureType: number, nonce: number, signer: SignerWithAddress): Promise<Signature> {
+  async function signPermit(
+    permit: Permit,
+    signatureType: number,
+    nonce: number,
+    signer: SignerWithAddress
+  ): Promise<Signature> {
     const eip712Values = {
       sigType: signatureType,
       tokens: permit.tokens,
       spender: permit.spender,
       deadline: permit.deadline,
       witness: permit.witness,
-      nonce: nonce
+      nonce: nonce,
     }
 
     const signature = await signer._signTypedData(eip712Domain, eip712Types, eip712Values)
@@ -157,7 +157,7 @@ describe('PermitPost', () => {
       tokenType: 0, // ERC20
       token: WETH.address,
       maxAmount: expandTo18DecimalsBN(2),
-      id: BigNumber.from(0)
+      id: BigNumber.from(0),
     }
 
     const permit: Permit = {
@@ -179,7 +179,7 @@ describe('PermitPost', () => {
     const calldata = constructData(permit, [router.address], [amountToTransfer], signature)
 
     const bobBalanceBefore = await wethContract.balanceOf(bob.address)
-    const routerBalanceBefore = await wethContract.balanceOf(router.address) 
+    const routerBalanceBefore = await wethContract.balanceOf(router.address)
 
     planner.add(PermitCommand(calldata))
     const { commands, state } = planner.plan()
@@ -198,7 +198,7 @@ describe('PermitPost', () => {
       tokenType: 0, // ERC20
       token: WETH.address,
       maxAmount: expandTo18DecimalsBN(2),
-      id: BigNumber.from(0)
+      id: BigNumber.from(0),
     }
 
     const permit: Permit = {
