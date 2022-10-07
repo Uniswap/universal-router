@@ -10,7 +10,7 @@ Object {
 exports[`Seaport gas fulfillAvailableAdvancedOrders 1 orders 1`] = `
 Object {
   "calldataByteLength": 4740,
-  "gasUsed": 347665,
+  "gasUsed": 347645,
 }
 `;
 
