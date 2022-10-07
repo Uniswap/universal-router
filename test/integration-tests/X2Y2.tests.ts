@@ -1,6 +1,5 @@
 import { RouterPlanner, X2Y2Command721, X2Y2Command1155 } from '@uniswap/narwhal-sdk'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
-import { abi as ERC1155_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import X2Y2_ABI from './shared/abis/X2Y2.json'
 import { Router } from '../../typechain'
 import { resetFork, ENS_721, CAMEO_1155 } from './shared/mainnetForkHelpers'
