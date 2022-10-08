@@ -38,11 +38,11 @@ library UniswapV2Library {
     function getReserves(address factory, bytes32 initCodeHash, address tokenA, address tokenB)
         internal
         view
-        returns (uint256 reserveA, uint256 reserveB)
+        returns (uint256 reserveA, uint256 reserveB, address pair)
     {
         (address token0, address token1) = UniswapPoolHelper.sortTokens(tokenA, tokenB);
-        (uint256 reserve0, uint256 reserve1,) =
-            IUniswapV2Pair(pairForPreSorted(factory, initCodeHash, token0, token1)).getReserves();
+        pair = pairForPreSorted(factory, initCodeHash, token0, token1);
+        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(pair).getReserves();
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
 
@@ -72,17 +72,18 @@ library UniswapV2Library {
     }
 
     // performs chained getAmountIn calculations on any number of pairs
-    function getAmountsIn(address factory, bytes32 initCodeHash, uint256 amountOut, address[] memory path)
+    function getAmountInMultihop(address factory, bytes32 initCodeHash, uint256 amountOut, address[] memory path)
         internal
         view
-        returns (uint256[] memory amounts)
+        returns (uint256 amount, address pair)
     {
         require(path.length >= 2);
-        amounts = new uint256[](path.length);
-        amounts[amounts.length - 1] = amountOut;
+        amount = amountOut;
         for (uint256 i = path.length - 1; i > 0; i--) {
-            (uint256 reserveIn, uint256 reserveOut) = getReserves(factory, initCodeHash, path[i - 1], path[i]);
-            amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
+            uint256 reserveIn;
+            uint256 reserveOut;
+            (reserveIn, reserveOut, pair) = getReserves(factory, initCodeHash, path[i - 1], path[i]);
+            amount = getAmountIn(amount, reserveIn, reserveOut);
         }
     }
 }

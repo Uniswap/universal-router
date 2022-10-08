@@ -55,13 +55,10 @@ contract V2SwapRouter {
         internal
         returns (uint256 amountIn)
     {
-        amountIn = UniswapV2Library.getAmountsIn(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path)[0];
+        address pair;
+        (amountIn, pair) = UniswapV2Library.getAmountInMultihop(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path);
         require(amountIn <= amountInMax, 'Too much requested');
-
-        Payments.payERC20(
-            path[0], UniswapV2Library.pairFor(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]), amountIn
-        );
-
+        Payments.payERC20(path[0], pair, amountIn);
         _v2Swap(path, recipient);
     }
 }

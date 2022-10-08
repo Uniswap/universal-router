@@ -58,7 +58,7 @@ const V2_EVENTS = new Interface([
   'event Swap(address indexed sender, uint amount0In, uint amount1In, uint amount0Out, uint amount1Out, address indexed to)',
 ])
 
-describe('Uniswap V2 and V3 Tests:', () => {
+describe.only('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
   let router: Router
   let daiContract: Contract
