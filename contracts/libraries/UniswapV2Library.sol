@@ -42,7 +42,7 @@ library UniswapV2Library {
     {
         (address token0, address token1) = UniswapPoolHelper.sortTokens(tokenA, tokenB);
         pair = pairForPreSorted(factory, initCodeHash, token0, token1);
-        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(pair).getReserves();
+        (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
 
