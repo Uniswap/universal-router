@@ -18,24 +18,26 @@ contract V2SwapRouter {
     }
 
     function _v2Swap(address[] memory path, address recipient) private {
-        // cached to save on duplicate operations
-        (address pair, address token0) =
-            UniswapV2Library.pairAndToken0For(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]);
-        for (uint256 i; i < path.length - 1; i++) {
-            (address input, address output) = (path[i], path[i + 1]);
-            (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
-            (uint256 reserveInput, uint256 reserveOutput) =
-                input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
-            uint256 amountInput = IERC20(input).balanceOf(pair) - reserveInput;
-            uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
-            (uint256 amount0Out, uint256 amount1Out) =
-                input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
-            address nextPair;
-            (nextPair, token0) = i < path.length - 2
-                ? UniswapV2Library.pairAndToken0For(V2_FACTORY, PAIR_INIT_CODE_HASH, output, path[i + 2])
-                : (recipient, address(0));
-            IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
-            pair = nextPair;
+        unchecked {
+            // cached to save on duplicate operations
+            (address pair, address token0) =
+                UniswapV2Library.pairAndToken0For(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]);
+            for (uint256 i; i < path.length - 1; i++) {
+                (address input, address output) = (path[i], path[i + 1]);
+                (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
+                (uint256 reserveInput, uint256 reserveOutput) =
+                    input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+                uint256 amountInput = IERC20(input).balanceOf(pair) - reserveInput;
+                uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
+                (uint256 amount0Out, uint256 amount1Out) =
+                    input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
+                address nextPair;
+                (nextPair, token0) = i < path.length - 2
+                    ? UniswapV2Library.pairAndToken0For(V2_FACTORY, PAIR_INIT_CODE_HASH, output, path[i + 2])
+                    : (recipient, address(0));
+                IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
+                pair = nextPair;
+            }
         }
     }
 
