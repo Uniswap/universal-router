@@ -17,9 +17,6 @@ jobs:
           submodules: recursive
           token: '${{ secrets.PERMIT_POST_KEY }}'
 
-      - name: Check out Git repository
-        uses: actions/checkout@v2
-
       - name: Set up node
         uses: actions/setup-node@v1
         with:
