@@ -8,24 +8,24 @@ import '../base/RouterCallbacks.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
-// Command Types
-uint256 constant PERMIT = 0x00;
-uint256 constant TRANSFER = 0x01;
-uint256 constant V3_SWAP_EXACT_IN = 0x02;
-uint256 constant V3_SWAP_EXACT_OUT = 0x03;
-uint256 constant V2_SWAP_EXACT_IN = 0x04;
-uint256 constant V2_SWAP_EXACT_OUT = 0x05;
-uint256 constant SEAPORT = 0x06;
-uint256 constant NFTX = 0x0a;
-uint256 constant LOOKS_RARE_721 = 0x0b;
-uint256 constant X2Y2_721 = 0x0c;
-uint256 constant LOOKS_RARE_1155 = 0x0d;
-uint256 constant X2Y2_1155 = 0x0e;
-uint256 constant WRAP_ETH = 0x07;
-uint256 constant UNWRAP_WETH = 0x08;
-uint256 constant SWEEP = 0x09;
-
 contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
+    // Command Types
+    uint256 constant PERMIT = 0x00;
+    uint256 constant TRANSFER = 0x01;
+    uint256 constant V3_SWAP_EXACT_IN = 0x02;
+    uint256 constant V3_SWAP_EXACT_OUT = 0x03;
+    uint256 constant V2_SWAP_EXACT_IN = 0x04;
+    uint256 constant V2_SWAP_EXACT_OUT = 0x05;
+    uint256 constant SEAPORT = 0x06;
+    uint256 constant NFTX = 0x0a;
+    uint256 constant LOOKS_RARE_721 = 0x0b;
+    uint256 constant X2Y2_721 = 0x0c;
+    uint256 constant LOOKS_RARE_1155 = 0x0d;
+    uint256 constant X2Y2_1155 = 0x0e;
+    uint256 constant WRAP_ETH = 0x07;
+    uint256 constant UNWRAP_WETH = 0x08;
+    uint256 constant SWEEP = 0x09;
+
     address immutable PERMIT_POST;
 
     error InvalidCommandType(uint256 commandType);

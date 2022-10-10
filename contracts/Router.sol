@@ -43,7 +43,7 @@ contract Router is Commands {
 
         // loop through all given commands, execute them and pass along outputs as defined
         for (uint256 commandIndex = 0; commandIndex < numCommands;) {
-            (uint8 flags, uint256 commandType, bytes8 indices) = commands.decodeCommand(commandIndex);
+            (uint8 flags, uint256 commandType, bytes8 indices, bytes1 outIndex) = commands.decodeCommand(commandIndex);
 
             bytes memory inputs = state.buildInputs(indices);
 
@@ -52,6 +52,9 @@ contract Router is Commands {
             if (!success && successRequired(flags)) {
                 revert ExecutionFailed({commandIndex: commandIndex, message: output});
             }
+
+            state = state.writeOutputs(outIndex, output);
+
             unchecked {
                 commandIndex++;
             }

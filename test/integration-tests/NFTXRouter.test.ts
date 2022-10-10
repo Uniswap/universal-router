@@ -2,7 +2,7 @@ import { RouterPlanner, NFTXCommand } from '@uniswap/narwhal-sdk'
 import { expect } from './shared/expect'
 import { Router, ERC721, ERC1155 } from '../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import parseEvents from './shared/parseEvents'
+import { parseEvents } from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import { COVEN_721, TWERKY_1155, resetFork, WETH } from './shared/mainnetForkHelpers'
 import {

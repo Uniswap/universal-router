@@ -11,7 +11,7 @@ import {
   V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
-import parseEvents from './shared/parseEvents'
+import { parseEvents } from './shared/parseEvents'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
