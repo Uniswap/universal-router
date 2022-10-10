@@ -1,8 +1,8 @@
 import { RouterPlanner, PermitCommand, V2ExactInputCommand } from '@uniswap/narwhal-sdk'
 import type { Contract, ContractFactory } from '@ethersproject/contracts'
 import { Router } from '../../typechain'
+import { DAI, resetFork, WETH } from './shared/mainnetForkHelpers'
 import PERMIT_POST_COMPILE from '../../lib/permitpost/out/PermitPost.sol/PermitPost.json'
-import { DAI, resetFork, USDC, WETH } from './shared/mainnetForkHelpers'
 import {
   EMPTY_BYTES_32,
   MAX_UINT,
@@ -21,10 +21,16 @@ import { expandTo18DecimalsBN } from './shared/helpers'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 const { ethers } = hre
 import { BigNumber } from 'ethers'
-import { pool_DAI_WETH } from './shared/swapRouter02Helpers'
 import { Pair } from '@uniswap/v2-sdk'
+import {
+  constructPermitCalldata,
+  Permit,
+  PERMIT_POST_INTERFACE,
+  signPermit,
+  TokenDetails,
+} from './shared/protocolHelpers/permitPost'
 
-describe('PermitPost', () => {
+describe.only('PermitPost', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router
@@ -37,95 +43,16 @@ describe('PermitPost', () => {
   const TOKEN_TYPE_ERC20 = 0
   const TOKEN_TYPE_ERC721 = 1
 
-  const permitPostInterface = new ethers.utils.Interface(PERMIT_POST_COMPILE.abi)
   const permitPostBytecode = PERMIT_POST_COMPILE.bytecode
 
-  type TokenDetails = {
-    tokenType: number
-    token: string
-    maxAmount: BigNumber
-    id: BigNumber
-  }
-
-  type Permit = {
-    tokens: TokenDetails[]
-    spender: string
-    deadline: BigNumber
-    witness: string
-  }
-
-  type Signature = {
-    v: number
-    r: string
-    s: string
-  }
-
-  const eip712Domain = {
-    name: 'PermitPost',
-    version: '1',
-    chainId: hre.network.config.chainId,
-    verifyingContract: ethers.constants.AddressZero,
-  }
-
-  const eip712Types = {
-    TokenDetails: [
-      { name: 'tokenType', type: 'uint8' },
-      { name: 'token', type: 'address' },
-      { name: 'maxAmount', type: 'uint256' },
-      { name: 'id', type: 'uint256' },
-    ],
-    Permit: [
-      { name: 'sigType', type: 'uint8' },
-      { name: 'tokens', type: 'TokenDetails[]' },
-      { name: 'spender', type: 'address' },
-      { name: 'deadline', type: 'uint256' },
-      { name: 'witness', type: 'bytes32' },
-      { name: 'nonce', type: 'uint256' },
-    ],
-  }
-
-  function constructData(permit: Permit, to: string[], amounts: BigNumber[], signature: Signature): string {
-    const calldata = permitPostInterface.encodeFunctionData('transferFrom', [
-      ethers.constants.AddressZero,
-      permit,
-      to,
-      amounts,
-      signature,
-    ])
-
-    return '0x' + calldata.slice(74)
-  }
-
-  async function signPermit(
-    permit: Permit,
-    signatureType: number,
-    nonce: number,
-    signer: SignerWithAddress
-  ): Promise<Signature> {
-    const eip712Values = {
-      sigType: signatureType,
-      tokens: permit.tokens,
-      spender: permit.spender,
-      deadline: permit.deadline,
-      witness: permit.witness,
-      nonce: nonce,
-    }
-
-    const signature = await signer._signTypedData(eip712Domain, eip712Types, eip712Values)
-
-    return {
-      r: '0x' + signature.slice(2, 66),
-      s: '0x' + signature.slice(66, 130),
-      v: Number('0x' + signature.slice(130)),
-    }
-  }
+  const chainId: number = hre.network.config.chainId ? hre.network.config.chainId : 1
 
   before(async () => {
     await resetFork()
     alice = await ethers.getSigner(ALICE_ADDRESS)
     bob = (await ethers.getSigners())[1]
 
-    permitPostFactory = new ethers.ContractFactory(permitPostInterface, permitPostBytecode, alice)
+    permitPostFactory = new ethers.ContractFactory(PERMIT_POST_INTERFACE, permitPostBytecode, alice)
     routerFactory = await ethers.getContractFactory('Router')
 
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
@@ -147,8 +74,6 @@ describe('PermitPost', () => {
       )
     ).connect(bob) as Router
     planner = new RouterPlanner()
-
-    eip712Domain.verifyingContract = permitPost.address
 
     // Given we must use Bob to test this contract, Alice gives Bob 1 WETH
     await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(10))
@@ -176,12 +101,12 @@ describe('PermitPost', () => {
     const nonce: number = 0 // currently no nonces have been used
 
     // Now Bob signs this payload
-    const signature = await signPermit(permit, signatureType, nonce, bob)
+    const signature = await signPermit(permit, signatureType, nonce, bob, chainId, permitPost.address)
 
     // Construct the permit post transferFrom calldata, without the function selector first parameter
     // The resulting calldata is what we pass into permit post
     const amountToTransfer = expandTo18DecimalsBN(1)
-    const calldata = constructData(permit, [router.address], [amountToTransfer], signature)
+    const calldata = constructPermitCalldata(permit, [router.address], [amountToTransfer], signature)
 
     const bobBalanceBefore = await wethContract.balanceOf(bob.address)
     const routerBalanceBefore = await wethContract.balanceOf(router.address)
@@ -217,12 +142,12 @@ describe('PermitPost', () => {
     const nonce: number = 0 // currently no nonces have been used
 
     // Now Bob signs this payload
-    const signature = await signPermit(permit, signatureType, nonce, bob)
+    const signature = await signPermit(permit, signatureType, nonce, bob, chainId, permitPost.address)
 
     // Construct the permit post transferFrom calldata, without the function selector first parameter
     // The resulting calldata is what we pass into permit post
     const amountToTransfer = expandTo18DecimalsBN(1)
-    const calldata = constructData(permit, [router.address], [amountToTransfer], signature)
+    const calldata = constructPermitCalldata(permit, [router.address], [amountToTransfer], signature)
 
     planner.add(PermitCommand(calldata))
     const { commands, state } = planner.plan()
@@ -252,12 +177,12 @@ describe('PermitPost', () => {
     const nonce: number = 1 // currently no nonces have been used
 
     // Now Bob signs this payload
-    const signature = await signPermit(permit, signatureType, nonce, bob)
+    const signature = await signPermit(permit, signatureType, nonce, bob, chainId, permitPost.address)
 
     // Construct the permit post transferFrom calldata, without the function selector first parameter
     // The resulting calldata is what we pass into permit post
     const amountToTransfer = expandTo18DecimalsBN(1)
-    const calldata = constructData(permit, [Pair.getAddress(DAI, WETH)], [amountToTransfer], signature)
+    const calldata = constructPermitCalldata(permit, [Pair.getAddress(DAI, WETH)], [amountToTransfer], signature)
 
     planner.add(PermitCommand(calldata))
     const { commands, state } = planner.plan()
@@ -287,12 +212,12 @@ describe('PermitPost', () => {
     const nonce: number = 1 // currently no nonces have been used
 
     // Now Bob signs this payload
-    const signature = await signPermit(permit, signatureType, nonce, bob)
+    const signature = await signPermit(permit, signatureType, nonce, bob, chainId, permitPost.address)
 
     // Construct the permit post transferFrom calldata, without the function selector first parameter
     // The resulting calldata is what we pass into permit post
     const inputAmount = expandTo18DecimalsBN(1)
-    const calldata = constructData(permit, [Pair.getAddress(DAI, WETH)], [inputAmount], signature)
+    const calldata = constructPermitCalldata(permit, [Pair.getAddress(DAI, WETH)], [inputAmount], signature)
 
     // Transfers 1 WETH into Uniswap pool
     planner.add(PermitCommand(calldata))
