@@ -6,6 +6,7 @@ import '../modules/V3SwapRouter.sol';
 import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
+import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
 // Command Types
 uint256 constant PERMIT = 0x00;
