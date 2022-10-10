@@ -1,7 +1,11 @@
-import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
+import { ERC721, ERC1155 } from '../../../typechain'
+import { abi as ERC20_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
+import { abi as ERC721_ABI } from '../../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import { abi as ERC1155_ABI } from '../../../artifacts/solmate/src/tokens/ERC1155.sol/ERC1155.json'
+import { COVEN_ADDRESS, TWERKY_ADDRESS } from './constants'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
-import { TransactionReceipt } from '@ethersproject/abstract-provider'
+import { TransactionResponse } from '@ethersproject/abstract-provider'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber, constants, Contract as EthersContract } from 'ethers'
 import hre from 'hardhat'
@@ -19,7 +23,7 @@ export const V2_FACTORY = 0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f
 const approveToken = async (alice: SignerWithAddress, approveTarget: string, currency: Currency) => {
   if (currency.isToken) {
     // const aliceTokenIn: Erc20 = Erc20__factory.connect(currency.address, alice);
-    const aliceTokenIn = new ethers.Contract(currency.address, TOKEN_ABI, alice) as EthersContract
+    const aliceTokenIn = new ethers.Contract(currency.address, ERC20_ABI, alice) as EthersContract
 
     if (currency.symbol == 'USDT') {
       await (await aliceTokenIn.approve(approveTarget, 0)).wait()
@@ -47,7 +51,7 @@ export const executeSwap = async (
   tokenIn: Currency,
   tokenOut: Currency,
   alice: SignerWithAddress
-): Promise<TransactionReceipt> => {
+): Promise<TransactionResponse> => {
   if (tokenIn.symbol == tokenOut.symbol) throw 'Cannot trade token for itself'
   await approveToken(alice, SWAP_ROUTER_V2, tokenIn)
 
@@ -60,11 +64,8 @@ export const executeSwap = async (
     type: 1,
   }
 
-  let transactionResponse = await alice.sendTransaction(transaction)
-  const receipt = await transactionResponse.wait()
-  if (receipt.status != 1) throw 'transaction failed'
-
-  return receipt
+  const transactionResponse = await alice.sendTransaction(transaction)
+  return transactionResponse
 }
 
 export const resetFork = async (block: number = 15360000) => {
@@ -81,16 +82,9 @@ export const resetFork = async (block: number = 15360000) => {
   })
 }
 
-export const DYSTOMICE_NFT = new ethers.Contract(
-  '0xe440654A00B757446B4914C56aD56A804a6BC6af',
-  [
-    {
-      inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
-      name: 'ownerOf',
-      outputs: [{ internalType: 'address', name: '', type: 'address' }],
-      stateMutability: 'view',
-      type: 'function',
-    },
-  ],
-  ethers.provider
-)
+export const COVEN_721 = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI) as ERC721
+export const DYSTOMICE_721 = new ethers.Contract('0xe440654A00B757446B4914C56aD56A804a6BC6af', ERC721_ABI) as ERC721
+export const ENS_721 = new ethers.Contract('0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85', ERC721_ABI) as ERC721
+
+export const TWERKY_1155 = new ethers.Contract(TWERKY_ADDRESS, ERC1155_ABI) as ERC1155
+export const CAMEO_1155 = new ethers.Contract('0x93317E87a3a47821803CAADC54Ae418Af80603DA', ERC1155_ABI) as ERC1155

@@ -5,8 +5,13 @@ import { BigNumber } from 'ethers'
 import { Router } from '../../typechain'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
+import {
+  seaportOrders,
+  seaportInterface,
+  getAdvancedOrderParams,
+  getOrderParams,
+} from './shared/protocolHelpers/seaport'
 
-import SEAPORT_ABI from './shared/abis/Seaport.json'
 import { resetFork } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
@@ -19,81 +24,8 @@ import {
   V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { expandTo18DecimalsBN } from './shared/helpers'
 import hre from 'hardhat'
 const { ethers } = hre
-import fs from 'fs'
-
-const seaportOrders = JSON.parse(
-  fs.readFileSync('test/integration-tests/shared/orders/Seaport.json', { encoding: 'utf8' })
-)
-const seaportInterface = new ethers.utils.Interface(SEAPORT_ABI)
-
-type OfferItem = {
-  itemType: BigNumber // enum
-  token: string // address
-  identifierOrCriteria: BigNumber
-  startAmount: BigNumber
-  endAmount: BigNumber
-}
-
-type ConsiderationItem = OfferItem & {
-  recipient: string
-}
-
-type OrderParameters = {
-  offerer: string // address,
-  offer: OfferItem[]
-  consideration: ConsiderationItem[]
-  orderType: BigNumber // enum
-  startTime: BigNumber
-  endTime: BigNumber
-  zoneHash: string // bytes32
-  salt: BigNumber
-  conduitKey: string // bytes32,
-  totalOriginalConsiderationItems: BigNumber
-}
-
-type Order = {
-  parameters: OrderParameters
-  signature: string
-}
-
-type AdvancedOrder = Order & {
-  numerator: BigNumber // uint120
-  denominator: BigNumber // uint120
-  extraData: string // bytes
-}
-
-function getOrderParams(apiOrder: any): { order: Order; value: BigNumber } {
-  delete apiOrder.protocol_data.parameters.counter
-  const order = {
-    parameters: apiOrder.protocol_data.parameters,
-    signature: apiOrder.protocol_data.signature,
-  }
-  const value = calculateValue(apiOrder.protocol_data.parameters.consideration)
-  return { order, value }
-}
-
-function getAdvancedOrderParams(apiOrder: any): { advancedOrder: AdvancedOrder; value: BigNumber } {
-  delete apiOrder.protocol_data.parameters.counter
-  const advancedOrder = {
-    parameters: apiOrder.protocol_data.parameters,
-    numerator: BigNumber.from('1'),
-    denominator: BigNumber.from('1'),
-    signature: apiOrder.protocol_data.signature,
-    extraData: '0x00',
-  }
-  const value = calculateValue(apiOrder.protocol_data.parameters.consideration)
-  return { advancedOrder, value }
-}
-
-function calculateValue(considerations: ConsiderationItem[]): BigNumber {
-  return considerations.reduce(
-    (amt: BigNumber, consideration: ConsiderationItem) => amt.add(consideration.startAmount),
-    expandTo18DecimalsBN(0)
-  )
-}
 
 describe('Seaport', () => {
   let alice: SignerWithAddress
@@ -169,6 +101,57 @@ describe('Seaport', () => {
     expect(ethDelta.sub(gasSpent)).to.eq(value)
   })
 
+  it('completes a fulfillAvailableAdvancedOrders type', async () => {
+    const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
+    const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
+    const params0 = advancedOrder0.parameters
+    const params1 = advancedOrder1.parameters
+    const value = value1.add(value2)
+    const considerationFulfillment = [
+      [[0, 0]],
+      [
+        [0, 1],
+        [1, 1],
+      ],
+      [
+        [0, 2],
+        [1, 2],
+      ],
+      [[1, 0]],
+    ]
+
+    const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
+      [advancedOrder0, advancedOrder1],
+      [],
+      [[[0, 0]], [[1, 0]]],
+      considerationFulfillment,
+      OPENSEA_CONDUIT_KEY,
+      alice.address,
+      100,
+    ])
+
+    planner.add(SeaportCommand(value.toString(), calldata))
+    const { commands, state } = planner.plan()
+
+    const owner0Before = await covenContract.ownerOf(params0.offer[0].identifierOrCriteria)
+    const owner1Before = await covenContract.ownerOf(params1.offer[0].identifierOrCriteria)
+    const ethBefore = await ethers.provider.getBalance(alice.address)
+
+    const receipt = await (await router.execute(DEADLINE, commands, state, { value })).wait()
+
+    const owner0After = await covenContract.ownerOf(params0.offer[0].identifierOrCriteria)
+    const owner1After = await covenContract.ownerOf(params1.offer[0].identifierOrCriteria)
+    const ethAfter = await ethers.provider.getBalance(alice.address)
+    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+    const ethDelta = ethBefore.sub(ethAfter)
+
+    expect(owner0Before.toLowerCase()).to.eq(params0.offerer)
+    expect(owner1Before.toLowerCase()).to.eq(params1.offerer)
+    expect(owner0After).to.eq(alice.address)
+    expect(owner1After).to.eq(alice.address)
+    expect(ethDelta.sub(gasSpent)).to.eq(value)
+  })
+
   it('gas fulfillOrder', async () => {
     const { order, value } = getOrderParams(seaportOrders[0])
     const calldata = seaportInterface.encodeFunctionData('fulfillOrder', [order, OPENSEA_CONDUIT_KEY])
@@ -188,6 +171,38 @@ describe('Seaport', () => {
     ])
 
     planner.add(SeaportCommand(value.toString(), calldata))
+    const { commands, state } = planner.plan()
+    await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
+  })
+
+  it('gas fulfillAvailableAdvancedOrders 1 orders', async () => {
+    const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
+    const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
+    const value = value1.add(value2)
+    const considerationFulfillment = [
+      [[0, 0]],
+      [
+        [0, 1],
+        [1, 1],
+      ],
+      [
+        [0, 2],
+        [1, 2],
+      ],
+      [[1, 0]],
+    ]
+
+    const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
+      [advancedOrder0, advancedOrder1],
+      [],
+      [[[0, 0]], [[1, 0]]],
+      considerationFulfillment,
+      OPENSEA_CONDUIT_KEY,
+      alice.address,
+      100,
+    ])
+
+    planner.add(SeaportCommand(value, calldata))
     const { commands, state } = planner.plan()
     await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
   })

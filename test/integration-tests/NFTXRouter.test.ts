@@ -1,21 +1,21 @@
-import type { Contract } from '@ethersproject/contracts'
 import { RouterPlanner, NFTXCommand } from '@uniswap/narwhal-sdk'
 import { expect } from './shared/expect'
-import { Router } from '../../typechain'
+import { Router, ERC721, ERC1155 } from '../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { parseEvents } from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
-import { abi as ERC1155_ABI } from '../../artifacts/solmate/src/tokens/ERC1155.sol/ERC1155.json'
-import { resetFork, WETH } from './shared/mainnetForkHelpers'
+import { COVEN_721, TWERKY_1155, resetFork, WETH } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
-  COVEN_ADDRESS,
   DEADLINE,
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
   V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
+  NFTX_COVEN_VAULT,
+  NFTX_COVEN_VAULT_ID,
+  NFTX_ERC_1155_VAULT,
+  NFTX_ERC_1155_VAULT_ID,
 } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
@@ -24,17 +24,11 @@ const { ethers } = hre
 
 const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
 
-const COVEN_VAULT = '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'
-const COVEN_VAULT_ID = '333'
-
-const ERC_1155_VAULT = '0x78e09c5ec42d505742a52fd10078a57ea186002a'
-const ERC_1155_VAULT_ID = '61'
-
 describe('NFTX', () => {
   let alice: SignerWithAddress
   let router: Router
-  let covenContract: Contract
-  let twerkyContract: Contract
+  let covenContract: ERC721
+  let twerkyContract: ERC1155
   let planner: RouterPlanner
 
   beforeEach(async () => {
@@ -44,8 +38,8 @@ describe('NFTX', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
-    twerkyContract = new ethers.Contract('0xf4680c917a873e2dd6ead72f9f433e74eb9c623c', ERC1155_ABI, alice)
+    covenContract = COVEN_721.connect(alice)
+    twerkyContract = TWERKY_1155.connect(alice)
     const routerFactory = await ethers.getContractFactory('Router')
     router = (
       await routerFactory.deploy(
@@ -63,19 +57,19 @@ describe('NFTX', () => {
     const value = expandTo18DecimalsBN(4)
     const numCovens = 2
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      COVEN_VAULT_ID,
+      NFTX_COVEN_VAULT_ID,
       numCovens,
       [],
-      [WETH.address, COVEN_VAULT],
+      [WETH.address, NFTX_COVEN_VAULT],
       alice.address,
     ])
 
     planner.add(NFTXCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
 
-    const covenBalanceBefore = await covenContract.balanceOf(alice.address)
+    const covenBalanceBefore = await COVEN_721.connect(alice).balanceOf(alice.address)
     await router.execute(DEADLINE, commands, state, { value })
-    const covenBalanceAfter = await covenContract.balanceOf(alice.address)
+    const covenBalanceAfter = await COVEN_721.connect(alice).balanceOf(alice.address)
 
     expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
   })
@@ -84,10 +78,10 @@ describe('NFTX', () => {
     const value = expandTo18DecimalsBN(4)
     const numCovens = 2
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      COVEN_VAULT_ID,
+      NFTX_COVEN_VAULT_ID,
       numCovens,
       [584, 3033],
-      [WETH.address, COVEN_VAULT],
+      [WETH.address, NFTX_COVEN_VAULT],
       alice.address,
     ])
 
@@ -113,10 +107,10 @@ describe('NFTX', () => {
     const value = expandTo18DecimalsBN(4)
     const numTwerkys = 2
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      ERC_1155_VAULT_ID,
+      NFTX_ERC_1155_VAULT_ID,
       numTwerkys,
       [],
-      [WETH.address, ERC_1155_VAULT],
+      [WETH.address, NFTX_ERC_1155_VAULT],
       alice.address,
     ])
 
@@ -134,10 +128,10 @@ describe('NFTX', () => {
     const value = expandTo18DecimalsBN(4)
     const numTwerkys = 1
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      ERC_1155_VAULT_ID,
+      NFTX_ERC_1155_VAULT_ID,
       numTwerkys,
       [44],
-      [WETH.address, ERC_1155_VAULT],
+      [WETH.address, NFTX_ERC_1155_VAULT],
       alice.address,
     ])
 
@@ -156,7 +150,7 @@ describe('NFTX', () => {
     const numCovens = 2
     const saleCost = '476686977628668346'
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      COVEN_VAULT_ID,
+      NFTX_COVEN_VAULT_ID,
       numCovens,
       [584, 3033],
       [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
@@ -178,7 +172,7 @@ describe('NFTX', () => {
     const value = expandTo18DecimalsBN(4)
     const numCovens = 2
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      COVEN_VAULT_ID,
+      NFTX_COVEN_VAULT_ID,
       numCovens,
       [],
       [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
@@ -194,7 +188,7 @@ describe('NFTX', () => {
     const value = expandTo18DecimalsBN(4)
     const numCovens = 2
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      COVEN_VAULT_ID,
+      NFTX_COVEN_VAULT_ID,
       numCovens,
       [584, 3033],
       [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],

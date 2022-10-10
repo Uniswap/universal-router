@@ -6,7 +6,6 @@ library CommandBuilder {
     uint256 constant IDX_VARIABLE_LENGTH = 0x80;
     uint256 constant IDX_VALUE_MASK = 0x7f;
     uint256 constant IDX_END_OF_ARGS = 0xff;
-    uint256 constant IDX_USE_STATE = 0xfe;
 
     function buildInputs(bytes[] memory state, bytes32 indices) internal view returns (bytes memory ret) {
         uint256 count; // Number of bytes in whole ABI encoded message
@@ -73,7 +72,7 @@ library CommandBuilder {
 
     function writeOutputs(bytes[] memory state, bytes1 index, bytes memory output)
         internal
-        view
+        pure
         returns (bytes[] memory)
     {
         uint256 idx = uint8(index);

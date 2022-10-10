@@ -1,3 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+<<<<<<< HEAD
 exports[`Router bytecode size 1`] = `9484`;
+=======
+exports[`Router bytecode size 1`] = `9649`;
+>>>>>>> origin/main

@@ -1,25 +1,43 @@
 import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
-import { Router } from '../../typechain'
+import { Router, ERC721 } from '../../typechain'
 import type { Contract } from '@ethersproject/contracts'
+import { BigNumber } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { FeeAmount } from '@uniswap/v3-sdk'
 import { expect } from './shared/expect'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
+import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import {
   ALICE_ADDRESS,
+  COVEN_ADDRESS,
   DEADLINE,
+  OPENSEA_CONDUIT_KEY,
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
   V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
+  NFTX_COVEN_VAULT,
+  NFTX_COVEN_VAULT_ID,
 } from './shared/constants'
+import { seaportOrders, seaportInterface, getOrderParams } from './shared/protocolHelpers/seaport'
 import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
-import { RouterPlanner, TransferCommand, V2ExactInputCommand, V3ExactInputCommand } from '@uniswap/narwhal-sdk'
+import {
+  RouterCommand,
+  RouterPlanner,
+  SeaportCommand,
+  NFTXCommand,
+  TransferCommand,
+  V2ExactInputCommand,
+  V3ExactInputCommand,
+} from '@uniswap/narwhal-sdk'
 import { makePair, encodePath } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import hre from 'hardhat'
+
 const { ethers } = hre
+const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
 
 function encodePathExactInput(tokens: string[]) {
   return encodePath(tokens, new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
@@ -86,7 +104,7 @@ describe('Router', () => {
       const commands = '0xffffffffffffffffffffffffffffffff'
       const state: string[] = []
 
-      await expect(router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(0)')
+      await expect(router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(15)')
     })
 
     it('reverts for an invalid command at index 1', async () => {
@@ -94,7 +112,57 @@ describe('Router', () => {
       planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, expandTo18DecimalsBN(1)))
       let { commands, state } = planner.plan()
       commands = commands.concat(invalidCommand)
-      await expect(router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(1)')
+      await expect(router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(15)')
+    })
+
+    describe('partial fills', async () => {
+      let covenContract: ERC721
+      let nftxValue: BigNumber
+      let numCovens: number
+      let invalidSeaportCommand: RouterCommand
+      let value: BigNumber
+
+      beforeEach(async () => {
+        covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice) as ERC721
+        // add valid nftx order to planner
+        nftxValue = expandTo18DecimalsBN(4)
+        numCovens = 2
+        const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
+          NFTX_COVEN_VAULT_ID,
+          numCovens,
+          [],
+          [WETH.address, NFTX_COVEN_VAULT],
+          alice.address,
+        ])
+        planner.add(NFTXCommand(nftxValue, calldata))
+
+        let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
+        invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
+        const { order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder)
+        const seaportCalldata = seaportInterface.encodeFunctionData('fulfillOrder', [seaportOrder, OPENSEA_CONDUIT_KEY])
+        invalidSeaportCommand = SeaportCommand(seaportValue, seaportCalldata)
+
+        value = seaportValue.add(nftxValue)
+      })
+
+      it('reverts if no commands are allowed to revert', async () => {
+        planner.add(invalidSeaportCommand)
+
+        const { commands, state } = planner.plan()
+        await expect(router.execute(DEADLINE, commands, state, { value })).to.be.revertedWith(
+          'ExecutionFailed(1, "0x8baa579f")'
+        )
+      })
+
+      it('does not revert if invalid seaport transaction allowed to fail', async () => {
+        planner.add(invalidSeaportCommand.allowRevert())
+        const { commands, state } = planner.plan()
+
+        const covenBalanceBefore = await covenContract.balanceOf(alice.address)
+        await router.execute(DEADLINE, commands, state, { value })
+        const covenBalanceAfter = await covenContract.balanceOf(alice.address)
+        expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
+      })
     })
 
     describe('using outputs', async () => {
