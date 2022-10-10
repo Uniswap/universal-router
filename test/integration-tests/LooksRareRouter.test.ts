@@ -85,7 +85,7 @@ function createLooksRareOrders(
   return { makerOrder, takerOrder, value }
 }
 
-describe.only('LooksRare', () => {
+describe('LooksRare', () => {
   let alice: SignerWithAddress
   let router: Router
   let value: BigNumber

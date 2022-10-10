@@ -33,7 +33,7 @@ library CommandLib {
     /// @notice Fetch the data for the first command in the command bytes
     function decodeCommand(bytes memory commands, uint256 index)
         internal
-        view
+        pure
         returns (uint8 flags, uint256 commandType, bytes8 indices, bytes1 outIndex)
     {
         bytes8 command;
@@ -45,7 +45,6 @@ library CommandLib {
         flags = uint8(bytes1(command));
         commandType = flags & FLAG_COMMAND_TYPE_MASK;
         indices = bytes8(uint64(command) << COMMAND_INDICES_OFFSET);
-        outIndex = bytes1(uint8(uint64(command)) << COMMAND_OUTPUTS_OFFSET);
-        console.logBytes1(outIndex);
+        outIndex = bytes1(command << COMMAND_OUTPUTS_OFFSET);
     }
 }
