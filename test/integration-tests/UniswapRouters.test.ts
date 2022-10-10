@@ -712,9 +712,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.add(V3ExactInputCommand(alice.address, amountOutV2, v3AmountOutMin, encodePathExactInput(v3Tokens)))
 
         const { commands, state } = planner.plan()
-        const tx = await router.connect(alice).execute(DEADLINE, commands, state)
-        const receipt = await tx.wait()
-        expect(receipt.gasUsed.toString()).to.matchSnapshot()
+        await snapshotGasCost(router.execute(DEADLINE, commands, state))
       })
 
       it('gas: split V2 and V3, one hop', async () => {
