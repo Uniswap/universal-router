@@ -24,7 +24,7 @@ uint256 constant UNWRAP_WETH = 0x08;
 uint256 constant SWEEP = 0x09;
 
 contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
-    address immutable PERMIT_POST_CONTRACT_CONTRACT;
+    address immutable PERMIT_POST_CONTRACT;
 
     error InvalidCommandType(uint256 commandType);
 
