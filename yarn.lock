@@ -1645,10 +1645,10 @@
   resolved "https://registry.npmjs.org/@uniswap/lib/-/lib-4.0.1-alpha.tgz"
   integrity sha512-f6UIliwBbRsgVLxIaBANF6w09tYqc6Y/qXdsrbEmXHyFA7ILiKrIwRFXe1yOg8M3cksgVsO9N7yuL2DdCGQKBA==
 
-"@uniswap/narwhal-sdk@1.0.0-beta.6":
-  version "1.0.0-beta.6"
-  resolved "https://registry.yarnpkg.com/@uniswap/narwhal-sdk/-/narwhal-sdk-1.0.0-beta.6.tgz#9083a1b00dbabf2b2d28146f42b445a882072787"
-  integrity sha512-HUCFsfnI2T6aC0cr6wse08BsLxmypSoKGfrdc/W2saoOdTwaqZ7k3pTYwi/GeICALpc2NPmhEeQs7HC0xs7qlQ==
+"@uniswap/narwhal-sdk@1.0.0-beta.9":
+  version "1.0.0-beta.9"
+  resolved "https://registry.yarnpkg.com/@uniswap/narwhal-sdk/-/narwhal-sdk-1.0.0-beta.9.tgz#13923cd4348c41958d0de511cb5d5fe632a7ac32"
+  integrity sha512-CuJg0vs0sx4RwoLlCPE7TgBtdWSDFG9GaPjF/x/fRZb4T4iJGo8rYUXy6bg2/AFj20pHTbGnwaSghRImfZTIkA==
   dependencies:
     ethers "^5.3.1"
 

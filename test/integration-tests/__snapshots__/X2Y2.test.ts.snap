@@ -1,8 +1,15 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`X2Y2 gas purchases 1 NFT on X2Y2 1`] = `
+exports[`X2Y2 ERC-721 purchase gas purchases 1 ERC-721 on X2Y2 1`] = `
 Object {
   "calldataByteLength": 2436,
-  "gasUsed": 226301,
+  "gasUsed": 226252,
+}
+`;
+
+exports[`X2Y2 ERC-1155 purchase gas purchases 1 ERC-1155 on X2Y2 1`] = `
+Object {
+  "calldataByteLength": 2564,
+  "gasUsed": 229157,
 }
 `;

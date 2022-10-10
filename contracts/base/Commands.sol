@@ -6,6 +6,7 @@ import '../modules/V3SwapRouter.sol';
 import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
+import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
 // Command Types
 uint256 constant PERMIT = 0x00;
@@ -16,8 +17,10 @@ uint256 constant V2_SWAP_EXACT_IN = 0x04;
 uint256 constant V2_SWAP_EXACT_OUT = 0x05;
 uint256 constant SEAPORT = 0x06;
 uint256 constant NFTX = 0x0a;
-uint256 constant LOOKS_RARE = 0x0b;
-uint256 constant X2Y2 = 0x0c;
+uint256 constant LOOKS_RARE_721 = 0x0b;
+uint256 constant X2Y2_721 = 0x0c;
+uint256 constant LOOKS_RARE_1155 = 0x0d;
+uint256 constant X2Y2_1155 = 0x0e;
 uint256 constant WRAP_ETH = 0x07;
 uint256 constant UNWRAP_WETH = 0x08;
 uint256 constant SWEEP = 0x09;
@@ -76,10 +79,14 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         } else if (command == NFTX) {
             (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
             (success, output) = Constants.NFTX_ZAP.call{value: value}(data);
-        } else if (command == LOOKS_RARE) {
-            (success, output) = callAndTransferERC721(inputs, Constants.LOOKS_RARE);
-        } else if (command == X2Y2) {
-            (success, output) = callAndTransferERC721(inputs, Constants.X2Y2);
+        } else if (command == LOOKS_RARE_721) {
+            (success, output) = callAndTransfer721(inputs, Constants.LOOKS_RARE);
+        } else if (command == X2Y2_721) {
+            (success, output) = callAndTransfer721(inputs, Constants.X2Y2);
+        } else if (command == LOOKS_RARE_1155) {
+            (success, output) = callAndTransfer1155(inputs, Constants.LOOKS_RARE);
+        } else if (command == X2Y2_1155) {
+            (success, output) = callAndTransfer1155(inputs, Constants.X2Y2);
         } else if (command == SWEEP) {
             (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
             Payments.sweepToken(token, recipient, minValue);
@@ -94,7 +101,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         }
     }
 
-    function callAndTransferERC721(bytes memory inputs, address protocol)
+    function callAndTransfer721(bytes memory inputs, address protocol)
         internal
         returns (bool success, bytes memory output)
     {
@@ -102,5 +109,15 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             abi.decode(inputs, (uint256, bytes, address, address, uint256));
         (success, output) = protocol.call{value: value}(data);
         if (success) ERC721(token).safeTransferFrom(address(this), recipient, id);
+    }
+
+    function callAndTransfer1155(bytes memory inputs, address protocol)
+        internal
+        returns (bool success, bytes memory output)
+    {
+        (uint256 value, bytes memory data, address recipient, address token, uint256 id, uint256 amount) =
+            abi.decode(inputs, (uint256, bytes, address, address, uint256, uint256));
+        (success, output) = protocol.call{value: value}(data);
+        if (success) ERC1155(token).safeTransferFrom(address(this), recipient, id, amount, new bytes(0));
     }
 }

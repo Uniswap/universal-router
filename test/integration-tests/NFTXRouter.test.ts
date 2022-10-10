@@ -1,12 +1,10 @@
-import type { Contract } from '@ethersproject/contracts'
 import { RouterPlanner, NFTXCommand } from '@uniswap/narwhal-sdk'
 import { expect } from './shared/expect'
-import { Router, ERC721 } from '../../typechain'
+import { Router, ERC721, ERC1155 } from '../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import parseEvents from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
-import { abi as ERC1155_ABI } from '../../artifacts/solmate/src/tokens/ERC1155.sol/ERC1155.json'
-import { COVEN_NFT, resetFork, WETH } from './shared/mainnetForkHelpers'
+import { COVEN_721, TWERKY_1155, resetFork, WETH } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   DEADLINE,
@@ -30,7 +28,7 @@ describe('NFTX', () => {
   let alice: SignerWithAddress
   let router: Router
   let covenContract: ERC721
-  let twerkyContract: Contract
+  let twerkyContract: ERC1155
   let planner: RouterPlanner
 
   beforeEach(async () => {
@@ -40,8 +38,8 @@ describe('NFTX', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    covenContract = COVEN_NFT.connect(alice)
-    twerkyContract = new ethers.Contract('0xf4680c917a873e2dd6ead72f9f433e74eb9c623c', ERC1155_ABI, alice)
+    covenContract = COVEN_721.connect(alice)
+    twerkyContract = TWERKY_1155.connect(alice)
     const routerFactory = await ethers.getContractFactory('Router')
     router = (
       await routerFactory.deploy(
@@ -69,9 +67,9 @@ describe('NFTX', () => {
     planner.add(NFTXCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
 
-    const covenBalanceBefore = await COVEN_NFT.connect(alice).balanceOf(alice.address)
+    const covenBalanceBefore = await COVEN_721.connect(alice).balanceOf(alice.address)
     await router.execute(DEADLINE, commands, state, { value })
-    const covenBalanceAfter = await COVEN_NFT.connect(alice).balanceOf(alice.address)
+    const covenBalanceAfter = await COVEN_721.connect(alice).balanceOf(alice.address)
 
     expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
   })
