@@ -16,7 +16,6 @@ import {
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import { expect } from 'chai'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 const { ethers } = hre
@@ -30,7 +29,7 @@ import {
   TokenDetails,
 } from './shared/protocolHelpers/permitPost'
 
-describe('PermitPost', () => {
+describe.only('PermitPost Integrations', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router
@@ -81,80 +80,7 @@ describe('PermitPost', () => {
     await wethContract.connect(bob).approve(permitPost.address, MAX_UINT)
   })
 
-  it('Fetch ERC20 via permit post', async () => {
-    // We construct Bob's permit
-    const tokenDetails: TokenDetails = {
-      tokenType: TOKEN_TYPE_ERC20, // ERC20
-      token: WETH.address,
-      maxAmount: expandTo18DecimalsBN(2),
-      id: BigNumber.from(0),
-    }
-
-    const permit: Permit = {
-      tokens: [tokenDetails],
-      spender: router.address, // the router is the one who will claim the WETH
-      deadline: BigNumber.from(MAX_UINT),
-      witness: EMPTY_BYTES_32,
-    }
-
-    const signatureType: number = 1 // sequential
-    const nonce: number = 0 // currently no nonces have been used
-
-    // Now Bob signs this payload
-    const signature = await signPermit(permit, signatureType, nonce, bob, chainId, permitPost.address)
-
-    // Construct the permit post transferFrom calldata, without the function selector first parameter
-    // The resulting calldata is what we pass into permit post
-    const amountToTransfer = expandTo18DecimalsBN(1)
-    const calldata = constructPermitCalldata(permit, [router.address], [amountToTransfer], signature)
-
-    const bobBalanceBefore = await wethContract.balanceOf(bob.address)
-    const routerBalanceBefore = await wethContract.balanceOf(router.address)
-
-    planner.add(PermitCommand(calldata))
-    const { commands, state } = planner.plan()
-    await router.execute(DEADLINE, commands, state)
-
-    const bobBalanceAfter = await wethContract.balanceOf(bob.address)
-    const routerBalanceAfter = await wethContract.balanceOf(router.address)
-
-    expect(bobBalanceBefore).to.be.eq(bobBalanceAfter.add(amountToTransfer))
-    expect(routerBalanceBefore).to.be.eq(routerBalanceAfter.sub(amountToTransfer))
-  })
-
-  it('gas: transfer ERC20 into router nonce 0', async () => {
-    // We construct Bob's permit
-    const tokenDetails: TokenDetails = {
-      tokenType: TOKEN_TYPE_ERC20, // ERC20
-      token: WETH.address,
-      maxAmount: expandTo18DecimalsBN(2),
-      id: BigNumber.from(0),
-    }
-
-    const permit: Permit = {
-      tokens: [tokenDetails],
-      spender: router.address, // the router is the one who will claim the WETH
-      deadline: BigNumber.from(MAX_UINT),
-      witness: EMPTY_BYTES_32,
-    }
-
-    const signatureType: number = 1 // sequential
-    const nonce: number = 0 // currently no nonces have been used
-
-    // Now Bob signs this payload
-    const signature = await signPermit(permit, signatureType, nonce, bob, chainId, permitPost.address)
-
-    // Construct the permit post transferFrom calldata, without the function selector first parameter
-    // The resulting calldata is what we pass into permit post
-    const amountToTransfer = expandTo18DecimalsBN(1)
-    const calldata = constructPermitCalldata(permit, [router.address], [amountToTransfer], signature)
-
-    planner.add(PermitCommand(calldata))
-    const { commands, state } = planner.plan()
-    await snapshotGasCost(router.execute(DEADLINE, commands, state))
-  })
-
-  it('gas: transfer ERC20 into Uniswap Pair nonce 1', async () => {
+  it('gas: permit post, uniswap v2 single hop', async () => {
     // bob increments his nonce past 0
     await permitPost.invalidateNonces(1)
 
@@ -181,10 +107,13 @@ describe('PermitPost', () => {
 
     // Construct the permit post transferFrom calldata, without the function selector first parameter
     // The resulting calldata is what we pass into permit post
-    const amountToTransfer = expandTo18DecimalsBN(1)
-    const calldata = constructPermitCalldata(permit, [Pair.getAddress(DAI, WETH)], [amountToTransfer], signature)
+    const inputAmount = expandTo18DecimalsBN(1)
+    const calldata = constructPermitCalldata(permit, [Pair.getAddress(DAI, WETH)], [inputAmount], signature)
 
+    // Transfers 1 WETH into Uniswap pool
     planner.add(PermitCommand(calldata))
+    // Min amount out of 1000 DAI, WETH for DAI, transfer to Alice
+    planner.add(V2ExactInputCommand(expandTo18DecimalsBN(1000), [WETH.address, DAI.address], alice.address))
     const { commands, state } = planner.plan()
     await snapshotGasCost(router.execute(DEADLINE, commands, state))
   })
