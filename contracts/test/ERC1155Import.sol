@@ -5,5 +5,4 @@ import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
 // this contract only exists to pull ERC1155 into the hardhat build pipeline
 // so that typechain artifacts are generated for it
-abstract contract ERC1155Import is ERC1155 {
-}
+abstract contract ERC1155Import is ERC1155 {}
