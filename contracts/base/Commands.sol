@@ -9,7 +9,7 @@ import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import '../../lib/permitpost/src/interfaces/IPermitPost.sol';
 
 // Command Types
-uint256 constant PERMIT = 0x00;
+uint256 constant PERMIT_POST = 0x00;
 uint256 constant TRANSFER = 0x01;
 uint256 constant V3_SWAP_EXACT_IN = 0x02;
 uint256 constant V3_SWAP_EXACT_OUT = 0x03;
@@ -24,7 +24,7 @@ uint256 constant UNWRAP_WETH = 0x08;
 uint256 constant SWEEP = 0x09;
 
 contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
-    address immutable PERMIT_POST;
+    address immutable PERMIT_POST_CONTRACT_CONTRACT;
 
     error InvalidCommandType(uint256 commandType);
 
@@ -35,7 +35,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         bytes32 pairInitCodeHash,
         bytes32 poolInitCodeHash
     ) V2SwapRouter(v2Factory, pairInitCodeHash) V3SwapRouter(v3Factory, poolInitCodeHash) {
-        PERMIT_POST = permitPost;
+        PERMIT_POST_CONTRACT = permitPost;
     }
 
     /// @notice executes the given command with the given inputs
@@ -45,11 +45,11 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     /// @return output The outputs, if any from the command
     function dispatch(uint256 command, bytes memory inputs) internal returns (bool success, bytes memory output) {
         success = true;
-        if (command == PERMIT) {
+        if (command == PERMIT_POST) {
             (bytes memory data) = abi.decode(inputs, (bytes));
             // pass in the msg.sender as the first parameter `from`
             data = bytes.concat(IPermitPost.transferFrom.selector, abi.encodePacked(uint256(uint160(msg.sender))), data);
-            (success, output) = PERMIT_POST.call(data);
+            (success, output) = PERMIT_POST_CONTRACT.call(data);
         } else if (command == TRANSFER) {
             (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
             Payments.payERC20(token, recipient, value);
