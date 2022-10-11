@@ -27,7 +27,6 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant UNWRAP_WETH = 0x08;
     uint256 constant SWEEP = 0x09;
 
-
     error InvalidCommandType(uint256 commandType);
 
     constructor(

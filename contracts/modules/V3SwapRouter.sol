@@ -9,7 +9,6 @@ import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 import {Signature, Permit, IPermitPost, TokenType, TokenDetails} from 'permitpost/src/interfaces/IPermitPost.sol';
 
-
 abstract contract V3SwapRouter {
     using Path for bytes;
     using SafeCast for uint256;
@@ -181,12 +180,8 @@ abstract contract V3SwapRouter {
         amounts[0] = amountToPay;
 
         TokenDetails[] memory tokenDetails = new TokenDetails[](1);
-        tokenDetails[1] = TokenDetails({
-            tokenType: TokenType.ERC20,
-            token: token,
-            maxAmount: transientPermitData.maxAmount,
-            id: 0
-        });
+        tokenDetails[1] =
+            TokenDetails({tokenType: TokenType.ERC20, token: token, maxAmount: transientPermitData.maxAmount, id: 0});
 
         Permit memory permit = Permit({
             tokens: tokenDetails,
@@ -196,11 +191,7 @@ abstract contract V3SwapRouter {
         });
 
         IPermitPost(PERMIT_POST_CONTRACT).transferFrom(
-            transientCaller,
-            permit,
-            to,
-            amounts,
-            transientPermitData.signature
+            transientCaller, permit, to, amounts, transientPermitData.signature
         );
 
         delete transientCaller;
