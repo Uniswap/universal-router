@@ -1,7 +1,7 @@
-import { RouterPlanner, FoundationCommand } from '@uniswap/narwhal-sdk'
-import X2Y2_ABI from './shared/abis/X2Y2.json'
+import {RouterPlanner, FoundationCommand} from '@uniswap/narwhal-sdk'
+import FOUNDATION_ABI from './shared/abis/Foundation.json'
 import { Router } from '../../typechain'
-import { resetFork, ENS_721 } from './shared/mainnetForkHelpers'
+import { resetFork } from './shared/mainnetForkHelpers'
 import {
     ALICE_ADDRESS,
     DEADLINE,
@@ -10,22 +10,13 @@ import {
     V2_INIT_CODE_HASH_MAINNET,
     V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
-import snapshotGasCost from '@uniswap/snapshot-gas-cost'
+// import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import fs from 'fs'
 import { BigNumber } from 'ethers'
 const { ethers } = hre
 
-const X2Y2_INTERFACE = new ethers.utils.Interface(X2Y2_ABI)
-const x2y2Orders = JSON.parse(fs.readFileSync('test/integration-tests/shared/orders/X2Y2.json', { encoding: 'utf8' }))
-
-type X2Y2Order = {
-    input: string
-    order_id: number
-    token_id: BigNumber
-    price: BigNumber
-}
+const FOUNDATION_INTERFACE = new ethers.utils.Interface(FOUNDATION_ABI)
 
 describe('Foundation', () => {
     let alice: SignerWithAddress
@@ -38,12 +29,9 @@ describe('Foundation', () => {
     })
 
     describe('ERC-721 purchase', () => {
-        let commands: string
-        let state: string[]
-        let erc721Order: X2Y2Order
 
         beforeEach(async () => {
-            await resetFork()
+            await resetFork(15725945)
             await hre.network.provider.request({
                 method: 'hardhat_impersonateAccount',
                 params: [ALICE_ADDRESS],
@@ -58,16 +46,21 @@ describe('Foundation', () => {
                     V3_INIT_CODE_HASH_MAINNET
                 )
             ).connect(alice) as Router
-
-            erc721Order = x2y2Orders[0]
-            const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
-            const calldata = functionSelector + erc721Order.input.slice(2)
-            planner.add(FoundationCommand(erc721Order.price, calldata, ALICE_ADDRESS, ENS_721.address, erc721Order.token_id))
-            ;({ commands, state } = planner.plan())
         })
 
-        it.only('purchases 1 ERC-721 on X2Y2', async () => {
-            const receipt = await (await router.execute(DEADLINE, commands, state, { value: erc721Order.price })).wait()
+        it.only('purchases 1 ERC-721 on Foundation', async () => {
+
+            const value = BigNumber.from('10000000000000000');
+            const calldata = FOUNDATION_INTERFACE.encodeFunctionData('buyV2', [
+                '0xEf96021Af16BD04918b0d87cE045d7984ad6c38c',
+                32,
+                value,
+                '0x459e213D8B5E79d706aB22b945e3aF983d51BC4C'
+            ])
+            planner.add(FoundationCommand(value, calldata, ALICE_ADDRESS, '0xEf96021Af16BD04918b0d87cE045d7984ad6c38c', 32))
+            const { commands, state } = planner.plan()
+
+            const receipt = await (await router.execute(DEADLINE, commands, state, { value: value })).wait()
             console.log(receipt)
             // const erc721TransferEvent = parseEvents(ERC721_INTERFACE, receipt)[1]?.args!
 
@@ -78,8 +71,8 @@ describe('Foundation', () => {
             // await expect(erc721TransferEvent.id).to.be.eq(erc721Order.token_id)
         })
 
-        it('gas purchases 1 ERC-721 on X2Y2', async () => {
-            await snapshotGasCost(router.execute(DEADLINE, commands, state, { value: erc721Order.price }))
-        })
+        // it('gas purchases 1 ERC-721 on Foundation', async () => {
+        //     await snapshotGasCost(router.execute(DEADLINE, commands, state, { value: erc721Order.price }))
+        // })
     })
 })

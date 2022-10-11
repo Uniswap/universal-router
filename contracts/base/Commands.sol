@@ -99,7 +99,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.unwrapWETH9(recipient, amountMin);
         } else if (command == FOUNDATION) {
-            console.log("FOUNDATION AYYYY");
+            (success, output) = callAndTransfer721(inputs, Constants.FOUNDATION);
         } else {
             revert InvalidCommandType(command);
         }
