@@ -1290,11 +1290,6 @@
   resolved "https://registry.npmjs.org/@openzeppelin/contracts/-/contracts-3.4.2-solc-0.7.tgz"
   integrity sha512-W6QmqgkADuFcTLzHL8vVoNBtkwjvQRpYIAom7KiUNoLKghyx3FgH0GBjt8NRvigV1ZmMOBllvE1By1C+bi8WpA==
 
-"@openzeppelin/contracts@^v4.7.3":
-  version "4.7.3"
-  resolved "https://registry.npmjs.org/@openzeppelin/contracts/-/contracts-4.7.3.tgz"
-  integrity sha512-dGRS0agJzu8ybo44pCIf3xBaPQN/65AIXNgK8+4gzKd5kbvlqyxryUYVLJv7fK98Seyd2hDZzVEHSWAh0Bt1Yw==
-
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
   resolved "https://registry.yarnpkg.com/@resolver-engine/core/-/core-0.3.3.tgz#590f77d85d45bc7ecc4e06c654f41345db6ca967"
@@ -1650,10 +1645,10 @@
   resolved "https://registry.npmjs.org/@uniswap/lib/-/lib-4.0.1-alpha.tgz"
   integrity sha512-f6UIliwBbRsgVLxIaBANF6w09tYqc6Y/qXdsrbEmXHyFA7ILiKrIwRFXe1yOg8M3cksgVsO9N7yuL2DdCGQKBA==
 
-"@uniswap/narwhal-sdk@1.0.0-beta.8":
-  version "1.0.0-beta.8"
-  resolved "https://registry.yarnpkg.com/@uniswap/narwhal-sdk/-/narwhal-sdk-1.0.0-beta.8.tgz#6e8fb68a8e9efd0d0e87500eac1f955b77a847c1"
-  integrity sha512-su/m6sq0NTetrhebhWsB0PICDpKPxOOQFwj1lpCegtroHOsyvPxkBENR3HaYg8b73ai0WOE8p4bY7QgyBlcWhA==
+"@uniswap/narwhal-sdk@1.0.0-beta.9":
+  version "1.0.0-beta.9"
+  resolved "https://registry.yarnpkg.com/@uniswap/narwhal-sdk/-/narwhal-sdk-1.0.0-beta.9.tgz#13923cd4348c41958d0de511cb5d5fe632a7ac32"
+  integrity sha512-CuJg0vs0sx4RwoLlCPE7TgBtdWSDFG9GaPjF/x/fRZb4T4iJGo8rYUXy6bg2/AFj20pHTbGnwaSghRImfZTIkA==
   dependencies:
     ethers "^5.3.1"
 
@@ -8007,11 +8002,6 @@ solidity-comments-extractor@^0.0.7:
   version "0.0.7"
   resolved "https://registry.yarnpkg.com/solidity-comments-extractor/-/solidity-comments-extractor-0.0.7.tgz#99d8f1361438f84019795d928b931f4e5c39ca19"
   integrity sha512-wciNMLg/Irp8OKGrh3S2tfvZiZ0NEyILfcRCXCD4mp7SgK/i9gzLfhY2hY7VMCQJ3kH9UB9BzNdibIVMchzyYw==
-
-solmate@^6.6.1:
-  version "6.6.1"
-  resolved "https://registry.yarnpkg.com/solmate/-/solmate-6.6.1.tgz#f0907e1cdada6dd5fbfe11811ab545162b713197"
-  integrity sha512-WHvRXQvGtgR6R9nmkDTz/d+oULMqf/D33rlzQyadTX2SbuTmaW7ToEjGjGtWUVCQwZsZ/JP3vbOEVv7fB50btg==
 
 source-map-resolve@^0.5.0:
   version "0.5.3"
