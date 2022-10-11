@@ -91,5 +91,6 @@ export function constructPermitCalldata(
     signature,
   ])
 
+  // Removes the function selector and first parameter
   return '0x' + calldata.slice(74)
 }

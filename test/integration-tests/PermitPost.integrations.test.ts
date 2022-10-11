@@ -63,8 +63,8 @@ describe.only('PermitPost Integrations', () => {
     permitPostFactory = new ethers.ContractFactory(PERMIT_POST_INTERFACE, permitPostBytecode, alice)
     routerFactory = await ethers.getContractFactory('Router')
 
-    usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
-    wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
+    usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
+    wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
   })
 
   beforeEach(async () => {
@@ -165,6 +165,41 @@ describe.only('PermitPost Integrations', () => {
 
         it('Swap Narwhal')
       })
+
+      describe('PP Max-Approve-Permit.', () => {
+        it('Max Approve Permit2', async () => {
+          await snapshotGasCost(usdcContract.approve(permitPost.address, MAX_UINT))
+        })
+
+        it('Swap Narwhal')
+      })
     })
+
+    describe('Complex Swap.', () => {
+      describe('SwapRouter02.', () => {
+        it('Max Approve SwapRouter02', async () => {
+          await snapshotGasCost(usdcContract.approve(SWAP_ROUTER_V2, MAX_UINT))
+        })
+
+        it('Swap SwapRouter02')
+      })
+
+      describe('PP Sign-Per-Swap.', () => {
+        it('Max Approve Permit2', async () => {
+          await snapshotGasCost(usdcContract.approve(permitPost.address, MAX_UINT))
+        })
+
+        it('Swap Narwhal')
+      })
+
+      describe('PP Max-Approve-Permit.', () => {
+        it('Max Approve Permit2', async () => {
+          await snapshotGasCost(usdcContract.approve(permitPost.address, MAX_UINT))
+        })
+
+        it('Swap Narwhal')
+      })
+    })
+
   })
 })

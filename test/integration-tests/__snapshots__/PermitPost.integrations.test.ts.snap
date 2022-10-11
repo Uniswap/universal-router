@@ -1,5 +1,33 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`PermitPost Integrations First Time User. Complex Swap. PP Max-Approve-Permit. Max Approve Permit2 1`] = `
+Object {
+  "calldataByteLength": 68,
+  "gasUsed": 60311,
+}
+`;
+
+exports[`PermitPost Integrations First Time User. Complex Swap. PP Sign-Per-Swap. Max Approve Permit2 1`] = `
+Object {
+  "calldataByteLength": 68,
+  "gasUsed": 60311,
+}
+`;
+
+exports[`PermitPost Integrations First Time User. Complex Swap. SwapRouter02. Max Approve SwapRouter02 1`] = `
+Object {
+  "calldataByteLength": 68,
+  "gasUsed": 60311,
+}
+`;
+
+exports[`PermitPost Integrations First Time User. Simple Swap. PP Max-Approve-Permit. Max Approve Permit2 1`] = `
+Object {
+  "calldataByteLength": 68,
+  "gasUsed": 60311,
+}
+`;
+
 exports[`PermitPost Integrations First Time User. Simple Swap. PP Sign-Per-Swap. Max Approve Permit2 1`] = `
 Object {
   "calldataByteLength": 68,
@@ -24,6 +52,6 @@ Object {
 exports[`PermitPost Integrations gas: permit post, uniswap v2 single hop 1`] = `
 Object {
   "calldataByteLength": 1252,
-  "gasUsed": 139809,
+  "gasUsed": 139827,
 }
 `;
