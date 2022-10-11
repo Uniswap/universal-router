@@ -7,6 +7,8 @@ import '../libraries/UniswapPoolHelper.sol';
 import '../libraries/Constants.sol';
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
+import {Signature, Permit, IPermitPost, TokenType, TokenDetails} from 'permitpost/src/interfaces/IPermitPost.sol';
+
 
 abstract contract V3SwapRouter {
     using Path for bytes;
@@ -21,6 +23,7 @@ abstract contract V3SwapRouter {
 
     address internal immutable V3_FACTORY;
     bytes32 internal immutable POOL_INIT_CODE_HASH_V3;
+    address immutable PERMIT_POST_CONTRACT;
 
     /// @dev Used as the placeholder value for amountInCached, because the computed amount in for an exact output swap
     /// can never actually be this value
@@ -35,10 +38,20 @@ abstract contract V3SwapRouter {
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
 
-    constructor(address v3Factory, bytes32 poolInitCodeHash) {
+    constructor(address permitPost, address v3Factory, bytes32 poolInitCodeHash) {
+        PERMIT_POST_CONTRACT = permitPost;
         V3_FACTORY = v3Factory;
         POOL_INIT_CODE_HASH_V3 = poolInitCodeHash;
     }
+
+    struct PermitData {
+        Signature signature;
+        uint256 maxAmount;
+        uint256 deadline;
+    }
+
+    PermitData private transientPermitData;
+    address private transientCaller;
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external {
         require(amount0Delta > 0 || amount1Delta > 0); // swaps entirely within 0-liquidity regions are not supported
@@ -51,7 +64,13 @@ abstract contract V3SwapRouter {
 
         if (isExactInput) {
             // Pay the pool (msg.sender)
-            Payments.payERC20(tokenIn, msg.sender, amountToPay);
+            if (transientCaller != address(0)) {
+                // this must be the first hop, therefore the input comes from the user
+                executePermitTransfer(tokenIn, amountToPay);
+            } else {
+                // we are in a later hop, the input comes from the router
+                Payments.payERC20(tokenIn, msg.sender, amountToPay);
+            }
         } else {
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
@@ -59,15 +78,19 @@ abstract contract V3SwapRouter {
             } else {
                 amountInCached = amountToPay;
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
-                Payments.payERC20(tokenOut, msg.sender, amountToPay);
+                executePermitTransfer(tokenOut, amountToPay);
             }
         }
     }
 
-    function v3SwapExactInput(address recipient, uint256 amountIn, uint256 amountOutMinimum, bytes memory path)
+    function v3SwapExactInput(address recipient, uint256 amountIn, uint256 amountOutMinimum, bytes memory data)
         internal
         returns (uint256 amountOut)
     {
+        bytes memory path;
+        (path, transientPermitData) = abi.decode(data, (bytes, PermitData));
+        transientCaller = msg.sender;
+
         // use amountIn == Constants.CONTRACT_BALANCE as a flag to swap the entire balance of the contract
         if (amountIn == Constants.CONTRACT_BALANCE) {
             address tokenIn = path.decodeFirstToken();
@@ -99,10 +122,14 @@ abstract contract V3SwapRouter {
         require(amountOut >= amountOutMinimum, 'Too little received');
     }
 
-    function v3SwapExactOutput(address recipient, uint256 amountOut, uint256 amountInMaximum, bytes memory path)
+    function v3SwapExactOutput(address recipient, uint256 amountOut, uint256 amountInMaximum, bytes memory data)
         internal
         returns (uint256 amountIn)
     {
+        bytes memory path;
+        (path, transientPermitData) = abi.decode(data, (bytes, PermitData));
+        transientCaller = msg.sender;
+
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
             _swap(-amountOut.toInt256(), recipient, path, false);
 
@@ -145,5 +172,38 @@ abstract contract V3SwapRouter {
             (tokenA, tokenB) = (tokenB, tokenA);
         }
         return PoolKey({token0: tokenA, token1: tokenB, fee: fee});
+    }
+
+    function executePermitTransfer(address token, uint256 amountToPay) private {
+        address[] memory to = new address[](1);
+        to[0] = msg.sender;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = amountToPay;
+
+        TokenDetails[] memory tokenDetails = new TokenDetails[](1);
+        tokenDetails[1] = TokenDetails({
+            tokenType: TokenType.ERC20,
+            token: token,
+            maxAmount: transientPermitData.maxAmount,
+            id: 0
+        });
+
+        Permit memory permit = Permit({
+            tokens: tokenDetails,
+            spender: address(this),
+            deadline: transientPermitData.deadline,
+            witness: bytes32(0)
+        });
+
+        IPermitPost(PERMIT_POST_CONTRACT).transferFrom(
+            transientCaller,
+            permit,
+            to,
+            amounts,
+            transientPermitData.signature
+        );
+
+        delete transientCaller;
+        delete transientPermitData;
     }
 }

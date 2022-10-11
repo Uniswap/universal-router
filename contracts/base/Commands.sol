@@ -27,7 +27,6 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant UNWRAP_WETH = 0x08;
     uint256 constant SWEEP = 0x09;
 
-    address immutable PERMIT_POST_CONTRACT;
 
     error InvalidCommandType(uint256 commandType);
 
@@ -37,9 +36,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         address v3Factory,
         bytes32 pairInitCodeHash,
         bytes32 poolInitCodeHash
-    ) V2SwapRouter(v2Factory, pairInitCodeHash) V3SwapRouter(v3Factory, poolInitCodeHash) {
-        PERMIT_POST_CONTRACT = permitPost;
-    }
+    ) V2SwapRouter(v2Factory, pairInitCodeHash) V3SwapRouter(permitPost, v3Factory, poolInitCodeHash) {}
 
     /// @notice executes the given command with the given inputs
     /// @param command The command to execute
@@ -65,13 +62,13 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 abi.decode(inputs, (uint256, uint256, address[], address));
             output = abi.encode(v2SwapExactOutput(amountOut, amountInMax, path, recipient));
         } else if (command == V3_SWAP_EXACT_IN) {
-            (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
+            (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory data) =
                 abi.decode(inputs, (address, uint256, uint256, bytes));
-            output = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, path));
+            output = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, data));
         } else if (command == V3_SWAP_EXACT_OUT) {
-            (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
+            (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory data) =
                 abi.decode(inputs, (address, uint256, uint256, bytes));
-            output = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
+            output = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, data));
         } else if (command == SEAPORT) {
             (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
             (success, output) = Constants.SEAPORT.call{value: value}(data);
