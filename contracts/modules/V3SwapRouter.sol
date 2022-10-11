@@ -20,17 +20,22 @@ abstract contract V3SwapRouter {
         uint24 fee;
     }
 
-    struct PaymentCallbackData {
+    // This is the data string that is passed from the narwhal router into this contract
+    // The first is a regular uniswap path encoding
+    // permitPostData is an encoding of a PermitPostData struct
+    struct DataReceived {
         bytes path;
         bytes permitPostData;
-        address user;
     }
 
+    // A struct containing information needed for permit post transfers
     struct PermitPostData {
         Permit permit;
         Signature signature;
     }
 
+    // The struct of calldata passed into the callback from V3.
+    // The boolean allows us to know what type of data is held in the bytes field
     struct SwapCallbackData {
         bool isPaymentCallbackData;
         // when isPaymentCallbackData is false, dataOrPath holds the trade path
@@ -38,9 +43,10 @@ abstract contract V3SwapRouter {
         bytes dataOrPath;
     }
 
-    struct DataReceived {
+    struct PaymentCallbackData {
         bytes path;
         bytes permitPostData;
+        address user;
     }
 
     address internal immutable V3_FACTORY;
