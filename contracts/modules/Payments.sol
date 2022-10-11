@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.4;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import '../interfaces/external/IWETH9.sol';
 import '../libraries/Constants.sol';
-import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
-import {ERC20} from 'solmate/src/tokens/ERC20.sol';
+import {SafeTransferLib} from 'solmate/utils/SafeTransferLib.sol';
+import {ERC20} from 'solmate/tokens/ERC20.sol';
 
 library Payments {
     error InsufficientToken(address token);

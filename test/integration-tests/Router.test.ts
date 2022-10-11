@@ -5,8 +5,8 @@ import { BigNumber } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { FeeAmount } from '@uniswap/v3-sdk'
 import { expect } from './shared/expect'
-import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import { abi as TOKEN_ABI } from '../../artifacts/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol/IERC20.json'
+import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import {
   ALICE_ADDRESS,

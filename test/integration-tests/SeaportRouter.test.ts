@@ -3,7 +3,7 @@ import { RouterPlanner, SeaportCommand } from '@uniswap/narwhal-sdk'
 import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
 import { Router } from '../../typechain'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import {
   seaportOrders,

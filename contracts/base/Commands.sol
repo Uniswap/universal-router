@@ -5,9 +5,9 @@ import '../modules/V2SwapRouter.sol';
 import '../modules/V3SwapRouter.sol';
 import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
-import {ERC721} from 'solmate/src/tokens/ERC721.sol';
-import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
-import '../../lib/permitpost/src/interfaces/IPermitPost.sol';
+import {ERC721} from 'solmate/tokens/ERC721.sol';
+import {ERC1155} from 'solmate/tokens/ERC1155.sol';
+import 'permitpost/src/interfaces/IPermitPost.sol';
 
 contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     // Command Types
@@ -51,7 +51,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         if (command == PERMIT_POST) {
             (bytes memory data) = abi.decode(inputs, (bytes));
             // pass in the msg.sender as the first parameter `from`
-            data = bytes.concat(IPermitPost.transferFrom.selector, abi.encodePacked(uint256(uint160(msg.sender))), data);
+            data = bytes.concat(IPermitPost.transferFrom.selector, abi.encode(msg.sender), data);
             (success, output) = PERMIT_POST_CONTRACT.call(data);
         } else if (command == TRANSFER) {
             (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
