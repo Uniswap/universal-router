@@ -7,7 +7,6 @@ import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
 import {ERC721} from 'solmate/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/tokens/ERC1155.sol';
-import 'permitpost/src/interfaces/IPermitPost.sol';
 
 contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     // Command Types
@@ -27,8 +26,6 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant UNWRAP_WETH = 0x08;
     uint256 constant SWEEP = 0x09;
 
-    address immutable PERMIT_POST_CONTRACT;
-
     error InvalidCommandType(uint256 commandType);
 
     constructor(
@@ -37,9 +34,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         address v3Factory,
         bytes32 pairInitCodeHash,
         bytes32 poolInitCodeHash
-    ) V2SwapRouter(v2Factory, pairInitCodeHash) V3SwapRouter(v3Factory, poolInitCodeHash) {
-        PERMIT_POST_CONTRACT = permitPost;
-    }
+    ) V2SwapRouter(v2Factory, pairInitCodeHash) V3SwapRouter(permitPost, v3Factory, poolInitCodeHash) {}
 
     /// @notice executes the given command with the given inputs
     /// @param command The command to execute

@@ -7,6 +7,7 @@ import '../libraries/UniswapPoolHelper.sol';
 import '../libraries/Constants.sol';
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
+import {Permit, Signature, IPermitPost} from 'permitpost/src/interfaces/IPermitPost.sol';
 
 abstract contract V3SwapRouter {
     using Path for bytes;
@@ -19,8 +20,32 @@ abstract contract V3SwapRouter {
         uint24 fee;
     }
 
+    struct PaymentCallbackData {
+        bytes path;
+        bytes permitPostData;
+        address user;
+    }
+
+    struct PermitPostData {
+        Permit permit;
+        Signature signature;
+    }
+
+    struct SwapCallbackData {
+        bool isPaymentCallbackData;
+        // when isPaymentCallbackData is false, dataOrPath holds the trade path
+        // when isPaymentCallbackData is true, dataOrPath is an encoding of a PaymentCallbackData struct
+        bytes dataOrPath;
+    }
+
+    struct DataReceived {
+        bytes path;
+        bytes permitPostData;
+    }
+
     address internal immutable V3_FACTORY;
     bytes32 internal immutable POOL_INIT_CODE_HASH_V3;
+    address immutable PERMIT_POST_CONTRACT;
 
     /// @dev Used as the placeholder value for amountInCached, because the computed amount in for an exact output swap
     /// can never actually be this value
@@ -35,57 +60,118 @@ abstract contract V3SwapRouter {
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
 
-    constructor(address v3Factory, bytes32 poolInitCodeHash) {
+    constructor(address permitPost, address v3Factory, bytes32 poolInitCodeHash) {
+        PERMIT_POST_CONTRACT = permitPost;
         V3_FACTORY = v3Factory;
         POOL_INIT_CODE_HASH_V3 = poolInitCodeHash;
     }
 
-    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external {
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) external {
         require(amount0Delta > 0 || amount1Delta > 0); // swaps entirely within 0-liquidity regions are not supported
 
-        // because exact output swaps are executed in reverse order, in this case tokenOut is actually tokenIn
-        (address tokenIn, address tokenOut,) = path.decodeFirstPool();
+        SwapCallbackData memory data = abi.decode(_data, (SwapCallbackData));
 
-        (bool isExactInput, uint256 amountToPay) =
-            amount0Delta > 0 ? (tokenIn < tokenOut, uint256(amount0Delta)) : (tokenOut < tokenIn, uint256(amount1Delta));
+        bytes memory path;
+        if (data.isPaymentCallbackData) {
+            // This if statement means that the data is a PaymentCallbackData. If we are in an exact input
+            // trade this must be the first hop. For exact output we pass the data through all calls.
+            PaymentCallbackData memory paymentData = abi.decode(data.dataOrPath, (PaymentCallbackData));
+            path = paymentData.path;
 
-        if (isExactInput) {
-            // Pay the pool (msg.sender)
-            Payments.payERC20(tokenIn, msg.sender, amountToPay);
-        } else {
-            // either initiate the next swap or pay
-            if (path.hasMultiplePools()) {
-                _swap(-amountToPay.toInt256(), msg.sender, path.skipToken(), false);
+            // Because exact output swaps are executed in reverse order, in this case tokenOut is actually tokenIn
+            (address tokenIn, address tokenOut,) = path.decodeFirstPool();
+
+            (bool isExactInput, uint256 amountToPay) = amount0Delta > 0
+                ? (tokenIn < tokenOut, uint256(amount0Delta))
+                : (tokenOut < tokenIn, uint256(amount1Delta));
+
+            if (isExactInput) {
+                executePermitPost(amountToPay, paymentData.user, paymentData.permitPostData);
             } else {
-                amountInCached = amountToPay;
-                // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
-                Payments.payERC20(tokenOut, msg.sender, amountToPay);
+                // either initiate the next swap or pay
+                if (path.hasMultiplePools()) {
+                    paymentData.path = path.skipToken();
+                    data.dataOrPath = abi.encode(paymentData);
+                    _swap(-amountToPay.toInt256(), msg.sender, abi.encode(data), false);
+                } else {
+                    amountInCached = amountToPay;
+                    // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
+                    executePermitPost(amountToPay, paymentData.user, paymentData.permitPostData);
+                }
             }
+        } else {
+            // we should only enter this branch for exactInput swaps, except the first hop
+            path = data.dataOrPath;
+            (address tokenIn, address tokenOut,) = path.decodeFirstPool();
+
+            (bool isExactInput, uint256 amountToPay) = amount0Delta > 0
+                ? (tokenIn < tokenOut, uint256(amount0Delta))
+                : (tokenOut < tokenIn, uint256(amount1Delta));
+
+            if (!isExactInput) revert();
+            Payments.payERC20(tokenIn, msg.sender, amountToPay);
         }
     }
 
-    function v3SwapExactInput(address recipient, uint256 amountIn, uint256 amountOutMinimum, bytes memory path)
+    function executePermitPost(uint256 amount, address user, bytes memory permitPostData) private {
+        address[] memory to = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        to[0] = msg.sender; // the pool
+        amounts[0] = amount;
+
+        PermitPostData memory data = abi.decode(permitPostData, (PermitPostData));
+
+        // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
+        IPermitPost(PERMIT_POST_CONTRACT).transferFrom(user, data.permit, to, amounts, data.signature);
+    }
+
+    function v3SwapExactInput(address recipient, uint256 amountIn, uint256 amountOutMinimum, bytes memory _data)
         internal
         returns (uint256 amountOut)
     {
+        DataReceived memory data = abi.decode(_data, (DataReceived));
+        bytes memory path = data.path;
+        bool isFirstHop = true;
+
         // use amountIn == Constants.CONTRACT_BALANCE as a flag to swap the entire balance of the contract
         if (amountIn == Constants.CONTRACT_BALANCE) {
             address tokenIn = path.decodeFirstToken();
             amountIn = IERC20(tokenIn).balanceOf(address(this));
         }
 
+        SwapCallbackData memory swapCallbackData;
+
         while (true) {
             bool hasMultiplePools = path.hasMultiplePools();
+
+            // The user's permit post payment is taken in the first hop and then the data can be simpler
+            if (isFirstHop) {
+                PaymentCallbackData memory paymentCallbackData = PaymentCallbackData({
+                    path: path.getFirstPool(),
+                    permitPostData: data.permitPostData,
+                    user: msg.sender
+                });
+
+                swapCallbackData =
+                    SwapCallbackData({isPaymentCallbackData: true, dataOrPath: abi.encode(paymentCallbackData)});
+            } else {
+                swapCallbackData.dataOrPath = path.getFirstPool();
+            }
 
             // the outputs of prior swaps become the inputs to subsequent ones
             (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = _swap(
                 amountIn.toInt256(),
                 hasMultiplePools ? address(this) : recipient, // for intermediate swaps, this contract custodies
-                path.getFirstPool(), // only the first pool is needed
+                abi.encode(swapCallbackData),
                 true
             );
 
             amountIn = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
+
+            if (isFirstHop) {
+                delete swapCallbackData; // this will set isPaymentCallbackData to false for the remainder
+                isFirstHop = false;
+            }
 
             // decide whether to continue or terminate
             if (hasMultiplePools) {
@@ -99,12 +185,20 @@ abstract contract V3SwapRouter {
         require(amountOut >= amountOutMinimum, 'Too little received');
     }
 
-    function v3SwapExactOutput(address recipient, uint256 amountOut, uint256 amountInMaximum, bytes memory path)
+    function v3SwapExactOutput(address recipient, uint256 amountOut, uint256 amountInMaximum, bytes memory _data)
         internal
         returns (uint256 amountIn)
     {
+        DataReceived memory data = abi.decode(_data, (DataReceived));
+
+        PaymentCallbackData memory paymentCallbackData =
+            PaymentCallbackData({path: data.path, permitPostData: data.permitPostData, user: msg.sender});
+
+        SwapCallbackData memory swapCallbackData =
+            SwapCallbackData({isPaymentCallbackData: true, dataOrPath: abi.encode(paymentCallbackData)});
+
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
-            _swap(-amountOut.toInt256(), recipient, path, false);
+            _swap(-amountOut.toInt256(), recipient, abi.encode(swapCallbackData), false);
 
         uint256 amountOutReceived;
         (amountIn, amountOutReceived) = zeroForOne
