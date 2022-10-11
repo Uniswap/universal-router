@@ -60,13 +60,13 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 abi.decode(inputs, (uint256, uint256, address[], address));
             output = abi.encode(v2SwapExactOutput(amountOut, amountInMax, path, recipient));
         } else if (command == V3_SWAP_EXACT_IN) {
-            (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
+            (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory data) =
                 abi.decode(inputs, (address, uint256, uint256, bytes));
-            output = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, path));
+            output = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, data));
         } else if (command == V3_SWAP_EXACT_OUT) {
-            (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
+            (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory data) =
                 abi.decode(inputs, (address, uint256, uint256, bytes));
-            output = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
+            output = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, data));
         } else if (command == SEAPORT) {
             (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
             (success, output) = Constants.SEAPORT.call{value: value}(data);

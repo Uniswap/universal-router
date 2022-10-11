@@ -3,6 +3,6 @@
 exports[`PermitPost Integrations gas: permit post, uniswap v2 single hop 1`] = `
 Object {
   "calldataByteLength": 1252,
-  "gasUsed": 140167,
+  "gasUsed": 140013,
 }
 `;

@@ -3,13 +3,13 @@
 exports[`PermitPost gas: transfer ERC20 into Uniswap Pair nonce 1 1`] = `
 Object {
   "calldataByteLength": 900,
-  "gasUsed": 72955,
+  "gasUsed": 72884,
 }
 `;
 
 exports[`PermitPost gas: transfer ERC20 into router nonce 0 1`] = `
 Object {
   "calldataByteLength": 900,
-  "gasUsed": 107155,
+  "gasUsed": 107084,
 }
 `;
