@@ -135,7 +135,7 @@ describe('LooksRare', () => {
 
       planner.add(LooksRareCommand721(value, calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId))
       const { commands, state } = planner.plan()
-      await router.execute(DEADLINE, commands, state, { value: value })
+      await router.executeWithDeadline(commands, state, DEADLINE, { value: value })
 
       await expect((await covenContract.connect(alice).ownerOf(tokenId)).toLowerCase()).to.eq(ALICE_ADDRESS)
     })
@@ -149,7 +149,7 @@ describe('LooksRare', () => {
       planner.add(LooksRareCommand721(value.toString(), calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId))
       const { commands, state } = planner.plan()
 
-      await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
+      await snapshotGasCost(router.executeWithDeadline(commands, state, DEADLINE, { value }))
     })
   })
 
@@ -177,12 +177,12 @@ describe('LooksRare', () => {
 
     it('Buys a Twerky', async () => {
       await expect(await twerkyContract.balanceOf(alice.address, tokenId)).to.eq(0)
-      await router.execute(DEADLINE, commands, state, { value: value })
+      await router.executeWithDeadline(commands, state, DEADLINE, { value: value })
       await expect(await twerkyContract.balanceOf(alice.address, tokenId)).to.eq(1)
     })
 
     it('gas: buy 1 ERC-1155 on looks rare', async () => {
-      await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
+      await snapshotGasCost(router.executeWithDeadline(commands, state, DEADLINE, { value }))
     })
   })
 })

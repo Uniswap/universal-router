@@ -71,7 +71,7 @@ describe('X2Y2', () => {
     })
 
     it('purchases 1 ERC-721 on X2Y2', async () => {
-      const receipt = await (await router.execute(DEADLINE, commands, state, { value: erc721Order.price })).wait()
+      const receipt = await (await router.executeWithDeadline(commands, state, DEADLINE, { value: erc721Order.price })).wait()
       const erc721TransferEvent = parseEvents(ERC721_INTERFACE, receipt)[1]?.args!
 
       const newOwner = await ENS_721.connect(alice).ownerOf(erc721Order.token_id)
@@ -82,7 +82,7 @@ describe('X2Y2', () => {
     })
 
     it('gas purchases 1 ERC-721 on X2Y2', async () => {
-      await snapshotGasCost(router.execute(DEADLINE, commands, state, { value: erc721Order.price }))
+      await snapshotGasCost(router.executeWithDeadline(commands, state, DEADLINE, { value: erc721Order.price }))
     })
   })
 
@@ -126,12 +126,12 @@ describe('X2Y2', () => {
 
     it('purchases 1 ERC-1155 on X2Y2', async () => {
       await expect(await CAMEO_1155.connect(alice).balanceOf(alice.address, erc1155Order.token_id)).to.eq(0)
-      await (await router.execute(DEADLINE, commands, state, { value: erc1155Order.price })).wait()
+      await (await router.executeWithDeadline(commands, state, DEADLINE, { value: erc1155Order.price })).wait()
       await expect(await CAMEO_1155.connect(alice).balanceOf(alice.address, erc1155Order.token_id)).to.eq(1)
     })
 
     it('gas purchases 1 ERC-1155 on X2Y2', async () => {
-      await snapshotGasCost(router.execute(DEADLINE, commands, state, { value: erc1155Order.price }))
+      await snapshotGasCost(router.executeWithDeadline(commands, state, DEADLINE, { value: erc1155Order.price }))
     })
   })
 })

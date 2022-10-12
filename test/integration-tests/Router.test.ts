@@ -87,7 +87,7 @@ describe('Router', () => {
       planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], alice.address))
 
       const { commands, state } = planner.plan()
-      const returnVal = await router.callStatic.execute(DEADLINE, commands, state)
+      const returnVal = await router.callStatic.executeWithDeadline(commands, state, DEADLINE)
       expect(returnVal).to.eql(state)
     })
 
@@ -97,14 +97,14 @@ describe('Router', () => {
       const invalidDeadline = 10
 
       const { commands, state } = planner.plan()
-      await expect(router.execute(invalidDeadline, commands, state)).to.be.revertedWith('TransactionDeadlinePassed()')
+      await expect(router.executeWithDeadline(commands, state, invalidDeadline)).to.be.revertedWith('TransactionDeadlinePassed()')
     })
 
     it('reverts for an invalid command at index 0', async () => {
       const commands = '0xffffffffffffffffffffffffffffffff'
       const state: string[] = []
 
-      await expect(router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(31)')
+      await expect(router.executeWithDeadline(commands, state, DEADLINE)).to.be.revertedWith('InvalidCommandType(31)')
     })
 
     it('reverts for an invalid command at index 1', async () => {
@@ -112,7 +112,7 @@ describe('Router', () => {
       planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, expandTo18DecimalsBN(1)))
       let { commands, state } = planner.plan()
       commands = commands.concat(invalidCommand)
-      await expect(router.execute(DEADLINE, commands, state)).to.be.revertedWith('InvalidCommandType(31)')
+      await expect(router.executeWithDeadline(commands, state, DEADLINE)).to.be.revertedWith('InvalidCommandType(31)')
     })
 
     describe('partial fills', async () => {
@@ -149,7 +149,7 @@ describe('Router', () => {
         planner.add(invalidSeaportCommand)
 
         const { commands, state } = planner.plan()
-        await expect(router.execute(DEADLINE, commands, state, { value })).to.be.revertedWith(
+        await expect(router.executeWithDeadline(commands, state, DEADLINE, { value })).to.be.revertedWith(
           'ExecutionFailed(1, "0x8baa579f")'
         )
       })
@@ -159,7 +159,7 @@ describe('Router', () => {
         const { commands, state } = planner.plan()
 
         const covenBalanceBefore = await covenContract.balanceOf(alice.address)
-        await router.execute(DEADLINE, commands, state, { value })
+        await router.executeWithDeadline(commands, state, DEADLINE, { value })
         const covenBalanceAfter = await covenContract.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
       })
@@ -184,7 +184,7 @@ describe('Router', () => {
 
         let { commands, state } = planner.plan()
 
-        const receipt = await (await router.execute(DEADLINE, commands, state)).wait()
+        const receipt = await (await router.executeWithDeadline(commands, state, DEADLINE)).wait()
 
         const v2AmountOut = parseEvents(V2_EVENTS, receipt)[0]!.args.amount1Out
         const v3AmountIn = parseEvents(V3_EVENTS, receipt)[0]!.args.amount1
