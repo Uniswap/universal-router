@@ -43,11 +43,7 @@ contract Router is Commands {
 
     /// @param commands A set of concatenated commands, each 8 bytes in length
     /// @param state The state elements that should be used for the input and output of commands
-    function execute(bytes memory commands, bytes[] memory state)
-        public
-        payable
-        returns (bytes[] memory)
-    {
+    function execute(bytes memory commands, bytes[] memory state) public payable returns (bytes[] memory) {
         bool success;
         bytes memory output;
         uint256 numCommands = commands.numCommands();

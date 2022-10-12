@@ -221,7 +221,9 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const daiBalanceBefore = await daiContract.balanceOf(alice.address)
         const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
 
-        const receipt = await (await router.executeWithDeadline(commands, state, DEADLINE, { value: amountIn.toString() })).wait()
+        const receipt = await (
+          await router.executeWithDeadline(commands, state, DEADLINE, { value: amountIn.toString() })
+        ).wait()
 
         const daiBalanceAfter = await daiContract.balanceOf(alice.address)
         const ethBalanceAfter = await ethers.provider.getBalance(alice.address)

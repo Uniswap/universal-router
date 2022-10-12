@@ -71,7 +71,9 @@ describe('X2Y2', () => {
     })
 
     it('purchases 1 ERC-721 on X2Y2', async () => {
-      const receipt = await (await router.executeWithDeadline(commands, state, DEADLINE, { value: erc721Order.price })).wait()
+      const receipt = await (
+        await router.executeWithDeadline(commands, state, DEADLINE, { value: erc721Order.price })
+      ).wait()
       const erc721TransferEvent = parseEvents(ERC721_INTERFACE, receipt)[1]?.args!
 
       const newOwner = await ENS_721.connect(alice).ownerOf(erc721Order.token_id)

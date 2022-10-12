@@ -97,7 +97,9 @@ describe('Router', () => {
       const invalidDeadline = 10
 
       const { commands, state } = planner.plan()
-      await expect(router.executeWithDeadline(commands, state, invalidDeadline)).to.be.revertedWith('TransactionDeadlinePassed()')
+      await expect(router.executeWithDeadline(commands, state, invalidDeadline)).to.be.revertedWith(
+        'TransactionDeadlinePassed()'
+      )
     })
 
     it('reverts for an invalid command at index 0', async () => {
