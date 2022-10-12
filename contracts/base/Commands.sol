@@ -25,6 +25,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant WRAP_ETH = 0x07;
     uint256 constant UNWRAP_WETH = 0x08;
     uint256 constant SWEEP = 0x09;
+    uint256 constant FOUNDATION = 0x0f;
 
     address immutable PERMIT_POST;
 
@@ -96,6 +97,8 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         } else if (command == UNWRAP_WETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.unwrapWETH9(recipient, amountMin);
+        } else if (command == FOUNDATION) {
+            (success, output) = callAndTransfer721(inputs, Constants.FOUNDATION);
         } else {
             revert InvalidCommandType(command);
         }
