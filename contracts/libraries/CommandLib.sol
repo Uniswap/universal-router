@@ -12,8 +12,8 @@ library CommandLib {
 
     /// @notice offset for the state index for the command output
     uint8 constant COMMAND_OUTPUTS_OFFSET = 56;
-    /// @notice mask for parsing command type
-    uint8 constant FLAG_COMMAND_TYPE_MASK = 0x0f;
+    /// @notice mask for parsing command type, 5 least significant bits
+    uint8 constant FLAG_COMMAND_TYPE_MASK = 0x1f;
     /// @notice offset of the command indices in a given command
     uint8 constant COMMAND_INDICES_OFFSET = 8;
     /// @notice The offset of the actual data in bytes
