@@ -69,11 +69,11 @@ The 1-byte flags argument `f` has the following field structure:
 ```
   0   1    2   3   4   5   6   7
 ┌───┬────────────┬──────────────┐
-│tup│  reserved  │  calltype    │
+│rev│  reserved  │  calltype    │
 └───┴────────────┴──────────────┘
 ```
 
-If `tup` is set, the return for this command will be assigned to the state slot directly, without any attempt at processing or decoding.
+If `rev` is set, and if the command is revertable (a direct external call), allow the command to revert without reverting the entire transaction.
 
 Bits 2-5 are reserved for future use.
 
