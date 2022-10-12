@@ -9,6 +9,7 @@ import {
   V3ExactInputCommand,
   V3ExactOutputCommand,
   UnwrapWETHCommand,
+  UnwrapWETHWithFeeCommand,
   WrapETHCommand,
 } from '@uniswap/narwhal-sdk'
 import { CurrencyAmount, Ether, Percent, Token, TradeType } from '@uniswap/sdk-core'
@@ -55,6 +56,7 @@ function encodePathExactOutput(tokens: string[]) {
 
 describe('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
+  let bob: SignerWithAddress
   let router: Router
   let daiContract: Contract
   let wethContract: Contract
@@ -73,6 +75,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
+    bob = (await ethers.getSigners())[1]
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
@@ -281,6 +284,30 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
         expect(ethDelta).to.eq(amountOut.sub(gasSpent))
+      })
+
+      it('completes a V2 exactOut swap ETH, with ETH fee', async () => {
+        const amountOut = expandTo18DecimalsBN(1)
+        planner.add(
+          V2ExactOutputCommand(amountOut, expandTo18DecimalsBN(10000), [DAI.address, WETH.address], router.address)
+        )
+        const ONE_PERCENT = 100
+        planner.add(UnwrapWETHWithFeeCommand(alice.address, CONTRACT_BALANCE, ONE_PERCENT, bob.address))
+
+        const { commands, state } = planner.plan()
+        const ethBalanceBeforeAlice = await ethers.provider.getBalance(alice.address)
+        const ethBalanceBeforeBob = await ethers.provider.getBalance(bob.address)
+        const receipt = await (await router.execute(DEADLINE, commands, state)).wait()
+
+        const ethBalanceAfterAlice = await ethers.provider.getBalance(alice.address)
+        const ethBalanceAfterBob = await ethers.provider.getBalance(bob.address)
+        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+
+        const bobFee = ethBalanceAfterBob.sub(ethBalanceBeforeBob)
+        const aliceEarnings = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice).add(gasSpent)
+
+        // not quite 100 because the fee is taken before the final gas is taken
+        expect(aliceEarnings.div(bobFee)).to.eq(99)
       })
 
       it('completes a V2 exactIn swap with longer path', async () => {
