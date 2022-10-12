@@ -10,6 +10,7 @@ import {
   V3ExactOutputCommand,
   UnwrapWETHCommand,
   UnwrapWETHWithFeeCommand,
+  SweepWithFeeCommand,
   WrapETHCommand,
 } from '@uniswap/narwhal-sdk'
 import { CurrencyAmount, Ether, Percent, Token, TradeType } from '@uniswap/sdk-core'
@@ -306,8 +307,32 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const bobFee = ethBalanceAfterBob.sub(ethBalanceBeforeBob)
         const aliceEarnings = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice).add(gasSpent)
 
-        // not quite 100 because the fee is taken before the final gas is taken
-        expect(aliceEarnings.div(bobFee)).to.eq(99)
+        expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT).div(10000)).to.eq(bobFee)
+      })
+
+      it('exactIn trade, where an output fee is taken', async () => {
+        // will likely make the most sense to take fees on input with permit post in most situations
+        planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn))
+
+        // back to the router so someone can take a fee
+        planner.add(V2ExactInputCommand(1, [DAI.address, WETH.address], router.address))
+
+        const ONE_PERCENT = 100
+        planner.add(SweepWithFeeCommand(WETH.address, alice.address, 1, ONE_PERCENT, bob.address))
+
+        const { commands, state } = planner.plan()
+        const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
+        const wethBalanceBeforeBob = await wethContract.balanceOf(bob.address)
+
+        await router.execute(DEADLINE, commands, state)
+
+        const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
+        const wethBalanceAfterBob = await wethContract.balanceOf(bob.address)
+
+        const bobFee = wethBalanceAfterBob.sub(wethBalanceBeforeBob)
+        const aliceEarnings = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
+
+        expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT).div(10000)).to.eq(bobFee)
       })
 
       it('completes a V2 exactIn swap with longer path', async () => {
