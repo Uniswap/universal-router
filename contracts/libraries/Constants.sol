@@ -33,4 +33,7 @@ library Constants {
 
     /// @dev The address of LooksRare on mainnet
     address internal constant X2Y2 = 0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3;
+
+    // @dev The address of Foundation on mainnet
+    address internal constant FOUNDATION = 0xcDA72070E455bb31C7690a170224Ce43623d0B6f;
 }
