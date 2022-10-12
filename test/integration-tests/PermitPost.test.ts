@@ -30,7 +30,7 @@ import {
   TokenDetails,
 } from './shared/protocolHelpers/permitPost'
 
-describe.only('PermitPost', () => {
+describe('PermitPost', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router

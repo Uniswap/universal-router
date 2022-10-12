@@ -14,14 +14,13 @@ import {
   V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { Route as V3RouteSDK, FeeAmount } from '@uniswap/v3-sdk'
+import { Route as V2RouteSDK, Pair } from '@uniswap/v2-sdk'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 const { ethers } = hre
 import { BigNumber } from 'ethers'
-import { Pair } from '@uniswap/v2-sdk'
 import {
   constructPermitCalldata,
   Permit,
@@ -31,7 +30,7 @@ import {
 } from './shared/protocolHelpers/permitPost'
 import { SwapRouter, MixedRouteSDK, Trade } from '@uniswap/router-sdk'
 import { CurrencyAmount, Ether, Percent, Token, TradeType } from '@uniswap/sdk-core'
-import { pool_DAI_USDC, pool_DAI_WETH, pool_USDC_WETH } from './shared/swapRouter02Helpers'
+import { makePair, pool_DAI_USDC, pool_DAI_WETH, pool_USDC_WETH } from './shared/swapRouter02Helpers'
 
 describe.only('PermitPost Integrations', () => {
   let alice: SignerWithAddress
@@ -47,6 +46,10 @@ describe.only('PermitPost Integrations', () => {
   const TOKEN_TYPE_ERC20 = 0
   const TOKEN_TYPE_ERC721 = 1
 
+  let pair_DAI_WETH: Pair
+  let pair_DAI_USDC: Pair
+  let pair_USDC_WETH: Pair
+
   const permitPostBytecode = PERMIT_POST_COMPILE.bytecode
 
   const chainId: number = hre.network.config.chainId ? hre.network.config.chainId : 1
@@ -54,6 +57,10 @@ describe.only('PermitPost Integrations', () => {
   function getUSDCAmountIn(amount: number) : number {
     return amount * (10 ** 6)
   }
+
+  const slippageTolerance = new Percent(10, 100)
+  const deadline = 2000000000
+  let v2TradeExactIn: Trade<Token, Token, TradeType.EXACT_INPUT>
 
   before(async () => {
     await resetFork()
@@ -65,6 +72,10 @@ describe.only('PermitPost Integrations', () => {
 
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
+
+    pair_DAI_WETH = await makePair(bob, DAI, WETH)
+    pair_DAI_USDC = await makePair(bob, DAI, USDC)
+    pair_USDC_WETH = await makePair(bob, USDC, WETH)
   })
 
   beforeEach(async () => {
@@ -91,51 +102,10 @@ describe.only('PermitPost Integrations', () => {
     await wethContract.connect(bob).approve(permitPost.address, MAX_UINT)
   })
 
-  it('gas: permit post, uniswap v2 single hop', async () => {
-    // bob increments his nonce past 0
-    await permitPost.invalidateNonces(1)
-
-    // We construct Bob's permit
-    const tokenDetails: TokenDetails = {
-      tokenType: TOKEN_TYPE_ERC20, // ERC20
-      token: WETH.address,
-      maxAmount: expandTo18DecimalsBN(2),
-      id: BigNumber.from(0),
-    }
-
-    const permit: Permit = {
-      tokens: [tokenDetails],
-      spender: router.address, // the router is the one who will claim the WETH
-      deadline: BigNumber.from(MAX_UINT),
-      witness: EMPTY_BYTES_32,
-    }
-
-    const signatureType: number = 1 // sequential
-    const nonce: number = 1 // currently no nonces have been used
-
-    // Now Bob signs this payload
-    const signature = await signPermit(permit, signatureType, nonce, bob, chainId, permitPost.address)
-
-    // Construct the permit post transferFrom calldata, without the function selector first parameter
-    // The resulting calldata is what we pass into permit post
-    const inputAmount = expandTo18DecimalsBN(1)
-    const calldata = constructPermitCalldata(permit, [Pair.getAddress(DAI, WETH)], [inputAmount], signature)
-
-    // Transfers 1 WETH into Uniswap pool
-    planner.add(PermitCommand(calldata))
-    // Min amount out of 1000 DAI, WETH for DAI, transfer to Alice
-    planner.add(V2ExactInputCommand(expandTo18DecimalsBN(1000), [WETH.address, DAI.address], alice.address))
-    const { commands, state } = planner.plan()
-    await snapshotGasCost(router.execute(DEADLINE, commands, state))
-  })
-
-  const slippageTolerance = new Percent(10, 100)
-  const deadline = 2000000000
-  const simpleSwapAmountIn = CurrencyAmount.fromRawAmount(USDC, getUSDCAmountIn(1000))
-  let v3ExactInMultihop: Trade<Token, Token, TradeType.EXACT_INPUT>
-
   describe('First Time User.', () => {
     describe('Simple Swap.', () => {
+      const simpleSwapAmountIn = getUSDCAmountIn(1000)
+      const simpleSwapCurrAmountIn = CurrencyAmount.fromRawAmount(USDC, simpleSwapAmountIn)
       describe('SwapRouter02.', () => {
         it('Max Approve SwapRouter02', async () => {
           await snapshotGasCost(usdcContract.approve(SWAP_ROUTER_V2, MAX_UINT))
@@ -143,15 +113,15 @@ describe.only('PermitPost Integrations', () => {
 
         it('Swap SwapRouter02', async () => {
           // USDC -> WETH -> DAI
-          v3ExactInMultihop = await Trade.fromRoute(
-            new V3RouteSDK([pool_USDC_WETH, pool_DAI_WETH], USDC, DAI),
-            simpleSwapAmountIn,
+          v2TradeExactIn = await Trade.fromRoute(
+            new V2RouteSDK([pair_USDC_WETH, pair_DAI_WETH], USDC, DAI),
+            simpleSwapCurrAmountIn,
             TradeType.EXACT_INPUT
           )
-          const { calldata } = SwapRouter.swapCallParameters(v3ExactInMultihop, {
+          const { calldata } = SwapRouter.swapCallParameters(v2TradeExactIn, {
             slippageTolerance,
             recipient: bob.address,
-            deadlineOrPreviousBlockhash: 2000000000,
+            deadlineOrPreviousBlockhash: deadline,
           })
   
           await snapshotGasCost(executeSwap({ value: '0', calldata }, USDC, DAI, bob))
@@ -163,14 +133,46 @@ describe.only('PermitPost Integrations', () => {
           await snapshotGasCost(usdcContract.approve(permitPost.address, MAX_UINT))
         })
 
-        it('Swap Narwhal')
+        it('Swap Narwhal', async () => {
+          // USDC->WETH->DAI
+          await usdcContract.approve(permitPost.address, MAX_UINT)
+
+          // We construct Bob's permit
+          const tokenDetails: TokenDetails = {
+            tokenType: TOKEN_TYPE_ERC20, // ERC20
+            token: USDC.address,
+            maxAmount: BigNumber.from(simpleSwapAmountIn + 4),
+            id: BigNumber.from(0),
+          }
+
+          const permit: Permit = {
+            tokens: [tokenDetails],
+            spender: router.address, // the router is the one who will claim the USDC
+            deadline: BigNumber.from(deadline),
+            witness: EMPTY_BYTES_32,
+          }
+
+          const signatureType: number = 1 // sequential
+          const nonce: number = 0 // currently no nonces have been used
+
+          // Now Bob signs this payload
+          const signature = await signPermit(permit, signatureType, nonce, bob, chainId, permitPost.address)
+
+          // Construct the permit post transferFrom calldata, without the function selector first parameter
+          // The resulting calldata is what we pass into permit post.
+          const calldata = constructPermitCalldata(permit, [Pair.getAddress(USDC, WETH)], [BigNumber.from(simpleSwapAmountIn)], signature)
+
+          // Transfers 1000 USDC into Uniswap pool
+          planner.add(PermitCommand(calldata))
+          // Min amount out of 950 DAI, USDC for DAI, transfer to Bob
+          planner.add(V2ExactInputCommand(expandTo18DecimalsBN(950), [USDC.address, WETH.address, DAI.address], bob.address))
+          const { commands, state } = planner.plan()
+          await snapshotGasCost(router.execute(DEADLINE, commands, state))
+        })
       })
 
       describe('PP Max-Approve-Permit.', () => {
-        it('Max Approve Permit2', async () => {
-          await snapshotGasCost(usdcContract.approve(permitPost.address, MAX_UINT))
-        })
-
+        it('Max Approve Permit2')
         it('Swap Narwhal')
       })
     })
@@ -181,7 +183,9 @@ describe.only('PermitPost Integrations', () => {
           await snapshotGasCost(usdcContract.approve(SWAP_ROUTER_V2, MAX_UINT))
         })
 
-        it('Swap SwapRouter02')
+        it('Swap SwapRouter02', async () => {
+
+        })
       })
 
       describe('PP Sign-Per-Swap.', () => {
@@ -193,13 +197,10 @@ describe.only('PermitPost Integrations', () => {
       })
 
       describe('PP Max-Approve-Permit.', () => {
-        it('Max Approve Permit2', async () => {
-          await snapshotGasCost(usdcContract.approve(permitPost.address, MAX_UINT))
-        })
+        it('Max Approve Permit2')
 
         it('Swap Narwhal')
       })
     })
-
   })
 })
