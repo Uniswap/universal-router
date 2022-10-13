@@ -765,22 +765,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE))
       })
 
-      it('gas: V2, then V3 using output instead of contract balance', async () => {
-        const v2Tokens = [DAI.address, USDC.address]
-        const v3Tokens = [USDC.address, WETH.address]
-        const v2AmountIn: BigNumber = expandTo18DecimalsBN(5)
-        const v2AmountOutMin = 0 // doesnt matter how much USDC it is, what matters is the end of the trade
-        const v3AmountOutMin = 0.0005 * 10 ** 18
-        planner.add(TransferCommand(DAI.address, Pair.getAddress(DAI, USDC), v2AmountIn))
-        // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
-        const amountOutV2 = planner.add(V2ExactInputCommand(v2AmountOutMin, v2Tokens, router.address))
-        // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
-        planner.add(V3ExactInputCommand(alice.address, amountOutV2, v3AmountOutMin, encodePathExactInput(v3Tokens)))
-
-        const { commands, state } = planner.plan()
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE))
-      })
-
       it('gas: split V2 and V3, one hop', async () => {
         const tokens = [DAI.address, WETH.address]
         const v2AmountIn: BigNumber = expandTo18DecimalsBN(2)

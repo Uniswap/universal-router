@@ -171,33 +171,5 @@ describe('Router', () => {
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
       })
     })
-
-    describe('using outputs', async () => {
-      it('can use an the output from a V2 swap as the input for a V3 swap', async () => {
-        const pair_DAI_WETH = await makePair(alice, DAI, WETH)
-        const amountIn = expandTo18DecimalsBN(100)
-        const amountOutMin = 1
-
-        planner.add(TransferCommand(DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn))
-        const amountOutV2 = planner.add(V2ExactInputCommand(amountOutMin, [DAI.address, WETH.address], router.address))
-        planner.add(
-          V3ExactInputCommand(
-            alice.address,
-            amountOutV2,
-            amountOutMin,
-            encodePathExactInput([WETH.address, USDC.address])
-          )
-        )
-
-        let { commands, state } = planner.plan()
-
-        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE)).wait()
-
-        const v2AmountOut = parseEvents(V2_EVENTS, receipt)[0]!.args.amount1Out
-        const v3AmountIn = parseEvents(V3_EVENTS, receipt)[0]!.args.amount1
-
-        expect(v2AmountOut).to.eq(v3AmountIn)
-      })
-    })
   })
 })

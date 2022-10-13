@@ -10,8 +10,6 @@ library CommandLib {
 
     error InvalidCommandType(uint256 commandIndex);
 
-    /// @notice offset for the state index for the command output
-    uint8 constant COMMAND_OUTPUTS_OFFSET = 56;
     /// @notice mask for parsing command type, 5 least significant bits
     uint8 constant FLAG_COMMAND_TYPE_MASK = 0x1f;
     /// @notice offset of the command indices in a given command
@@ -32,7 +30,7 @@ library CommandLib {
     function decodeCommand(bytes memory commands, uint256 index)
         internal
         pure
-        returns (uint8 flags, uint256 commandType, bytes8 indices, bytes1 outIndex)
+        returns (uint8 flags, uint256 commandType, bytes8 indices)
     {
         bytes8 command;
         assembly {
@@ -43,6 +41,5 @@ library CommandLib {
         flags = uint8(bytes1(command));
         commandType = flags & FLAG_COMMAND_TYPE_MASK;
         indices = bytes8(uint64(command) << COMMAND_INDICES_OFFSET);
-        outIndex = bytes1(command << COMMAND_OUTPUTS_OFFSET);
     }
 }
