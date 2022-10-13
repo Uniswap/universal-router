@@ -1,20 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
-import './base/Commands.sol';
-import './libraries/CommandBuilder.sol';
-import './libraries/CommandLib.sol';
+import './base/Dispatcher.sol';
 import './libraries/Constants.sol';
+import 'hardhat/console.sol';
 
-contract Router is Commands {
-    using CommandBuilder for bytes[];
-    using CommandLib for bytes;
-
+contract Router is Dispatcher {
     error ExecutionFailed(uint256 commandIndex, bytes message);
     error ETHNotAccepted();
     error TransactionDeadlinePassed();
-
-    uint8 constant FLAG_ALLOW_REVERT = 0x80;
 
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
@@ -27,36 +21,37 @@ contract Router is Commands {
         address v3Factory,
         bytes32 pairInitCodeHash,
         bytes32 poolInitCodeHash
-    ) Commands(permitPost, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash) {}
+    ) Dispatcher(permitPost, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash) {}
 
     /// @param commands A set of concatenated commands, each 8 bytes in length
-    /// @param state The state elements that should be used for the input and output of commands
+    /// @param inputs The state elements that should be used for the input and output of commands
     /// @param deadline The deadline by which the transaction must be executed
-    function execute(bytes memory commands, bytes[] memory state, uint256 deadline)
+    function execute(bytes memory commands, bytes[] memory inputs, uint256 deadline)
         external
         payable
         checkDeadline(deadline)
-        returns (bytes[] memory)
     {
-        return execute(commands, state);
+        execute(commands, inputs);
     }
 
     /// @param commands A set of concatenated commands, each 8 bytes in length
-    /// @param state The state elements that should be used for the input and output of commands
-    function execute(bytes memory commands, bytes[] memory state) public payable returns (bytes[] memory) {
+    /// @param inputs The state elements that should be used for the input and output of commands
+    function execute(bytes memory commands, bytes[] memory inputs) public payable {
         bool success;
         bytes memory output;
-        uint256 numCommands = commands.numCommands();
+        uint256 numCommands = commands.length;
+        require(inputs.length == numCommands);
 
         // loop through all given commands, execute them and pass along outputs as defined
         for (uint256 commandIndex = 0; commandIndex < numCommands;) {
-            (uint8 flags, uint256 commandType, bytes8 indices) = commands.decodeCommand(commandIndex);
+            bytes1 command = commands[commandIndex];
+            uint256 commandType = uint256(uint8(command & FLAG_COMMAND_TYPE_MASK));
 
-            bytes memory inputs = state.buildInputs(indices);
+            bytes memory input = inputs[commandIndex];
 
-            (success, output) = dispatch(commandType, inputs);
+            (success, output) = dispatch(commandType, input);
 
-            if (!success && successRequired(flags)) {
+            if (!success && successRequired(command)) {
                 revert ExecutionFailed({commandIndex: commandIndex, message: output});
             }
 
@@ -64,11 +59,10 @@ contract Router is Commands {
                 commandIndex++;
             }
         }
-        return state;
     }
 
-    function successRequired(uint8 flags) internal pure returns (bool) {
-        return flags & FLAG_ALLOW_REVERT == 0;
+    function successRequired(bytes1 command) internal pure returns (bool) {
+        return command & FLAG_ALLOW_REVERT == 0;
     }
 
     receive() external payable {
