@@ -68,7 +68,7 @@ describe('NFTX', () => {
     const { commands, state } = planner.plan()
 
     const covenBalanceBefore = await COVEN_721.connect(alice).balanceOf(alice.address)
-    await router["execute(bytes,bytes[],uint256)"](commands, state, DEADLINE, { value })
+    await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value })
     const covenBalanceAfter = await COVEN_721.connect(alice).balanceOf(alice.address)
 
     expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
@@ -91,7 +91,7 @@ describe('NFTX', () => {
     const covenBalanceBefore = await covenContract.balanceOf(alice.address)
     const covenOwner584Before = await covenContract.ownerOf(584)
     const covenOwner3033Before = await covenContract.ownerOf(3033)
-    await (await router["execute(bytes,bytes[],uint256)"](commands, state, DEADLINE, { value })).wait()
+    await (await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value })).wait()
     const covenBalanceAfter = await covenContract.balanceOf(alice.address)
     const covenOwner584After = await covenContract.ownerOf(584)
     const covenOwner3033After = await covenContract.ownerOf(3033)
@@ -117,7 +117,7 @@ describe('NFTX', () => {
     planner.add(NFTXCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
 
-    const tx = await router["execute(bytes,bytes[],uint256)"](commands, state, DEADLINE, { value })
+    const tx = await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value })
     const receipt = await tx.wait()
     const tokenIds = parseEvents(twerkyContract.interface, receipt).map((event) => event!.args.id)
     expect(await twerkyContract.balanceOf(alice.address, tokenIds[0])).to.eq(1)
@@ -139,7 +139,7 @@ describe('NFTX', () => {
     const { commands, state } = planner.plan()
 
     const twerkyBalanceBefore = await twerkyContract.balanceOf(alice.address, 44)
-    await (await router["execute(bytes,bytes[],uint256)"](commands, state, DEADLINE, { value })).wait()
+    await (await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value })).wait()
     const twerkyBalanceAfter = await twerkyContract.balanceOf(alice.address, 44)
 
     expect(twerkyBalanceAfter.sub(twerkyBalanceBefore)).to.eq(numTwerkys)
@@ -161,7 +161,7 @@ describe('NFTX', () => {
     const { commands, state } = planner.plan()
 
     const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await router["execute(bytes,bytes[],uint256)"](commands, state, DEADLINE, { value })).wait()
+    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value })).wait()
     const ethDelta = ethBalanceBefore.sub(await ethers.provider.getBalance(alice.address))
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
@@ -181,7 +181,7 @@ describe('NFTX', () => {
 
     planner.add(NFTXCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-    await snapshotGasCost(router["execute(bytes,bytes[],uint256)"](commands, state, DEADLINE, { value }))
+    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value }))
   })
 
   it('gas: buyAndRedeem w/ specific selection', async () => {
@@ -197,6 +197,6 @@ describe('NFTX', () => {
 
     planner.add(NFTXCommand(value.toString(), calldata))
     const { commands, state } = planner.plan()
-    await snapshotGasCost(router["execute(bytes,bytes[],uint256)"](commands, state, DEADLINE, { value }))
+    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value }))
   })
 })
