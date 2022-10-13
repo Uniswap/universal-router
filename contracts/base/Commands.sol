@@ -9,7 +9,7 @@ import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
 contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
-    // Command Types. Maximum supported command at this moment is 0x1F
+    // Command Types. Maximum supported command at this moment is 0x1F.
     uint256 constant PERMIT = 0x00;
     uint256 constant TRANSFER = 0x01;
     uint256 constant V3_SWAP_EXACT_IN = 0x02;

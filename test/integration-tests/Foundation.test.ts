@@ -65,7 +65,9 @@ describe('Foundation', () => {
 
       const aliceBalance = await ethers.provider.getBalance(alice.address)
       const referrerBalance = await ethers.provider.getBalance(REFERRER)
-      const receipt = await (await router.execute(DEADLINE, commands, state, { value: value })).wait()
+      const receipt = await (
+        await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value: value })
+      ).wait()
 
       // Expect that alice has the NFT
       await expect((await mentalWorlds.connect(alice).ownerOf(32)).toLowerCase()).to.eq(ALICE_ADDRESS)
@@ -82,7 +84,7 @@ describe('Foundation', () => {
       const calldata = FOUNDATION_INTERFACE.encodeFunctionData('buyV2', [MENTAL_WORLDS_ADDRESS, 32, value, REFERRER])
       planner.add(FoundationCommand(value, calldata, ALICE_ADDRESS, MENTAL_WORLDS_ADDRESS, 32))
       const { commands, state } = planner.plan()
-      await snapshotGasCost(router.execute(DEADLINE, commands, state, { value: value }))
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value: value }))
     })
   })
 })
