@@ -31,12 +31,19 @@ contract Router is Commands {
 
     /// @param commands A set of concatenated commands, each 8 bytes in length
     /// @param state The state elements that should be used for the input and output of commands
-    function execute(uint256 deadline, bytes memory commands, bytes[] memory state)
-        public
+    /// @param deadline The deadline by which the transaction must be executed
+    function execute(bytes memory commands, bytes[] memory state, uint256 deadline)
+        external
         payable
         checkDeadline(deadline)
         returns (bytes[] memory)
     {
+        return execute(commands, state);
+    }
+
+    /// @param commands A set of concatenated commands, each 8 bytes in length
+    /// @param state The state elements that should be used for the input and output of commands
+    function execute(bytes memory commands, bytes[] memory state) public payable returns (bytes[] memory) {
         bool success;
         bytes memory output;
         uint256 numCommands = commands.numCommands();
