@@ -57,7 +57,7 @@ describe('Sudoswap', () => {
             sudolets = new ethers.Contract(SUDOLETS_ADDRESS, ERC721_ABI) as ERC721
         })
 
-        it.only('purchases token ids 80, 35, 93 of Sudolets', async () => {
+        it('purchases token ids 80, 35, 93 of Sudolets', async () => {
             const value = BigNumber.from('73337152777777783')
             const calldata = SUDOSWAP_INTERFACE.encodeFunctionData(
                 'robustSwapETHForSpecificNFTs',
@@ -89,7 +89,11 @@ describe('Sudoswap', () => {
             const value = BigNumber.from('73337152777777783')
             const calldata = SUDOSWAP_INTERFACE.encodeFunctionData(
                 'robustSwapETHForSpecificNFTs',
-                [[], "0x459e213d8b5e79d706ab22b945e3af983d51bc4c", "0x459e213d8b5e79d706ab22b945e3af983d51bc4c", 1665685098]
+                [[[["0x339e7004372e04b1d59443f0ddc075efd9d80360", [
+                    "80",
+                    "35",
+                    "93"
+                ]], "73337152777777783"]], ALICE_ADDRESS, ALICE_ADDRESS, 1665685098]
             )
             planner.add(SudoswapCommand(value, calldata))
             const { commands, state } = planner.plan()
