@@ -1,21 +1,22 @@
-import { RouterPlanner, SudoswapCommand } from '@uniswap/narwhal-sdk'
-import SUDOSWAP_ABI from './shared/abis/Foundation.json'
-import { Router, ERC721 } from '../../typechain'
-import { resetFork } from './shared/mainnetForkHelpers'
+import {RouterPlanner, SudoswapCommand} from '@uniswap/narwhal-sdk'
+import SUDOSWAP_ABI from './shared/abis/Sudoswap.json'
+import {ERC721, Router} from '../../typechain'
+import {resetFork} from './shared/mainnetForkHelpers'
 import {
     ALICE_ADDRESS,
     DEADLINE,
     V2_FACTORY_MAINNET,
-    V3_FACTORY_MAINNET,
     V2_INIT_CODE_HASH_MAINNET,
+    V3_FACTORY_MAINNET,
     V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import { BigNumber } from 'ethers'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
-import { expect } from 'chai'
+import {BigNumber} from 'ethers'
+import {abi as ERC721_ABI} from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import {expect} from 'chai'
+
 const { ethers } = hre
 
 const SUDOSWAP_INTERFACE = new ethers.utils.Interface(SUDOSWAP_ABI)
@@ -56,11 +57,15 @@ describe('Sudoswap', () => {
             sudolets = new ethers.Contract(SUDOLETS_ADDRESS, ERC721_ABI) as ERC721
         })
 
-        it.('purchases token ids 80, 35, 93 of Sudolets', async () => {
+        it.only('purchases token ids 80, 35, 93 of Sudolets', async () => {
             const value = BigNumber.from('73337152777777783')
             const calldata = SUDOSWAP_INTERFACE.encodeFunctionData(
                 'robustSwapETHForSpecificNFTs',
-                [[], "0x459e213d8b5e79d706ab22b945e3af983d51bc4c", "0x459e213d8b5e79d706ab22b945e3af983d51bc4c", 1665685098]
+                [[[["0x339e7004372e04b1d59443f0ddc075efd9d80360", [
+                    "80",
+                    "35",
+                    "93"
+                ]], "73337152777777783"]], ALICE_ADDRESS, ALICE_ADDRESS, 1665685098]
             )
             planner.add(SudoswapCommand(value, calldata))
             const { commands, state } = planner.plan()
