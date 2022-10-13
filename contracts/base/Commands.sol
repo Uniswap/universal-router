@@ -9,7 +9,7 @@ import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
 contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
-    // Command Types
+    // Command Types. Maximum supported command at this moment is 0x1F.
     uint256 constant PERMIT = 0x00;
     uint256 constant TRANSFER = 0x01;
     uint256 constant V3_SWAP_EXACT_IN = 0x02;
@@ -26,6 +26,8 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant UNWRAP_WETH = 0x08;
     uint256 constant SWEEP = 0x09;
     uint256 constant FOUNDATION = 0x0f;
+    uint256 constant SWEEP_WITH_FEE = 0x10;
+    uint256 constant UNWRAP_WETH_WITH_FEE = 0x11;
 
     address immutable PERMIT_POST;
 
@@ -88,17 +90,25 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (success, output) = callAndTransfer1155(inputs, Constants.LOOKS_RARE);
         } else if (command == X2Y2_1155) {
             (success, output) = callAndTransfer1155(inputs, Constants.X2Y2);
+        } else if (command == FOUNDATION) {
+            (success, output) = callAndTransfer721(inputs, Constants.FOUNDATION);
         } else if (command == SWEEP) {
-            (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
-            Payments.sweepToken(token, recipient, minValue);
+            (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
+            Payments.sweepToken(token, recipient, amountMin);
         } else if (command == WRAP_ETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.wrapETH(recipient, amountMin);
         } else if (command == UNWRAP_WETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.unwrapWETH9(recipient, amountMin);
-        } else if (command == FOUNDATION) {
-            (success, output) = callAndTransfer721(inputs, Constants.FOUNDATION);
+        } else if (command == SWEEP_WITH_FEE) {
+            (address token, address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
+                abi.decode(inputs, (address, address, uint256, uint256, address));
+            Payments.sweepTokenWithFee(token, recipient, amountMin, feeBips, feeRecipient);
+        } else if (command == UNWRAP_WETH_WITH_FEE) {
+            (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
+                abi.decode(inputs, (address, uint256, uint256, address));
+            Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
         } else {
             revert InvalidCommandType(command);
         }
