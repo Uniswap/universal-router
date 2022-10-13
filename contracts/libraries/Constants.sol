@@ -36,4 +36,7 @@ library Constants {
 
     // @dev The address of Foundation on mainnet
     address internal constant FOUNDATION = 0xcDA72070E455bb31C7690a170224Ce43623d0B6f;
+
+    // @dev The address of Sudoswap's router on mainnet
+    address internal constant SUDOSWAP = 0x2B2e8cDA09bBA9660dCA5cB6233787738Ad68329;
 }

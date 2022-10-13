@@ -28,6 +28,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant FOUNDATION = 0x0f;
     uint256 constant SWEEP_WITH_FEE = 0x10;
     uint256 constant UNWRAP_WETH_WITH_FEE = 0x11;
+    uint256 constant SUDOSWAP = 0x12;
 
     address immutable PERMIT_POST;
 
@@ -109,6 +110,9 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
                 abi.decode(inputs, (address, uint256, uint256, address));
             Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
+        } else if (command == SUDOSWAP) {
+            (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
+            (success, output) = Constants.SUDOSWAP.call{value: value}(data);
         } else {
             revert InvalidCommandType(command);
         }
