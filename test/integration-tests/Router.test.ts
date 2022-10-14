@@ -142,8 +142,11 @@ describe('Router', () => {
         let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
         invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
         let seaportOrder: Order
-        ({ order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder))
-        invalidSeaportCalldata = seaportInterface.encodeFunctionData('fulfillOrder', [seaportOrder, OPENSEA_CONDUIT_KEY])
+        ;({ order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder))
+        invalidSeaportCalldata = seaportInterface.encodeFunctionData('fulfillOrder', [
+          seaportOrder,
+          OPENSEA_CONDUIT_KEY,
+        ])
 
         value = seaportValue.add(nftxValue)
       })
