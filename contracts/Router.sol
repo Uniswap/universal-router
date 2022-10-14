@@ -3,7 +3,6 @@ pragma solidity ^0.8.15;
 
 import './base/Dispatcher.sol';
 import './libraries/Constants.sol';
-import 'hardhat/console.sol';
 
 contract Router is Dispatcher {
     error ExecutionFailed(uint256 commandIndex, bytes message);
