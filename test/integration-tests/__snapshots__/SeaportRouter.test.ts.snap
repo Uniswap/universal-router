@@ -2,21 +2,21 @@
 
 exports[`Seaport gas fulfillAdvancedOrder 1`] = `
 Object {
-  "calldataByteLength": 2084,
-  "gasUsed": 208590,
+  "calldataByteLength": 2052,
+  "gasUsed": 200753,
 }
 `;
 
 exports[`Seaport gas fulfillAvailableAdvancedOrders 1 orders 1`] = `
 Object {
-  "calldataByteLength": 4740,
-  "gasUsed": 347367,
+  "calldataByteLength": 4708,
+  "gasUsed": 332703,
 }
 `;
 
 exports[`Seaport gas fulfillOrder 1`] = `
 Object {
-  "calldataByteLength": 1828,
-  "gasUsed": 201816,
+  "calldataByteLength": 1796,
+  "gasUsed": 194616,
 }
 `;

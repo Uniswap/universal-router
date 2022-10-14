@@ -44,7 +44,7 @@ function encodePathExactOutput(tokens: string[]) {
   return encodePath(tokens.slice().reverse(), new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
 }
 
-describe.only('Uniswap V2 and V3 Tests:', () => {
+describe('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router
@@ -186,37 +186,6 @@ describe.only('Uniswap V2 and V3 Tests:', () => {
         planner = new RoutePlanner()
         await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
         await wethContract.connect(alice).approve(router.address, expandTo18DecimalsBN(5000))
-      })
-
-      it('completes a v2 exactIn swap', async () => {
-        let commands: string = '0x'
-        let inputs: string[] = []
-        let input: string
-
-        // add the transfer command
-        commands = commands.concat('01')
-        input = defaultAbiCoder.encode(
-          ['address', 'address', 'uint256'],
-          [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn]
-        )
-        inputs.push(input)
-
-        //add v2 exact in command
-        commands = commands.concat('04')
-        input = defaultAbiCoder.encode(
-          ['uint256', 'address[]', 'address'],
-          [1, [DAI.address, WETH.address], alice.address]
-        )
-        inputs.push(input)
-
-        const balanceBefore = await wethContract.balanceOf(alice.address)
-        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
-        const balanceAfter = await wethContract.balanceOf(alice.address)
-        const amountOut = parseEvents(V2_EVENTS, receipt).reduce(
-          (prev, current) => prev.add(current!.args.amount1Out),
-          expandTo18DecimalsBN(0)
-        )
-        expect(balanceAfter.sub(balanceBefore)).to.equal(amountOut)
       })
 
       it('completes a V2 exactIn swap', async () => {

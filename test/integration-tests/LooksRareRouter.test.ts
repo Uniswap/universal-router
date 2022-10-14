@@ -1,4 +1,4 @@
-import { RouterPlanner, LooksRareCommand721, LooksRareCommand1155 } from '@uniswap/narwhal-sdk'
+import { CommandType, RoutePlanner } from './shared/planner'
 import { Router, ERC721, ERC1155 } from '../../typechain'
 import LOOKS_RARE_ABI from './shared/abis/LooksRare.json'
 import { resetFork, COVEN_721, TWERKY_1155 } from './shared/mainnetForkHelpers'
@@ -89,7 +89,7 @@ describe('LooksRare', () => {
   let alice: SignerWithAddress
   let router: Router
   let value: BigNumber
-  let planner: RouterPlanner
+  let planner: RoutePlanner
   let covenContract: ERC721
   let twerkyContract: ERC1155
 
@@ -114,7 +114,7 @@ describe('LooksRare', () => {
         V3_INIT_CODE_HASH_MAINNET
       )
     ).connect(alice) as Router
-    planner = new RouterPlanner()
+    planner = new RoutePlanner()
   })
 
   describe('ERC-721 Purchase', () => {
@@ -133,9 +133,10 @@ describe('LooksRare', () => {
         makerOrder,
       ])
 
-      planner.add(LooksRareCommand721(value, calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId))
-      const { commands, state } = planner.plan()
-      await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value: value })
+      planner.addCommand(CommandType.LOOKS_RARE_721, [value, calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId])
+      const commands = planner.commands
+      const inputs = planner.inputs
+      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
 
       await expect((await covenContract.connect(alice).ownerOf(tokenId)).toLowerCase()).to.eq(ALICE_ADDRESS)
     })
@@ -146,10 +147,17 @@ describe('LooksRare', () => {
         makerOrder,
       ])
 
-      planner.add(LooksRareCommand721(value.toString(), calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId))
-      const { commands, state } = planner.plan()
+      planner.addCommand(CommandType.LOOKS_RARE_721, [
+        value.toString(),
+        calldata,
+        ALICE_ADDRESS,
+        COVEN_ADDRESS,
+        tokenId,
+      ])
+      const commands = planner.commands
+      const inputs = planner.inputs
 
-      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value }))
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
     })
   })
 
@@ -159,7 +167,7 @@ describe('LooksRare', () => {
     let tokenId: BigNumber
     let value: BigNumber
     let commands: string
-    let state: string[]
+    let inputs: string[]
 
     beforeEach(async () => {
       ;({ makerOrder, takerOrder, value } = createLooksRareOrders(
@@ -171,18 +179,19 @@ describe('LooksRare', () => {
         takerOrder,
         makerOrder,
       ])
-      planner.add(LooksRareCommand1155(value, calldata, ALICE_ADDRESS, TWERKY_ADDRESS, tokenId, 1))
-      ;({ commands, state } = planner.plan())
+      planner.addCommand(CommandType.LOOKS_RARE_1155, [value, calldata, ALICE_ADDRESS, TWERKY_ADDRESS, tokenId, 1])
+      commands = planner.commands
+      inputs = planner.inputs
     })
 
     it('Buys a Twerky', async () => {
       await expect(await twerkyContract.balanceOf(alice.address, tokenId)).to.eq(0)
-      await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value: value })
+      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
       await expect(await twerkyContract.balanceOf(alice.address, tokenId)).to.eq(1)
     })
 
     it('gas: buy 1 ERC-1155 on looks rare', async () => {
-      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value }))
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
     })
   })
 })

@@ -1,4 +1,4 @@
-import { RouterPlanner, X2Y2Command721, X2Y2Command1155 } from '@uniswap/narwhal-sdk'
+import { CommandType, RoutePlanner } from './shared/planner'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import X2Y2_ABI from './shared/abis/X2Y2.json'
 import { Router } from '../../typechain'
@@ -34,16 +34,16 @@ type X2Y2Order = {
 describe('X2Y2', () => {
   let alice: SignerWithAddress
   let router: Router
-  let planner: RouterPlanner
+  let planner: RoutePlanner
 
   beforeEach(async () => {
-    planner = new RouterPlanner()
+    planner = new RoutePlanner()
     alice = await ethers.getSigner(ALICE_ADDRESS)
   })
 
   describe('ERC-721 purchase', () => {
     let commands: string
-    let state: string[]
+    let inputs: string[]
     let erc721Order: X2Y2Order
 
     beforeEach(async () => {
@@ -66,13 +66,20 @@ describe('X2Y2', () => {
       erc721Order = x2y2Orders[0]
       const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
       const calldata = functionSelector + erc721Order.input.slice(2)
-      planner.add(X2Y2Command721(erc721Order.price, calldata, ALICE_ADDRESS, ENS_721.address, erc721Order.token_id))
-      ;({ commands, state } = planner.plan())
+      planner.addCommand(CommandType.X2Y2_721, [
+        erc721Order.price,
+        calldata,
+        ALICE_ADDRESS,
+        ENS_721.address,
+        erc721Order.token_id,
+      ])
+      commands = planner.commands
+      inputs = planner.inputs
     })
 
     it('purchases 1 ERC-721 on X2Y2', async () => {
       const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value: erc721Order.price })
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: erc721Order.price })
       ).wait()
       const erc721TransferEvent = parseEvents(ERC721_INTERFACE, receipt)[1]?.args!
 
@@ -85,14 +92,14 @@ describe('X2Y2', () => {
 
     it('gas purchases 1 ERC-721 on X2Y2', async () => {
       await snapshotGasCost(
-        router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value: erc721Order.price })
+        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: erc721Order.price })
       )
     })
   })
 
   describe('ERC-1155 purchase', () => {
     let commands: string
-    let state: string[]
+    let inputs: string[]
     let erc1155Order: X2Y2Order
 
     beforeEach(async () => {
@@ -115,30 +122,29 @@ describe('X2Y2', () => {
       erc1155Order = x2y2Orders[1]
       const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
       const calldata = functionSelector + erc1155Order.input.slice(2)
-      planner.add(
-        X2Y2Command1155(
-          erc1155Order.price,
-          calldata,
-          ALICE_ADDRESS,
-          '0x93317E87a3a47821803CAADC54Ae418Af80603DA',
-          erc1155Order.token_id,
-          1
-        )
-      )
-      ;({ commands, state } = planner.plan())
+      planner.addCommand(CommandType.X2Y2_1155, [
+        erc1155Order.price,
+        calldata,
+        ALICE_ADDRESS,
+        '0x93317E87a3a47821803CAADC54Ae418Af80603DA',
+        erc1155Order.token_id,
+        1,
+      ])
+      commands = planner.commands
+      inputs = planner.inputs
     })
 
     it('purchases 1 ERC-1155 on X2Y2', async () => {
       await expect(await CAMEO_1155.connect(alice).balanceOf(alice.address, erc1155Order.token_id)).to.eq(0)
       await (
-        await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value: erc1155Order.price })
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: erc1155Order.price })
       ).wait()
       await expect(await CAMEO_1155.connect(alice).balanceOf(alice.address, erc1155Order.token_id)).to.eq(1)
     })
 
     it('gas purchases 1 ERC-1155 on X2Y2', async () => {
       await snapshotGasCost(
-        router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value: erc1155Order.price })
+        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: erc1155Order.price })
       )
     })
   })
