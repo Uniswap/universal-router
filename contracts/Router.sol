@@ -8,6 +8,7 @@ contract Router is Dispatcher {
     error ExecutionFailed(uint256 commandIndex, bytes message);
     error ETHNotAccepted();
     error TransactionDeadlinePassed();
+    error LengthMismatch();
 
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
@@ -39,7 +40,7 @@ contract Router is Dispatcher {
         bool success;
         bytes memory output;
         uint256 numCommands = commands.length;
-        require(inputs.length == numCommands);
+        if (inputs.length != numCommands) revert LengthMismatch();
 
         // loop through all given commands, execute them and pass along outputs as defined
         for (uint256 commandIndex = 0; commandIndex < numCommands;) {
