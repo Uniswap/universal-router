@@ -1,4 +1,3 @@
-import { RouterPlanner, FoundationCommand } from '@uniswap/narwhal-sdk'
 import FOUNDATION_ABI from './shared/abis/Foundation.json'
 import { Router, ERC721 } from '../../typechain'
 import { resetFork } from './shared/mainnetForkHelpers'
@@ -16,6 +15,7 @@ import hre from 'hardhat'
 import { BigNumber } from 'ethers'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { expect } from 'chai'
+import { CommandType, RoutePlanner } from './shared/planner'
 const { ethers } = hre
 
 const FOUNDATION_INTERFACE = new ethers.utils.Interface(FOUNDATION_ABI)
@@ -25,10 +25,10 @@ const REFERRER = '0x459e213D8B5E79d706aB22b945e3aF983d51BC4C'
 describe('Foundation', () => {
   let alice: SignerWithAddress
   let router: Router
-  let planner: RouterPlanner
+  let planner: RoutePlanner
 
   beforeEach(async () => {
-    planner = new RouterPlanner()
+    planner = new RoutePlanner()
     alice = await ethers.getSigner(ALICE_ADDRESS)
   })
 
@@ -60,13 +60,14 @@ describe('Foundation', () => {
     it('purchases token id 32 of mental worlds', async () => {
       const value = BigNumber.from('10000000000000000')
       const calldata = FOUNDATION_INTERFACE.encodeFunctionData('buyV2', [MENTAL_WORLDS_ADDRESS, 32, value, REFERRER])
-      planner.add(FoundationCommand(value, calldata, ALICE_ADDRESS, MENTAL_WORLDS_ADDRESS, 32))
-      const { commands, state } = planner.plan()
+      planner.addCommand(CommandType.FOUNDATION, [value, calldata, ALICE_ADDRESS, MENTAL_WORLDS_ADDRESS, 32])
+      const commands = planner.commands
+      const inputs = planner.inputs
 
       const aliceBalance = await ethers.provider.getBalance(alice.address)
       const referrerBalance = await ethers.provider.getBalance(REFERRER)
       const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value: value })
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
       ).wait()
 
       // Expect that alice has the NFT
@@ -82,9 +83,11 @@ describe('Foundation', () => {
     it('gas token id 32 of mental worlds', async () => {
       const value = BigNumber.from('10000000000000000')
       const calldata = FOUNDATION_INTERFACE.encodeFunctionData('buyV2', [MENTAL_WORLDS_ADDRESS, 32, value, REFERRER])
-      planner.add(FoundationCommand(value, calldata, ALICE_ADDRESS, MENTAL_WORLDS_ADDRESS, 32))
-      const { commands, state } = planner.plan()
-      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value: value }))
+      planner.addCommand(CommandType.FOUNDATION, [value, calldata, ALICE_ADDRESS, MENTAL_WORLDS_ADDRESS, 32])
+
+      const commands = planner.commands
+      const inputs = planner.inputs
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value }))
     })
   })
 })

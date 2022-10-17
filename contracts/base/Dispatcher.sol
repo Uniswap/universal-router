@@ -8,7 +8,9 @@ import '../base/RouterCallbacks.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
-contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
+contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
+    bytes1 internal constant FLAG_COMMAND_TYPE_MASK = 0x1f;
+
     // Command Types. Maximum supported command at this moment is 0x1F.
     uint256 constant PERMIT = 0x00;
     uint256 constant TRANSFER = 0x01;
