@@ -22,7 +22,7 @@ const { ethers } = hre
 const SUDOSWAP_INTERFACE = new ethers.utils.Interface(SUDOSWAP_ABI)
 const SUDOLETS_ADDRESS = '0xfa9937555dc20a020a161232de4d2b109c62aa9c'
 
-describe.only('Sudoswap', () => {
+describe('Sudoswap', () => {
   let alice: SignerWithAddress
   let router: Router
   let planner: RoutePlanner
