@@ -71,7 +71,7 @@ library UniswapV2Library {
         amountIn = (numerator / denominator) + 1;
     }
 
-    // performs chained getAmountIn calculations on any number of pairs
+    // given an output amount of an asset and pair reserves, performs chained getAmountIn calculations on any number of pairs
     function getAmountInMultihop(address factory, bytes32 initCodeHash, uint256 amountOut, address[] memory path)
         internal
         view
