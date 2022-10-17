@@ -10,6 +10,8 @@ contract Router is Dispatcher {
     error TransactionDeadlinePassed();
     error LengthMismatch();
 
+    bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
+
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
