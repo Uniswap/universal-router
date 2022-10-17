@@ -30,6 +30,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant FOUNDATION = 0x0f;
     uint256 constant SWEEP_WITH_FEE = 0x10;
     uint256 constant UNWRAP_WETH_WITH_FEE = 0x11;
+    uint256 constant SUDOSWAP = 0x12;
 
     address immutable PERMIT_POST;
 
@@ -94,6 +95,9 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (success, output) = callAndTransfer1155(inputs, Constants.X2Y2);
         } else if (command == FOUNDATION) {
             (success, output) = callAndTransfer721(inputs, Constants.FOUNDATION);
+        } else if (command == SUDOSWAP) {
+            (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
+            (success, output) = Constants.SUDOSWAP.call{value: value}(data);
         } else if (command == SWEEP) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
             Payments.sweepToken(token, recipient, amountMin);

@@ -81,6 +81,8 @@ Each command is a `bytes1` containing the following 8 bits:
    │ 0x10 │  SweepWithFee      │ 
    ├──────┼────────────────────┤
    │ 0x11 │  UnwrapWETHWithFee │
+   ├──────┼────────────────────┤
+   │ 0x12 │  Sudoswap          │
    └──────┴────────────────────┘
 ```
 

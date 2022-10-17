@@ -24,6 +24,7 @@ export enum CommandType {
   FOUNDATION = 0x0f,
   SWEEP_WITH_FEE = 0x10,
   UNWRAP_WETH_WITH_FEE = 0x11,
+  SUDOSWAP = 0x12,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -57,6 +58,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.FOUNDATION]: ['uint256', 'bytes', 'address', 'address', 'uint256'],
   [CommandType.SWEEP_WITH_FEE]: ['address', 'address', 'uint256', 'uint256', 'address'],
   [CommandType.UNWRAP_WETH_WITH_FEE]: ['address', 'uint256', 'uint256', 'address'],
+  [CommandType.SUDOSWAP]: ['uint256', 'bytes'],
 }
 
 export class RoutePlanner {
