@@ -47,9 +47,7 @@ contract Router is Dispatcher {
             bytes1 command = commands[commandIndex];
             uint256 commandType = uint256(uint8(command & FLAG_COMMAND_TYPE_MASK));
 
-            bytes memory input = inputs[commandIndex];
-
-            (success, output) = dispatch(commandType, input);
+            (success, output) = dispatch(commandType, inputs[commandIndex]);
 
             if (!success && successRequired(command)) {
                 revert ExecutionFailed({commandIndex: commandIndex, message: output});

@@ -3,13 +3,13 @@
 exports[`NFTX gas: buyAndRedeem w/ random selection 1`] = `
 Object {
   "calldataByteLength": 676,
-  "gasUsed": 503844,
+  "gasUsed": 503056,
 }
 `;
 
 exports[`NFTX gas: buyAndRedeem w/ specific selection 1`] = `
 Object {
   "calldataByteLength": 740,
-  "gasUsed": 490868,
+  "gasUsed": 489972,
 }
 `;

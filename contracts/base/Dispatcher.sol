@@ -5,6 +5,7 @@ import '../modules/V2SwapRouter.sol';
 import '../modules/V3SwapRouter.sol';
 import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
+import './Decoders.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
@@ -51,7 +52,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     /// @param inputs The inputs to execute the command with
     /// @return success true on success, false on failure
     /// @return output The outputs, if any from the command
-    function dispatch(uint256 command, bytes memory inputs) internal returns (bool success, bytes memory output) {
+    function dispatch(uint256 command, bytes calldata inputs) internal returns (bool success, bytes memory output) {
         success = true;
         if (command == PERMIT) {
             // state[state.length] = abi.encode(msg.sender);
@@ -64,8 +65,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
             Payments.payERC20(token, recipient, value);
         } else if (command == V2_SWAP_EXACT_IN) {
-            (uint256 amountOutMin, address[] memory path, address recipient) =
-                abi.decode(inputs, (uint256, address[], address));
+            (uint256 amountOutMin, address[] memory path, address recipient) = Decoders.v2SwapExactIn(inputs);
             output = abi.encode(v2SwapExactInput(amountOutMin, path, recipient));
         } else if (command == V2_SWAP_EXACT_OUT) {
             (uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient) =
