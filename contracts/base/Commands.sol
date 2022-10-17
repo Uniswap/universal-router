@@ -4,6 +4,8 @@ pragma solidity ^0.8.15;
 import '../modules/V2SwapRouter.sol';
 import '../modules/V3SwapRouter.sol';
 import '../modules/Payments.sol';
+import '../interfaces/external/INFT20Factory.sol';
+import '../interfaces/external/INFT20.sol';
 import '../base/RouterCallbacks.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
@@ -28,6 +30,7 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant FOUNDATION = 0x0f;
     uint256 constant SWEEP_WITH_FEE = 0x10;
     uint256 constant UNWRAP_WETH_WITH_FEE = 0x11;
+    uint256 constant NFT20_WITHDRAW = 0x12;
 
     address immutable PERMIT_POST;
 
@@ -92,6 +95,11 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (success, output) = callAndTransfer1155(inputs, Constants.X2Y2);
         } else if (command == FOUNDATION) {
             (success, output) = callAndTransfer721(inputs, Constants.FOUNDATION);
+        } else if (command == NFT20_WITHDRAW) {
+            (address nft, address recipient, uint256[] memory tokenIds, uint256[] memory amounts) =
+                abi.decode(inputs, (address, address, uint256[], uint256[]));
+            address token = INFT20Factory(Constants.NFT20_FACTORY).nftToToken(nft);
+            INFT20(token).withdraw(tokenIds, amounts, recipient);
         } else if (command == SWEEP) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
             Payments.sweepToken(token, recipient, amountMin);
