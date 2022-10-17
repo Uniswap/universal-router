@@ -26,7 +26,7 @@ contract Router is Dispatcher {
     /// @param commands A set of concatenated commands, each 8 bytes in length
     /// @param inputs The state elements that should be used for the input and output of commands
     /// @param deadline The deadline by which the transaction must be executed
-    function execute(bytes memory commands, bytes[] memory inputs, uint256 deadline)
+    function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
         external
         payable
         checkDeadline(deadline)
@@ -36,7 +36,7 @@ contract Router is Dispatcher {
 
     /// @param commands A set of concatenated commands, each 8 bytes in length
     /// @param inputs The state elements that should be used for the input and output of commands
-    function execute(bytes memory commands, bytes[] memory inputs) public payable {
+    function execute(bytes calldata commands, bytes[] calldata inputs) public payable {
         bool success;
         bytes memory output;
         uint256 numCommands = commands.length;

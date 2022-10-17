@@ -25,7 +25,7 @@ forge test
 
 ### Router.execute parameters
 
-#### `bytes memory commands`
+#### `bytes calldata commands`
 
 This bytes string contains 1 byte per command to be executed. 
 
@@ -43,7 +43,7 @@ Each command is a `bytes1` containing the following 8 bits:
 - `command` is a 5 bit unique identifier for the command that should be carried out.
 
 
-#### `bytes[] memory inputs`
+#### `bytes[] calldata inputs`
 
 This array contains the abi encoded parameters to provide for each command.
 
