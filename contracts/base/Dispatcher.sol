@@ -8,7 +8,9 @@ import '../base/RouterCallbacks.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
-contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
+contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
+    bytes1 internal constant FLAG_COMMAND_TYPE_MASK = 0x1f;
+
     // Command Types. Maximum supported command at this moment is 0x1F.
     uint256 constant PERMIT = 0x00;
     uint256 constant TRANSFER = 0x01;
@@ -93,6 +95,9 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (success, output) = callAndTransfer1155(inputs, Constants.X2Y2);
         } else if (command == FOUNDATION) {
             (success, output) = callAndTransfer721(inputs, Constants.FOUNDATION);
+        } else if (command == SUDOSWAP) {
+            (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
+            (success, output) = Constants.SUDOSWAP.call{value: value}(data);
         } else if (command == SWEEP) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
             Payments.sweepToken(token, recipient, amountMin);
@@ -110,9 +115,6 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
                 abi.decode(inputs, (address, uint256, uint256, address));
             Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
-        } else if (command == SUDOSWAP) {
-            (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
-            (success, output) = Constants.SUDOSWAP.call{value: value}(data);
         } else {
             revert InvalidCommandType(command);
         }

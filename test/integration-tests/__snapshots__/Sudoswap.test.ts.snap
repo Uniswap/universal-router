@@ -2,7 +2,7 @@
 
 exports[`Sudoswap Buy 3 sudolets from sudoswap gas: purchases token ids 80, 35, 93 of Sudolets 1`] = `
 Object {
-  "calldataByteLength": 868,
-  "gasUsed": 196095,
+  "calldataByteLength": 836,
+  "gasUsed": 190537,
 }
 `;

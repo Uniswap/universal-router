@@ -1,4 +1,4 @@
-import { RouterPlanner, SudoswapCommand } from '@uniswap/narwhal-sdk'
+import { CommandType, RoutePlanner } from './shared/planner'
 import SUDOSWAP_ABI from './shared/abis/Sudoswap.json'
 import { ERC721, Router } from '../../typechain'
 import { resetFork } from './shared/mainnetForkHelpers'
@@ -22,13 +22,13 @@ const { ethers } = hre
 const SUDOSWAP_INTERFACE = new ethers.utils.Interface(SUDOSWAP_ABI)
 const SUDOLETS_ADDRESS = '0xfa9937555dc20a020a161232de4d2b109c62aa9c'
 
-describe('Sudoswap', () => {
+describe.only('Sudoswap', () => {
   let alice: SignerWithAddress
   let router: Router
-  let planner: RouterPlanner
+  let planner: RoutePlanner
 
   beforeEach(async () => {
-    planner = new RouterPlanner()
+    planner = new RoutePlanner()
     alice = await ethers.getSigner(ALICE_ADDRESS)
   })
 
@@ -65,12 +65,13 @@ describe('Sudoswap', () => {
         ALICE_ADDRESS,
         1665685098,
       ])
-      planner.add(SudoswapCommand(value, calldata))
-      const { commands, state } = planner.plan()
+      planner.addCommand(CommandType.SUDOSWAP, [value, calldata])
+      const commands = planner.commands
+      const inputs = planner.inputs
 
       const aliceBalance = await ethers.provider.getBalance(alice.address)
       const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value: value })
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
       ).wait()
 
       // Expect that alice has the NFTs
@@ -91,9 +92,12 @@ describe('Sudoswap', () => {
         ALICE_ADDRESS,
         1665685098,
       ])
-      planner.add(SudoswapCommand(value, calldata))
-      const { commands, state } = planner.plan()
-      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, state, DEADLINE, { value: value }))
+
+      planner.addCommand(CommandType.SUDOSWAP, [value, calldata])
+      const commands = planner.commands
+      const inputs = planner.inputs
+
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value }))
     })
   })
 })
