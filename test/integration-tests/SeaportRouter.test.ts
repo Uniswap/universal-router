@@ -1,5 +1,5 @@
 import type { Contract } from '@ethersproject/contracts'
-import { RouterPlanner, SeaportCommand } from '@uniswap/narwhal-sdk'
+import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
 import { Router } from '../../typechain'
@@ -31,7 +31,7 @@ describe('Seaport', () => {
   let alice: SignerWithAddress
   let router: Router
   let covenContract: Contract
-  let planner: RouterPlanner
+  let planner: RoutePlanner
 
   beforeEach(async () => {
     await resetFork()
@@ -51,7 +51,7 @@ describe('Seaport', () => {
         V3_INIT_CODE_HASH_MAINNET
       )
     ).connect(alice) as Router
-    planner = new RouterPlanner()
+    planner = new RoutePlanner()
   })
 
   it('completes a fulfillOrder type', async () => {
@@ -59,12 +59,13 @@ describe('Seaport', () => {
     const params = order.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillOrder', [order, OPENSEA_CONDUIT_KEY])
 
-    planner.add(SeaportCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
+    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
 
     const ownerBefore = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await router.execute(DEADLINE, commands, state, { value })).wait()
+    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
     const ownerAfter = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
@@ -85,12 +86,13 @@ describe('Seaport', () => {
       alice.address,
     ])
 
-    planner.add(SeaportCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
+    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
 
     const ownerBefore = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await router.execute(DEADLINE, commands, state, { value })).wait()
+    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
     const ownerAfter = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
@@ -130,14 +132,15 @@ describe('Seaport', () => {
       100,
     ])
 
-    planner.add(SeaportCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
+    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
 
     const owner0Before = await covenContract.ownerOf(params0.offer[0].identifierOrCriteria)
     const owner1Before = await covenContract.ownerOf(params1.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
 
-    const receipt = await (await router.execute(DEADLINE, commands, state, { value })).wait()
+    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
 
     const owner0After = await covenContract.ownerOf(params0.offer[0].identifierOrCriteria)
     const owner1After = await covenContract.ownerOf(params1.offer[0].identifierOrCriteria)
@@ -156,9 +159,10 @@ describe('Seaport', () => {
     const { order, value } = getOrderParams(seaportOrders[0])
     const calldata = seaportInterface.encodeFunctionData('fulfillOrder', [order, OPENSEA_CONDUIT_KEY])
 
-    planner.add(SeaportCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
-    await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
+    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
+    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 
   it('gas fulfillAdvancedOrder', async () => {
@@ -170,9 +174,10 @@ describe('Seaport', () => {
       alice.address,
     ])
 
-    planner.add(SeaportCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
-    await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
+    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
+    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 
   it('gas fulfillAvailableAdvancedOrders 1 orders', async () => {
@@ -202,9 +207,10 @@ describe('Seaport', () => {
       100,
     ])
 
-    planner.add(SeaportCommand(value, calldata))
-    const { commands, state } = planner.plan()
-    await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
+    planner.addCommand(CommandType.SEAPORT, [value, calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
+    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 
   it('reverts if order does not go through', async () => {
@@ -217,9 +223,10 @@ describe('Seaport', () => {
       alice.address,
     ])
 
-    planner.add(SeaportCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
-    await expect(router.execute(DEADLINE, commands, state, { value })).to.be.revertedWith(
+    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
+    await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).to.be.revertedWith(
       'ExecutionFailed(0, "0x815e1d64")'
     )
   })

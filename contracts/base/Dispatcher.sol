@@ -5,24 +5,32 @@ import '../modules/V2SwapRouter.sol';
 import '../modules/V3SwapRouter.sol';
 import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
-import '../Router.sol';
+import {ERC721} from 'solmate/src/tokens/ERC721.sol';
+import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
-// Command Types
-uint256 constant PERMIT = 0x00;
-uint256 constant TRANSFER = 0x01;
-uint256 constant V3_SWAP_EXACT_IN = 0x02;
-uint256 constant V3_SWAP_EXACT_OUT = 0x03;
-uint256 constant V2_SWAP_EXACT_IN = 0x04;
-uint256 constant V2_SWAP_EXACT_OUT = 0x05;
-uint256 constant SEAPORT = 0x06;
-uint256 constant NFTX = 0x0a;
-uint256 constant LOOKS_RARE = 0x0b;
-uint256 constant X2Y2 = 0x0c;
-uint256 constant WRAP_ETH = 0x07;
-uint256 constant UNWRAP_WETH = 0x08;
-uint256 constant SWEEP = 0x09;
+contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
+    bytes1 internal constant FLAG_COMMAND_TYPE_MASK = 0x1f;
 
-contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
+    // Command Types. Maximum supported command at this moment is 0x1F.
+    uint256 constant PERMIT = 0x00;
+    uint256 constant TRANSFER = 0x01;
+    uint256 constant V3_SWAP_EXACT_IN = 0x02;
+    uint256 constant V3_SWAP_EXACT_OUT = 0x03;
+    uint256 constant V2_SWAP_EXACT_IN = 0x04;
+    uint256 constant V2_SWAP_EXACT_OUT = 0x05;
+    uint256 constant SEAPORT = 0x06;
+    uint256 constant NFTX = 0x0a;
+    uint256 constant LOOKS_RARE_721 = 0x0b;
+    uint256 constant X2Y2_721 = 0x0c;
+    uint256 constant LOOKS_RARE_1155 = 0x0d;
+    uint256 constant X2Y2_1155 = 0x0e;
+    uint256 constant WRAP_ETH = 0x07;
+    uint256 constant UNWRAP_WETH = 0x08;
+    uint256 constant SWEEP = 0x09;
+    uint256 constant FOUNDATION = 0x0f;
+    uint256 constant SWEEP_WITH_FEE = 0x10;
+    uint256 constant UNWRAP_WETH_WITH_FEE = 0x11;
+
     address immutable PERMIT_POST;
 
     error InvalidCommandType(uint256 commandType);
@@ -76,25 +84,39 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         } else if (command == NFTX) {
             (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
             (success, output) = Constants.NFTX_ZAP.call{value: value}(data);
-        } else if (command == LOOKS_RARE) {
-            (success, output) = callAndTransferERC721(inputs, Constants.LOOKS_RARE);
-        } else if (command == X2Y2) {
-            (success, output) = callAndTransferERC721(inputs, Constants.X2Y2);
+        } else if (command == LOOKS_RARE_721) {
+            (success, output) = callAndTransfer721(inputs, Constants.LOOKS_RARE);
+        } else if (command == X2Y2_721) {
+            (success, output) = callAndTransfer721(inputs, Constants.X2Y2);
+        } else if (command == LOOKS_RARE_1155) {
+            (success, output) = callAndTransfer1155(inputs, Constants.LOOKS_RARE);
+        } else if (command == X2Y2_1155) {
+            (success, output) = callAndTransfer1155(inputs, Constants.X2Y2);
+        } else if (command == FOUNDATION) {
+            (success, output) = callAndTransfer721(inputs, Constants.FOUNDATION);
         } else if (command == SWEEP) {
-            (address token, address recipient, uint256 minValue) = abi.decode(inputs, (address, address, uint256));
-            Payments.sweepToken(token, recipient, minValue);
+            (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
+            Payments.sweepToken(token, recipient, amountMin);
         } else if (command == WRAP_ETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.wrapETH(recipient, amountMin);
         } else if (command == UNWRAP_WETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.unwrapWETH9(recipient, amountMin);
+        } else if (command == SWEEP_WITH_FEE) {
+            (address token, address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
+                abi.decode(inputs, (address, address, uint256, uint256, address));
+            Payments.sweepTokenWithFee(token, recipient, amountMin, feeBips, feeRecipient);
+        } else if (command == UNWRAP_WETH_WITH_FEE) {
+            (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
+                abi.decode(inputs, (address, uint256, uint256, address));
+            Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
         } else {
             revert InvalidCommandType(command);
         }
     }
 
-    function callAndTransferERC721(bytes memory inputs, address protocol)
+    function callAndTransfer721(bytes memory inputs, address protocol)
         internal
         returns (bool success, bytes memory output)
     {
@@ -102,5 +124,15 @@ contract Commands is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             abi.decode(inputs, (uint256, bytes, address, address, uint256));
         (success, output) = protocol.call{value: value}(data);
         if (success) ERC721(token).safeTransferFrom(address(this), recipient, id);
+    }
+
+    function callAndTransfer1155(bytes memory inputs, address protocol)
+        internal
+        returns (bool success, bytes memory output)
+    {
+        (uint256 value, bytes memory data, address recipient, address token, uint256 id, uint256 amount) =
+            abi.decode(inputs, (uint256, bytes, address, address, uint256, uint256));
+        (success, output) = protocol.call{value: value}(data);
+        if (success) ERC1155(token).safeTransferFrom(address(this), recipient, id, amount, new bytes(0));
     }
 }

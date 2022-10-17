@@ -1,12 +1,10 @@
-import type { Contract } from '@ethersproject/contracts'
-import { RouterPlanner, NFTXCommand } from '@uniswap/narwhal-sdk'
+import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
-import { Router, ERC721 } from '../../typechain'
+import { Router, ERC721, ERC1155 } from '../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import parseEvents from './shared/parseEvents'
+import { parseEvents } from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
-import { abi as ERC1155_ABI } from '../../artifacts/solmate/src/tokens/ERC1155.sol/ERC1155.json'
-import { COVEN_NFT, resetFork, WETH } from './shared/mainnetForkHelpers'
+import { COVEN_721, TWERKY_1155, resetFork, WETH } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   DEADLINE,
@@ -30,8 +28,8 @@ describe('NFTX', () => {
   let alice: SignerWithAddress
   let router: Router
   let covenContract: ERC721
-  let twerkyContract: Contract
-  let planner: RouterPlanner
+  let twerkyContract: ERC1155
+  let planner: RoutePlanner
 
   beforeEach(async () => {
     await resetFork()
@@ -40,8 +38,8 @@ describe('NFTX', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    covenContract = COVEN_NFT.connect(alice)
-    twerkyContract = new ethers.Contract('0xf4680c917a873e2dd6ead72f9f433e74eb9c623c', ERC1155_ABI, alice)
+    covenContract = COVEN_721.connect(alice)
+    twerkyContract = TWERKY_1155.connect(alice)
     const routerFactory = await ethers.getContractFactory('Router')
     router = (
       await routerFactory.deploy(
@@ -52,7 +50,7 @@ describe('NFTX', () => {
         V3_INIT_CODE_HASH_MAINNET
       )
     ).connect(alice) as Router
-    planner = new RouterPlanner()
+    planner = new RoutePlanner()
   })
 
   it('completes an ERC-721 buyAndRedeem order with random selection', async () => {
@@ -66,12 +64,13 @@ describe('NFTX', () => {
       alice.address,
     ])
 
-    planner.add(NFTXCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
+    planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
 
-    const covenBalanceBefore = await COVEN_NFT.connect(alice).balanceOf(alice.address)
-    await router.execute(DEADLINE, commands, state, { value })
-    const covenBalanceAfter = await COVEN_NFT.connect(alice).balanceOf(alice.address)
+    const covenBalanceBefore = await COVEN_721.connect(alice).balanceOf(alice.address)
+    await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+    const covenBalanceAfter = await COVEN_721.connect(alice).balanceOf(alice.address)
 
     expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
   })
@@ -87,13 +86,14 @@ describe('NFTX', () => {
       alice.address,
     ])
 
-    planner.add(NFTXCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
+    planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
 
     const covenBalanceBefore = await covenContract.balanceOf(alice.address)
     const covenOwner584Before = await covenContract.ownerOf(584)
     const covenOwner3033Before = await covenContract.ownerOf(3033)
-    await (await router.execute(DEADLINE, commands, state, { value })).wait()
+    await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
     const covenBalanceAfter = await covenContract.balanceOf(alice.address)
     const covenOwner584After = await covenContract.ownerOf(584)
     const covenOwner3033After = await covenContract.ownerOf(3033)
@@ -116,10 +116,11 @@ describe('NFTX', () => {
       alice.address,
     ])
 
-    planner.add(NFTXCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
+    planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
 
-    const tx = await router.execute(DEADLINE, commands, state, { value })
+    const tx = await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
     const receipt = await tx.wait()
     const tokenIds = parseEvents(twerkyContract.interface, receipt).map((event) => event!.args.id)
     expect(await twerkyContract.balanceOf(alice.address, tokenIds[0])).to.eq(1)
@@ -137,11 +138,12 @@ describe('NFTX', () => {
       alice.address,
     ])
 
-    planner.add(NFTXCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
+    planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
 
     const twerkyBalanceBefore = await twerkyContract.balanceOf(alice.address, 44)
-    await (await router.execute(DEADLINE, commands, state, { value })).wait()
+    await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
     const twerkyBalanceAfter = await twerkyContract.balanceOf(alice.address, 44)
 
     expect(twerkyBalanceAfter.sub(twerkyBalanceBefore)).to.eq(numTwerkys)
@@ -159,11 +161,12 @@ describe('NFTX', () => {
       alice.address,
     ])
 
-    planner.add(NFTXCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
+    planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
 
     const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await router.execute(DEADLINE, commands, state, { value })).wait()
+    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
     const ethDelta = ethBalanceBefore.sub(await ethers.provider.getBalance(alice.address))
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
@@ -181,9 +184,10 @@ describe('NFTX', () => {
       alice.address,
     ])
 
-    planner.add(NFTXCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
-    await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
+    planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
+    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 
   it('gas: buyAndRedeem w/ specific selection', async () => {
@@ -197,8 +201,9 @@ describe('NFTX', () => {
       alice.address,
     ])
 
-    planner.add(NFTXCommand(value.toString(), calldata))
-    const { commands, state } = planner.plan()
-    await snapshotGasCost(router.execute(DEADLINE, commands, state, { value }))
+    planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
+    const commands = planner.commands
+    const inputs = planner.inputs
+    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 })

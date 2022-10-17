@@ -16,9 +16,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Check out Git repository
-        uses: actions/checkout@v2
-
       - name: Set up node
         uses: actions/setup-node@v1
         with:
