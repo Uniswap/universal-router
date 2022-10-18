@@ -32,8 +32,8 @@ describe('NFT20', () => {
     alice = await ethers.getSigner(ALICE_ADDRESS)
   })
 
-  // In this test we will buy token ids 129, 193, 278 of Alphabetties (0x6d05064fe99e40f1c3464e7310a23ffaded56e20),
-  // which costs 0.021 ETH (exactly 20583701229648230 wei), but we get refunded 1086067487962785 wei
+  // In this test we will buy token ids 129, 193, 278 of Alphabetties (0x6d05064fe99e40f1c3464e7310a23ffaded56e20).
+  // We will send 0.021~ ETH (20583701229648230 wei), and we will get refunded 1086067487962785 wei
   describe('Buy 3 alphabetties from NFT20', () => {
     let alphabetties: ERC721
 
