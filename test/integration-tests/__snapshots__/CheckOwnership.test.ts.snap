@@ -1,0 +1,8 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Check Ownership gas checks ownership after a seaport trade 1`] = `
+Object {
+  "calldataByteLength": 2212,
+  "gasUsed": 204055,
+}
+`;

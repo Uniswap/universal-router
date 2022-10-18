@@ -31,6 +31,8 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     uint256 constant SWEEP_WITH_FEE = 0x10;
     uint256 constant UNWRAP_WETH_WITH_FEE = 0x11;
     uint256 constant SUDOSWAP = 0x12;
+    uint256 constant OWNERSHIP_CHECK_721 = 0x13;
+    uint256 constant OWNERSHIP_CHECK_1155 = 0x14;
 
     address immutable PERMIT_POST;
 
@@ -107,6 +109,12 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         } else if (command == UNWRAP_WETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.unwrapWETH9(recipient, amountMin);
+        } else if (command == OWNERSHIP_CHECK_721) {
+            (address owner, address token, uint256 id) = abi.decode(inputs, (address, address, uint256));
+            success = (ERC721(token).ownerOf(id) == owner);
+        } else if (command == OWNERSHIP_CHECK_1155) {
+            (address owner, address token, uint256 id, uint256 minBalance) = abi.decode(inputs, (address, address, uint256, uint256));
+            success = (ERC1155(token).balanceOf(owner, id) >= minBalance);
         } else if (command == SWEEP_WITH_FEE) {
             (address token, address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
                 abi.decode(inputs, (address, address, uint256, uint256, address));
