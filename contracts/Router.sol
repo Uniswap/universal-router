@@ -22,6 +22,7 @@ contract Router is IRouter, Dispatcher {
         bytes32 poolInitCodeHash
     ) Dispatcher(permitPost, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash) {}
 
+    /// @inheritdoc IRouter
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
         external
         payable
@@ -30,6 +31,7 @@ contract Router is IRouter, Dispatcher {
         execute(commands, inputs);
     }
 
+    /// @inheritdoc IRouter
     function execute(bytes calldata commands, bytes[] calldata inputs) public payable {
         bool success;
         bytes memory output;

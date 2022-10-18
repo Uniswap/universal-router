@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
-interface IRouter {
+import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
+import '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';
+
+interface IRouter is IERC721Receiver, IERC1155Receiver {
     /// @notice Thrown when a required command has failed
     error ExecutionFailed(uint256 commandIndex, bytes message);
 
