@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
-import './Payments.sol';
-import '../libraries/Path.sol';
-import '../libraries/UniswapPoolHelper.sol';
-import '../libraries/Constants.sol';
+import '../../Payments.sol';
+import './V3Path.sol';
+import '../UniswapPoolHelper.sol';
+import '../../../libraries/Constants.sol';
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
 abstract contract V3SwapRouter {
-    using Path for bytes;
+    using V3Path for bytes;
     using SafeCast for uint256;
 
     /// @notice The identifying key of the pool

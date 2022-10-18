@@ -2,14 +2,11 @@
 pragma solidity ^0.8.15;
 
 import './base/Dispatcher.sol';
+import './base/RouterCallbacks.sol';
 import './libraries/Constants.sol';
+import './interfaces/IRouter.sol';
 
-contract Router is Dispatcher {
-    error ExecutionFailed(uint256 commandIndex, bytes message);
-    error ETHNotAccepted();
-    error TransactionDeadlinePassed();
-    error LengthMismatch();
-
+contract Router is Dispatcher, IRouter {
     bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
 
     modifier checkDeadline(uint256 deadline) {
@@ -25,9 +22,7 @@ contract Router is Dispatcher {
         bytes32 poolInitCodeHash
     ) Dispatcher(permitPost, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash) {}
 
-    /// @param commands A set of concatenated commands, each 8 bytes in length
-    /// @param inputs The state elements that should be used for the input and output of commands
-    /// @param deadline The deadline by which the transaction must be executed
+
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
         external
         payable
@@ -36,8 +31,6 @@ contract Router is Dispatcher {
         execute(commands, inputs);
     }
 
-    /// @param commands A set of concatenated commands, each 8 bytes in length
-    /// @param inputs The state elements that should be used for the input and output of commands
     function execute(bytes calldata commands, bytes[] calldata inputs) public payable {
         bool success;
         bytes memory output;

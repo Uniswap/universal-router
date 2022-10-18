@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
-import '../modules/V2SwapRouter.sol';
-import '../modules/V3SwapRouter.sol';
+import '../modules/uniswap/v2/V2SwapRouter.sol';
+import '../modules/uniswap/v3/V3SwapRouter.sol';
 import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
