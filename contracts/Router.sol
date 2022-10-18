@@ -2,12 +2,11 @@
 pragma solidity ^0.8.15;
 
 import './base/Dispatcher.sol';
-import './base/RouterCallbacks.sol';
 import './libraries/Constants.sol';
+import './libraries/Commands.sol';
 import './interfaces/IRouter.sol';
 
 contract Router is IRouter, Dispatcher {
-    bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
 
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
@@ -41,7 +40,7 @@ contract Router is IRouter, Dispatcher {
         // loop through all given commands, execute them and pass along outputs as defined
         for (uint256 commandIndex = 0; commandIndex < numCommands;) {
             bytes1 command = commands[commandIndex];
-            uint256 commandType = uint256(uint8(command & FLAG_COMMAND_TYPE_MASK));
+            uint256 commandType = uint256(uint8(command & Commands.TYPE_MASK));
 
             bytes memory input = inputs[commandIndex];
 
@@ -58,7 +57,7 @@ contract Router is IRouter, Dispatcher {
     }
 
     function successRequired(bytes1 command) internal pure returns (bool) {
-        return command & FLAG_ALLOW_REVERT == 0;
+        return command & Commands.FLAG_ALLOW_REVERT == 0;
     }
 
     receive() external payable {
