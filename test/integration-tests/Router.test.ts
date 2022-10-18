@@ -1,9 +1,7 @@
-import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { Router, ERC721 } from '../../typechain'
 import type { Contract } from '@ethersproject/contracts'
 import { BigNumber } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
-import { FeeAmount } from '@uniswap/v3-sdk'
 import { expect } from './shared/expect'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
@@ -21,19 +19,15 @@ import {
   NFTX_COVEN_VAULT_ID,
 } from './shared/constants'
 import { seaportOrders, seaportInterface, getOrderParams, Order } from './shared/protocolHelpers/seaport'
-import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
-import { makePair, encodePath } from './shared/swapRouter02Helpers'
+import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import hre from 'hardhat'
 
 const { ethers } = hre
 const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
-
-function encodePathExactInput(tokens: string[]) {
-  return encodePath(tokens, new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
-}
 
 describe('Router', () => {
   let alice: SignerWithAddress

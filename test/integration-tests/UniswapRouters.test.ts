@@ -1,25 +1,16 @@
 import type { Contract } from '@ethersproject/contracts'
+import { Pair } from '@uniswap/v2-sdk'
+import { FeeAmount } from '@uniswap/v3-sdk'
 import { parseEvents, V2_EVENTS } from './shared/parseEvents'
-import { CurrencyAmount, Ether, Percent, Token, TradeType } from '@uniswap/sdk-core'
-import { Route as V2RouteSDK, Pair } from '@uniswap/v2-sdk'
-import { Route as V3RouteSDK, FeeAmount } from '@uniswap/v3-sdk'
-import { SwapRouter, MixedRouteSDK, Trade } from '@uniswap/router-sdk'
 import { expect } from './shared/expect'
-import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import {
   makePair,
-  expandTo18Decimals,
   encodePath,
-  pool_DAI_WETH,
-  pool_DAI_USDC,
-  pool_USDC_WETH,
-  pool_USDC_USDT,
-  pool_WETH_USDT,
 } from './shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
 import { Router } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { executeSwap, resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   CONTRACT_BALANCE,
@@ -32,8 +23,7 @@ import {
 import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import { defaultAbiCoder } from 'ethers/lib/utils'
-import { RoutePlanner, CommandType, createCommand } from './shared/planner'
+import { RoutePlanner, CommandType } from './shared/planner'
 const { ethers } = hre
 
 function encodePathExactInput(tokens: string[]) {
@@ -55,8 +45,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
   // 6 pairs for gas tests with high numbers of trades
   let pair_DAI_WETH: Pair
-  let pair_DAI_USDC: Pair
-  let pair_USDC_WETH: Pair
 
   beforeEach(async () => {
     await resetFork()
@@ -80,8 +68,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
       )
     ).connect(alice) as Router
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
-    pair_DAI_USDC = await makePair(alice, DAI, USDC)
-    pair_USDC_WETH = await makePair(alice, USDC, WETH)
   })
 
   describe('Trade on UniswapV2', () => {

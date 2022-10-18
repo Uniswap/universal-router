@@ -1,10 +1,8 @@
 import type { Contract } from '@ethersproject/contracts'
-import { parseEvents, V2_EVENTS } from './shared/parseEvents'
 import { CurrencyAmount, Ether, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import { Route as V2RouteSDK, Pair } from '@uniswap/v2-sdk'
 import { Route as V3RouteSDK, FeeAmount } from '@uniswap/v3-sdk'
 import { SwapRouter, MixedRouteSDK, Trade } from '@uniswap/router-sdk'
-import { expect } from './shared/expect'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import {
   makePair,
@@ -33,7 +31,7 @@ import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { defaultAbiCoder } from 'ethers/lib/utils'
-import { RoutePlanner, CommandType, createCommand } from './shared/planner'
+import { RoutePlanner, CommandType } from './shared/planner'
 const { ethers } = hre
 
 function encodePathExactInput(tokens: string[]) {
@@ -46,11 +44,9 @@ function encodePathExactOutput(tokens: string[]) {
 
 describe('Uniswap Gas Tests', () => {
   let alice: SignerWithAddress
-  let bob: SignerWithAddress
   let router: Router
   let daiContract: Contract
   let wethContract: Contract
-  let usdcContract: Contract
   let planner: RoutePlanner
 
   // 6 pairs for gas tests with high numbers of trades
@@ -65,10 +61,8 @@ describe('Uniswap Gas Tests', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    bob = (await ethers.getSigners())[1]
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
-    usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
     const routerFactory = await ethers.getContractFactory('Router')
     router = (
       await routerFactory.deploy(
