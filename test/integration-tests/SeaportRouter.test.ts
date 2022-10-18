@@ -54,28 +54,6 @@ describe('Seaport', () => {
     planner = new RoutePlanner()
   })
 
-  it('completes a fulfillOrder type', async () => {
-    const { order, value } = getOrderParams(seaportOrders[0])
-    const params = order.parameters
-    const calldata = seaportInterface.encodeFunctionData('fulfillOrder', [order, OPENSEA_CONDUIT_KEY])
-
-    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
-
-    const ownerBefore = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
-    const ethBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
-    const ownerAfter = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
-    const ethAfter = await ethers.provider.getBalance(alice.address)
-    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-    const ethDelta = ethBefore.sub(ethAfter)
-
-    expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
-    expect(ownerAfter).to.eq(router.address)
-    expect(ethDelta.sub(gasSpent)).to.eq(value)
-  })
-
   it('completes a fulfillAdvancedOrder type', async () => {
     const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
     const params = advancedOrder.parameters
@@ -155,15 +133,6 @@ describe('Seaport', () => {
     expect(ethDelta.sub(gasSpent)).to.eq(value)
   })
 
-  it('gas fulfillOrder', async () => {
-    const { order, value } = getOrderParams(seaportOrders[0])
-    const calldata = seaportInterface.encodeFunctionData('fulfillOrder', [order, OPENSEA_CONDUIT_KEY])
-
-    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
-    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
-  })
 
   it('gas fulfillAdvancedOrder', async () => {
     const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
