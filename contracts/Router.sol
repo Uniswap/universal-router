@@ -7,7 +7,6 @@ import './libraries/Commands.sol';
 import './interfaces/IRouter.sol';
 
 contract Router is IRouter, Dispatcher {
-
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
