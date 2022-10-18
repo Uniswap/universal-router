@@ -6,7 +6,7 @@ import './base/RouterCallbacks.sol';
 import './libraries/Constants.sol';
 import './interfaces/IRouter.sol';
 
-contract Router is Dispatcher, IRouter {
+contract Router is IRouter, Dispatcher {
     bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
 
     modifier checkDeadline(uint256 deadline) {

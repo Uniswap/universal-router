@@ -3,10 +3,7 @@ import { Pair } from '@uniswap/v2-sdk'
 import { FeeAmount } from '@uniswap/v3-sdk'
 import { parseEvents, V2_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
-import {
-  makePair,
-  encodePath,
-} from './shared/swapRouter02Helpers'
+import { makePair, encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
 import { Router } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
