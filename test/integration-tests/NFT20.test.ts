@@ -60,12 +60,12 @@ describe('NFT20', () => {
     it('purchases token ids 129, 193, 278 of Alphabetties', async () => {
       const value = BigNumber.from('20583701229648230')
       const calldata = NFT20_INTERFACE.encodeFunctionData('ethForNft', [
-        "0x6d05064fe99e40f1c3464e7310a23ffaded56e20",
-        ["129", "193", "278"],
-        ["1", "1", "1"],
+        '0x6d05064fe99e40f1c3464e7310a23ffaded56e20',
+        ['129', '193', '278'],
+        ['1', '1', '1'],
         ALICE_ADDRESS,
         0,
-        false
+        false,
       ])
       planner.addCommand(CommandType.NFT20, [value, calldata])
       const commands = planner.commands
@@ -82,19 +82,19 @@ describe('NFT20', () => {
       await expect((await alphabetties.connect(alice).ownerOf(278)).toLowerCase()).to.eq(ALICE_ADDRESS)
       // Expect that alice's account has 0.021 (plus gas, minus refund) less ETH in it
       await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
-        value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice)).sub(BigNumber.from("1086067487962785"))
+        value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice)).sub(BigNumber.from('1086067487962785'))
       )
     })
 
     it('gas: purchases token ids 129, 193, 278 of Alphabetties', async () => {
       const value = BigNumber.from('20583701229648230')
       const calldata = NFT20_INTERFACE.encodeFunctionData('ethForNft', [
-        "0x6d05064fe99e40f1c3464e7310a23ffaded56e20",
-        ["129", "193", "278"],
-        ["1", "1", "1"],
+        '0x6d05064fe99e40f1c3464e7310a23ffaded56e20',
+        ['129', '193', '278'],
+        ['1', '1', '1'],
         ALICE_ADDRESS,
         0,
-        false
+        false,
       ])
       planner.addCommand(CommandType.NFT20, [value, calldata])
       const commands = planner.commands
