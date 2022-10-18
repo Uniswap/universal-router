@@ -113,7 +113,8 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (address owner, address token, uint256 id) = abi.decode(inputs, (address, address, uint256));
             success = (ERC721(token).ownerOf(id) == owner);
         } else if (command == OWNERSHIP_CHECK_1155) {
-            (address owner, address token, uint256 id, uint256 minBalance) = abi.decode(inputs, (address, address, uint256, uint256));
+            (address owner, address token, uint256 id, uint256 minBalance) =
+                abi.decode(inputs, (address, address, uint256, uint256));
             success = (ERC1155(token).balanceOf(owner, id) >= minBalance);
         } else if (command == SWEEP_WITH_FEE) {
             (address token, address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =

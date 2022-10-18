@@ -4,11 +4,7 @@ import { expect } from './shared/expect'
 import { Router } from '../../typechain'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import {
-  seaportOrders,
-  seaportInterface,
-  getAdvancedOrderParams,
-} from './shared/protocolHelpers/seaport'
+import { seaportOrders, seaportInterface, getAdvancedOrderParams } from './shared/protocolHelpers/seaport'
 
 import { resetFork } from './shared/mainnetForkHelpers'
 import {
@@ -64,7 +60,11 @@ describe('Check Ownership', () => {
     ])
 
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
-    planner.addCommand(CommandType.OWNER_CHECK_721, [alice.address, COVEN_ADDRESS, params.offer[0].identifierOrCriteria])
+    planner.addCommand(CommandType.OWNER_CHECK_721, [
+      alice.address,
+      COVEN_ADDRESS,
+      params.offer[0].identifierOrCriteria,
+    ])
 
     const commands = planner.commands
     const inputs = planner.inputs
@@ -93,7 +93,11 @@ describe('Check Ownership', () => {
     ])
 
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
-    planner.addCommand(CommandType.OWNER_CHECK_721, [alice.address, COVEN_ADDRESS, BigNumber.from(params.offer[0].identifierOrCriteria).sub("1")])
+    planner.addCommand(CommandType.OWNER_CHECK_721, [
+      alice.address,
+      COVEN_ADDRESS,
+      BigNumber.from(params.offer[0].identifierOrCriteria).sub('1'),
+    ])
 
     const commands = planner.commands
     const inputs = planner.inputs
@@ -115,11 +119,14 @@ describe('Check Ownership', () => {
     ])
 
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
-    planner.addCommand(CommandType.OWNER_CHECK_721, [alice.address, COVEN_ADDRESS, params.offer[0].identifierOrCriteria])
+    planner.addCommand(CommandType.OWNER_CHECK_721, [
+      alice.address,
+      COVEN_ADDRESS,
+      params.offer[0].identifierOrCriteria,
+    ])
 
     const commands = planner.commands
     const inputs = planner.inputs
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
-
 })
