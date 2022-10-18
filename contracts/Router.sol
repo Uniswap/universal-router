@@ -22,7 +22,6 @@ contract Router is Dispatcher, IRouter {
         bytes32 poolInitCodeHash
     ) Dispatcher(permitPost, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash) {}
 
-
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
         external
         payable

@@ -17,10 +17,10 @@ interface IRouter {
     /// @param commands A set of concatenated commands, each 8 bytes in length
     /// @param inputs The state elements that should be used for the input and output of commands
     /// @param deadline The deadline by which the transaction must be executed
-    function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline) payable external;
+    function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline) external payable;
 
     /// @notice Executes encoded commands along with provided inputs.
     /// @param commands A set of concatenated commands, each 8 bytes in length
     /// @param inputs The state elements that should be used for the input and output of commands
-    function execute(bytes calldata commands, bytes[] calldata inputs) payable external;
+    function execute(bytes calldata commands, bytes[] calldata inputs) external payable;
 }
