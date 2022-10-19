@@ -9,7 +9,6 @@ import {
   seaportOrders,
   seaportInterface,
   getAdvancedOrderParams,
-  getOrderParams,
 } from './shared/protocolHelpers/seaport'
 
 import { resetFork } from './shared/mainnetForkHelpers'
