@@ -5,6 +5,7 @@ import { BigNumber } from 'ethers'
 import { Router } from '../../typechain'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
+import deployRouter from './shared/deployRouter'
 import {
   seaportOrders,
   seaportInterface,
@@ -42,15 +43,7 @@ describe('Seaport', () => {
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
     const routerFactory = await ethers.getContractFactory('Router')
-    router = (
-      await routerFactory.deploy(
-        ethers.constants.AddressZero,
-        V2_FACTORY_MAINNET,
-        V3_FACTORY_MAINNET,
-        V2_INIT_CODE_HASH_MAINNET,
-        V3_INIT_CODE_HASH_MAINNET
-      )
-    ).connect(alice) as Router
+    router = (await deployRouter()).connect(alice) as Router
     planner = new RoutePlanner()
   })
 
