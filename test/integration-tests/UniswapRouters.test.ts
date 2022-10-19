@@ -479,7 +479,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           router.address,
         ])
         planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
-        planner.addCommand(CommandType.SWEEP, [DAI.address, alice.address, 0]) //exactOut will have to sweep tokens w/ PermitPost
+        planner.addCommand(CommandType.SWEEP, [DAI.address, alice.address, 0])
 
         const commands = planner.commands
         const inputs = planner.inputs

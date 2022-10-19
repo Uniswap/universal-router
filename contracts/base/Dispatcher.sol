@@ -100,7 +100,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (success, output) = Constants.SUDOSWAP.call{value: value}(data);
         } else if (command == SWEEP) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
-            Payments.sweepToken(token, recipient, amountMin);
+            Payments.sweep(token, recipient, amountMin);
         } else if (command == WRAP_ETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.wrapETH(recipient, amountMin);
@@ -110,7 +110,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         } else if (command == SWEEP_WITH_FEE) {
             (address token, address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
                 abi.decode(inputs, (address, address, uint256, uint256, address));
-            Payments.sweepTokenWithFee(token, recipient, amountMin, feeBips, feeRecipient);
+            Payments.sweepWithFee(token, recipient, amountMin, feeBips, feeRecipient);
         } else if (command == UNWRAP_WETH_WITH_FEE) {
             (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
                 abi.decode(inputs, (address, uint256, uint256, address));

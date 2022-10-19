@@ -28,31 +28,18 @@ library Payments {
         }
     }
 
-    function sweepToken(address token, address recipient, uint256 amountMinimum) internal {
-        uint256 balanceToken = ERC20(token).balanceOf(address(this));
-        if (balanceToken < amountMinimum) revert InsufficientToken();
-
-        if (balanceToken > 0) {
-            ERC20(token).safeTransfer(recipient, balanceToken);
-        }
-    }
-
-    function sweepTokenWithFee(
-        address token,
-        address recipient,
-        uint256 amountMinimum,
-        uint256 feeBips,
-        address feeRecipient
-    ) internal {
-        if (feeBips == 0 || feeBips > 100) revert InvalidFeeBips();
-
-        uint256 balanceToken = ERC20(token).balanceOf(address(this));
-        if (balanceToken < amountMinimum) revert InsufficientToken();
-
-        if (balanceToken > 0) {
-            uint256 feeAmount = (balanceToken * feeBips) / FEE_BIPS_BASE;
-            if (feeAmount > 0) ERC20(token).safeTransfer(feeRecipient, feeAmount);
-            ERC20(token).safeTransfer(recipient, balanceToken - feeAmount);
+    function sweep(address token, address recipient, uint256 amountMinimum) internal {
+        uint256 balance;
+        if (token == Constants.ETH) {
+            balance = address(this).balance;
+    
+            if (balance < amountMinimum) revert InsufficientETH();
+            if (balance > 0) recipient.safeTransferETH(balance);
+        } else {
+            balance = ERC20(token).balanceOf(address(this));
+    
+            if (balance < amountMinimum) revert InsufficientToken();
+            if (balance > 0) ERC20(token).safeTransfer(recipient, balance);
         }
     }
 
@@ -84,14 +71,46 @@ library Payments {
     {
         if (feeBips == 0 || feeBips > 100) revert InvalidFeeBips();
 
-        uint256 balanceWETH9 = ERC20(Constants.WETH9).balanceOf(address(this));
-        if (balanceWETH9 < amountMinimum) revert InsufficientToken();
+        uint256 balance = ERC20(Constants.WETH9).balanceOf(address(this));
+        if (balance < amountMinimum) revert InsufficientToken();
 
-        if (balanceWETH9 > 0) {
-            IWETH9(Constants.WETH9).withdraw(balanceWETH9);
-            uint256 feeAmount = (balanceWETH9 * feeBips) / FEE_BIPS_BASE;
-            if (feeAmount > 0) feeRecipient.safeTransferETH(feeAmount);
-            recipient.safeTransferETH(balanceWETH9 - feeAmount);
+        if (balance > 0) {
+            IWETH9(Constants.WETH9).withdraw(balance);
+            transferETHWithFee(recipient, balance, feeBips, feeRecipient);
         }
+    }
+
+    function sweepWithFee(
+        address token,
+        address recipient,
+        uint256 amountMinimum,
+        uint256 feeBips,
+        address feeRecipient
+    ) internal {
+        if (feeBips == 0 || feeBips > 100) revert InvalidFeeBips();
+
+        uint256 balance;
+        if (token == Constants.ETH) {
+            balance = address(this).balance;
+    
+            if (balance < amountMinimum) revert InsufficientETH();
+            if (balance > 0) transferETHWithFee(recipient, balance, feeBips, feeRecipient);
+        } else {
+            balance = ERC20(token).balanceOf(address(this));
+            
+            if (balance < amountMinimum) revert InsufficientToken();
+            if (balance > 0) {
+                uint256 feeAmount = (balance * feeBips) / FEE_BIPS_BASE;
+                if (feeAmount > 0) ERC20(token).safeTransfer(feeRecipient, feeAmount);
+                ERC20(token).safeTransfer(recipient, balance - feeAmount);
+            }
+        }
+    }
+
+    // Calling function must verify that balance>0
+    function transferETHWithFee(address recipient, uint256 balance, uint256 feeBips, address feeRecipient) internal {
+        uint256 feeAmount = (balance * feeBips) / FEE_BIPS_BASE;
+        if (feeAmount > 0) feeRecipient.safeTransferETH(feeAmount);
+        recipient.safeTransferETH(balance - feeAmount);
     }
 }
