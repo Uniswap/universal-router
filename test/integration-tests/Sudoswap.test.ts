@@ -9,7 +9,7 @@ import {
   V2_INIT_CODE_HASH_MAINNET,
   V3_FACTORY_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
-  ADDRESS_ZERO
+  ADDRESS_ZERO,
 } from './shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'

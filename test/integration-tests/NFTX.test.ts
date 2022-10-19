@@ -16,7 +16,7 @@ import {
   NFTX_COVEN_VAULT_ID,
   NFTX_ERC_1155_VAULT,
   NFTX_ERC_1155_VAULT_ID,
-  ADDRESS_ZERO
+  ADDRESS_ZERO,
 } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'

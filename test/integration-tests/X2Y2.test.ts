@@ -10,7 +10,7 @@ import {
   V3_FACTORY_MAINNET,
   V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
-  ADDRESS_ZERO
+  ADDRESS_ZERO,
 } from './shared/constants'
 import { parseEvents } from './shared/parseEvents'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'

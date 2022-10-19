@@ -18,7 +18,7 @@ import {
   V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
   ADDRESS_ZERO,
-  ETH_ADDRESS
+  ETH_ADDRESS,
 } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'

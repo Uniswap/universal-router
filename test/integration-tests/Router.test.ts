@@ -17,7 +17,7 @@ import {
   V3_INIT_CODE_HASH_MAINNET,
   NFTX_COVEN_VAULT,
   NFTX_COVEN_VAULT_ID,
-  ADDRESS_ZERO
+  ADDRESS_ZERO,
 } from './shared/constants'
 import { seaportOrders, seaportInterface, getOrderParams, Order } from './shared/protocolHelpers/seaport'
 import { resetFork, WETH, DAI } from './shared/mainnetForkHelpers'
