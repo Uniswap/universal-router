@@ -22,7 +22,7 @@ const { ethers } = hre
 
 const NFT20_INTERFACE = new ethers.utils.Interface(NFT20_ABI)
 
-describe.only('NFT20', () => {
+describe('NFT20', () => {
   let alice: SignerWithAddress
   let router: Router
   let planner: RoutePlanner
