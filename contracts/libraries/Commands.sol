@@ -5,7 +5,7 @@ pragma solidity ^0.8.15;
 /// @notice Command Flags used to decode commands
 library Commands {
     bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
-    bytes1 internal constant TYPE_MASK = 0x1f;
+    bytes1 internal constant COMMAND_TYPE_MASK = 0x1f;
 
     // Command Types. Maximum supported command at this moment is 0x1F.
     uint256 constant PERMIT = 0x00;
