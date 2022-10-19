@@ -13,10 +13,3 @@ Object {
   "gasUsed": 332211,
 }
 `;
-
-exports[`Seaport gas fulfillOrder 1`] = `
-Object {
-  "calldataByteLength": 1796,
-  "gasUsed": 194127,
-}
-`;
