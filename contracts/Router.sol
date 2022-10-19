@@ -20,7 +20,10 @@ contract Router is IRouter, Dispatcher, RewardsExtractor {
         address v3Factory,
         bytes32 pairInitCodeHash,
         bytes32 poolInitCodeHash
-    ) Dispatcher(permitPost, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash) RewardsExtractor (rewardsDistributor) {}
+    )
+        Dispatcher(permitPost, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash)
+        RewardsExtractor(rewardsDistributor)
+    {}
 
     /// @inheritdoc IRouter
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)

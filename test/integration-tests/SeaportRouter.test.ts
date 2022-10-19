@@ -14,16 +14,7 @@ import {
 } from './shared/protocolHelpers/seaport'
 
 import { resetFork } from './shared/mainnetForkHelpers'
-import {
-  ALICE_ADDRESS,
-  COVEN_ADDRESS,
-  DEADLINE,
-  OPENSEA_CONDUIT_KEY,
-  V2_FACTORY_MAINNET,
-  V3_FACTORY_MAINNET,
-  V2_INIT_CODE_HASH_MAINNET,
-  V3_INIT_CODE_HASH_MAINNET,
-} from './shared/constants'
+import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 const { ethers } = hre
@@ -42,7 +33,6 @@ describe('Seaport', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
-    const routerFactory = await ethers.getContractFactory('Router')
     router = (await deployRouter()).connect(alice) as Router
     planner = new RoutePlanner()
   })

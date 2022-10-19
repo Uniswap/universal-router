@@ -2,10 +2,7 @@ import FOUNDATION_ABI from './shared/abis/Foundation.json'
 import { Router, ERC721 } from '../../typechain'
 import deployRouter from './shared/deployRouter'
 import { resetFork } from './shared/mainnetForkHelpers'
-import {
-  ALICE_ADDRESS,
-  DEADLINE,
-} from './shared/constants'
+import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'

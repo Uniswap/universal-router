@@ -2,16 +2,7 @@ import { CommandType, RoutePlanner } from './shared/planner'
 import { Router, ERC721, ERC1155 } from '../../typechain'
 import LOOKS_RARE_ABI from './shared/abis/LooksRare.json'
 import { resetFork, COVEN_721, TWERKY_1155 } from './shared/mainnetForkHelpers'
-import {
-  ALICE_ADDRESS,
-  COVEN_ADDRESS,
-  TWERKY_ADDRESS,
-  DEADLINE,
-  V2_FACTORY_MAINNET,
-  V3_FACTORY_MAINNET,
-  V2_INIT_CODE_HASH_MAINNET,
-  V3_INIT_CODE_HASH_MAINNET,
-} from './shared/constants'
+import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE } from './shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import deployRouter from './shared/deployRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
