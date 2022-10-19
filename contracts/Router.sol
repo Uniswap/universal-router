@@ -3,15 +3,10 @@ pragma solidity ^0.8.15;
 
 import './base/Dispatcher.sol';
 import './libraries/Constants.sol';
+import './libraries/Commands.sol';
+import './interfaces/IRouter.sol';
 
-contract Router is Dispatcher {
-    error ExecutionFailed(uint256 commandIndex, bytes message);
-    error ETHNotAccepted();
-    error TransactionDeadlinePassed();
-    error LengthMismatch();
-
-    bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
-
+contract Router is IRouter, Dispatcher {
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
@@ -25,9 +20,7 @@ contract Router is Dispatcher {
         bytes32 poolInitCodeHash
     ) Dispatcher(permitPost, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash) {}
 
-    /// @param commands A set of concatenated commands, each 8 bytes in length
-    /// @param inputs The state elements that should be used for the input and output of commands
-    /// @param deadline The deadline by which the transaction must be executed
+    /// @inheritdoc IRouter
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
         external
         payable
@@ -36,8 +29,7 @@ contract Router is Dispatcher {
         execute(commands, inputs);
     }
 
-    /// @param commands A set of concatenated commands, each 8 bytes in length
-    /// @param inputs The state elements that should be used for the input and output of commands
+    /// @inheritdoc IRouter
     function execute(bytes calldata commands, bytes[] calldata inputs) public payable {
         bool success;
         bytes memory output;
@@ -47,7 +39,7 @@ contract Router is Dispatcher {
         // loop through all given commands, execute them and pass along outputs as defined
         for (uint256 commandIndex = 0; commandIndex < numCommands;) {
             bytes1 command = commands[commandIndex];
-            uint256 commandType = uint256(uint8(command & FLAG_COMMAND_TYPE_MASK));
+            uint256 commandType = uint256(uint8(command & Commands.COMMAND_TYPE_MASK));
 
             bytes memory input = inputs[commandIndex];
 
@@ -64,7 +56,7 @@ contract Router is Dispatcher {
     }
 
     function successRequired(bytes1 command) internal pure returns (bool) {
-        return command & FLAG_ALLOW_REVERT == 0;
+        return command & Commands.FLAG_ALLOW_REVERT == 0;
     }
 
     receive() external payable {
