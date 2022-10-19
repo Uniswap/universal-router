@@ -32,12 +32,12 @@ library Payments {
         uint256 balance;
         if (token == Constants.ETH) {
             balance = address(this).balance;
-    
+
             if (balance < amountMinimum) revert InsufficientETH();
             if (balance > 0) recipient.safeTransferETH(balance);
         } else {
             balance = ERC20(token).balanceOf(address(this));
-    
+
             if (balance < amountMinimum) revert InsufficientToken();
             if (balance > 0) ERC20(token).safeTransfer(recipient, balance);
         }
@@ -92,12 +92,12 @@ library Payments {
         uint256 balance;
         if (token == Constants.ETH) {
             balance = address(this).balance;
-    
+
             if (balance < amountMinimum) revert InsufficientETH();
             if (balance > 0) transferETHWithFee(recipient, balance, feeBips, feeRecipient);
         } else {
             balance = ERC20(token).balanceOf(address(this));
-            
+
             if (balance < amountMinimum) revert InsufficientToken();
             if (balance > 0) {
                 uint256 feeAmount = (balance * feeBips) / FEE_BIPS_BASE;

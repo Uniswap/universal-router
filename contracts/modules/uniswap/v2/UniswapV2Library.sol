@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
-import './UniswapPoolHelper.sol';
+import '../UniswapPoolHelper.sol';
 
 library UniswapV2Library {
     // calculates the CREATE2 address for a pair without making any external calls
