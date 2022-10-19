@@ -3,14 +3,7 @@ import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol
 import X2Y2_ABI from './shared/abis/X2Y2.json'
 import { Router } from '../../typechain'
 import { resetFork, ENS_721, CAMEO_1155 } from './shared/mainnetForkHelpers'
-import {
-  ALICE_ADDRESS,
-  DEADLINE,
-  V2_FACTORY_MAINNET,
-  V3_FACTORY_MAINNET,
-  V2_INIT_CODE_HASH_MAINNET,
-  V3_INIT_CODE_HASH_MAINNET,
-} from './shared/constants'
+import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
 import { parseEvents } from './shared/parseEvents'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import deployRouter from './shared/deployRouter'
@@ -53,7 +46,6 @@ describe('X2Y2', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      const routerFactory = await ethers.getContractFactory('Router')
       router = (await deployRouter()).connect(alice) as Router
 
       erc721Order = x2y2Orders[0]
