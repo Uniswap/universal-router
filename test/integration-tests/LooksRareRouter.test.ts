@@ -13,6 +13,7 @@ import {
   V3_INIT_CODE_HASH_MAINNET,
 } from './shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
+import deployRouter from './shared/deployRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { expect } from 'chai'
@@ -104,16 +105,7 @@ describe('LooksRare', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
 
-    const routerFactory = await ethers.getContractFactory('Router')
-    router = (
-      await routerFactory.deploy(
-        ethers.constants.AddressZero,
-        V2_FACTORY_MAINNET,
-        V3_FACTORY_MAINNET,
-        V2_INIT_CODE_HASH_MAINNET,
-        V3_INIT_CODE_HASH_MAINNET
-      )
-    ).connect(alice) as Router
+    router = (await deployRouter()).connect(alice) as Router
     planner = new RoutePlanner()
   })
 

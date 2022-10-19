@@ -2,6 +2,7 @@ import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
 import { Router, ERC721, ERC1155 } from '../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
+import deployRouter from './shared/deployRouter'
 import { parseEvents } from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import { COVEN_721, TWERKY_1155, resetFork, WETH } from './shared/mainnetForkHelpers'
@@ -40,16 +41,7 @@ describe('NFTX', () => {
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = COVEN_721.connect(alice)
     twerkyContract = TWERKY_1155.connect(alice)
-    const routerFactory = await ethers.getContractFactory('Router')
-    router = (
-      await routerFactory.deploy(
-        ethers.constants.AddressZero,
-        V2_FACTORY_MAINNET,
-        V3_FACTORY_MAINNET,
-        V2_INIT_CODE_HASH_MAINNET,
-        V3_INIT_CODE_HASH_MAINNET
-      )
-    ).connect(alice) as Router
+    router = (await deployRouter()).connect(alice) as Router
     planner = new RoutePlanner()
   })
 

@@ -13,6 +13,7 @@ import {
 } from './shared/constants'
 import { parseEvents } from './shared/parseEvents'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
+import deployRouter from './shared/deployRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { expect } from 'chai'
@@ -53,15 +54,7 @@ describe('X2Y2', () => {
         params: [ALICE_ADDRESS],
       })
       const routerFactory = await ethers.getContractFactory('Router')
-      router = (
-        await routerFactory.deploy(
-          ethers.constants.AddressZero,
-          V2_FACTORY_MAINNET,
-          V3_FACTORY_MAINNET,
-          V2_INIT_CODE_HASH_MAINNET,
-          V3_INIT_CODE_HASH_MAINNET
-        )
-      ).connect(alice) as Router
+      router = (await deployRouter()).connect(alice) as Router
 
       erc721Order = x2y2Orders[0]
       const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
@@ -108,16 +101,7 @@ describe('X2Y2', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      const routerFactory = await ethers.getContractFactory('Router')
-      router = (
-        await routerFactory.deploy(
-          ethers.constants.AddressZero,
-          V2_FACTORY_MAINNET,
-          V3_FACTORY_MAINNET,
-          V2_INIT_CODE_HASH_MAINNET,
-          V3_INIT_CODE_HASH_MAINNET
-        )
-      ).connect(alice) as Router
+      router = (await deployRouter()).connect(alice) as Router
 
       erc1155Order = x2y2Orders[1]
       const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
