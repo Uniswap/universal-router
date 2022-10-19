@@ -9,6 +9,7 @@ contract RewardsExtractor is IRewardsExtractor {
     using SafeTransferLib for ERC20;
 
     event RewardsSent(uint256 amount);
+
     error UnableToClaim();
 
     address public immutable rewardsDistributor;
@@ -20,7 +21,7 @@ contract RewardsExtractor is IRewardsExtractor {
     }
 
     function sendRewards(bytes calldata looksRareClaim) external {
-        (bool success, ) = LOOKSRARE_REWARDS_DISTRIBUTOR.call(looksRareClaim);
+        (bool success,) = LOOKSRARE_REWARDS_DISTRIBUTOR.call(looksRareClaim);
         if (!success) revert UnableToClaim();
 
         uint256 balance = LOOKS_RARE_TOKEN.balanceOf(address(this));
