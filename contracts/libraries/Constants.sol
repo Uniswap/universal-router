@@ -31,7 +31,7 @@ library Constants {
     /// @dev The address of LooksRare on mainnet
     address internal constant LOOKS_RARE = 0x59728544B08AB483533076417FbBB2fD0B17CE3a;
 
-    /// @dev The address of LooksRare on mainnet
+    /// @dev The address of X2Y2 on mainnet
     address internal constant X2Y2 = 0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3;
 
     // @dev The address of Foundation on mainnet
@@ -39,4 +39,7 @@ library Constants {
 
     // @dev The address of Sudoswap's router on mainnet
     address internal constant SUDOSWAP = 0x2B2e8cDA09bBA9660dCA5cB6233787738Ad68329;
+
+    // @dev the address of NFT20's zap contract on mainnet
+    address internal constant NFT20_ZAP = 0xA42f6cADa809Bcf417DeefbdD69C5C5A909249C0;
 }
