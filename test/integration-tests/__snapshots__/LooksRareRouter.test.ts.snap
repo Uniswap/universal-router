@@ -3,13 +3,13 @@
 exports[`LooksRare ERC-721 Purchase gas: buy 1 ERC-721 on looks rare 1`] = `
 Object {
   "calldataByteLength": 1316,
-  "gasUsed": 246607,
+  "gasUsed": 246601,
 }
 `;
 
 exports[`LooksRare ERC-1155 Purchase gas: buy 1 ERC-1155 on looks rare 1`] = `
 Object {
   "calldataByteLength": 1348,
-  "gasUsed": 266569,
+  "gasUsed": 266563,
 }
 `;

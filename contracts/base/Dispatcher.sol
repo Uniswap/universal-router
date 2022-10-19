@@ -44,19 +44,19 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         } else if (command == Commands.V2_SWAP_EXACT_IN) {
             (uint256 amountOutMin, address[] memory path, address recipient) =
                 abi.decode(inputs, (uint256, address[], address));
-            output = abi.encode(v2SwapExactInput(amountOutMin, path, recipient));
+            v2SwapExactInput(amountOutMin, path, recipient);
         } else if (command == Commands.V2_SWAP_EXACT_OUT) {
             (uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient) =
                 abi.decode(inputs, (uint256, uint256, address[], address));
-            output = abi.encode(v2SwapExactOutput(amountOut, amountInMax, path, recipient));
+            v2SwapExactOutput(amountOut, amountInMax, path, recipient);
         } else if (command == Commands.V3_SWAP_EXACT_IN) {
             (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                 abi.decode(inputs, (address, uint256, uint256, bytes));
-            output = abi.encode(v3SwapExactInput(recipient, amountIn, amountOutMin, path));
+            v3SwapExactInput(recipient, amountIn, amountOutMin, path);
         } else if (command == Commands.V3_SWAP_EXACT_OUT) {
             (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                 abi.decode(inputs, (address, uint256, uint256, bytes));
-            output = abi.encode(v3SwapExactOutput(recipient, amountIn, amountOutMin, path));
+            v3SwapExactOutput(recipient, amountIn, amountOutMin, path);
         } else if (command == Commands.SEAPORT) {
             (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
             (success, output) = Constants.SEAPORT.call{value: value}(data);

@@ -39,24 +39,20 @@ contract V2SwapRouter {
         }
     }
 
-    function v2SwapExactInput(uint256 amountOutMin, address[] memory path, address recipient)
-        internal
-        returns (uint256 amountOut)
-    {
+    function v2SwapExactInput(uint256 amountOutMin, address[] memory path, address recipient) internal {
         uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(recipient);
 
         _v2Swap(path, recipient);
 
-        amountOut = IERC20(path[path.length - 1]).balanceOf(recipient) - balanceBefore;
+        uint256 amountOut = IERC20(path[path.length - 1]).balanceOf(recipient) - balanceBefore;
         require(amountOut >= amountOutMin, 'Too little received');
     }
 
     function v2SwapExactOutput(uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient)
         internal
-        returns (uint256 amountIn)
     {
-        address pair;
-        (amountIn, pair) = UniswapV2Library.getAmountInMultihop(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path);
+        (uint256 amountIn, address pair) =
+            UniswapV2Library.getAmountInMultihop(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path);
         require(amountIn <= amountInMax, 'Too much requested');
         Payments.payERC20(path[0], pair, amountIn);
         _v2Swap(path, recipient);
