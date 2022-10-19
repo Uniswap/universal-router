@@ -16,6 +16,7 @@ import {
   NFTX_COVEN_VAULT_ID,
   NFTX_ERC_1155_VAULT,
   NFTX_ERC_1155_VAULT_ID,
+  ADDRESS_ZERO
 } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
@@ -43,7 +44,7 @@ describe('NFTX', () => {
     const routerFactory = await ethers.getContractFactory('Router')
     router = (
       await routerFactory.deploy(
-        ethers.constants.AddressZero,
+        ADDRESS_ZERO,
         V2_FACTORY_MAINNET,
         V3_FACTORY_MAINNET,
         V2_INIT_CODE_HASH_MAINNET,

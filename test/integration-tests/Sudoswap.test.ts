@@ -9,6 +9,7 @@ import {
   V2_INIT_CODE_HASH_MAINNET,
   V3_FACTORY_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
+  ADDRESS_ZERO
 } from './shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -46,7 +47,7 @@ describe('Sudoswap', () => {
       const routerFactory = await ethers.getContractFactory('Router')
       router = (
         await routerFactory.deploy(
-          ethers.constants.AddressZero,
+          ADDRESS_ZERO,
           V2_FACTORY_MAINNET,
           V3_FACTORY_MAINNET,
           V2_INIT_CODE_HASH_MAINNET,

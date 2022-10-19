@@ -16,6 +16,7 @@ import {
   V3_FACTORY_MAINNET,
   V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
+  ADDRESS_ZERO
 } from './shared/constants'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -57,7 +58,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     const routerFactory = await ethers.getContractFactory('Router')
     router = (
       await routerFactory.deploy(
-        ethers.constants.AddressZero,
+        ADDRESS_ZERO,
         V2_FACTORY_MAINNET,
         V3_FACTORY_MAINNET,
         V2_INIT_CODE_HASH_MAINNET,

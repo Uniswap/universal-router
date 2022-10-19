@@ -7,9 +7,16 @@ Object {
 }
 `;
 
-exports[`Seaport gas fulfillAvailableAdvancedOrders 1 orders 1`] = `
+exports[`Seaport gas fulfillAvailableAdvancedOrders 2 orders 1`] = `
 Object {
   "calldataByteLength": 4708,
   "gasUsed": 332219,
+}
+`;
+
+exports[`Seaport revertable fulfillAdvancedOrder reverts and sweeps ETH 1`] = `
+Object {
+  "calldataByteLength": 2212,
+  "gasUsed": 58244,
 }
 `;
