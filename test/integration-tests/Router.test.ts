@@ -56,10 +56,6 @@ describe('Router', () => {
     ).connect(alice) as Router
   })
 
-  it('bytecode size', async () => {
-    expect(((await router.provider.getCode(router.address)).length - 2) / 2).to.matchSnapshot()
-  })
-
   describe('#execute', async () => {
     let planner: RoutePlanner
 

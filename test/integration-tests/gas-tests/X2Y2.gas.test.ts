@@ -1,8 +1,7 @@
-import { CommandType, RoutePlanner } from './shared/planner'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
-import X2Y2_ABI from './shared/abis/X2Y2.json'
-import { Router } from '../../typechain'
-import { resetFork, ENS_721, CAMEO_1155 } from './shared/mainnetForkHelpers'
+import { CommandType, RoutePlanner } from './../shared/planner'
+import X2Y2_ABI from './../shared/abis/X2Y2.json'
+import { Router } from '../../../typechain'
+import { resetFork, ENS_721 } from './../shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   DEADLINE,
@@ -10,17 +9,15 @@ import {
   V3_FACTORY_MAINNET,
   V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
-} from './shared/constants'
-import { parseEvents } from './shared/parseEvents'
+} from './../shared/constants'
+import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import { expect } from 'chai'
 import fs from 'fs'
 import { BigNumber } from 'ethers'
 const { ethers } = hre
 
 const X2Y2_INTERFACE = new ethers.utils.Interface(X2Y2_ABI)
-const ERC721_INTERFACE = new ethers.utils.Interface(ERC721_ABI)
 const x2y2Orders = JSON.parse(fs.readFileSync('test/integration-tests/shared/orders/X2Y2.json', { encoding: 'utf8' }))
 
 type X2Y2Order = {
@@ -76,17 +73,10 @@ describe('X2Y2', () => {
       inputs = planner.inputs
     })
 
-    it('purchases 1 ERC-721 on X2Y2', async () => {
-      const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: erc721Order.price })
-      ).wait()
-      const erc721TransferEvent = parseEvents(ERC721_INTERFACE, receipt)[1]?.args!
-
-      const newOwner = await ENS_721.connect(alice).ownerOf(erc721Order.token_id)
-      await expect(newOwner.toLowerCase()).to.eq(ALICE_ADDRESS)
-      await expect(erc721TransferEvent.from).to.be.eq(router.address)
-      await expect(erc721TransferEvent.to.toLowerCase()).to.be.eq(ALICE_ADDRESS)
-      await expect(erc721TransferEvent.id).to.be.eq(erc721Order.token_id)
+    it('gas: purchases 1 ERC-721 on X2Y2', async () => {
+      await snapshotGasCost(
+        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: erc721Order.price })
+      )
     })
   })
 
@@ -127,12 +117,10 @@ describe('X2Y2', () => {
       inputs = planner.inputs
     })
 
-    it('purchases 1 ERC-1155 on X2Y2', async () => {
-      await expect(await CAMEO_1155.connect(alice).balanceOf(alice.address, erc1155Order.token_id)).to.eq(0)
-      await (
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: erc1155Order.price })
-      ).wait()
-      await expect(await CAMEO_1155.connect(alice).balanceOf(alice.address, erc1155Order.token_id)).to.eq(1)
+    it('gas: purchases 1 ERC-1155 on X2Y2', async () => {
+      await snapshotGasCost(
+        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: erc1155Order.price })
+      )
     })
   })
 })

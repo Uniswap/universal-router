@@ -1,7 +1,6 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
 import { Router, ERC721, ERC1155 } from '../../typechain'
-import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { parseEvents } from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import { COVEN_721, TWERKY_1155, resetFork, WETH } from './shared/mainnetForkHelpers'
@@ -171,39 +170,5 @@ describe('NFTX', () => {
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
     expect(ethDelta.sub(gasSpent)).to.eq(saleCost)
-  })
-
-  it('gas: buyAndRedeem w/ random selection', async () => {
-    const value = expandTo18DecimalsBN(4)
-    const numCovens = 2
-    const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      NFTX_COVEN_VAULT_ID,
-      numCovens,
-      [],
-      [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
-      alice.address,
-    ])
-
-    planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
-    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
-  })
-
-  it('gas: buyAndRedeem w/ specific selection', async () => {
-    const value = expandTo18DecimalsBN(4)
-    const numCovens = 2
-    const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      NFTX_COVEN_VAULT_ID,
-      numCovens,
-      [584, 3033],
-      [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
-      alice.address,
-    ])
-
-    planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
-    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 })
