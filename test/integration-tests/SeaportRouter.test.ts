@@ -5,11 +5,7 @@ import { BigNumber } from 'ethers'
 import { Router } from '../../typechain'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import {
-  seaportOrders,
-  seaportInterface,
-  getAdvancedOrderParams,
-} from './shared/protocolHelpers/seaport'
+import { seaportOrders, seaportInterface, getAdvancedOrderParams } from './shared/protocolHelpers/seaport'
 
 import { resetFork } from './shared/mainnetForkHelpers'
 import {
@@ -131,7 +127,6 @@ describe('Seaport', () => {
     expect(owner1After).to.eq(alice.address)
     expect(ethDelta.sub(gasSpent)).to.eq(value)
   })
-
 
   it('gas fulfillAdvancedOrder', async () => {
     const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
