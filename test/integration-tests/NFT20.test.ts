@@ -39,13 +39,13 @@ describe('NFT20', () => {
     })
     const routerFactory = await ethers.getContractFactory('Router')
     router = (
-        await routerFactory.deploy(
-            ethers.constants.AddressZero,
-            V2_FACTORY_MAINNET,
-            V3_FACTORY_MAINNET,
-            V2_INIT_CODE_HASH_MAINNET,
-            V3_INIT_CODE_HASH_MAINNET
-        )
+      await routerFactory.deploy(
+        ethers.constants.AddressZero,
+        V2_FACTORY_MAINNET,
+        V3_FACTORY_MAINNET,
+        V2_INIT_CODE_HASH_MAINNET,
+        V3_INIT_CODE_HASH_MAINNET
+      )
     ).connect(alice) as Router
 
     alphabetties = new ethers.Contract(ALPHABETTIES_ADDRESS, ERC721_ABI) as ERC721
@@ -55,7 +55,6 @@ describe('NFT20', () => {
   // In this test we will buy token ids 129, 193, 278 of Alphabetties (0x6d05064fe99e40f1c3464e7310a23ffaded56e20).
   // We will send 0.021~ ETH (20583701229648230 wei), and we will get refunded 1086067487962785 wei
   describe('Buy 3 alphabetties from NFT20', () => {
-
     it('purchases token ids 129, 193, 278 of Alphabetties', async () => {
       const value = BigNumber.from('20583701229648230')
       const calldata = NFT20_INTERFACE.encodeFunctionData('ethForNft', [
