@@ -2,6 +2,6 @@
 pragma solidity ^0.8.15;
 
 interface IRewardsExtractor {
-  function rewardsDistributor() external returns (address);
-  function sendRewards() external;
+    function rewardsDistributor() external returns (address);
+    function sendRewards() external;
 }
