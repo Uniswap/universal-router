@@ -78,7 +78,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (success, output) = Constants.SUDOSWAP.call{value: value}(data);
         } else if (command == Commands.NFT20) {
             (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
-            (success, output) = Constants.NFT20.call{value: value}(data);
+            (success, output) = Constants.NFT20_ZAP.call{value: value}(data);
         } else if (command == Commands.SWEEP) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
             Payments.sweepToken(token, recipient, amountMin);

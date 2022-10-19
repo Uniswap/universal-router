@@ -41,5 +41,5 @@ library Constants {
     address internal constant SUDOSWAP = 0x2B2e8cDA09bBA9660dCA5cB6233787738Ad68329;
 
     // @dev the address of NFT20's zap contract on mainnet
-    address internal constant NFT20 = 0xA42f6cADa809Bcf417DeefbdD69C5C5A909249C0;
+    address internal constant NFT20_ZAP = 0xA42f6cADa809Bcf417DeefbdD69C5C5A909249C0;
 }
