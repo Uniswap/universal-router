@@ -3,13 +3,13 @@
 exports[`Check Ownership gas checks ownership after a seaport trade 1`] = `
 Object {
   "calldataByteLength": 2212,
-  "gasUsed": 204055,
+  "gasUsed": 204077,
 }
 `;
 
 exports[`Check Ownership gas just ownership check 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 30866,
+  "gasUsed": 30888,
 }
 `;
