@@ -6,3 +6,10 @@ Object {
   "gasUsed": 204055,
 }
 `;
+
+exports[`Check Ownership gas just ownership check 1`] = `
+Object {
+  "calldataByteLength": 356,
+  "gasUsed": 30866,
+}
+`;

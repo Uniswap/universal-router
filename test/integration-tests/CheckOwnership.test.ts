@@ -101,7 +101,6 @@ describe('Check Ownership', () => {
 
     const commands = planner.commands
     const inputs = planner.inputs
-    console.log(commands)
 
     await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).to.be.revertedWith(
       'ExecutionFailed(1, "0x")'
@@ -128,5 +127,20 @@ describe('Check Ownership', () => {
     const commands = planner.commands
     const inputs = planner.inputs
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+  })
+
+  it('gas just ownership check', async () => {
+    const { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
+    const params = advancedOrder.parameters
+
+    planner.addCommand(CommandType.OWNER_CHECK_721, [
+      params.offerer,
+      COVEN_ADDRESS,
+      params.offer[0].identifierOrCriteria,
+    ])
+
+    const commands = planner.commands
+    const inputs = planner.inputs
+    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
   })
 })
