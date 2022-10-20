@@ -4,7 +4,7 @@ import { Route as V2RouteSDK, Pair } from '@uniswap/v2-sdk'
 import { Route as V3RouteSDK, FeeAmount } from '@uniswap/v3-sdk'
 import { SwapRouter, MixedRouteSDK, Trade } from '@uniswap/router-sdk'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import deployRouter from './shared/deployRouter'
+import deployRouter from './../shared/deployRouter'
 import {
   makePair,
   expandTo18Decimals,
@@ -14,17 +14,17 @@ import {
   pool_USDC_WETH,
   pool_USDC_USDT,
   pool_WETH_USDT,
-} from './shared/swapRouter02Helpers'
+} from '../shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
-import { Router } from '../../typechain'
-import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { executeSwap, resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE } from './shared/constants'
-import { expandTo18DecimalsBN } from './shared/helpers'
+import { Router } from '../../../typechain'
+import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
+import { executeSwap, resetFork, WETH, DAI, USDC, USDT } from '../shared/mainnetForkHelpers'
+import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE } from '../shared/constants'
+import { expandTo18DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { defaultAbiCoder } from 'ethers/lib/utils'
-import { RoutePlanner, CommandType } from './shared/planner'
+import { RoutePlanner, CommandType } from '../shared/planner'
 const { ethers } = hre
 
 function encodePathExactInput(tokens: string[]) {

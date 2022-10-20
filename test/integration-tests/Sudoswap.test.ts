@@ -3,7 +3,6 @@ import SUDOSWAP_ABI from './shared/abis/Sudoswap.json'
 import { ERC721, Router } from '../../typechain'
 import { resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
-import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import deployRouter from './shared/deployRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -67,22 +66,6 @@ describe('Sudoswap', () => {
       await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
         value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice))
       )
-    })
-
-    it('gas: purchases token ids 80, 35, 93 of Sudolets', async () => {
-      const value = BigNumber.from('73337152777777783')
-      const calldata = SUDOSWAP_INTERFACE.encodeFunctionData('robustSwapETHForSpecificNFTs', [
-        [[['0x339e7004372e04b1d59443f0ddc075efd9d80360', ['80', '35', '93']], '73337152777777783']],
-        ALICE_ADDRESS,
-        ALICE_ADDRESS,
-        1665685098,
-      ])
-
-      planner.addCommand(CommandType.SUDOSWAP, [value, calldata])
-      const commands = planner.commands
-      const inputs = planner.inputs
-
-      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value }))
     })
   })
 })
