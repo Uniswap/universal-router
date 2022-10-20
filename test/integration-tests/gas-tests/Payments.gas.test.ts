@@ -11,10 +11,9 @@ import { RoutePlanner, CommandType } from '../shared/planner'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 const { ethers } = hre
 import WETH_ABI from '../../../artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
-import { Pair } from '@uniswap/v2-sdk'
 import { BigNumber } from 'ethers'
 
-describe('Payments Gas Tests', () => {
+describe.only('Payments Gas Tests', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router
@@ -38,7 +37,6 @@ describe('Payments Gas Tests', () => {
 
   describe('Individual Command Tests', () => {
     // These tests are not representative of actual situations - but allow us to monitor the cost of the commands
-    // The next section contains tests for realistic situations, combined with other commands
 
     it('gas: TRANSFER with ERC20', async () => {
       // seed router with tokens
@@ -134,61 +132,6 @@ describe('Payments Gas Tests', () => {
       const inputs = planner.inputs
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-    })
-  })
-
-  describe('Integration Tests', () => {
-    let planner: RoutePlanner
-
-    beforeEach(async () => {
-      planner = new RoutePlanner()
-      await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
-    })
-
-    it('gas: V2 exactOut swap plus sweep of remainder', async () => {
-      const amountOut: BigNumber = expandTo18DecimalsBN(1)
-      planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-        amountOut,
-        expandTo18DecimalsBN(1),
-        [WETH.address, DAI.address],
-        alice.address,
-      ])
-      planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, 0])
-      const commands = planner.commands
-      const inputs = planner.inputs
-
-      await wethContract.transfer(router.address, expandTo18DecimalsBN(100)) // TODO: permitPost
-      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-    })
-
-    it('gas: wraps ETH then V2 exactIn swap', async () => {
-      const amountIn: BigNumber = expandTo18DecimalsBN(5)
-      const pairAddress = Pair.getAddress(DAI, WETH)
-
-      planner.addCommand(CommandType.WRAP_ETH, [pairAddress, amountIn])
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [amountIn, [WETH.address, DAI.address], alice.address])
-
-      const commands = planner.commands
-      const inputs = planner.inputs
-
-      await snapshotGasCost(
-        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountIn.toString() })
-      )
-    })
-
-    it('gas: transfer then v2 exact in swap', async () => {
-      const amountIn: BigNumber = expandTo18DecimalsBN(5)
-      const pairAddress = Pair.getAddress(DAI, WETH)
-
-      planner.addCommand(CommandType.TRANSFER, [DAI.address, pairAddress, amountIn])
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], alice.address])
-
-      const commands = planner.commands
-      const inputs = planner.inputs
-
-      await snapshotGasCost(
-        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountIn.toString() })
-      )
     })
   })
 })
