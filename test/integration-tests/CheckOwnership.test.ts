@@ -3,23 +3,13 @@ import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
 import { Router } from '../../typechain'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
-import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { seaportOrders, seaportInterface, getAdvancedOrderParams } from './shared/protocolHelpers/seaport'
-
 import { resetFork } from './shared/mainnetForkHelpers'
-import {
-  ALICE_ADDRESS,
-  COVEN_ADDRESS,
-  DEADLINE,
-  OPENSEA_CONDUIT_KEY,
-  V2_FACTORY_MAINNET,
-  V3_FACTORY_MAINNET,
-  V2_INIT_CODE_HASH_MAINNET,
-  V3_INIT_CODE_HASH_MAINNET,
-} from './shared/constants'
+import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
+import deployRouter from './shared/deployRouter'
 const { ethers } = hre
 
 describe('Check Ownership', () => {
@@ -36,16 +26,7 @@ describe('Check Ownership', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
-    const routerFactory = await ethers.getContractFactory('Router')
-    router = (
-      await routerFactory.deploy(
-        ethers.constants.AddressZero,
-        V2_FACTORY_MAINNET,
-        V3_FACTORY_MAINNET,
-        V2_INIT_CODE_HASH_MAINNET,
-        V3_INIT_CODE_HASH_MAINNET
-      )
-    ).connect(alice) as Router
+    router = (await deployRouter()).connect(alice) as Router
     planner = new RoutePlanner()
   })
 
@@ -105,42 +86,5 @@ describe('Check Ownership', () => {
     await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).to.be.revertedWith(
       'ExecutionFailed(1, "0x")'
     )
-  })
-
-  it('gas checks ownership after a seaport trade', async () => {
-    const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
-    const params = advancedOrder.parameters
-    const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
-      advancedOrder,
-      [],
-      OPENSEA_CONDUIT_KEY,
-      alice.address,
-    ])
-
-    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
-    planner.addCommand(CommandType.OWNER_CHECK_721, [
-      alice.address,
-      COVEN_ADDRESS,
-      params.offer[0].identifierOrCriteria,
-    ])
-
-    const commands = planner.commands
-    const inputs = planner.inputs
-    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
-  })
-
-  it('gas just ownership check', async () => {
-    const { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
-    const params = advancedOrder.parameters
-
-    planner.addCommand(CommandType.OWNER_CHECK_721, [
-      params.offerer,
-      COVEN_ADDRESS,
-      params.offer[0].identifierOrCriteria,
-    ])
-
-    const commands = planner.commands
-    const inputs = planner.inputs
-    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
   })
 })
