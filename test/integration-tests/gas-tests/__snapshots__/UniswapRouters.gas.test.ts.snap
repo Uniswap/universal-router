@@ -77,10 +77,17 @@ Object {
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. gas: exactOut ETH, one trade, one hop 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. gas: exactOut ERC20 --> ETH, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 772,
   "gasUsed": 123999,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. gas: exactOut ETH --> ERC20, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 740,
+  "gasUsed": 139555,
 }
 `;
 
