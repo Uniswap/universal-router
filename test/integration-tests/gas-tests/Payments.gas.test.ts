@@ -14,7 +14,7 @@ import WETH_ABI from '../../../artifacts/contracts/interfaces/external/IWETH9.so
 import { Pair } from '@uniswap/v2-sdk'
 import { BigNumber } from 'ethers'
 
-describe.only('Payments Gas Tests', () => {
+describe('Payments Gas Tests', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router
