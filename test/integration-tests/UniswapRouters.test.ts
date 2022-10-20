@@ -58,7 +58,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     beforeEach(async () => {
       planner = new RoutePlanner()
       await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
-      await wethContract.connect(alice).approve(router.address, expandTo18DecimalsBN(5000))
+      await wethContract.approve(router.address, expandTo18DecimalsBN(5000))
     })
 
     it('completes a V2 exactIn swap', async () => {
@@ -124,7 +124,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       const balanceWethBefore = await wethContract.balanceOf(alice.address)
       const balanceDaiBefore = await daiContract.balanceOf(alice.address)
-      await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100)) // TODO: permitPost
+      await wethContract.transfer(router.address, expandTo18DecimalsBN(100)) // TODO: permitPost
       const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
       const balanceWethAfter = await wethContract.balanceOf(alice.address)
       const balanceDaiAfter = await daiContract.balanceOf(alice.address)

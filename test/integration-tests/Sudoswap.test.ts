@@ -38,7 +38,7 @@ describe('Sudoswap', () => {
       })
       router = (await deployRouter()).connect(alice) as Router
 
-      sudolets = new ethers.Contract(SUDOLETS_ADDRESS, ERC721_ABI) as ERC721
+      sudolets = new ethers.Contract(SUDOLETS_ADDRESS, ERC721_ABI).connect(alice) as ERC721
     })
 
     it('purchases token ids 80, 35, 93 of Sudolets', async () => {
@@ -59,9 +59,9 @@ describe('Sudoswap', () => {
       ).wait()
 
       // Expect that alice has the NFTs
-      await expect((await sudolets.connect(alice).ownerOf(80)).toLowerCase()).to.eq(ALICE_ADDRESS)
-      await expect((await sudolets.connect(alice).ownerOf(35)).toLowerCase()).to.eq(ALICE_ADDRESS)
-      await expect((await sudolets.connect(alice).ownerOf(93)).toLowerCase()).to.eq(ALICE_ADDRESS)
+      await expect((await sudolets.ownerOf(80)).toLowerCase()).to.eq(ALICE_ADDRESS)
+      await expect((await sudolets.ownerOf(35)).toLowerCase()).to.eq(ALICE_ADDRESS)
+      await expect((await sudolets.ownerOf(93)).toLowerCase()).to.eq(ALICE_ADDRESS)
       // Expect that alice's account has 0.073 (plus gas) less ETH in it
       await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
         value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice))
