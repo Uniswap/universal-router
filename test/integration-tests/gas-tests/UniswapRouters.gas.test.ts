@@ -163,7 +163,7 @@ describe('Uniswap Gas Tests', () => {
       beforeEach(async () => {
         planner = new RoutePlanner()
         await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
-        await wethContract.connect(alice).approve(router.address, expandTo18DecimalsBN(5000))
+        await wethContract.approve(router.address, expandTo18DecimalsBN(5000))
       })
 
       it('gas: exactIn, one trade, one hop', async () => {
@@ -240,7 +240,7 @@ describe('Uniswap Gas Tests', () => {
       })
 
       it('gas: exactOut, one trade, one hop', async () => {
-        await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100))
+        await wethContract.transfer(router.address, expandTo18DecimalsBN(100))
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           expandTo18DecimalsBN(5),
           expandTo18DecimalsBN(100),
@@ -253,7 +253,7 @@ describe('Uniswap Gas Tests', () => {
       })
 
       it('gas: exactOut, one trade, two hops', async () => {
-        await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100))
+        await wethContract.transfer(router.address, expandTo18DecimalsBN(100))
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           expandTo18DecimalsBN(5),
           expandTo18DecimalsBN(100),
@@ -266,7 +266,7 @@ describe('Uniswap Gas Tests', () => {
       })
 
       it('gas: exactOut, one trade, three hops', async () => {
-        await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100))
+        await wethContract.transfer(router.address, expandTo18DecimalsBN(100))
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           expandTo18DecimalsBN(5),
           expandTo18DecimalsBN(100),
