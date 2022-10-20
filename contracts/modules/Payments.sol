@@ -5,7 +5,6 @@ import '../interfaces/external/IWETH9.sol';
 import '../libraries/Constants.sol';
 import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
-import 'hardhat/console.sol';
 
 library Payments {
     using SafeTransferLib for ERC20;
