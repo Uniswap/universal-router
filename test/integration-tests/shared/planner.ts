@@ -25,8 +25,9 @@ export enum CommandType {
   SWEEP_WITH_FEE = 0x10,
   UNWRAP_WETH_WITH_FEE = 0x11,
   SUDOSWAP = 0x12,
-  OWNER_CHECK_721 = 0x13,
-  OWNER_CHECK_1155 = 0x14,
+  NFT20 = 0x13,
+  OWNER_CHECK_721 = 0x14,
+  OWNER_CHECK_1155 = 0x15,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -40,6 +41,7 @@ const REVERTABLE_COMMANDS = new Set<CommandType>([
   CommandType.X2Y2_1155,
   CommandType.FOUNDATION,
   CommandType.SUDOSWAP,
+  CommandType.NFT20,
 ])
 
 const ABI_DEFINITION: { [key in CommandType]: string[] } = {
@@ -64,6 +66,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.SUDOSWAP]: ['uint256', 'bytes'],
   [CommandType.OWNER_CHECK_721]: ['address', 'address', 'uint256'],
   [CommandType.OWNER_CHECK_1155]: ['address', 'address', 'uint256', 'uint256'],
+  [CommandType.NFT20]: ['uint256', 'bytes'],
 }
 
 export class RoutePlanner {
