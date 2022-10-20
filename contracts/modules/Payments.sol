@@ -75,7 +75,7 @@ library Payments {
         }
         if (value > 0) {
             IWETH9(Constants.WETH9).withdraw(value);
-            if (recipient != address(this)) recipient.safeTransferETH(value);
+            recipient.safeTransferETH(value);
         }
     }
 
