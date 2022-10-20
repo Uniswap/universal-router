@@ -114,7 +114,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       const amountOut = expandTo18DecimalsBN(1)
       planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
         amountOut,
-        expandTo18DecimalsBN(10000),
+        expandTo18DecimalsBN(1),
         [WETH.address, DAI.address],
         alice.address,
       ])
