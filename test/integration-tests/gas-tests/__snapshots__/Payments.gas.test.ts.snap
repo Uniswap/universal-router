@@ -56,6 +56,13 @@ Object {
 }
 `;
 
+exports[`Payments Gas Tests Integration Tests gas: transfer then v2 exact in swap 1`] = `
+Object {
+  "calldataByteLength": 612,
+  "gasUsed": 101420,
+}
+`;
+
 exports[`Payments Gas Tests Integration Tests gas: wraps ETH then V2 exactIn swap 1`] = `
 Object {
   "calldataByteLength": 580,
