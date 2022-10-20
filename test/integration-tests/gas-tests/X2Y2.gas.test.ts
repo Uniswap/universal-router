@@ -1,5 +1,4 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
-import X2Y2_ABI from './../shared/abis/X2Y2.json'
 import { Router } from '../../../typechain'
 import { resetFork, ENS_721 } from './../shared/mainnetForkHelpers'
 import {
@@ -13,19 +12,8 @@ import {
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import fs from 'fs'
-import { BigNumber } from 'ethers'
+import { X2Y2Order, x2y2Orders, X2Y2_INTERFACE } from '../shared/protocolHelpers/x2y2'
 const { ethers } = hre
-
-const X2Y2_INTERFACE = new ethers.utils.Interface(X2Y2_ABI)
-const x2y2Orders = JSON.parse(fs.readFileSync('test/integration-tests/shared/orders/X2Y2.json', { encoding: 'utf8' }))
-
-type X2Y2Order = {
-  input: string
-  order_id: number
-  token_id: BigNumber
-  price: BigNumber
-}
 
 describe('X2Y2', () => {
   let alice: SignerWithAddress
