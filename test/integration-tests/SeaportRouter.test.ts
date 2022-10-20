@@ -41,8 +41,7 @@ describe('Seaport', () => {
     ])
 
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
 
     const ownerBefore = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
@@ -87,8 +86,7 @@ describe('Seaport', () => {
     ])
 
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
 
     const owner0Before = await covenContract.ownerOf(params0.offer[0].identifierOrCriteria)
     const owner1Before = await covenContract.ownerOf(params1.offer[0].identifierOrCriteria)
@@ -120,8 +118,8 @@ describe('Seaport', () => {
     ])
 
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
+
     await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).to.be.revertedWith(
       'ExecutionFailed(0, "0x815e1d64")'
     )

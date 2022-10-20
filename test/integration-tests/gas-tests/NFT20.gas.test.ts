@@ -48,8 +48,7 @@ describe('NFT20', () => {
         false,
       ])
       planner.addCommand(CommandType.NFT20, [value, calldata])
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value }))
     })

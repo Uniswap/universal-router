@@ -61,8 +61,8 @@ describe('Router', () => {
       planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], alice.address])
       const invalidDeadline = 10
 
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
+
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, invalidDeadline)).to.be.revertedWith(
         'TransactionDeadlinePassed()'
       )
@@ -132,8 +132,8 @@ describe('Router', () => {
       it('reverts if no commands are allowed to revert', async () => {
         planner.addCommand(CommandType.SEAPORT, [seaportValue, invalidSeaportCalldata])
 
-        const commands = planner.commands
-        const inputs = planner.inputs
+        const { commands, inputs } = planner
+
         await expect(
           router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
         ).to.be.revertedWith('ExecutionFailed(1, "0x8baa579f")')
@@ -141,8 +141,7 @@ describe('Router', () => {
 
       it('does not revert if invalid seaport transaction allowed to fail', async () => {
         planner.addCommand(CommandType.SEAPORT, [seaportValue, invalidSeaportCalldata], true)
-        const commands = planner.commands
-        const inputs = planner.inputs
+        const { commands, inputs } = planner
 
         const covenBalanceBefore = await covenContract.balanceOf(alice.address)
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
