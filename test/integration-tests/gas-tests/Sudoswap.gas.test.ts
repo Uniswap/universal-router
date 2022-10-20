@@ -14,7 +14,6 @@ import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
-
 const { ethers } = hre
 
 const SUDOSWAP_INTERFACE = new ethers.utils.Interface(SUDOSWAP_ABI)
