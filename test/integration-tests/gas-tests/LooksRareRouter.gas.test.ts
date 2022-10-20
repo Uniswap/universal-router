@@ -1,16 +1,7 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
 import { Router } from '../../../typechain'
 import { resetFork } from './../shared/mainnetForkHelpers'
-import {
-  ALICE_ADDRESS,
-  COVEN_ADDRESS,
-  TWERKY_ADDRESS,
-  DEADLINE,
-  V2_FACTORY_MAINNET,
-  V3_FACTORY_MAINNET,
-  V2_INIT_CODE_HASH_MAINNET,
-  V3_INIT_CODE_HASH_MAINNET,
-} from './../shared/constants'
+import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE } from './../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -25,6 +16,7 @@ import {
   LOOKS_RARE_1155_ORDER,
   LOOKS_RARE_721_ORDER,
 } from '../shared/protocolHelpers/looksrare'
+import deployRouter from '../shared/deployRouter'
 
 describe('LooksRare Gas Tests', () => {
   let alice: SignerWithAddress
@@ -41,16 +33,7 @@ describe('LooksRare Gas Tests', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
 
-    const routerFactory = await ethers.getContractFactory('Router')
-    router = (
-      await routerFactory.deploy(
-        ethers.constants.AddressZero,
-        V2_FACTORY_MAINNET,
-        V3_FACTORY_MAINNET,
-        V2_INIT_CODE_HASH_MAINNET,
-        V3_INIT_CODE_HASH_MAINNET
-      )
-    ).connect(alice) as Router
+    router = (await deployRouter()).connect(alice) as Router
     planner = new RoutePlanner()
   })
 

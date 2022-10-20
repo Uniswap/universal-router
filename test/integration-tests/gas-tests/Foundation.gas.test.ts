@@ -1,19 +1,13 @@
 import FOUNDATION_ABI from '../shared/abis/Foundation.json'
 import { Router } from '../../../typechain'
 import { resetFork } from '../shared/mainnetForkHelpers'
-import {
-  ALICE_ADDRESS,
-  DEADLINE,
-  V2_FACTORY_MAINNET,
-  V3_FACTORY_MAINNET,
-  V2_INIT_CODE_HASH_MAINNET,
-  V3_INIT_CODE_HASH_MAINNET,
-} from '../shared/constants'
+import { ALICE_ADDRESS, DEADLINE } from '../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
 import { CommandType, RoutePlanner } from '../shared/planner'
+import deployRouter from '../shared/deployRouter'
 const { ethers } = hre
 
 const FOUNDATION_INTERFACE = new ethers.utils.Interface(FOUNDATION_ABI)
@@ -39,16 +33,7 @@ describe('Foundation Gas Tests', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      const routerFactory = await ethers.getContractFactory('Router')
-      router = (
-        await routerFactory.deploy(
-          ethers.constants.AddressZero,
-          V2_FACTORY_MAINNET,
-          V3_FACTORY_MAINNET,
-          V2_INIT_CODE_HASH_MAINNET,
-          V3_INIT_CODE_HASH_MAINNET
-        )
-      ).connect(alice) as Router
+      router = (await deployRouter()).connect(alice) as Router
     })
 
     it('gas: token id 32 of mental worlds', async () => {

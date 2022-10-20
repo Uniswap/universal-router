@@ -66,7 +66,6 @@ abstract contract V3SwapRouter {
 
     function v3SwapExactInput(address recipient, uint256 amountIn, uint256 amountOutMinimum, bytes memory path)
         internal
-        returns (uint256 amountOut)
     {
         // use amountIn == Constants.CONTRACT_BALANCE as a flag to swap the entire balance of the contract
         if (amountIn == Constants.CONTRACT_BALANCE) {
@@ -74,6 +73,7 @@ abstract contract V3SwapRouter {
             amountIn = IERC20(tokenIn).balanceOf(address(this));
         }
 
+        uint256 amountOut;
         while (true) {
             bool hasMultiplePools = path.hasMultiplePools();
 
@@ -101,13 +101,11 @@ abstract contract V3SwapRouter {
 
     function v3SwapExactOutput(address recipient, uint256 amountOut, uint256 amountInMaximum, bytes memory path)
         internal
-        returns (uint256 amountIn)
     {
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
             _swap(-amountOut.toInt256(), recipient, path, false);
 
-        uint256 amountOutReceived;
-        (amountIn, amountOutReceived) = zeroForOne
+        (uint256 amountIn, uint256 amountOutReceived) = zeroForOne
             ? (uint256(amount0Delta), uint256(-amount1Delta))
             : (uint256(amount1Delta), uint256(-amount0Delta));
 
