@@ -6,7 +6,7 @@ import '../libraries/Constants.sol';
 import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
-library Payments {
+library FungiblePayments {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for address;
 
@@ -19,7 +19,7 @@ library Payments {
     /// @param token The token to pay (can be ETH using Constants.ETH)
     /// @param recipient The entity that will receive payment
     /// @param value The amount to pay
-    function payERC20(address token, address recipient, uint256 value) internal {
+    function pay(address token, address recipient, uint256 value) internal {
         if (token == Constants.ETH) {
             recipient.safeTransferETH(value);
         } else {

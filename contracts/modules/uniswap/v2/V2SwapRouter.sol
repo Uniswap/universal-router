@@ -4,7 +4,7 @@ pragma solidity ^0.8.15;
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './UniswapV2Library.sol';
-import '../../Payments.sol';
+import '../../FungiblePayments.sol';
 
 contract V2SwapRouter {
     address internal immutable V2_FACTORY;
@@ -54,7 +54,7 @@ contract V2SwapRouter {
         (uint256 amountIn, address pair) =
             UniswapV2Library.getAmountInMultihop(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path);
         require(amountIn <= amountInMax, 'Too much requested');
-        Payments.payERC20(path[0], pair, amountIn);
+        FungiblePayments.pay(path[0], pair, amountIn);
         _v2Swap(path, recipient);
     }
 }
