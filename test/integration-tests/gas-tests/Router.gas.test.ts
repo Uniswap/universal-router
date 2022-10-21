@@ -22,7 +22,7 @@ describe('Router Gas Tests', () => {
     router = (await deployRouter()).connect(alice) as Router
   })
 
-  it('bytecode size', async () => {
+  it.only('gas: bytecode size', async () => {
     expect(((await router.provider.getCode(router.address)).length - 2) / 2).to.matchSnapshot()
   })
 })
