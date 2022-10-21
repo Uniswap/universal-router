@@ -8,19 +8,11 @@ import { BigNumber } from 'ethers'
 import { Router } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
-import {
-  ALICE_ADDRESS,
-  CONTRACT_BALANCE,
-  DEADLINE,
-  V2_FACTORY_MAINNET,
-  V3_FACTORY_MAINNET,
-  V2_INIT_CODE_HASH_MAINNET,
-  V3_INIT_CODE_HASH_MAINNET,
-  ADDRESS_ZERO,
-} from './shared/constants'
+import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE } from './shared/constants'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
+import deployRouter from './shared/deployRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 const { ethers } = hre
 
@@ -55,16 +47,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
-    const routerFactory = await ethers.getContractFactory('Router')
-    router = (
-      await routerFactory.deploy(
-        ADDRESS_ZERO,
-        V2_FACTORY_MAINNET,
-        V3_FACTORY_MAINNET,
-        V2_INIT_CODE_HASH_MAINNET,
-        V3_INIT_CODE_HASH_MAINNET
-      )
-    ).connect(alice) as Router
+    router = (await deployRouter()).connect(alice) as Router
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
   })
 
@@ -75,7 +58,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     beforeEach(async () => {
       planner = new RoutePlanner()
       await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
-      await wethContract.connect(alice).approve(router.address, expandTo18DecimalsBN(5000))
+      await wethContract.approve(router.address, expandTo18DecimalsBN(5000))
     })
 
     it('completes a V2 exactIn swap', async () => {
@@ -131,7 +114,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       const amountOut = expandTo18DecimalsBN(1)
       planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
         amountOut,
-        expandTo18DecimalsBN(10000),
+        expandTo18DecimalsBN(1),
         [WETH.address, DAI.address],
         alice.address,
       ])
@@ -141,7 +124,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       const balanceWethBefore = await wethContract.balanceOf(alice.address)
       const balanceDaiBefore = await daiContract.balanceOf(alice.address)
-      await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100)) // TODO: permitPost
+      await wethContract.transfer(router.address, expandTo18DecimalsBN(100)) // TODO: permitPost
       const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
       const balanceWethAfter = await wethContract.balanceOf(alice.address)
       const balanceDaiAfter = await daiContract.balanceOf(alice.address)

@@ -11,6 +11,7 @@ export const OPENSEA_CONDUIT_KEY = '0x0000007b02230091a7ed01230072f7006a004d60a8
 
 export const COVEN_ADDRESS = '0x5180db8f5c931aae63c74266b211f580155ecac8'
 export const TWERKY_ADDRESS = '0xf4680c917a873e2dd6ead72f9f433e74eb9c623c'
+export const ALPHABETTIES_ADDRESS = '0x6d05064fe99e40f1c3464e7310a23ffaded56e20'
 
 export const NFTX_COVEN_VAULT = '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'
 export const NFTX_COVEN_VAULT_ID = '333'
@@ -23,4 +24,3 @@ export const V3_INIT_CODE_HASH_MAINNET = '0xe34f199b19b2b4f47f68442619d555527d24
 export const V2_INIT_CODE_HASH_MAINNET = '0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f'
 
 export const ETH_ADDRESS = ethers.constants.AddressZero
-export const ADDRESS_ZERO = ethers.constants.AddressZero

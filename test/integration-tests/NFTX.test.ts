@@ -1,22 +1,17 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
 import { Router, ERC721, ERC1155 } from '../../typechain'
-import snapshotGasCost from '@uniswap/snapshot-gas-cost'
+import deployRouter from './shared/deployRouter'
 import { parseEvents } from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import { COVEN_721, TWERKY_1155, resetFork, WETH } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   DEADLINE,
-  V2_FACTORY_MAINNET,
-  V3_FACTORY_MAINNET,
-  V2_INIT_CODE_HASH_MAINNET,
-  V3_INIT_CODE_HASH_MAINNET,
   NFTX_COVEN_VAULT,
   NFTX_COVEN_VAULT_ID,
   NFTX_ERC_1155_VAULT,
   NFTX_ERC_1155_VAULT_ID,
-  ADDRESS_ZERO,
 } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
@@ -41,16 +36,7 @@ describe('NFTX', () => {
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = COVEN_721.connect(alice)
     twerkyContract = TWERKY_1155.connect(alice)
-    const routerFactory = await ethers.getContractFactory('Router')
-    router = (
-      await routerFactory.deploy(
-        ADDRESS_ZERO,
-        V2_FACTORY_MAINNET,
-        V3_FACTORY_MAINNET,
-        V2_INIT_CODE_HASH_MAINNET,
-        V3_INIT_CODE_HASH_MAINNET
-      )
-    ).connect(alice) as Router
+    router = (await deployRouter()).connect(alice) as Router
     planner = new RoutePlanner()
   })
 
@@ -69,9 +55,9 @@ describe('NFTX', () => {
     const commands = planner.commands
     const inputs = planner.inputs
 
-    const covenBalanceBefore = await COVEN_721.connect(alice).balanceOf(alice.address)
+    const covenBalanceBefore = await covenContract.balanceOf(alice.address)
     await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
-    const covenBalanceAfter = await COVEN_721.connect(alice).balanceOf(alice.address)
+    const covenBalanceAfter = await covenContract.balanceOf(alice.address)
 
     expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
   })
@@ -172,39 +158,5 @@ describe('NFTX', () => {
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
     expect(ethDelta.sub(gasSpent)).to.eq(saleCost)
-  })
-
-  it('gas: buyAndRedeem w/ random selection', async () => {
-    const value = expandTo18DecimalsBN(4)
-    const numCovens = 2
-    const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      NFTX_COVEN_VAULT_ID,
-      numCovens,
-      [],
-      [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
-      alice.address,
-    ])
-
-    planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
-    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
-  })
-
-  it('gas: buyAndRedeem w/ specific selection', async () => {
-    const value = expandTo18DecimalsBN(4)
-    const numCovens = 2
-    const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      NFTX_COVEN_VAULT_ID,
-      numCovens,
-      [584, 3033],
-      [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
-      alice.address,
-    ])
-
-    planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
-    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 })

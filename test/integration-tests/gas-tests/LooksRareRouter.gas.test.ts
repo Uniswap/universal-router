@@ -1,35 +1,31 @@
-import { CommandType, RoutePlanner } from './shared/planner'
-import { Router, ERC721, ERC1155 } from '../../typechain'
-import { resetFork, COVEN_721, TWERKY_1155 } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE } from './shared/constants'
-import deployRouter from './shared/deployRouter'
+import { CommandType, RoutePlanner } from './../shared/planner'
+import { Router } from '../../../typechain'
+import { resetFork } from './../shared/mainnetForkHelpers'
+import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE } from './../shared/constants'
+import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import { expect } from 'chai'
 const { ethers } = hre
 import { BigNumber } from 'ethers'
 import {
   createLooksRareOrders,
-  looksRareInterface,
   looksRareOrders,
-  LOOKS_RARE_1155_ORDER,
-  LOOKS_RARE_721_ORDER,
   MakerOrder,
   TakerOrder,
-} from './shared/protocolHelpers/looksrare'
+  looksRareInterface,
+  LOOKS_RARE_1155_ORDER,
+  LOOKS_RARE_721_ORDER,
+} from '../shared/protocolHelpers/looksrare'
+import deployRouter from '../shared/deployRouter'
 
-describe('LooksRare', () => {
+describe('LooksRare Gas Tests', () => {
   let alice: SignerWithAddress
   let router: Router
   let value: BigNumber
   let planner: RoutePlanner
-  let covenContract: ERC721
-  let twerkyContract: ERC1155
 
   beforeEach(async () => {
     await resetFork()
-    covenContract = COVEN_721.connect(alice)
-    twerkyContract = TWERKY_1155.connect(alice)
 
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
@@ -54,18 +50,23 @@ describe('LooksRare', () => {
       tokenId = makerOrder.tokenId
     })
 
-    it('Buys a Coven', async () => {
+    it('gas: buy 1 ERC-721 on looks rare', async () => {
       const calldata = looksRareInterface.encodeFunctionData('matchAskWithTakerBidUsingETHAndWETH', [
         takerOrder,
         makerOrder,
       ])
 
-      planner.addCommand(CommandType.LOOKS_RARE_721, [value, calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId])
+      planner.addCommand(CommandType.LOOKS_RARE_721, [
+        value.toString(),
+        calldata,
+        ALICE_ADDRESS,
+        COVEN_ADDRESS,
+        tokenId,
+      ])
       const commands = planner.commands
       const inputs = planner.inputs
-      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
 
-      await expect((await covenContract.connect(alice).ownerOf(tokenId)).toLowerCase()).to.eq(ALICE_ADDRESS)
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
     })
   })
 
@@ -92,10 +93,8 @@ describe('LooksRare', () => {
       inputs = planner.inputs
     })
 
-    it('Buys a Twerky', async () => {
-      await expect(await twerkyContract.balanceOf(alice.address, tokenId)).to.eq(0)
-      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
-      await expect(await twerkyContract.balanceOf(alice.address, tokenId)).to.eq(1)
+    it('gas: buy 1 ERC-1155 on looks rare', async () => {
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
     })
   })
 })

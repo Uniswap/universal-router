@@ -1,16 +1,8 @@
 import FOUNDATION_ABI from './shared/abis/Foundation.json'
 import { Router, ERC721 } from '../../typechain'
+import deployRouter from './shared/deployRouter'
 import { resetFork } from './shared/mainnetForkHelpers'
-import {
-  ALICE_ADDRESS,
-  DEADLINE,
-  V2_FACTORY_MAINNET,
-  V3_FACTORY_MAINNET,
-  V2_INIT_CODE_HASH_MAINNET,
-  V3_INIT_CODE_HASH_MAINNET,
-  ADDRESS_ZERO,
-} from './shared/constants'
-import snapshotGasCost from '@uniswap/snapshot-gas-cost'
+import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
@@ -44,16 +36,7 @@ describe('Foundation', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      const routerFactory = await ethers.getContractFactory('Router')
-      router = (
-        await routerFactory.deploy(
-          ADDRESS_ZERO,
-          V2_FACTORY_MAINNET,
-          V3_FACTORY_MAINNET,
-          V2_INIT_CODE_HASH_MAINNET,
-          V3_INIT_CODE_HASH_MAINNET
-        )
-      ).connect(alice) as Router
+      router = (await deployRouter()).connect(alice) as Router
 
       mentalWorlds = new ethers.Contract(MENTAL_WORLDS_ADDRESS, ERC721_ABI) as ERC721
     })
@@ -79,16 +62,6 @@ describe('Foundation', () => {
       )
       // Expect that referrer's account has 0.0001 more ETH in it (referrers receive 1% of NFT value)
       await expect((await ethers.provider.getBalance(REFERRER)).sub(referrerBalance)).to.eq(value.div(100))
-    })
-
-    it('gas token id 32 of mental worlds', async () => {
-      const value = BigNumber.from('10000000000000000')
-      const calldata = FOUNDATION_INTERFACE.encodeFunctionData('buyV2', [MENTAL_WORLDS_ADDRESS, 32, value, REFERRER])
-      planner.addCommand(CommandType.FOUNDATION, [value, calldata, ALICE_ADDRESS, MENTAL_WORLDS_ADDRESS, 32])
-
-      const commands = planner.commands
-      const inputs = planner.inputs
-      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value }))
     })
   })
 })

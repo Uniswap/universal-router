@@ -6,18 +6,14 @@ import { expect } from './shared/expect'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
+import deployRouter from './shared/deployRouter'
 import {
   ALICE_ADDRESS,
   COVEN_ADDRESS,
   DEADLINE,
   OPENSEA_CONDUIT_KEY,
-  V2_FACTORY_MAINNET,
-  V3_FACTORY_MAINNET,
-  V2_INIT_CODE_HASH_MAINNET,
-  V3_INIT_CODE_HASH_MAINNET,
   NFTX_COVEN_VAULT,
   NFTX_COVEN_VAULT_ID,
-  ADDRESS_ZERO,
 } from './shared/constants'
 import { seaportOrders, seaportInterface, getOrderParams, Order } from './shared/protocolHelpers/seaport'
 import { resetFork, WETH, DAI } from './shared/mainnetForkHelpers'
@@ -45,20 +41,7 @@ describe('Router', () => {
     })
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
-    const routerFactory = await ethers.getContractFactory('Router')
-    router = (
-      await routerFactory.deploy(
-        ADDRESS_ZERO,
-        V2_FACTORY_MAINNET,
-        V3_FACTORY_MAINNET,
-        V2_INIT_CODE_HASH_MAINNET,
-        V3_INIT_CODE_HASH_MAINNET
-      )
-    ).connect(alice) as Router
-  })
-
-  it('bytecode size', async () => {
-    expect(((await router.provider.getCode(router.address)).length - 2) / 2).to.matchSnapshot()
+    router = (await deployRouter()).connect(alice) as Router
   })
 
   describe('#execute', async () => {
