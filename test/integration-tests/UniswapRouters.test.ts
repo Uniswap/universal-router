@@ -61,201 +61,226 @@ describe('Uniswap V2 and V3 Tests:', () => {
       await wethContract.connect(alice).approve(router.address, expandTo18DecimalsBN(5000))
     })
 
-    it('completes a V2 exactIn swap', async () => {
-      planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], alice.address])
+    describe('ERC20 --> ERC20', () =>  {
+      it('completes a V2 exactIn swap', async () => {
+        planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
+        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], alice.address])
 
-      const { commands, inputs } = planner
+        const { commands, inputs } = planner
 
-      const balanceBefore = await wethContract.balanceOf(alice.address)
-      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
-      const balanceAfter = await wethContract.balanceOf(alice.address)
-      const amountOut = parseEvents(V2_EVENTS, receipt).reduce(
-        (prev, current) => prev.add(current!.args.amount1Out),
-        expandTo18DecimalsBN(0)
-      )
-      expect(balanceAfter.sub(balanceBefore)).to.equal(amountOut)
+        const balanceBefore = await wethContract.balanceOf(alice.address)
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+        const balanceAfter = await wethContract.balanceOf(alice.address)
+        const amountOut = parseEvents(V2_EVENTS, receipt).reduce(
+          (prev, current) => prev.add(current!.args.amount1Out),
+          expandTo18DecimalsBN(0)
+        )
+        expect(balanceAfter.sub(balanceBefore)).to.equal(amountOut)
+      })
+
+      it('completes a V2 exactOut swap', async () => {
+        // this will eventually be permit post
+        const amountOut = expandTo18DecimalsBN(1)
+        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+          amountOut,
+          expandTo18DecimalsBN(10000),
+          [WETH.address, DAI.address],
+          alice.address,
+        ])
+        planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, 0])
+        const { commands, inputs } = planner
+
+        const balanceWethBefore = await wethContract.balanceOf(alice.address)
+        const balanceDaiBefore = await daiContract.balanceOf(alice.address)
+        await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100)) // TODO: permitPost
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+        const balanceWethAfter = await wethContract.balanceOf(alice.address)
+        const balanceDaiAfter = await daiContract.balanceOf(alice.address)
+
+        const totalAmountIn = parseEvents(V2_EVENTS, receipt)
+          .reduce((prev, current) => prev.add(current!.args.amount1In), expandTo18DecimalsBN(0))
+          .mul(-1) // totalAmountIn will be negative
+
+        // TODO: when permitpost is ready, test this number against alice's EOA
+        expect(balanceWethAfter.sub(balanceWethBefore)).to.equal(totalAmountIn)
+        expect(balanceDaiBefore.sub(balanceDaiAfter)).to.be.lte(amountOut)
+      })
+
+      it('exactIn trade, where an output fee is taken', async () => {
+        const ONE_PERCENT = 100
+
+        // will likely make the most sense to take fees on input with permit post in most situations
+        planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
+        // back to the router so someone can take a fee
+        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
+        planner.addCommand(CommandType.SWEEP_WITH_FEE, [WETH.address, alice.address, 1, ONE_PERCENT, bob.address])
+
+        const { commands, inputs } = planner
+        const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
+        const wethBalanceBeforeBob = await wethContract.balanceOf(bob.address)
+
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+
+        const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
+        const wethBalanceAfterBob = await wethContract.balanceOf(bob.address)
+
+        const bobFee = wethBalanceAfterBob.sub(wethBalanceBeforeBob)
+        const aliceEarnings = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
+
+        expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT).div(10000)).to.eq(bobFee)
+      })
+
+      it('completes a V2 exactIn swap with longer path', async () => {
+        planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
+        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address, USDC.address], alice.address])
+        const { commands, inputs } = planner
+
+        const usdcBalanceBefore = await usdcContract.balanceOf(alice.address)
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+        const usdcBalanceAfter = await usdcContract.balanceOf(alice.address)
+        const events = parseEvents(V2_EVENTS, receipt)
+        const usdcOut = events[events.length - 1]!.args.amount0Out
+        expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.equal(usdcOut)
+      })
     })
 
-    it('completes a V2 exactIn swap ETH', async () => {
-      const pairAddress = Pair.getAddress(DAI, WETH)
-      planner.addCommand(CommandType.WRAP_ETH, [pairAddress, amountIn])
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [amountIn, [WETH.address, DAI.address], alice.address])
+    describe('ERC20 --> ETH', () => {
+      it('completes a V2 exactIn swap', async () => {
+        planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
+        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
+        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
 
-      const { commands, inputs } = planner
+        const { commands, inputs } = planner
 
-      const daiBalanceBefore = await daiContract.balanceOf(alice.address)
-      const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
+        const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+        const amountOut = parseEvents(V2_EVENTS, receipt)[0]!.args.amount1Out
 
-      const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountIn.toString() })
-      ).wait()
+        const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
+        const ethDelta = ethBalanceAfter.sub(ethBalanceBefore)
+        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
-      const daiBalanceAfter = await daiContract.balanceOf(alice.address)
-      const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
-      const amountOut = parseEvents(V2_EVENTS, receipt).reduce(
-        (prev, current) => prev.add(current!.args.amount0Out),
-        expandTo18DecimalsBN(0)
-      )
-      const daiDelta = daiBalanceAfter.sub(daiBalanceBefore)
-      const ethDelta = ethBalanceAfter.sub(ethBalanceBefore)
-      const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+        expect(ethDelta).to.eq(amountOut.sub(gasSpent))
+      })
 
-      expect(daiDelta).to.be.gt(0)
-      expect(daiDelta).to.equal(amountOut)
-      expect(ethDelta).to.be.lt(0)
-      expect(ethDelta.mul(-1)).to.eq(amountIn.add(gasSpent))
+      it('completes a V2 exactOut swap', async () => {
+        const amountOut = expandTo18DecimalsBN(1)
+        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+          amountOut,
+          expandTo18DecimalsBN(10000),
+          [DAI.address, WETH.address],
+          router.address,
+        ])
+        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, amountOut])
+        planner.addCommand(CommandType.SWEEP, [DAI.address, alice.address, 0])
+
+        const { commands, inputs } = planner
+        const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+
+        const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
+        const ethDelta = ethBalanceAfter.sub(ethBalanceBefore)
+        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+
+        expect(ethDelta).to.eq(amountOut.sub(gasSpent))
+      })
+
+      it('completes a V2 exactOut swap, with ETH fee', async () => {
+        const amountOut = expandTo18DecimalsBN(1)
+        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+          amountOut,
+          expandTo18DecimalsBN(10000),
+          [DAI.address, WETH.address],
+          router.address,
+        ])
+        const ONE_PERCENT = 100
+        planner.addCommand(CommandType.UNWRAP_WETH_WITH_FEE, [alice.address, CONTRACT_BALANCE, ONE_PERCENT, bob.address])
+
+        const { commands, inputs } = planner
+        const ethBalanceBeforeAlice = await ethers.provider.getBalance(alice.address)
+        const ethBalanceBeforeBob = await ethers.provider.getBalance(bob.address)
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+
+        const ethBalanceAfterAlice = await ethers.provider.getBalance(alice.address)
+        const ethBalanceAfterBob = await ethers.provider.getBalance(bob.address)
+        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+
+        const bobFee = ethBalanceAfterBob.sub(ethBalanceBeforeBob)
+        const aliceEarnings = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice).add(gasSpent)
+
+        expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT).div(10000)).to.eq(bobFee)
+      })
     })
 
-    it('completes a V2 exactOut swap', async () => {
-      // this will eventually be permit post
-      const amountOut = expandTo18DecimalsBN(1)
-      planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-        amountOut,
-        expandTo18DecimalsBN(10000),
-        [WETH.address, DAI.address],
-        alice.address,
-      ])
-      planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, 0])
-      const { commands, inputs } = planner
+    describe('ETH --> ERC20', () => {
+      it('completes a V2 exactIn swap', async () => {
+        const pairAddress = Pair.getAddress(DAI, WETH)
+        planner.addCommand(CommandType.WRAP_ETH, [pairAddress, amountIn])
+        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [amountIn, [WETH.address, DAI.address], alice.address])
 
-      const balanceWethBefore = await wethContract.balanceOf(alice.address)
-      const balanceDaiBefore = await daiContract.balanceOf(alice.address)
-      await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100)) // TODO: permitPost
-      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
-      const balanceWethAfter = await wethContract.balanceOf(alice.address)
-      const balanceDaiAfter = await daiContract.balanceOf(alice.address)
+        const { commands, inputs } = planner
 
-      const totalAmountIn = parseEvents(V2_EVENTS, receipt)
-        .reduce((prev, current) => prev.add(current!.args.amount1In), expandTo18DecimalsBN(0))
-        .mul(-1) // totalAmountIn will be negative
+        const daiBalanceBefore = await daiContract.balanceOf(alice.address)
+        const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
 
-      // TODO: when permitpost is ready, test this number against alice's EOA
-      expect(balanceWethAfter.sub(balanceWethBefore)).to.equal(totalAmountIn)
-      expect(balanceDaiBefore.sub(balanceDaiAfter)).to.be.lte(amountOut)
-    })
+        const receipt = await (
+          await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountIn.toString() })
+        ).wait()
 
-    it('completes a V2 exactOut swap ERC20 --> ETH', async () => {
-      const amountOut = expandTo18DecimalsBN(1)
-      planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-        amountOut,
-        expandTo18DecimalsBN(10000),
-        [DAI.address, WETH.address],
-        router.address,
-      ])
-      planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
+        const daiBalanceAfter = await daiContract.balanceOf(alice.address)
+        const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
+        const amountOut = parseEvents(V2_EVENTS, receipt).reduce(
+          (prev, current) => prev.add(current!.args.amount0Out),
+          expandTo18DecimalsBN(0)
+        )
+        const daiDelta = daiBalanceAfter.sub(daiBalanceBefore)
+        const ethDelta = ethBalanceAfter.sub(ethBalanceBefore)
+        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
-      const { commands, inputs } = planner
-      const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
-      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+        expect(daiDelta).to.be.gt(0)
+        expect(daiDelta).to.equal(amountOut)
+        expect(ethDelta).to.be.lt(0)
+        expect(ethDelta.mul(-1)).to.eq(amountIn.add(gasSpent))
+      })
 
-      const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
-      const ethDelta = ethBalanceAfter.sub(ethBalanceBefore)
-      const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+      it('completes a V2 exactOut swap', async () => {
+        const amountOut = expandTo18DecimalsBN(100)
+        const value = expandTo18DecimalsBN(1)
 
-      expect(ethDelta).to.eq(amountOut.sub(gasSpent))
-    })
+        planner.addCommand(CommandType.WRAP_ETH, [router.address, value])
+        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+          amountOut,
+          expandTo18DecimalsBN(1),
+          [WETH.address, DAI.address],
+          alice.address,
+        ])
+        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
 
-    it('completes a V2 exactOut swap ETH --> ERC20', async () => {
-      const amountOut = expandTo18DecimalsBN(100)
-      const value = expandTo18DecimalsBN(1)
+        const { commands, inputs } = planner
 
-      planner.addCommand(CommandType.WRAP_ETH, [router.address, value])
-      planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-        amountOut,
-        expandTo18DecimalsBN(1),
-        [WETH.address, DAI.address],
-        alice.address,
-      ])
-      planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
+        const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
+        const daiBalanceBefore = await daiContract.balanceOf(alice.address)
 
-      const { commands, inputs } = planner
+        const receipt = await (
+          await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+        ).wait()
 
-      const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
-      const daiBalanceBefore = await daiContract.balanceOf(alice.address)
+        const { amount1In: wethTraded, amount0Out: daiTraded } = parseEvents(V2_EVENTS, receipt)[0]!.args
 
-      const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
-      ).wait()
+        const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
+        const daiBalanceAfter = await daiContract.balanceOf(alice.address)
 
-      const { amount1In: wethTraded, amount0Out: daiTraded } = parseEvents(V2_EVENTS, receipt)[0]!.args
+        const ethDelta = ethBalanceBefore.sub(ethBalanceAfter)
+        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
-      const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
-      const daiBalanceAfter = await daiContract.balanceOf(alice.address)
-
-      const ethDelta = ethBalanceBefore.sub(ethBalanceAfter)
-      const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-
-      expect(daiBalanceAfter.sub(daiBalanceBefore)).to.eq(daiTraded)
-      expect(ethDelta).to.eq(wethTraded.add(gasSpent))
-    })
-
-    it('completes a V2 exactOut swap ERC20 --> ETH, with ETH fee', async () => {
-      const amountOut = expandTo18DecimalsBN(1)
-      planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-        amountOut,
-        expandTo18DecimalsBN(10000),
-        [DAI.address, WETH.address],
-        router.address,
-      ])
-      const ONE_PERCENT = 100
-      planner.addCommand(CommandType.UNWRAP_WETH_WITH_FEE, [alice.address, CONTRACT_BALANCE, ONE_PERCENT, bob.address])
-
-      const { commands, inputs } = planner
-      const ethBalanceBeforeAlice = await ethers.provider.getBalance(alice.address)
-      const ethBalanceBeforeBob = await ethers.provider.getBalance(bob.address)
-      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
-
-      const ethBalanceAfterAlice = await ethers.provider.getBalance(alice.address)
-      const ethBalanceAfterBob = await ethers.provider.getBalance(bob.address)
-      const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-
-      const bobFee = ethBalanceAfterBob.sub(ethBalanceBeforeBob)
-      const aliceEarnings = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice).add(gasSpent)
-
-      expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT).div(10000)).to.eq(bobFee)
-    })
-
-    it('exactIn trade, where an output fee is taken ERC20 --> ERC20', async () => {
-      const ONE_PERCENT = 100
-
-      // will likely make the most sense to take fees on input with permit post in most situations
-      planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
-      // back to the router so someone can take a fee
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
-      planner.addCommand(CommandType.SWEEP_WITH_FEE, [WETH.address, alice.address, 1, ONE_PERCENT, bob.address])
-
-      const { commands, inputs } = planner
-      const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
-      const wethBalanceBeforeBob = await wethContract.balanceOf(bob.address)
-
-      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
-
-      const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
-      const wethBalanceAfterBob = await wethContract.balanceOf(bob.address)
-
-      const bobFee = wethBalanceAfterBob.sub(wethBalanceBeforeBob)
-      const aliceEarnings = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
-
-      expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT).div(10000)).to.eq(bobFee)
-    })
-
-    it('completes a V2 exactIn swap with longer path ERC20 --> ERC20', async () => {
-      planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address, USDC.address], alice.address])
-      const { commands, inputs } = planner
-
-      const usdcBalanceBefore = await usdcContract.balanceOf(alice.address)
-      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
-      const usdcBalanceAfter = await usdcContract.balanceOf(alice.address)
-      const events = parseEvents(V2_EVENTS, receipt)
-      const usdcOut = events[events.length - 1]!.args.amount0Out
-      expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.equal(usdcOut)
+        expect(daiBalanceAfter.sub(daiBalanceBefore)).to.eq(daiTraded)
+        expect(ethDelta).to.eq(wethTraded.add(gasSpent))
+      })
     })
   })
 
   describe('Trade on UniswapV3', () => {
-    const amountIn: BigNumber = expandTo18DecimalsBN(5)
+    const amountIn: BigNumber = expandTo18DecimalsBN(500)
     const amountInMax: BigNumber = expandTo18DecimalsBN(2000)
     const amountOut: BigNumber = expandTo18DecimalsBN(1)
 
@@ -263,11 +288,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
       planner: RoutePlanner,
       numTrades: BigNumberish,
       amountOutMin: BigNumberish,
+      recipient?: string,
       tokens: string[] = [DAI.address, WETH.address]
     ) => {
       const path = encodePathExactInput(tokens)
       for (let i = 0; i < numTrades; i++) {
-        planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [alice.address, amountIn, amountOutMin, path])
+        planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [recipient ?? alice.address, amountIn, amountOutMin, path])
       }
     }
 
@@ -276,88 +302,149 @@ describe('Uniswap V2 and V3 Tests:', () => {
       await daiContract.transfer(router.address, expandTo18DecimalsBN(1000000))
     })
 
-    it('completes a V3 exactIn swap ERC20 --> ERC20', async () => {
-      const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
-      addV3ExactInTrades(planner, 1, amountOutMin)
-      const { commands, inputs } = planner
+    describe('ERC20 --> ERC20', () => {
+      it('completes a V3 exactIn swap', async () => {
+        const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
+        addV3ExactInTrades(planner, 1, amountOutMin)
+        const { commands, inputs } = planner
 
-      const balanceWethBefore = await wethContract.balanceOf(alice.address)
-      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
-      const balanceWethAfter = await wethContract.balanceOf(alice.address)
-      expect(balanceWethAfter.sub(balanceWethBefore)).to.be.gte(amountOutMin)
+        const balanceWethBefore = await wethContract.balanceOf(alice.address)
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        const balanceWethAfter = await wethContract.balanceOf(alice.address)
+        expect(balanceWethAfter.sub(balanceWethBefore)).to.be.gte(amountOutMin)
+      })
+
+      it('completes a V3 exactIn swap with longer path', async () => {
+        const amountOutMin: number = 3 * 10 ** 6
+        addV3ExactInTrades(planner, 1, amountOutMin, alice.address, [DAI.address, WETH.address, USDC.address])
+        const { commands, inputs } = planner
+
+        const balanceWethBefore = await wethContract.balanceOf(alice.address)
+        const balanceUsdcBefore = await usdcContract.balanceOf(alice.address)
+
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+
+        const balanceWethAfter = await wethContract.balanceOf(alice.address)
+        const balanceUsdcAfter = await usdcContract.balanceOf(alice.address)
+
+        expect(balanceWethAfter).to.eq(balanceWethBefore)
+        expect(balanceUsdcAfter.sub(balanceUsdcBefore)).to.be.gte(amountOutMin)
+      })
+
+      it('completes a V3 exactOut swap', async () => {
+        // trade DAI in for WETH out
+        const tokens = [DAI.address, WETH.address]
+        const path = encodePathExactOutput(tokens)
+
+        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
+        const { commands, inputs } = planner
+
+        const balanceWethBefore = await wethContract.balanceOf(alice.address)
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        const balanceWethAfter = await wethContract.balanceOf(alice.address)
+        expect(balanceWethAfter.sub(balanceWethBefore)).to.eq(amountOut)
+      })
+
+      it('completes a V3 exactOut swap with longer path', async () => {
+        // trade DAI in for WETH out
+        const tokens = [DAI.address, USDC.address, WETH.address]
+        const path = encodePathExactOutput(tokens)
+
+        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
+        const { commands, inputs } = planner
+
+        const balanceWethBefore = await wethContract.balanceOf(alice.address)
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        const balanceWethAfter = await wethContract.balanceOf(alice.address)
+        expect(balanceWethAfter.sub(balanceWethBefore)).to.eq(amountOut)
+      })
     })
 
-    it('completes a V3 exactIn swap with longer path ERC20 --> ERC20', async () => {
-      const amountOutMin: number = 3 * 10 ** 6
-      addV3ExactInTrades(planner, 1, amountOutMin, [DAI.address, WETH.address, USDC.address])
-      const { commands, inputs } = planner
+    describe('ERC20 --> ETH', () => {
+      it('completes a V3 exactIn swap', async () => {
+        const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
+        addV3ExactInTrades(planner, 1, amountOutMin, router.address)
+        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
 
-      const balanceWethBefore = await wethContract.balanceOf(alice.address)
-      const balanceUsdcBefore = await usdcContract.balanceOf(alice.address)
+        const { commands, inputs } = planner
 
-      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+        const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
+        const ethDelta = ethBalanceAfter.sub(ethBalanceBefore)
+        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
-      const balanceWethAfter = await wethContract.balanceOf(alice.address)
-      const balanceUsdcAfter = await usdcContract.balanceOf(alice.address)
+        expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.gte(amountOutMin.sub(gasSpent))
+      })
 
-      expect(balanceWethAfter).to.eq(balanceWethBefore)
-      expect(balanceUsdcAfter.sub(balanceUsdcBefore)).to.be.gte(amountOutMin)
+      it('completes a V3 exactOut swap', async () => {
+        // trade DAI in for WETH out
+        const tokens = [DAI.address, WETH.address]
+        const path = encodePathExactOutput(tokens)
+
+        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [router.address, amountOut, amountInMax, path])
+        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, amountOut])
+        const { commands, inputs } = planner
+
+        const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+        const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
+        const ethDelta = ethBalanceAfter.sub(ethBalanceBefore)
+        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+
+        expect(ethDelta).to.eq(amountOut.sub(gasSpent))
+      })
     })
 
-    it('completes a V3 exactOut swap ERC20 --> ERC20', async () => {
-      // trade DAI in for WETH out
-      const tokens = [DAI.address, WETH.address]
-      const path = encodePathExactOutput(tokens)
+    describe('ETH --> ERC20', () => {
+      it('completes a V3 exactIn swap', async () => {
+        const tokens = [WETH.address, DAI.address]
+        const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
 
-      planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
-      const { commands, inputs } = planner
+        planner.addCommand(CommandType.WRAP_ETH, [router.address, amountIn])
+        addV3ExactInTrades(planner, 1, amountOutMin, alice.address, tokens)
 
-      const balanceWethBefore = await wethContract.balanceOf(alice.address)
-      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
-      const balanceWethAfter = await wethContract.balanceOf(alice.address)
-      expect(balanceWethAfter.sub(balanceWethBefore)).to.eq(amountOut)
-    })
+        const { commands, inputs } = planner
 
-    it('completes a V3 exactOut swap with longer path ERC20 --> ERC20', async () => {
-      // trade DAI in for WETH out
-      const tokens = [DAI.address, USDC.address, WETH.address]
-      const path = encodePathExactOutput(tokens)
+        const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
+        const daiBalanceBefore = await daiContract.balanceOf(alice.address)
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountIn })).wait()
+        const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
+        const daiBalanceAfter = await daiContract.balanceOf(alice.address)
+        const ethDelta = ethBalanceAfter.sub(ethBalanceBefore)
+        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
-      planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
-      const { commands, inputs } = planner
+        expect(ethBalanceBefore.sub(ethBalanceAfter)).to.eq(amountIn.add(gasSpent))
+        expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.gte(amountOutMin)
+      })
 
-      const balanceWethBefore = await wethContract.balanceOf(alice.address)
-      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
-      const balanceWethAfter = await wethContract.balanceOf(alice.address)
-      expect(balanceWethAfter.sub(balanceWethBefore)).to.eq(amountOut)
-    })
+      it('completes a V3 exactOut swap', async () => {
+        const tokens = [WETH.address, DAI.address]
+        const path = encodePathExactOutput(tokens)
 
-    it('completes a V3 exactOut swap ETH --> ERC20', async () => {
-      const tokens = [WETH.address, DAI.address]
-      const path = encodePathExactOutput(tokens)
+        planner.addCommand(CommandType.WRAP_ETH, [router.address, amountInMax])
+        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
+        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
+        const { commands, inputs } = planner
 
-      planner.addCommand(CommandType.WRAP_ETH, [router.address, amountInMax])
-      planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
-      planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
-      const { commands, inputs } = planner
+        const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
+        const daiBalanceBefore = await daiContract.balanceOf(alice.address)
 
-      const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
-      const daiBalanceBefore = await daiContract.balanceOf(alice.address)
+        const receipt = await (
+          await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountInMax })
+        ).wait()
 
-      const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountInMax })
-      ).wait()
+        const { amount0: daiTraded, amount1: wethTraded } = parseEvents(V3_EVENTS, receipt)[0]!.args
 
-      const { amount0: daiTraded, amount1: wethTraded } = parseEvents(V3_EVENTS, receipt)[0]!.args
+        const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
+        const daiBalanceAfter = await daiContract.balanceOf(alice.address)
 
-      const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
-      const daiBalanceAfter = await daiContract.balanceOf(alice.address)
+        const ethDelta = ethBalanceBefore.sub(ethBalanceAfter)
+        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
-      const ethDelta = ethBalanceBefore.sub(ethBalanceAfter)
-      const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-
-      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.eq(daiTraded)
-      expect(ethDelta).to.eq(wethTraded.add(gasSpent))
+        expect(daiBalanceBefore.sub(daiBalanceAfter)).to.eq(daiTraded)
+        expect(ethDelta).to.eq(wethTraded.add(gasSpent))
+      })
     })
   })
 
