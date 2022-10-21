@@ -80,7 +80,7 @@ Object {
 exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. gas: exactOut ETH, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 772,
-  "gasUsed": 123971,
+  "gasUsed": 123954,
 }
 `;
 

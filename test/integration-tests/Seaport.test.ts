@@ -7,7 +7,7 @@ import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol
 import { seaportOrders, seaportInterface, getAdvancedOrderParams } from './shared/protocolHelpers/seaport'
 import deployRouter from './shared/deployRouter'
 import { resetFork } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, ETH_ADDRESS, OPENSEA_CONDUIT_KEY } from './shared/constants'
+import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 const { ethers } = hre
