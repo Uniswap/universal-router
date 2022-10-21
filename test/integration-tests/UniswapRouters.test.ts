@@ -4,7 +4,7 @@ import { FeeAmount } from '@uniswap/v3-sdk'
 import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
 import { makePair, encodePath } from './shared/swapRouter02Helpers'
-import { BigNumber } from 'ethers'
+import { BigNumber, BigNumberish } from 'ethers'
 import { Router } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
@@ -163,7 +163,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       planner.addCommand(CommandType.WRAP_ETH, [router.address, value])
       planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
         amountOut,
-        expandTo18DecimalsBN(10000),
+        expandTo18DecimalsBN(1),
         [WETH.address, DAI.address],
         alice.address,
       ])
@@ -261,8 +261,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
     const addV3ExactInTrades = (
       planner: RoutePlanner,
-      numTrades: number,
-      amountOutMin: number,
+      numTrades: BigNumberish,
+      amountOutMin: BigNumberish,
       tokens: string[] = [DAI.address, WETH.address]
     ) => {
       const path = encodePathExactInput(tokens)
@@ -277,7 +277,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     })
 
     it('completes a V3 exactIn swap ERC20 --> ERC20', async () => {
-      const amountOutMin: number = 0.0005 * 10 ** 18
+      const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
       addV3ExactInTrades(planner, 1, amountOutMin)
       const { commands, inputs } = planner
 
@@ -373,7 +373,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const v2Tokens = [USDC.address, WETH.address]
         const v3AmountIn: BigNumber = expandTo18DecimalsBN(5)
         const v3AmountOutMin = 0
-        const v2AmountOutMin = 0.0005 * 10 ** 18
+        const v2AmountOutMin = expandTo18DecimalsBN(0.0005)
 
         planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
           Pair.getAddress(USDC, WETH),
@@ -406,7 +406,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const v3Tokens = [USDC.address, WETH.address]
         const v2AmountIn: BigNumber = expandTo18DecimalsBN(5)
         const v2AmountOutMin = 0 // doesnt matter how much USDC it is, what matters is the end of the trade
-        const v3AmountOutMin = 0.0005 * 10 ** 18
+        const v3AmountOutMin = expandTo18DecimalsBN(0.0005)
 
         planner.addCommand(CommandType.TRANSFER, [DAI.address, Pair.getAddress(DAI, USDC), v2AmountIn])
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountOutMin, v2Tokens, router.address])
@@ -437,8 +437,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
       it('split V2 and V3, one hop ERC20 --> ERC20', async () => {
         const tokens = [DAI.address, WETH.address]
         const v2AmountIn: BigNumber = expandTo18DecimalsBN(2)
-        const v2AmountOutMin = 0.0002 * 10 ** 18
-        const v3AmountOutMin = 0.0003 * 10 ** 18
+        const v2AmountOutMin = expandTo18DecimalsBN(0.0002)
+        const v3AmountOutMin = expandTo18DecimalsBN(0.0003)
         planner.addCommand(CommandType.TRANSFER, [DAI.address, Pair.getAddress(DAI, WETH), v2AmountIn])
         // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountOutMin, tokens, router.address])
