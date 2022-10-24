@@ -506,9 +506,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           // aggregate slippate check
           planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, fullAmountOut])
 
-          const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
-            planner
-          )
+          const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(planner)
 
           // TODO: permit2 test alice doesn't send more than maxAmountIn DAI
           expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(fullAmountOut.sub(gasSpent))
