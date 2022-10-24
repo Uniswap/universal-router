@@ -2,7 +2,7 @@ import type { Contract } from '@ethersproject/contracts'
 import { CurrencyAmount, Ether, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import { Route as V2RouteSDK, Pair } from '@uniswap/v2-sdk'
 import { Route as V3RouteSDK, FeeAmount } from '@uniswap/v3-sdk'
-import { SwapRouter, MixedRouteSDK, Trade } from '@uniswap/router-sdk'
+import { SwapRouter, Trade } from '@uniswap/router-sdk'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import deployRouter from './../shared/deployRouter'
 import {
@@ -18,12 +18,11 @@ import {
 import { BigNumber, BigNumberish } from 'ethers'
 import { Router } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { executeSwap, resetFork, WETH, DAI, USDC, USDT } from '../shared/mainnetForkHelpers'
+import { executeSwap, resetFork, WETH, DAI, USDC } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE } from '../shared/constants'
 import { expandTo18DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import { defaultAbiCoder } from 'ethers/lib/utils'
 import { RoutePlanner, CommandType } from '../shared/planner'
 const { ethers } = hre
 
@@ -172,7 +171,6 @@ describe('Uniswap Gas Tests', () => {
 
       describe('ERC20 --> ERC20', () => {
         it('gas: completes a V2 exactIn swap', async () => {
-          const minAmountOut = expandTo18DecimalsBN(0.0001)
           planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], alice.address])
 
@@ -201,17 +199,8 @@ describe('Uniswap Gas Tests', () => {
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
           planner.addCommand(CommandType.SWEEP_WITH_FEE, [WETH.address, alice.address, 1, ONE_PERCENT, bob.address])
 
-          const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
-          const wethBalanceBeforeBob = await wethContract.balanceOf(bob.address)
-
           const { commands, inputs } = planner
-          await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
-
-          const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
-          const wethBalanceAfterBob = await wethContract.balanceOf(bob.address)
-
-          const bobFee = wethBalanceAfterBob.sub(wethBalanceBeforeBob)
-          const aliceEarnings = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
         })
 
         it('gas: completes a V2 exactIn swap with longer path', async () => {
@@ -222,8 +211,6 @@ describe('Uniswap Gas Tests', () => {
             [DAI.address, USDC.address, WETH.address],
             alice.address,
           ])
-
-          const wethBalanceBefore = await wethContract.balanceOf(alice.address)
 
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -270,18 +257,10 @@ describe('Uniswap Gas Tests', () => {
             bob.address,
           ])
 
-          const ethBalanceBeforeAlice = await ethers.provider.getBalance(alice.address)
-          const ethBalanceBeforeBob = await ethers.provider.getBalance(bob.address)
-
           const { commands, inputs } = planner
-          const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
-
-          const ethBalanceAfterAlice = await ethers.provider.getBalance(alice.address)
-          const ethBalanceAfterBob = await ethers.provider.getBalance(bob.address)
-          const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-
-          const bobFee = ethBalanceAfterBob.sub(ethBalanceBeforeBob)
-          const aliceEarnings = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice).add(gasSpent)
+          await snapshotGasCost(
+            router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountIn })
+          )
         })
       })
 
@@ -588,8 +567,6 @@ describe('Uniswap Gas Tests', () => {
           const tokens = [DAI.address, WETH.address]
           const v2AmountIn: BigNumber = expandTo18DecimalsBN(2)
           const v3AmountIn: BigNumber = expandTo18DecimalsBN(3)
-          const v2AmountOutMin = expandTo18DecimalsBN(0.0002)
-          const v3AmountOutMin = expandTo18DecimalsBN(0.0003)
 
           planner.addCommand(CommandType.TRANSFER, [DAI.address, Pair.getAddress(DAI, WETH), v2AmountIn])
           // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
@@ -634,7 +611,6 @@ describe('Uniswap Gas Tests', () => {
           const tokens = [DAI.address, WETH.address]
           const v2AmountIn: BigNumber = expandTo18DecimalsBN(20)
           const v3AmountIn: BigNumber = expandTo18DecimalsBN(30)
-          const value = v2AmountIn.add(v3AmountIn)
 
           planner.addCommand(CommandType.TRANSFER, [DAI.address, Pair.getAddress(DAI, WETH), v2AmountIn])
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, tokens, router.address])

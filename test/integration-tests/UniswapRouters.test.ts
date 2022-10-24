@@ -114,10 +114,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, inputs } = planner
 
         const wethBalanceBefore = await wethContract.balanceOf(alice.address)
-        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+        await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
         const wethBalanceAfter = await wethContract.balanceOf(alice.address)
-        const events = parseEvents(V2_EVENTS, receipt)
-        const wethOut = events[events.length - 1]!.args.amount1Out
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gt(minAmountOut)
       })
     })
@@ -256,9 +254,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
       it('completes a V3 exactIn swap with longer path', async () => {
         const amountOutMin: number = 3 * 10 ** 6
         addV3ExactInTrades(planner, 1, amountOutMin, alice.address, [DAI.address, WETH.address, USDC.address])
-        const { commands, inputs } = planner
 
-        const { wethBalanceBefore, wethBalanceAfter, usdcBalanceBefore, usdcBalanceAfter, v3SwapEventArgs } =
+        const { wethBalanceBefore, wethBalanceAfter, usdcBalanceBefore, usdcBalanceAfter } =
           await executeRouter(planner)
 
         expect(wethBalanceAfter).to.eq(wethBalanceBefore)
@@ -271,7 +268,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const path = encodePathExactOutput(tokens)
 
         planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
-        const { commands, inputs } = planner
 
         const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(planner)
         const { amount0: daiTraded } = v3SwapEventArgs!
@@ -411,8 +407,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           const tokens = [DAI.address, WETH.address]
           const v2AmountIn: BigNumber = expandTo18DecimalsBN(2)
           const v3AmountIn: BigNumber = expandTo18DecimalsBN(3)
-          const v2AmountOutMin = expandTo18DecimalsBN(0.0002)
-          const v3AmountOutMin = expandTo18DecimalsBN(0.0003)
+          const minAmountOut = expandTo18DecimalsBN(0.0005)
 
           planner.addCommand(CommandType.TRANSFER, [DAI.address, Pair.getAddress(DAI, WETH), v2AmountIn])
           // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
@@ -425,7 +420,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
             encodePathExactInput(tokens),
           ])
           // aggregate slippate check
-          planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, expandTo18DecimalsBN(0.0005)])
+          planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, minAmountOut])
 
           const { wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs, v3SwapEventArgs } = await executeRouter(planner)
           const { amount1Out: wethOutV2 } = v2SwapEventArgs!
@@ -467,7 +462,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
           const tokens = [DAI.address, WETH.address]
           const v2AmountIn: BigNumber = expandTo18DecimalsBN(20)
           const v3AmountIn: BigNumber = expandTo18DecimalsBN(30)
-          const value = v2AmountIn.add(v3AmountIn)
 
           planner.addCommand(CommandType.TRANSFER, [DAI.address, Pair.getAddress(DAI, WETH), v2AmountIn])
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, tokens, router.address])
