@@ -415,7 +415,7 @@ describe('Uniswap Gas Tests', () => {
       })
 
       it('gas: exactIn, one trade, one hop ERC20 --> ERC20', async () => {
-        const amountOutMin: BigNumber  = expandTo18DecimalsBN(0.0005)
+        const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
         addV3ExactInTrades(planner, 1, amountOutMin)
         const { commands, inputs } = planner
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
