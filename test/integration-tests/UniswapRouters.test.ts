@@ -255,8 +255,9 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const amountOutMin: number = 3 * 10 ** 6
         addV3ExactInTrades(planner, 1, amountOutMin, alice.address, [DAI.address, WETH.address, USDC.address])
 
-        const { wethBalanceBefore, wethBalanceAfter, usdcBalanceBefore, usdcBalanceAfter } =
-          await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(
+          planner
+        )
 
         expect(wethBalanceAfter).to.eq(wethBalanceBefore)
         expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(amountOutMin)
