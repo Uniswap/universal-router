@@ -4,7 +4,7 @@ import { Route as V2RouteSDK, Pair } from '@uniswap/v2-sdk'
 import { Route as V3RouteSDK, FeeAmount } from '@uniswap/v3-sdk'
 import { SwapRouter, MixedRouteSDK, Trade } from '@uniswap/router-sdk'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import deployRouter from './shared/deployRouter'
+import deployRouter from './../shared/deployRouter'
 import {
   makePair,
   expandTo18Decimals,
@@ -14,17 +14,17 @@ import {
   pool_USDC_WETH,
   pool_USDC_USDT,
   pool_WETH_USDT,
-} from './shared/swapRouter02Helpers'
+} from '../shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
-import { Router } from '../../typechain'
-import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { executeSwap, resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE } from './shared/constants'
-import { expandTo18DecimalsBN } from './shared/helpers'
+import { Router } from '../../../typechain'
+import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
+import { executeSwap, resetFork, WETH, DAI, USDC, USDT } from '../shared/mainnetForkHelpers'
+import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE } from '../shared/constants'
+import { expandTo18DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { defaultAbiCoder } from 'ethers/lib/utils'
-import { RoutePlanner, CommandType } from './shared/planner'
+import { RoutePlanner, CommandType } from '../shared/planner'
 const { ethers } = hre
 
 function encodePathExactInput(tokens: string[]) {
@@ -163,7 +163,7 @@ describe('Uniswap Gas Tests', () => {
       beforeEach(async () => {
         planner = new RoutePlanner()
         await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
-        await wethContract.connect(alice).approve(router.address, expandTo18DecimalsBN(5000))
+        await wethContract.approve(router.address, expandTo18DecimalsBN(5000))
       })
 
       it('gas: exactIn, one trade, one hop', async () => {
@@ -240,7 +240,7 @@ describe('Uniswap Gas Tests', () => {
       })
 
       it('gas: exactOut, one trade, one hop', async () => {
-        await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100))
+        await wethContract.transfer(router.address, expandTo18DecimalsBN(100))
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           expandTo18DecimalsBN(5),
           expandTo18DecimalsBN(100),
@@ -253,7 +253,7 @@ describe('Uniswap Gas Tests', () => {
       })
 
       it('gas: exactOut, one trade, two hops', async () => {
-        await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100))
+        await wethContract.transfer(router.address, expandTo18DecimalsBN(100))
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           expandTo18DecimalsBN(5),
           expandTo18DecimalsBN(100),
@@ -266,7 +266,7 @@ describe('Uniswap Gas Tests', () => {
       })
 
       it('gas: exactOut, one trade, three hops', async () => {
-        await wethContract.connect(alice).transfer(router.address, expandTo18DecimalsBN(100))
+        await wethContract.transfer(router.address, expandTo18DecimalsBN(100))
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           expandTo18DecimalsBN(5),
           expandTo18DecimalsBN(100),

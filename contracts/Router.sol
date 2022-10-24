@@ -64,9 +64,5 @@ contract Router is IRouter, Dispatcher, RewardsExtractor {
         return command & Commands.FLAG_ALLOW_REVERT == 0;
     }
 
-    receive() external payable {
-        if (msg.sender != Constants.WETH9) {
-            revert ETHNotAccepted();
-        }
-    }
+    receive() external payable {}
 }
