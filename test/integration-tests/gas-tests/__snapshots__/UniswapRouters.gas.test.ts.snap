@@ -35,20 +35,6 @@ Object {
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ERC20 gas: exactIn swap 1`] = `
-Object {
-  "calldataByteLength": 612,
-  "gasUsed": 101420,
-}
-`;
-
-exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ERC20 gas: exactIn swap with longer path 1`] = `
-Object {
-  "calldataByteLength": 644,
-  "gasUsed": 172476,
-}
-`;
-
 exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ERC20 gas: exactIn trade, where an output fee is taken 1`] = `
 Object {
   "calldataByteLength": 836,
@@ -56,42 +42,84 @@ Object {
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ERC20 gas: exactOut swap 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ERC20 gas: exactIn, one trade, one hop 1`] = `
 Object {
-  "calldataByteLength": 644,
-  "gasUsed": 106753,
+  "calldataByteLength": 612,
+  "gasUsed": 101420,
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ETH gas: exactIn swap 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ERC20 gas: exactIn, one trade, three hops 1`] = `
+Object {
+  "calldataByteLength": 676,
+  "gasUsed": 240080,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ERC20 gas: exactIn, one trade, three hops, no deadline 1`] = `
+Object {
+  "calldataByteLength": 644,
+  "gasUsed": 239870,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ERC20 gas: exactIn, one trade, two hops 1`] = `
+Object {
+  "calldataByteLength": 644,
+  "gasUsed": 172428,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ERC20 gas: exactOut, one trade, one hop 1`] = `
+Object {
+  "calldataByteLength": 484,
+  "gasUsed": 99602,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ERC20 gas: exactOut, one trade, three hops 1`] = `
+Object {
+  "calldataByteLength": 548,
+  "gasUsed": 243367,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ERC20 gas: exactOut, one trade, two hops 1`] = `
+Object {
+  "calldataByteLength": 516,
+  "gasUsed": 173207,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ETH gas: exactIn, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 740,
   "gasUsed": 118323,
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ETH gas: exactOut swap 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ETH gas: exactOut, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 772,
   "gasUsed": 124026,
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ETH gas: exactOut swap, with ETH fee 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ETH gas: exactOut, with ETH fee 1`] = `
 Object {
   "calldataByteLength": 676,
   "gasUsed": 126890,
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ETH --> ERC20 gas: exactIn swap 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ETH --> ERC20 gas: exactIn, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 580,
   "gasUsed": 108187,
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ETH --> ERC20 gas: exactOut swap 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ETH --> ERC20 gas: exactOut, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 740,
   "gasUsed": 139500,
@@ -133,28 +161,42 @@ Object {
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV3 with Narwhal Router. ERC20 --> ERC20 gas: exactIn swap 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV3 with Narwhal Router. ERC20 --> ERC20 gas: exactIn, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 484,
   "gasUsed": 107020,
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV3 with Narwhal Router. ERC20 --> ERC20 gas: exactIn swap with longer path 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV3 with Narwhal Router. ERC20 --> ERC20 gas: exactIn, one trade, three hops 1`] = `
+Object {
+  "calldataByteLength": 516,
+  "gasUsed": 267489,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV3 with Narwhal Router. ERC20 --> ERC20 gas: exactIn, one trade, two hops 1`] = `
 Object {
   "calldataByteLength": 516,
   "gasUsed": 182902,
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV3 with Narwhal Router. ERC20 --> ERC20 gas: exactOut swap 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV3 with Narwhal Router. ERC20 --> ERC20 gas: exactOut, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 484,
   "gasUsed": 108423,
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV3 with Narwhal Router. ERC20 --> ERC20 gas: exactOut swap with longer path 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV3 with Narwhal Router. ERC20 --> ERC20 gas: exactOut, one trade, three hops 1`] = `
+Object {
+  "calldataByteLength": 516,
+  "gasUsed": 412958,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV3 with Narwhal Router. ERC20 --> ERC20 gas: exactOut, one trade, two hops 1`] = `
 Object {
   "calldataByteLength": 516,
   "gasUsed": 305641,
