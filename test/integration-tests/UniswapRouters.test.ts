@@ -17,13 +17,7 @@ import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 const { ethers } = hre
 
-function encodePathExactInput(tokens: string[]) {
-  return encodePath(tokens, new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
-}
-
-function encodePathExactOutput(tokens: string[]) {
-  return encodePath(tokens.slice().reverse(), new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
-}
+const ONE_PERCENT = 100
 
 describe('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
@@ -88,8 +82,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       it('exactIn trade, where an output fee is taken', async () => {
-        const ONE_PERCENT = 100
-
         // will likely make the most sense to take fees on input with permit post in most situations
         planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
         // back to the router so someone can take a fee
@@ -155,6 +147,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         const { gasSpent, ethBalanceBefore, ethBalanceAfter, v2SwapEventArgs } = await executeRouter(planner)
         const { amount1Out: wethTraded } = v2SwapEventArgs!
+        expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(amountOut.sub(gasSpent))
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(wethTraded.sub(gasSpent))
       })
 
@@ -166,7 +159,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
           [DAI.address, WETH.address],
           router.address,
         ])
-        const ONE_PERCENT = 100
         planner.addCommand(CommandType.UNWRAP_WETH_WITH_FEE, [
           alice.address,
           CONTRACT_BALANCE,
@@ -444,9 +436,37 @@ describe('Uniswap V2 and V3 Tests:', () => {
         })
 
         it('ETH --> ERC20 split V2 and V3, one hop', async () => {
-          const tokens = [DAI.address, WETH.address]
+          const tokens = [WETH.address, USDC.address]
           const v2AmountIn: BigNumber = expandTo18DecimalsBN(2)
           const v3AmountIn: BigNumber = expandTo18DecimalsBN(3)
+          const value = v2AmountIn.add(v3AmountIn)
+
+          planner.addCommand(CommandType.WRAP_ETH, [router.address, value])
+          planner.addCommand(CommandType.TRANSFER, [WETH.address, Pair.getAddress(USDC, WETH), v2AmountIn])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, tokens, router.address])
+          planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            router.address,
+            v3AmountIn,
+            0,
+            encodePathExactInput(tokens),
+          ])
+          // aggregate slippate check
+          planner.addCommand(CommandType.SWEEP, [USDC.address, alice.address, 0.0005 * 10 ** 6])
+
+          const { usdcBalanceBefore, usdcBalanceAfter, v2SwapEventArgs, v3SwapEventArgs } = await executeRouter(
+            planner,
+            value
+          )
+          const { amount0Out: usdcOutV2 } = v2SwapEventArgs!
+          let { amount0: usdcOutV3 } = v3SwapEventArgs!
+          usdcOutV3 = usdcOutV3.mul(-1)
+          expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.eq(usdcOutV2.add(usdcOutV3))
+        })
+
+        it('ERC20 --> ETH split V2 and V3, one hop', async () => {
+          const tokens = [DAI.address, WETH.address]
+          const v2AmountIn: BigNumber = expandTo18DecimalsBN(20)
+          const v3AmountIn: BigNumber = expandTo18DecimalsBN(30)
           const value = v2AmountIn.add(v3AmountIn)
 
           planner.addCommand(CommandType.TRANSFER, [DAI.address, Pair.getAddress(DAI, WETH), v2AmountIn])
@@ -458,13 +478,16 @@ describe('Uniswap V2 and V3 Tests:', () => {
             encodePathExactInput(tokens),
           ])
           // aggregate slippate check
-          planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, expandTo18DecimalsBN(0.0005)])
+          planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, expandTo18DecimalsBN(0.0005)])
 
-          const { wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs, v3SwapEventArgs } = await executeRouter(planner)
+          const { ethBalanceBefore, ethBalanceAfter, gasSpent, v2SwapEventArgs, v3SwapEventArgs } = await executeRouter(
+            planner
+          )
           const { amount1Out: wethOutV2 } = v2SwapEventArgs!
           let { amount1: wethOutV3 } = v3SwapEventArgs!
           wethOutV3 = wethOutV3.mul(-1)
-          expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethOutV2.add(wethOutV3))
+
+          expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(wethOutV2.add(wethOutV3).sub(gasSpent))
         })
       })
     })
@@ -529,5 +552,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
       receipt,
       gasSpent,
     }
+  }
+
+  function encodePathExactInput(tokens: string[]) {
+    return encodePath(tokens, new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
+  }
+
+  function encodePathExactOutput(tokens: string[]) {
+    return encodePath(tokens.slice().reverse(), new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
   }
 })
