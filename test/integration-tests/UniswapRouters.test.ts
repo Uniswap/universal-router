@@ -55,7 +55,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     beforeEach(async () => {
       planner = new RoutePlanner()
       await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
-      await wethContract.connect(alice).approve(router.address, expandTo18DecimalsBN(5000))
+      await wethContract.approve(router.address, expandTo18DecimalsBN(5000))
     })
 
     describe('ERC20 --> ERC20', () => {

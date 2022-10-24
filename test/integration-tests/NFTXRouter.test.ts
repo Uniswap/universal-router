@@ -54,9 +54,9 @@ describe('NFTX', () => {
     planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
     const { commands, inputs } = planner
 
-    const covenBalanceBefore = await COVEN_721.connect(alice).balanceOf(alice.address)
+    const covenBalanceBefore = await covenContract.balanceOf(alice.address)
     await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
-    const covenBalanceAfter = await COVEN_721.connect(alice).balanceOf(alice.address)
+    const covenBalanceAfter = await covenContract.balanceOf(alice.address)
 
     expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
   })
