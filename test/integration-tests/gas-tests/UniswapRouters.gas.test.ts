@@ -696,6 +696,31 @@ describe('Uniswap Gas Tests', () => {
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
         })
+
+        it('gas: ERC20 --> ETH split V2 and V3, exactOut, one hop', async () => {
+          // TODO: Use permit
+          await daiContract.transfer(router.address, expandTo18DecimalsBN(4000))
+
+          const tokens = [DAI.address, WETH.address]
+          const v2AmountOut: BigNumber = expandTo18DecimalsBN(0.5)
+          const v3AmountOut: BigNumber = expandTo18DecimalsBN(1)
+          const path = encodePathExactOutput(tokens)
+          const maxAmountIn = expandTo18DecimalsBN(4000)
+          const fullAmountOut = v2AmountOut.add(v3AmountOut)
+
+          planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+            v2AmountOut,
+            maxAmountIn,
+            [DAI.address, WETH.address],
+            router.address,
+          ])
+          planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [router.address, v3AmountOut, maxAmountIn, path])
+          // aggregate slippate check
+          planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, fullAmountOut])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
       })
     })
   })

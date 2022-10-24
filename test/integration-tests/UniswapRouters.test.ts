@@ -484,6 +484,35 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
           expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(wethOutV2.add(wethOutV3).sub(gasSpent))
         })
+
+        it('ERC20 --> ETH split V2 and V3, exactOut, one hop', async () => {
+          // TODO: Use permit
+          await daiContract.transfer(router.address, expandTo18DecimalsBN(4000))
+
+          const tokens = [DAI.address, WETH.address]
+          const v2AmountOut: BigNumber = expandTo18DecimalsBN(0.5)
+          const v3AmountOut: BigNumber = expandTo18DecimalsBN(1)
+          const path = encodePathExactOutput(tokens)
+          const maxAmountIn = expandTo18DecimalsBN(4000)
+          const fullAmountOut = v2AmountOut.add(v3AmountOut)
+
+          planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+            v2AmountOut,
+            maxAmountIn,
+            [DAI.address, WETH.address],
+            router.address,
+          ])
+          planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [router.address, v3AmountOut, maxAmountIn, path])
+          // aggregate slippate check
+          planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, fullAmountOut])
+
+          const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+            planner
+          )
+
+          // TODO: permit2 test alice doesn't send more than maxAmountIn DAI
+          expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(fullAmountOut.sub(gasSpent))
+        })
       })
     })
   })

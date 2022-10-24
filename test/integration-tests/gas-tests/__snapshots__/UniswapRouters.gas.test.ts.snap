@@ -21,6 +21,13 @@ Object {
 }
 `;
 
+exports[`Uniswap Gas Tests Mixing V2 and V3 with Narwhal Router. Split routes gas: ERC20 --> ETH split V2 and V3, exactOut, one hop 1`] = `
+Object {
+  "calldataByteLength": 900,
+  "gasUsed": 187802,
+}
+`;
+
 exports[`Uniswap Gas Tests Mixing V2 and V3 with Narwhal Router. Split routes gas: ERC20 --> ETH split V2 and V3, one hop 1`] = `
 Object {
   "calldataByteLength": 1028,
