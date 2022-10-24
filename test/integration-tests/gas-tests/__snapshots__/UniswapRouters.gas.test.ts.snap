@@ -56,6 +56,13 @@ Object {
 }
 `;
 
+exports[`Uniswap Gas Tests Trade on Uniswap V2 With narwhal: ERC20 --> ERC20 gas: exactIn trade, where an output fee is taken 1`] = `
+Object {
+  "calldataByteLength": 836,
+  "gasUsed": 137006,
+}
+`;
+
 exports[`Uniswap Gas Tests Trade on Uniswap V2 With narwhal: ERC20 --> ETH gas: completes a V2 exactIn swap 1`] = `
 Object {
   "calldataByteLength": 740,
@@ -67,6 +74,13 @@ exports[`Uniswap Gas Tests Trade on Uniswap V2 With narwhal: ERC20 --> ETH gas: 
 Object {
   "calldataByteLength": 772,
   "gasUsed": 124026,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on Uniswap V2 With narwhal: ERC20 --> ETH gas: completes a V2 exactOut swap, with ETH fee 1`] = `
+Object {
+  "calldataByteLength": 676,
+  "gasUsed": 126890,
 }
 `;
 
