@@ -41,8 +41,8 @@ describe('Foundation Gas Tests', () => {
       const calldata = FOUNDATION_INTERFACE.encodeFunctionData('buyV2', [MENTAL_WORLDS_ADDRESS, 32, value, REFERRER])
       planner.addCommand(CommandType.FOUNDATION, [value, calldata, ALICE_ADDRESS, MENTAL_WORLDS_ADDRESS, 32])
 
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
+
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value }))
     })
   })

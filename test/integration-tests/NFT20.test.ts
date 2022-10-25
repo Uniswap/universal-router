@@ -48,8 +48,7 @@ describe('NFT20', () => {
         false,
       ])
       planner.addCommand(CommandType.NFT20, [value, calldata])
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
 
       const aliceBalance = await ethers.provider.getBalance(alice.address)
       const receipt = await (

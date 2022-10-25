@@ -52,8 +52,7 @@ describe('NFTX', () => {
     ])
 
     planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
 
     const covenBalanceBefore = await covenContract.balanceOf(alice.address)
     await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
@@ -74,8 +73,7 @@ describe('NFTX', () => {
     ])
 
     planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
 
     const covenBalanceBefore = await covenContract.balanceOf(alice.address)
     const covenOwner584Before = await covenContract.ownerOf(584)
@@ -104,8 +102,7 @@ describe('NFTX', () => {
     ])
 
     planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
 
     const tx = await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
     const receipt = await tx.wait()
@@ -126,8 +123,7 @@ describe('NFTX', () => {
     ])
 
     planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
 
     const twerkyBalanceBefore = await twerkyContract.balanceOf(alice.address, 44)
     await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
@@ -149,8 +145,7 @@ describe('NFTX', () => {
     ])
 
     planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
 
     const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
     const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
