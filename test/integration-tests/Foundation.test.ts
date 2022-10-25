@@ -45,8 +45,7 @@ describe('Foundation', () => {
       const value = BigNumber.from('10000000000000000')
       const calldata = FOUNDATION_INTERFACE.encodeFunctionData('buyV2', [MENTAL_WORLDS_ADDRESS, 32, value, REFERRER])
       planner.addCommand(CommandType.FOUNDATION, [value, calldata, ALICE_ADDRESS, MENTAL_WORLDS_ADDRESS, 32])
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
 
       const aliceBalance = await ethers.provider.getBalance(alice.address)
       const referrerBalance = await ethers.provider.getBalance(REFERRER)

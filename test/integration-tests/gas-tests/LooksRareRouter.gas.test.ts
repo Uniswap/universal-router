@@ -63,8 +63,7 @@ describe('LooksRare Gas Tests', () => {
         COVEN_ADDRESS,
         tokenId,
       ])
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
     })

@@ -15,7 +15,14 @@ import {
   NFTX_COVEN_VAULT,
   NFTX_COVEN_VAULT_ID,
 } from './shared/constants'
-import { seaportOrders, seaportInterface, getOrderParams, Order } from './shared/protocolHelpers/seaport'
+import {
+  seaportOrders,
+  seaportInterface,
+  getOrderParams,
+  getAdvancedOrderParams,
+  AdvancedOrder,
+  Order,
+} from './shared/protocolHelpers/seaport'
 import { resetFork, WETH, DAI } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
 import { makePair } from './shared/swapRouter02Helpers'
@@ -61,8 +68,8 @@ describe('Router', () => {
       planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], alice.address])
       const invalidDeadline = 10
 
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
+
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, invalidDeadline)).to.be.revertedWith(
         'TransactionDeadlinePassed()'
       )
@@ -132,8 +139,8 @@ describe('Router', () => {
       it('reverts if no commands are allowed to revert', async () => {
         planner.addCommand(CommandType.SEAPORT, [seaportValue, invalidSeaportCalldata])
 
-        const commands = planner.commands
-        const inputs = planner.inputs
+        const { commands, inputs } = planner
+
         await expect(
           router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
         ).to.be.revertedWith('ExecutionFailed(1, "0x8baa579f")')
@@ -141,13 +148,48 @@ describe('Router', () => {
 
       it('does not revert if invalid seaport transaction allowed to fail', async () => {
         planner.addCommand(CommandType.SEAPORT, [seaportValue, invalidSeaportCalldata], true)
-        const commands = planner.commands
-        const inputs = planner.inputs
+        const { commands, inputs } = planner
 
         const covenBalanceBefore = await covenContract.balanceOf(alice.address)
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
         const covenBalanceAfter = await covenContract.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
+      })
+    })
+
+    describe('ERC20 --> NFT', () => {
+      let advancedOrder: AdvancedOrder
+      let value: BigNumber
+      let covenContract: ERC721
+
+      beforeEach(async () => {
+        covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice) as ERC721
+        ;({ advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0]))
+      })
+
+      it('completes a trade for ERC20 --> ETH --> Seaport NFT', async () => {
+        const maxAmountIn = expandTo18DecimalsBN(100_000)
+        await daiContract.transfer(router.address, maxAmountIn)
+        const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+          advancedOrder,
+          [],
+          OPENSEA_CONDUIT_KEY,
+          alice.address,
+        ])
+
+        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+          value,
+          maxAmountIn,
+          [DAI.address, WETH.address],
+          router.address,
+        ])
+        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
+        planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+        const { commands, inputs } = planner
+        const covenBalanceBefore = await covenContract.balanceOf(alice.address)
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+        const covenBalanceAfter = await covenContract.balanceOf(alice.address)
+        expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
       })
     })
   })
