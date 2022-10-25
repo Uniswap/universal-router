@@ -9,7 +9,7 @@ import { BigNumber, BigNumberish } from 'ethers'
 import { Router } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE } from './shared/constants'
+import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE, ONE_PERCENT_BIPS } from './shared/constants'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployRouter from './shared/deployRouter'
@@ -17,7 +17,6 @@ import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 const { ethers } = hre
 
-const ONE_PERCENT = 100
 
 describe('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
@@ -86,7 +85,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
         // back to the router so someone can take a fee
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
-        planner.addCommand(CommandType.SWEEP_WITH_FEE, [WETH.address, alice.address, 1, ONE_PERCENT, bob.address])
+        planner.addCommand(CommandType.SWEEP_WITH_FEE, [WETH.address, alice.address, 1, ONE_PERCENT_BIPS, bob.address])
 
         const { commands, inputs } = planner
         const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
@@ -100,7 +99,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const bobFee = wethBalanceAfterBob.sub(wethBalanceBeforeBob)
         const aliceEarnings = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
 
-        expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT).div(10000)).to.eq(bobFee)
+        expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT_BIPS).div(10000)).to.eq(bobFee)
       })
 
       it('completes a V2 exactIn swap with longer path', async () => {
@@ -160,7 +159,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.UNWRAP_WETH_WITH_FEE, [
           alice.address,
           CONTRACT_BALANCE,
-          ONE_PERCENT,
+          ONE_PERCENT_BIPS,
           bob.address,
         ])
 
@@ -176,7 +175,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const bobFee = ethBalanceAfterBob.sub(ethBalanceBeforeBob)
         const aliceEarnings = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice).add(gasSpent)
 
-        expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT).div(10000)).to.eq(bobFee)
+        expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT_BIPS).div(10000)).to.eq(bobFee)
       })
     })
 

@@ -19,14 +19,12 @@ import { BigNumber, BigNumberish } from 'ethers'
 import { Router } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { executeSwap, resetFork, WETH, DAI, USDC, USDT } from '../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE } from '../shared/constants'
+import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE, ONE_PERCENT_BIPS } from '../shared/constants'
 import { expandTo18DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { RoutePlanner, CommandType } from '../shared/planner'
 const { ethers } = hre
-
-const ONE_PERCENT = 100
 
 function encodePathExactInput(tokens: string[]) {
   return encodePath(tokens, new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
@@ -82,7 +80,7 @@ describe('Uniswap Gas Tests', () => {
         amountOut = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
       })
 
-      it('gas: exactIn, one trade, one hop ERC20 --> ERC20', async () => {
+      it('gas: ERC20 --> ERC20 exactIn, one trade, one hop', async () => {
         v2TradeExactIn = await Trade.fromRoute(
           new V2RouteSDK([pair_DAI_WETH], DAI, WETH),
           amountInDAI,
@@ -219,7 +217,7 @@ describe('Uniswap Gas Tests', () => {
           planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
           // back to the router so someone can take a fee
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
-          planner.addCommand(CommandType.SWEEP_WITH_FEE, [WETH.address, alice.address, 1, ONE_PERCENT, bob.address])
+          planner.addCommand(CommandType.SWEEP_WITH_FEE, [WETH.address, alice.address, 1, ONE_PERCENT_BIPS, bob.address])
 
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -301,7 +299,7 @@ describe('Uniswap Gas Tests', () => {
           planner.addCommand(CommandType.UNWRAP_WETH_WITH_FEE, [
             alice.address,
             CONTRACT_BALANCE,
-            ONE_PERCENT,
+            ONE_PERCENT_BIPS,
             bob.address,
           ])
 
@@ -365,7 +363,7 @@ describe('Uniswap Gas Tests', () => {
         )
       })
 
-      it('gas: exactIn, one trade, one hop ERC20 --> ERC20', async () => {
+      it('gas: ERC20 --> ERC20 exactIn, one trade, one hop', async () => {
         const { calldata } = SwapRouter.swapCallParameters(v3ExactIn, {
           slippageTolerance,
           recipient: alice.address,
