@@ -16,7 +16,7 @@ import {
   LOOKS_RARE_721_ORDER,
   MakerOrder,
   TakerOrder,
-} from './shared/protocolHelpers/looksrare'
+} from './shared/protocolHelpers/looksRare'
 
 describe('LooksRare', () => {
   let alice: SignerWithAddress

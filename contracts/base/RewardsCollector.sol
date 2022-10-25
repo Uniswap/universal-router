@@ -13,17 +13,17 @@ contract RewardsCollector is IRewardsCollector {
     error UnableToClaim();
 
     address public immutable routerRewardsDistributor;
-    address public immutable looksrareRewardsDistributor;
+    address public immutable looksRareRewardsDistributor;
     ERC20 immutable looksRareToken;
 
-    constructor(address _routerRewardsDistributor, address _looksrareRewardsDistributor, address _looksRareToken) {
+    constructor(address _routerRewardsDistributor, address _looksRareRewardsDistributor, address _looksRareToken) {
         routerRewardsDistributor = _routerRewardsDistributor;
-        looksrareRewardsDistributor = _looksrareRewardsDistributor;
+        looksRareRewardsDistributor = _looksRareRewardsDistributor;
         looksRareToken = ERC20(_looksRareToken);
     }
 
     function collectRewards(bytes calldata looksRareClaim) external {
-        (bool success,) = looksrareRewardsDistributor.call(looksRareClaim);
+        (bool success,) = looksRareRewardsDistributor.call(looksRareClaim);
         if (!success) revert UnableToClaim();
 
         uint256 balance = looksRareToken.balanceOf(address(this));

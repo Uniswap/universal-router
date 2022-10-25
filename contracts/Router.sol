@@ -16,7 +16,7 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
     constructor(
         address permitPost,
         address routerRewardsDistributor,
-        address looksrareRewardsDistributor,
+        address looksRareRewardsDistributor,
         address looksRareToken,
         address v2Factory,
         address v3Factory,
@@ -24,7 +24,7 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
         bytes32 poolInitCodeHash
     )
         Dispatcher(permitPost, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash)
-        RewardsCollector(routerRewardsDistributor, looksrareRewardsDistributor, looksRareToken)
+        RewardsCollector(routerRewardsDistributor, looksRareRewardsDistributor, looksRareToken)
     {}
 
     /// @inheritdoc IRouter
