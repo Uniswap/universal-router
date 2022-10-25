@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import './UniswapV2Library.sol';
 import '../../Payments.sol';
 import '../../Permit2Payments.sol';

@@ -46,6 +46,26 @@ describe('Uniswap V2 and V3 Tests:', () => {
     pair_DAI_USDC = await makePair(alice, DAI, USDC)
   })
 
+  describe('Trade on UniswapV2 with Permit2', () => {
+    const amountIn: BigNumber = expandTo18DecimalsBN(5)
+    let planner: RoutePlanner
+
+    beforeEach(async () => {
+      planner = new RoutePlanner()
+      await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
+    })
+
+    describe('ERC20 --> ERC20', () => {
+      it('completes a V2 exactIn swap', async () => {
+        const minAmountOut = expandTo18DecimalsBN(0.0001)
+        planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
+        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], alice.address])
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+        expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gt(minAmountOut)
+      })
+    })
+  })
+
   describe('Trade on UniswapV2', () => {
     const amountIn: BigNumber = expandTo18DecimalsBN(5)
     let planner: RoutePlanner

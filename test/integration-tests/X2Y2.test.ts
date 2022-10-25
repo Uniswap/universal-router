@@ -1,5 +1,5 @@
 import { CommandType, RoutePlanner } from './shared/planner'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import { Router } from '../../typechain'
 import { resetFork, ENS_721, CAMEO_1155 } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'

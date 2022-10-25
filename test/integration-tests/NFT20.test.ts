@@ -6,7 +6,7 @@ import { ALICE_ADDRESS, DEADLINE, ALPHABETTIES_ADDRESS } from './shared/constant
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import { expect } from 'chai'
 import deployRouter from './shared/deployRouter'
 const { ethers } = hre

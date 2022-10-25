@@ -1,6 +1,6 @@
 import hre from 'hardhat'
 const { ethers } = hre
-import { Router } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain'
 import {
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
@@ -9,13 +9,20 @@ import {
 } from './constants'
 
 export default async (): Promise<Router> => {
+  const permit2 = await deployPermit2()
   const routerFactory = await ethers.getContractFactory('Router')
   const router = (await routerFactory.deploy(
-    ethers.constants.AddressZero,
+    permit2.address,
     V2_FACTORY_MAINNET,
     V3_FACTORY_MAINNET,
     V2_INIT_CODE_HASH_MAINNET,
     V3_INIT_CODE_HASH_MAINNET
   )) as Router
   return router
+}
+
+export async function deployPermit2(): Promise<Permit2> {
+  const permit2Factory = await ethers.getContractFactory('Permit2')
+  const permit2 = (await permit2Factory.deploy()) as Permit2
+  return permit2
 }
