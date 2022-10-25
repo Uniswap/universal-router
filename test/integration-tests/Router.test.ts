@@ -167,7 +167,7 @@ describe('Router', () => {
         ;({ advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0]))
       })
 
-      it('ERC20 --> ETH --> Seaport NFT', async () => {
+      it('completes a trade for ERC20 --> ETH --> Seaport NFT', async () => {
         const maxAmountIn = expandTo18DecimalsBN(100_000)
         await daiContract.transfer(router.address, maxAmountIn)
         const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
