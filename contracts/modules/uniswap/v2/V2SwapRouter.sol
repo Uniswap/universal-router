@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.17;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './UniswapV2Library.sol';
 import '../../Payments.sol';
+import '../../Permit2Payments.sol';
 
-contract V2SwapRouter {
+contract V2SwapRouter is Permit2Payments {
     address internal immutable V2_FACTORY;
     bytes32 internal immutable PAIR_INIT_CODE_HASH;
 
-    constructor(address v2Factory, bytes32 pairInitCodeHash) {
+    constructor(address v2Factory, bytes32 pairInitCodeHash, address permit2) Permit2Payments(permit2) {
         V2_FACTORY = v2Factory;
         PAIR_INIT_CODE_HASH = pairInitCodeHash;
     }
@@ -54,7 +55,8 @@ contract V2SwapRouter {
         (uint256 amountIn, address pair) =
             UniswapV2Library.getAmountInMultihop(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path);
         require(amountIn <= amountInMax, 'Too much requested');
-        Payments.payERC20(path[0], pair, amountIn);
+
+        permit2TransferFrom(path[0], pair, uint160(amountIn));
         _v2Swap(path, recipient);
     }
 }

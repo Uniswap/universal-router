@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.17;
 
 /// @title Commands
 /// @notice Command Flags used to decode commands
@@ -8,7 +8,10 @@ library Commands {
     bytes1 internal constant COMMAND_TYPE_MASK = 0x1f;
 
     // Command Types. Maximum supported command at this moment is 0x1F.
-    uint256 constant PERMIT = 0x00;
+    uint256 constant PERMIT2_PERMIT = 0x00;
+    uint256 constant PERMIT2_PERMIT_BATCH = 0x14;
+    uint256 constant PERMIT2_TRANSFER_FROM = 0x15;
+    uint256 constant PERMIT2_TRANSFER_FROM_BATCH = 0x16;
     uint256 constant TRANSFER = 0x01;
     uint256 constant V3_SWAP_EXACT_IN = 0x02;
     uint256 constant V3_SWAP_EXACT_OUT = 0x03;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.17;
 
 import './base/Dispatcher.sol';
 import './libraries/Constants.sol';
@@ -13,12 +13,12 @@ contract Router is IRouter, Dispatcher {
     }
 
     constructor(
-        address permitPost,
+        address permit2,
         address v2Factory,
         address v3Factory,
         bytes32 pairInitCodeHash,
         bytes32 poolInitCodeHash
-    ) Dispatcher(permitPost, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash) {}
+    ) Dispatcher(permit2, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash) {}
 
     /// @inheritdoc IRouter
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)

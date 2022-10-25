@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.17;
 
 import '../../Payments.sol';
 import './V3Path.sol';
@@ -7,8 +7,9 @@ import '../UniswapPoolHelper.sol';
 import '../../../libraries/Constants.sol';
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
+import '../../Permit2Payments.sol';
 
-abstract contract V3SwapRouter {
+abstract contract V3SwapRouter is Permit2Payments {
     using V3Path for bytes;
     using SafeCast for uint256;
 

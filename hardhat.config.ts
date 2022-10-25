@@ -5,7 +5,7 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 const DEFAULT_COMPILER_SETTINGS = {
-  version: '0.8.16',
+  version: '0.8.17',
   settings: {
     viaIR: true,
     evmVersion: 'istanbul',

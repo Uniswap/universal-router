@@ -6,7 +6,7 @@ import { defaultAbiCoder } from 'ethers/lib/utils'
  * @enum {number}
  */
 export enum CommandType {
-  PERMIT = 0x00,
+  PERMIT2 = 0x00,
   TRANSFER = 0x01,
   V3_SWAP_EXACT_IN = 0x02,
   V3_SWAP_EXACT_OUT = 0x03,
@@ -43,7 +43,7 @@ const REVERTABLE_COMMANDS = new Set<CommandType>([
 ])
 
 const ABI_DEFINITION: { [key in CommandType]: string[] } = {
-  [CommandType.PERMIT]: [],
+  [CommandType.PERMIT2]: [],
   [CommandType.TRANSFER]: ['address', 'address', 'uint256'],
   [CommandType.V3_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'bytes'],
   [CommandType.V3_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'bytes'],
