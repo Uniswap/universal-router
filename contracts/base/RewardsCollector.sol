@@ -17,17 +17,17 @@ contract RewardsCollector is IRewardsCollector {
     ERC20 immutable looksRareToken;
 
     constructor(address _routerRewardsDistributor, address _looksrareRewardsDistributor, address _looksRareToken) {
-        rewardsDistributor = _rewardsDistributor;
+        routerRewardsDistributor = _routerRewardsDistributor;
         looksrareRewardsDistributor = _looksrareRewardsDistributor;
-        looksRareToken = _looksRareToken;
+        looksRareToken = ERC20(_looksRareToken);
     }
 
-    function sendRewards(bytes calldata looksRareClaim) external {
+    function collectRewards(bytes calldata looksRareClaim) external {
         (bool success,) = looksrareRewardsDistributor.call(looksRareClaim);
         if (!success) revert UnableToClaim();
 
         uint256 balance = looksRareToken.balanceOf(address(this));
-        looksRareToken.transfer(rewardsDistributor, balance);
+        looksRareToken.transfer(routerRewardsDistributor, balance);
         emit RewardsSent(balance);
     }
 }
