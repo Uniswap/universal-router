@@ -61,8 +61,8 @@ describe('LooksRare', () => {
       ])
 
       planner.addCommand(CommandType.LOOKS_RARE_721, [value, calldata, ALICE_ADDRESS, COVEN_ADDRESS, tokenId])
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
+
       await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
 
       await expect((await covenContract.connect(alice).ownerOf(tokenId)).toLowerCase()).to.eq(ALICE_ADDRESS)
