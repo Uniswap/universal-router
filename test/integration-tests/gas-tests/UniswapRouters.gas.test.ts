@@ -217,7 +217,13 @@ describe('Uniswap Gas Tests', () => {
           planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
           // back to the router so someone can take a fee
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
-          planner.addCommand(CommandType.SWEEP_WITH_FEE, [WETH.address, alice.address, 1, ONE_PERCENT_BIPS, bob.address])
+          planner.addCommand(CommandType.SWEEP_WITH_FEE, [
+            WETH.address,
+            alice.address,
+            1,
+            ONE_PERCENT_BIPS,
+            bob.address,
+          ])
 
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
