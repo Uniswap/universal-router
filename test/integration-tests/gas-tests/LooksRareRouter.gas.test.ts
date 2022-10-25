@@ -1,5 +1,5 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
-import { Router } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain'
 import { resetFork } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE } from './../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
@@ -16,11 +16,12 @@ import {
   LOOKS_RARE_1155_ORDER,
   LOOKS_RARE_721_ORDER,
 } from '../shared/protocolHelpers/looksrare'
-import deployRouter from '../shared/deployRouter'
+import deployRouter, { deployPermit2 } from '../shared/deployRouter'
 
 describe('LooksRare Gas Tests', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let value: BigNumber
   let planner: RoutePlanner
 
@@ -33,7 +34,8 @@ describe('LooksRare Gas Tests', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
 
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
     planner = new RoutePlanner()
   })
 

@@ -1,9 +1,9 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import SUDOSWAP_ABI from './shared/abis/Sudoswap.json'
-import { ERC721, Router } from '../../typechain'
+import { ERC721, Router, Permit2 } from '../../typechain'
 import { resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
-import deployRouter from './shared/deployRouter'
+import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
@@ -18,6 +18,7 @@ const SUDOLETS_ADDRESS = '0xfa9937555dc20a020a161232de4d2b109c62aa9c'
 describe('Sudoswap', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -36,7 +37,8 @@ describe('Sudoswap', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      router = (await deployRouter()).connect(alice) as Router
+      permit2 = (await deployPermit2()).connect(alice) as Permit2
+      router = (await deployRouter(permit2)).connect(alice) as Router
 
       sudolets = new ethers.Contract(SUDOLETS_ADDRESS, ERC721_ABI).connect(alice) as ERC721
     })

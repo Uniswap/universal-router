@@ -1,4 +1,4 @@
-import { Router, ERC721 } from '../../typechain'
+import { Router, Permit2, ERC721 } from '../../typechain'
 import type { Contract } from '@ethersproject/contracts'
 import { BigNumber } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
@@ -6,7 +6,7 @@ import { expect } from './shared/expect'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
-import deployRouter from './shared/deployRouter'
+import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import {
   ALICE_ADDRESS,
   COVEN_ADDRESS,
@@ -36,6 +36,7 @@ const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
 describe('Router', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let daiContract: Contract
   let pair_DAI_WETH: Pair
 
@@ -48,7 +49,8 @@ describe('Router', () => {
     })
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
   })
 
   describe('#execute', async () => {

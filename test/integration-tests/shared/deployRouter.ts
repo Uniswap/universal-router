@@ -8,8 +8,7 @@ import {
   V3_INIT_CODE_HASH_MAINNET,
 } from './constants'
 
-export default async (): Promise<Router> => {
-  const permit2 = await deployPermit2()
+export default async (permit2: Permit2): Promise<Router> => {
   const routerFactory = await ethers.getContractFactory('Router')
   const router = (await routerFactory.deploy(
     permit2.address,

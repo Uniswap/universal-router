@@ -1,8 +1,8 @@
 import { CommandType, RoutePlanner } from './shared/planner'
-import { Router, ERC721, ERC1155 } from '../../typechain'
+import { Router, Permit2, ERC721, ERC1155 } from '../../typechain'
 import { resetFork, COVEN_721, TWERKY_1155 } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE } from './shared/constants'
-import deployRouter from './shared/deployRouter'
+import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { expect } from 'chai'
@@ -21,6 +21,7 @@ import {
 describe('LooksRare', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let value: BigNumber
   let planner: RoutePlanner
   let covenContract: ERC721
@@ -37,7 +38,8 @@ describe('LooksRare', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
 
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
     planner = new RoutePlanner()
   })
 

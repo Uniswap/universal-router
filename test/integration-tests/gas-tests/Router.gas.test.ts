@@ -1,4 +1,4 @@
-import { Router } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain'
 import { expect } from '../shared/expect'
 import type { Contract } from '@ethersproject/contracts'
 import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
@@ -14,7 +14,7 @@ import {
   getAdvancedOrderParams,
   AdvancedOrder,
 } from '../shared/protocolHelpers/seaport'
-import deployRouter from '../shared/deployRouter'
+import deployRouter, { deployPermit2 } from '../shared/deployRouter'
 import { RoutePlanner, CommandType } from '../shared/planner'
 import { BigNumber } from 'ethers'
 
@@ -24,6 +24,7 @@ describe('Router Gas Tests', () => {
   let alice: SignerWithAddress
   let planner: RoutePlanner
   let router: Router
+  let permit2: Permit2
   let daiContract: Contract
 
   beforeEach(async () => {
@@ -34,7 +35,8 @@ describe('Router Gas Tests', () => {
       params: [ALICE_ADDRESS],
     })
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
     planner = new RoutePlanner()
   })
 

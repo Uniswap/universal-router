@@ -1,6 +1,6 @@
 import FOUNDATION_ABI from './shared/abis/Foundation.json'
-import { Router, ERC721 } from '../../typechain'
-import deployRouter from './shared/deployRouter'
+import { Router, ERC721, Permit2 } from '../../typechain'
+import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -18,6 +18,7 @@ const REFERRER = '0x459e213D8B5E79d706aB22b945e3aF983d51BC4C'
 describe('Foundation', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -36,7 +37,8 @@ describe('Foundation', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      router = (await deployRouter()).connect(alice) as Router
+      permit2 = (await deployPermit2()).connect(alice) as Permit2
+      router = (await deployRouter(permit2)).connect(alice) as Router
 
       mentalWorlds = new ethers.Contract(MENTAL_WORLDS_ADDRESS, ERC721_ABI) as ERC721
     })

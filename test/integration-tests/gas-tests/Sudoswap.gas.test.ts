@@ -1,13 +1,13 @@
 import { CommandType, RoutePlanner } from '../shared/planner'
 import SUDOSWAP_ABI from '../shared/abis/Sudoswap.json'
-import { Router } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain'
 import { resetFork } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from '../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
-import deployRouter from '../shared/deployRouter'
+import deployRouter, { deployPermit2 } from '../shared/deployRouter'
 const { ethers } = hre
 
 const SUDOSWAP_INTERFACE = new ethers.utils.Interface(SUDOSWAP_ABI)
@@ -15,6 +15,7 @@ const SUDOSWAP_INTERFACE = new ethers.utils.Interface(SUDOSWAP_ABI)
 describe('Sudoswap Gas Tests', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -31,7 +32,8 @@ describe('Sudoswap Gas Tests', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      router = (await deployRouter()).connect(alice) as Router
+      permit2 = (await deployPermit2()).connect(alice) as Permit2
+      router = (await deployRouter(permit2)).connect(alice) as Router
     })
 
     it('gas: purchases token ids 80, 35, 93 of Sudolets', async () => {

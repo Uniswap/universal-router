@@ -6,13 +6,13 @@ import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
 import { makePair, encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
-import { Router } from '../../typechain'
+import { Permit2, Router } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE, ONE_PERCENT_BIPS } from './shared/constants'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import deployRouter from './shared/deployRouter'
+import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 const { ethers } = hre
@@ -21,6 +21,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let daiContract: Contract
   let wethContract: Contract
   let usdcContract: Contract
@@ -41,22 +42,23 @@ describe('Uniswap V2 and V3 Tests:', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
     pair_DAI_USDC = await makePair(alice, DAI, USDC)
   })
 
   describe('Trade on UniswapV2 with Permit2', () => {
-    const amountIn: BigNumber = expandTo18DecimalsBN(5)
     let planner: RoutePlanner
 
     beforeEach(async () => {
       planner = new RoutePlanner()
-      await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
     })
 
     describe('ERC20 --> ERC20', () => {
       it('completes a V2 exactIn swap', async () => {
+        // the user approves permit2
+        await daiContract.connect(bob).approve()
         const minAmountOut = expandTo18DecimalsBN(0.0001)
         planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], alice.address])

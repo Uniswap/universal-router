@@ -1,17 +1,18 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
-import { Router } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain'
 import { resetFork, ENS_721 } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { X2Y2Order, x2y2Orders, X2Y2_INTERFACE } from '../shared/protocolHelpers/x2y2'
-import deployRouter from '../shared/deployRouter'
+import deployRouter, { deployPermit2 } from '../shared/deployRouter'
 const { ethers } = hre
 
 describe('X2Y2', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -30,7 +31,8 @@ describe('X2Y2', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      router = (await deployRouter()).connect(alice) as Router
+      permit2 = (await deployPermit2()).connect(alice) as Permit2
+      router = (await deployRouter(permit2)).connect(alice) as Router
 
       erc721Order = x2y2Orders[0]
       const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
@@ -64,7 +66,8 @@ describe('X2Y2', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      router = (await deployRouter()).connect(alice) as Router
+      permit2 = (await deployPermit2()).connect(alice) as Permit2
+      router = (await deployRouter(permit2)).connect(alice) as Router
 
       erc1155Order = x2y2Orders[1]
       const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))

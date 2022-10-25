@@ -4,7 +4,7 @@ import { Route as V2RouteSDK, Pair } from '@uniswap/v2-sdk'
 import { Route as V3RouteSDK, FeeAmount } from '@uniswap/v3-sdk'
 import { SwapRouter, Trade } from '@uniswap/router-sdk'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import deployRouter from './../shared/deployRouter'
+import deployRouter, { deployPermit2 } from '../shared/deployRouter'
 import {
   makePair,
   expandTo18Decimals,
@@ -16,7 +16,7 @@ import {
   pool_WETH_USDT,
 } from '../shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
-import { Router } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { executeSwap, resetFork, WETH, DAI, USDC, USDT } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE, ONE_PERCENT_BIPS } from '../shared/constants'
@@ -38,6 +38,7 @@ describe('Uniswap Gas Tests', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let daiContract: Contract
   let wethContract: Contract
   let planner: RoutePlanner
@@ -57,7 +58,8 @@ describe('Uniswap Gas Tests', () => {
     bob = (await ethers.getSigners())[1]
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
     pair_DAI_USDC = await makePair(alice, DAI, USDC)
     pair_USDC_WETH = await makePair(alice, USDC, WETH)

@@ -1,5 +1,5 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
-import { Router } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import NFTX_ZAP_ABI from './../shared/abis/NFTXZap.json'
 import { resetFork, WETH } from './../shared/mainnetForkHelpers'
@@ -7,7 +7,7 @@ import { ALICE_ADDRESS, DEADLINE, NFTX_COVEN_VAULT_ID } from './../shared/consta
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './../shared/helpers'
 import hre from 'hardhat'
-import deployRouter from '../shared/deployRouter'
+import deployRouter, { deployPermit2 } from '../shared/deployRouter'
 const { ethers } = hre
 
 const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
@@ -15,6 +15,7 @@ const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
 describe('NFTX Gas Tests', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -24,7 +25,8 @@ describe('NFTX Gas Tests', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
     planner = new RoutePlanner()
   })
 

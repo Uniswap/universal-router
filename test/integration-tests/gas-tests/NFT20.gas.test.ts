@@ -1,6 +1,6 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
 import NFT20_ABI from './../shared/abis/NFT20.json'
-import { ERC721, Router } from '../../../typechain'
+import { ERC721, Router, Permit2 } from '../../../typechain'
 import { resetFork } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, ALPHABETTIES_ADDRESS } from './../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
@@ -8,7 +8,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
 import { abi as ERC721_ABI } from '../../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
-import deployRouter from './../shared/deployRouter'
+import deployRouter, { deployPermit2 } from '../shared/deployRouter'
 const { ethers } = hre
 
 const NFT20_INTERFACE = new ethers.utils.Interface(NFT20_ABI)
@@ -16,6 +16,7 @@ const NFT20_INTERFACE = new ethers.utils.Interface(NFT20_ABI)
 describe('NFT20', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let planner: RoutePlanner
   let alphabetties: ERC721
 
@@ -28,7 +29,8 @@ describe('NFT20', () => {
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
     })
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
 
     alphabetties = new ethers.Contract(ALPHABETTIES_ADDRESS, ERC721_ABI) as ERC721
     alphabetties = alphabetties.connect(alice)
