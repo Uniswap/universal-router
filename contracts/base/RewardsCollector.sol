@@ -3,9 +3,9 @@ pragma solidity ^0.8.15;
 
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
-import '../interfaces/IRewardsExtractor.sol';
+import '../interfaces/IRewardsCollector.sol';
 
-contract RewardsExtractor is IRewardsExtractor {
+contract RewardsCollector is IRewardsCollector {
     using SafeTransferLib for ERC20;
 
     event RewardsSent(uint256 amount);

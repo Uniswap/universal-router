@@ -2,12 +2,12 @@
 pragma solidity ^0.8.15;
 
 import './base/Dispatcher.sol';
-import './base/RewardsExtractor.sol';
+import './base/RewardsCollector.sol';
 import './libraries/Constants.sol';
 import './libraries/Commands.sol';
 import './interfaces/IRouter.sol';
 
-contract Router is IRouter, Dispatcher, RewardsExtractor {
+contract Router is IRouter, Dispatcher, RewardsCollector {
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
@@ -22,7 +22,7 @@ contract Router is IRouter, Dispatcher, RewardsExtractor {
         bytes32 poolInitCodeHash
     )
         Dispatcher(permitPost, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash)
-        RewardsExtractor(rewardsDistributor)
+        RewardsCollector(rewardsDistributor)
     {}
 
     /// @inheritdoc IRouter
