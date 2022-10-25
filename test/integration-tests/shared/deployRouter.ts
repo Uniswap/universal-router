@@ -16,7 +16,7 @@ export default async (mockLooksRareRewardsDistributor?: string, mockLooksRareTok
   const router = (await routerFactory.deploy(
     ethers.constants.AddressZero,
     ROUTER_REWARDS_DISTRIBUTOR,
-    mockLooksRareRewardsDistributor?? LOOKSRARE_REWARDS_DISTRIBUTOR,
+    mockLooksRareRewardsDistributor ?? LOOKSRARE_REWARDS_DISTRIBUTOR,
     mockLooksRareToken ?? LOOKSRARE_TOKEN,
     V2_FACTORY_MAINNET,
     V3_FACTORY_MAINNET,

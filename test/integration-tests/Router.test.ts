@@ -52,15 +52,17 @@ describe('Router', () => {
     // mock rewards contracts
     const tokenFactory = await ethers.getContractFactory('MintableERC20')
     const mockDistributorFactory = await ethers.getContractFactory('MockLooksRareRewardsDistributor')
-    mockLooksRareToken = await tokenFactory.connect(alice).deploy(expandTo18DecimalsBN(5)) as ERC20
+    mockLooksRareToken = (await tokenFactory.connect(alice).deploy(expandTo18DecimalsBN(5))) as ERC20
     mockLooksRareRewardsDistributor = (await mockDistributorFactory.deploy(
       ROUTER_REWARDS_DISTRIBUTOR,
-      mockLooksRareToken.address,
+      mockLooksRareToken.address
     )) as MockLooksRareRewardsDistributor
 
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
-    router = (await deployRouter(mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)).connect(alice) as Router
+    router = (await deployRouter(mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)).connect(
+      alice
+    ) as Router
   })
 
   describe('#execute', () => {
