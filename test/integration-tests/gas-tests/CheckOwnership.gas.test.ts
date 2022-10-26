@@ -1,7 +1,12 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
 import { Router } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import { seaportOrders, seaportInterface, getAdvancedOrderParams, purchaseDataForTwoCovensSeaport } from './../shared/protocolHelpers/seaport'
+import {
+  seaportOrders,
+  seaportInterface,
+  getAdvancedOrderParams,
+  purchaseDataForTwoCovensSeaport,
+} from './../shared/protocolHelpers/seaport'
 import { resetFork } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -40,7 +45,6 @@ describe('Check Ownership Gas', () => {
     const inputs = planner.inputs
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
-
 
   it('gas: checks ownership after a seaport trade, one NFT', async () => {
     const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])

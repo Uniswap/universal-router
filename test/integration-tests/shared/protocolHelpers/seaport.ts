@@ -77,12 +77,11 @@ export function calculateValue(considerations: ConsiderationItem[]): BigNumber {
   )
 }
 
-
 type BuyCovensReturnData = {
-  calldata: string,
-  advancedOrder0: AdvancedOrder,
-  advancedOrder1: AdvancedOrder,
-  value: BigNumberish,
+  calldata: string
+  advancedOrder0: AdvancedOrder
+  advancedOrder1: AdvancedOrder
+  value: BigNumberish
 }
 
 export function purchaseDataForTwoCovensSeaport(receipient: string): BuyCovensReturnData {
