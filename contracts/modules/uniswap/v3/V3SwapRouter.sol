@@ -12,6 +12,11 @@ abstract contract V3SwapRouter {
     using V3Path for bytes;
     using SafeCast for uint256;
 
+    error InvalidSwap();
+    error V3TooLittleReceived();
+    error V3TooMuchRequested();
+    error V3InvalidAmountOut();
+
     /// @notice The identifying key of the pool
     struct PoolKey {
         address token0;
@@ -41,7 +46,7 @@ abstract contract V3SwapRouter {
     }
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external {
-        require(amount0Delta > 0 || amount1Delta > 0); // swaps entirely within 0-liquidity regions are not supported
+        if (amount0Delta <= 0 && amount1Delta <= 0) revert InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
 
         // because exact output swaps are executed in reverse order, in this case tokenOut is actually tokenIn
         (address tokenIn, address tokenOut,) = path.decodeFirstPool();
@@ -96,7 +101,7 @@ abstract contract V3SwapRouter {
             }
         }
 
-        require(amountOut >= amountOutMinimum, 'Too little received');
+        if(amountOut < amountOutMinimum) revert V3TooLittleReceived();
     }
 
     function v3SwapExactOutput(address recipient, uint256 amountOut, uint256 amountInMaximum, bytes memory path)
@@ -109,10 +114,10 @@ abstract contract V3SwapRouter {
             ? (uint256(amount0Delta), uint256(-amount1Delta))
             : (uint256(amount1Delta), uint256(-amount0Delta));
 
-        require(amountOutReceived == amountOut);
+        if (amountOutReceived != amountOut) revert V3InvalidAmountOut();
 
         amountIn = amountInCached;
-        require(amountIn <= amountInMaximum, 'Too much requested');
+        if (amountIn > amountInMaximum) revert V3TooMuchRequested();
         amountInCached = DEFAULT_AMOUNT_IN_CACHED;
     }
 
