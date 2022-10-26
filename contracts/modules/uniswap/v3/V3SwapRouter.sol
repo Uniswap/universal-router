@@ -101,7 +101,7 @@ abstract contract V3SwapRouter {
             }
         }
 
-        if(amountOut < amountOutMinimum) revert V3TooLittleReceived();
+        if (amountOut < amountOutMinimum) revert V3TooLittleReceived();
     }
 
     function v3SwapExactOutput(address recipient, uint256 amountOut, uint256 amountInMaximum, bytes memory path)

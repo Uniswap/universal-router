@@ -48,7 +48,7 @@ contract V2SwapRouter {
         _v2Swap(path, recipient);
 
         uint256 amountOut = IERC20(path[path.length - 1]).balanceOf(recipient) - balanceBefore;
-        if(amountOut < amountOutMin) revert V2TooLittleReceived();
+        if (amountOut < amountOutMin) revert V2TooLittleReceived();
     }
 
     function v2SwapExactOutput(uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient)

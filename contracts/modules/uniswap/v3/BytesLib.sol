@@ -17,9 +17,9 @@ library BytesLib {
     error ToUint24OutOfBounds();
 
     function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
-        if(_length + 31 <_length) revert SliceOverflow();
-        if(_start + _length <_start) revert SliceOverflow();
-        if(_bytes.length < _start + _length) revert SliceOutOfBounds();
+        if (_length + 31 < _length) revert SliceOverflow();
+        if (_start + _length < _start) revert SliceOverflow();
+        if (_bytes.length < _start + _length) revert SliceOutOfBounds();
 
         bytes memory tempBytes;
 
@@ -73,8 +73,8 @@ library BytesLib {
     }
 
     function toAddress(bytes memory _bytes, uint256 _start) internal pure returns (address) {
-        if(_start + 20 < _start) revert ToAddressOverflow();
-        if(_bytes.length < _start + 20) revert ToAddressOutOfBounds();
+        if (_start + 20 < _start) revert ToAddressOverflow();
+        if (_bytes.length < _start + 20) revert ToAddressOutOfBounds();
         address tempAddress;
 
         assembly {
@@ -85,8 +85,8 @@ library BytesLib {
     }
 
     function toUint24(bytes memory _bytes, uint256 _start) internal pure returns (uint24) {
-        if(_start + 3 < _start) revert ToUint24Overflow();
-        if(_bytes.length < _start + 3) revert ToUint24OutOfBounds();
+        if (_start + 3 < _start) revert ToUint24Overflow();
+        if (_bytes.length < _start + 3) revert ToUint24OutOfBounds();
         uint24 tempUint;
 
         assembly {

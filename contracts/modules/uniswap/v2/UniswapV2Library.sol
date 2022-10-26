@@ -68,7 +68,7 @@ library UniswapV2Library {
         pure
         returns (uint256 amountIn)
     {
-          if (reserveIn == 0 || reserveOut == 0) revert InvalidReserves();
+        if (reserveIn == 0 || reserveOut == 0) revert InvalidReserves();
         uint256 numerator = reserveIn * amountOut * 1000;
         uint256 denominator = (reserveOut - amountOut) * 997;
         amountIn = (numerator / denominator) + 1;
