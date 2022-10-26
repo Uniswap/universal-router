@@ -56,7 +56,7 @@ contract V2SwapRouter is Permit2Payments {
             UniswapV2Library.getAmountInMultihop(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path);
         require(amountIn <= amountInMax, 'Too much requested');
 
-        permit2TransferFrom(path[0], pair, uint160(amountIn));
+        permit2TransferFrom(path[0], msg.sender, pair, uint160(amountIn));
         _v2Swap(path, recipient);
     }
 }

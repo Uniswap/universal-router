@@ -39,7 +39,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (success, output) = PERMIT2.call(data);
         } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
             (address token, address to, uint160 amount) = abi.decode(inputs, (address, address, uint160));
-            permit2TransferFrom(token, to, amount);
+            permit2TransferFrom(token, msg.sender, to, amount);
         } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
             (bytes memory data) = abi.decode(inputs, (bytes));
             // pass in the msg.sender as the first parameter `owner`
@@ -57,13 +57,13 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 abi.decode(inputs, (uint256, uint256, address[], address));
             v2SwapExactOutput(amountOut, amountInMax, path, recipient);
         } else if (command == Commands.V3_SWAP_EXACT_IN) {
-            (address recipient, uint256 amountOut, uint256 amountInMaximum, bytes memory path) =
-                abi.decode(inputs, (address, uint256, uint256, bytes));
-            v3SwapExactInput(recipient, amountOut, amountInMaximum, path);
-        } else if (command == Commands.V3_SWAP_EXACT_OUT) {
             (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                 abi.decode(inputs, (address, uint256, uint256, bytes));
-            v3SwapExactOutput(recipient, amountIn, amountOutMin, path);
+            v3SwapExactInput(recipient, amountIn, amountOutMin, path, msg.sender);
+        } else if (command == Commands.V3_SWAP_EXACT_OUT) {
+            (address recipient, uint256 amountOut, uint256 amountInMax, bytes memory path) =
+                abi.decode(inputs, (address, uint256, uint256, bytes));
+            v3SwapExactOutput(recipient, amountOut, amountInMax, path, msg.sender);
         } else if (command == Commands.SEAPORT) {
             (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
             (success, output) = Constants.SEAPORT.call{value: value}(data);

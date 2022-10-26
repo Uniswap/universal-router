@@ -9,7 +9,7 @@ contract Permit2Payments {
         PERMIT2 = permit2;
     }
 
-    function permit2TransferFrom(address token, address to, uint160 amount) internal {
-        IAllowanceTransfer(PERMIT2).transferFrom(token, msg.sender, to, amount);
+    function permit2TransferFrom(address token, address from, address to, uint160 amount) internal {
+        IAllowanceTransfer(PERMIT2).transferFrom(token, from, to, amount);
     }
 }
