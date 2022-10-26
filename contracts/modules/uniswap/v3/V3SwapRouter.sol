@@ -58,16 +58,24 @@ abstract contract V3SwapRouter is Permit2Payments {
             amount0Delta > 0 ? (tokenIn < tokenOut, uint256(amount0Delta)) : (tokenOut < tokenIn, uint256(amount1Delta));
 
         if (isExactInput) {
+            address payer = data.payer;
+
             // Pay the pool (msg.sender)
-            permit2TransferFrom(tokenIn, data.payer, msg.sender, uint160(amountToPay));
+            if (payer == address(this)) Payments.payERC20(tokenIn, msg.sender, amountToPay);
+            else permit2TransferFrom(tokenIn, payer, msg.sender, uint160(amountToPay));
         } else {
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
+                // this is an intermediate step so the payer is actually this contract
                 _swap(-amountToPay.toInt256(), msg.sender, path.skipToken(), data.payer, false);
             } else {
+                address payer = data.payer;
+
                 amountInCached = amountToPay;
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
-                permit2TransferFrom(tokenOut, data.payer, msg.sender, uint160(amountToPay));
+                            
+                if (payer == address(this)) Payments.payERC20(tokenOut, msg.sender, amountToPay);
+                permit2TransferFrom(tokenOut, payer, msg.sender, uint160(amountToPay));
             }
         }
     }
@@ -94,7 +102,7 @@ abstract contract V3SwapRouter is Permit2Payments {
                 amountIn.toInt256(),
                 hasMultiplePools ? address(this) : recipient, // for intermediate swaps, this contract custodies
                 path.getFirstPool(), // only the first pool is needed
-                payer,
+                payer, // for intermediate swaps, this contract custodies
                 true
             );
 
@@ -102,6 +110,7 @@ abstract contract V3SwapRouter is Permit2Payments {
 
             // decide whether to continue or terminate
             if (hasMultiplePools) {
+                payer = address(this);
                 path = path.skipToken();
             } else {
                 amountOut = amountIn;
