@@ -17,7 +17,7 @@ import hre from 'hardhat'
 import deployRouter from './shared/deployRouter'
 const { ethers } = hre
 
-describe.only('Check Ownership', () => {
+describe('Check Ownership', () => {
   let alice: SignerWithAddress
   let router: Router
   let covenContract: Contract
