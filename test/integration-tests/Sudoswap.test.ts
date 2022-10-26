@@ -1,6 +1,6 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import SUDOSWAP_ABI from './shared/abis/Sudoswap.json'
-import { ERC721, Router, Permit2 } from '../../typechain'
+import { ERC721, Router, Permit2 } from '../../typechain-types'
 import { resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'

@@ -6,7 +6,7 @@ import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
 import { makePair, encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
-import { Permit2, Router } from '../../typechain'
+import { ERC20, Permit2, Router } from '../../typechain-types'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE, MAX_UINT, MAX_UINT160, ONE_PERCENT_BIPS } from './shared/constants'
@@ -23,9 +23,9 @@ describe('Uniswap V2 and V3 Tests:', () => {
   let bob: SignerWithAddress
   let router: Router
   let permit2: Permit2
-  let daiContract: Contract
-  let wethContract: Contract
-  let usdcContract: Contract
+  let daiContract: ERC20
+  let wethContract: ERC20
+  let usdcContract: ERC20
   let planner: RoutePlanner
 
   // 6 pairs for gas tests with high numbers of trades
@@ -43,9 +43,9 @@ describe('Uniswap V2 and V3 Tests:', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     bob = (await ethers.getSigners())[1]
-    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
-    wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
-    usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
+    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob) as ERC20
+    wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob) as ERC20
+    usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob) as ERC20
     permit2 = (await deployPermit2()).connect(bob) as Permit2
     router = (await deployRouter(permit2)).connect(bob) as Router
     pair_DAI_WETH = await makePair(bob, DAI, WETH)

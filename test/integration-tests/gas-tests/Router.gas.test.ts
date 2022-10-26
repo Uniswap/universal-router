@@ -1,6 +1,5 @@
-import { Router, Permit2 } from '../../../typechain'
+import { Router, Permit2, ERC20 } from '../../../typechain-types'
 import { expect } from '../shared/expect'
-import type { Contract } from '@ethersproject/contracts'
 import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
@@ -25,7 +24,7 @@ describe('Router Gas Tests', () => {
   let planner: RoutePlanner
   let router: Router
   let permit2: Permit2
-  let daiContract: Contract
+  let daiContract: ERC20
 
   beforeEach(async () => {
     await resetFork()
@@ -34,7 +33,7 @@ describe('Router Gas Tests', () => {
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
     })
-    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
+    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
     permit2 = (await deployPermit2()).connect(alice) as Permit2
     router = (await deployRouter(permit2)).connect(alice) as Router
     planner = new RoutePlanner()

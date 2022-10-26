@@ -1,5 +1,5 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
-import { Router, Permit2 } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain-types'
 import { resetFork } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE } from './../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'

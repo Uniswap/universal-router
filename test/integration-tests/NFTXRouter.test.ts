@@ -1,6 +1,6 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
-import { Router, Permit2, ERC721, ERC1155 } from '../../typechain'
+import { Router, Permit2, ERC721, ERC1155 } from '../../typechain-types'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { parseEvents } from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'

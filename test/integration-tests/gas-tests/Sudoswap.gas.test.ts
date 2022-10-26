@@ -1,6 +1,6 @@
 import { CommandType, RoutePlanner } from '../shared/planner'
 import SUDOSWAP_ABI from '../shared/abis/Sudoswap.json'
-import { Router, Permit2 } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain-types'
 import { resetFork } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from '../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'

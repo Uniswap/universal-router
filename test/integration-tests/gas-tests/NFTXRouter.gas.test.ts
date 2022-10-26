@@ -1,5 +1,5 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
-import { Router, Permit2 } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain-types'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import NFTX_ZAP_ABI from './../shared/abis/NFTXZap.json'
 import { resetFork, WETH } from './../shared/mainnetForkHelpers'

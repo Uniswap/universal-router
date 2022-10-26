@@ -1,5 +1,5 @@
 import { CommandType, RoutePlanner } from './shared/planner'
-import { Router, Permit2, ERC721, ERC1155 } from '../../typechain'
+import { Router, Permit2, ERC721, ERC1155 } from '../../typechain-types'
 import { resetFork, COVEN_721, TWERKY_1155 } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE } from './shared/constants'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'

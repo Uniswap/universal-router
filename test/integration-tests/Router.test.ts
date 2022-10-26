@@ -1,6 +1,5 @@
-import { Router, Permit2, ERC721 } from '../../typechain'
-import type { Contract } from '@ethersproject/contracts'
-import { BigNumber } from 'ethers'
+import { Router, Permit2, ERC721, ERC20 } from '../../typechain-types'
+import { BigNumber, Signer } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
@@ -37,7 +36,7 @@ describe('Router', () => {
   let alice: SignerWithAddress
   let router: Router
   let permit2: Permit2
-  let daiContract: Contract
+  let daiContract: ERC20
   let pair_DAI_WETH: Pair
 
   beforeEach(async () => {
@@ -47,7 +46,7 @@ describe('Router', () => {
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
     })
-    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
+    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
     permit2 = (await deployPermit2()).connect(alice) as Permit2
     router = (await deployRouter(permit2)).connect(alice) as Router

@@ -2,7 +2,7 @@ import type { Contract } from '@ethersproject/contracts'
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
-import { Router, Permit2 } from '../../typechain'
+import { Router, Permit2, ERC721 } from '../../typechain-types'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import { seaportOrders, seaportInterface, getAdvancedOrderParams } from './shared/protocolHelpers/seaport'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
@@ -16,7 +16,7 @@ describe('Seaport', () => {
   let alice: SignerWithAddress
   let router: Router
   let permit2: Permit2
-  let covenContract: Contract
+  let covenContract: ERC721
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -26,7 +26,7 @@ describe('Seaport', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
+    covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice) as ERC721
     permit2 = (await deployPermit2()).connect(alice) as Permit2
     router = (await deployRouter(permit2)).connect(alice) as Router
     planner = new RoutePlanner()

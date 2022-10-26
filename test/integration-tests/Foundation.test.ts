@@ -1,18 +1,16 @@
 import FOUNDATION_ABI from './shared/abis/Foundation.json'
-import { Router, ERC721, Permit2 } from '../../typechain'
+import { Router, Permit2 } from '../../typechain-types'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
-import { resetFork } from './shared/mainnetForkHelpers'
+import { MENTAL_WORLDS, resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import { expect } from 'chai'
 import { CommandType, RoutePlanner } from './shared/planner'
 const { ethers } = hre
 
 const FOUNDATION_INTERFACE = new ethers.utils.Interface(FOUNDATION_ABI)
-const MENTAL_WORLDS_ADDRESS = '0xEf96021Af16BD04918b0d87cE045d7984ad6c38c'
 const REFERRER = '0x459e213D8B5E79d706aB22b945e3aF983d51BC4C'
 
 describe('Foundation', () => {
@@ -29,8 +27,6 @@ describe('Foundation', () => {
   // In this test we will buy token id 32 of mental worlds NFT (0xEf96021Af16BD04918b0d87cE045d7984ad6c38c),
   // which costs 0.01 ETH
   describe('Buy a mental worlds NFT from Foundation', () => {
-    let mentalWorlds: ERC721
-
     beforeEach(async () => {
       await resetFork(15725945)
       await hre.network.provider.request({
@@ -39,14 +35,12 @@ describe('Foundation', () => {
       })
       permit2 = (await deployPermit2()).connect(alice) as Permit2
       router = (await deployRouter(permit2)).connect(alice) as Router
-
-      mentalWorlds = new ethers.Contract(MENTAL_WORLDS_ADDRESS, ERC721_ABI) as ERC721
     })
 
     it('purchases token id 32 of mental worlds', async () => {
       const value = BigNumber.from('10000000000000000')
-      const calldata = FOUNDATION_INTERFACE.encodeFunctionData('buyV2', [MENTAL_WORLDS_ADDRESS, 32, value, REFERRER])
-      planner.addCommand(CommandType.FOUNDATION, [value, calldata, ALICE_ADDRESS, MENTAL_WORLDS_ADDRESS, 32])
+      const calldata = FOUNDATION_INTERFACE.encodeFunctionData('buyV2', [MENTAL_WORLDS.address, 32, value, REFERRER])
+      planner.addCommand(CommandType.FOUNDATION, [value, calldata, ALICE_ADDRESS, MENTAL_WORLDS.address, 32])
       const { commands, inputs } = planner
 
       const aliceBalance = await ethers.provider.getBalance(alice.address)
@@ -56,7 +50,7 @@ describe('Foundation', () => {
       ).wait()
 
       // Expect that alice has the NFT
-      await expect((await mentalWorlds.connect(alice).ownerOf(32)).toLowerCase()).to.eq(ALICE_ADDRESS)
+      await expect((await MENTAL_WORLDS.connect(alice).ownerOf(32)).toLowerCase()).to.eq(ALICE_ADDRESS)
       // Expect that alice's account has 0.01 (plus gas) less ETH in it
       await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
         value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice))

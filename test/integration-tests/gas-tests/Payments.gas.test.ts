@@ -1,5 +1,4 @@
-import type { Contract } from '@ethersproject/contracts'
-import { Router, Permit2 } from '../../../typechain'
+import { Router, Permit2, ERC20 } from '../../../typechain-types'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import { resetFork, DAI, WETH } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from '../shared/constants'
@@ -18,8 +17,8 @@ describe('Payments Gas Tests', () => {
   let bob: SignerWithAddress
   let router: Router
   let permit2: Permit2
-  let daiContract: Contract
-  let wethContract: Contract
+  let daiContract: ERC20
+  let wethContract: ERC20
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -30,8 +29,8 @@ describe('Payments Gas Tests', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     bob = (await ethers.getSigners())[1]
-    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
-    wethContract = new ethers.Contract(WETH.address, new ethers.utils.Interface(WETH_ABI.abi), alice)
+    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
+    wethContract = new ethers.Contract(WETH.address, new ethers.utils.Interface(WETH_ABI.abi), alice) as ERC20
     permit2 = (await deployPermit2()).connect(alice) as Permit2
     router = (await deployRouter(permit2)).connect(alice) as Router
     planner = new RoutePlanner()
