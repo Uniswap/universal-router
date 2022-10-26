@@ -1,5 +1,5 @@
 import { ERC721, ERC1155 } from '../../../typechain'
-import { abi as ERC20_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
+import { abi as ERC20_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import { abi as ERC721_ABI } from '../../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC1155_ABI } from '../../../artifacts/solmate/tokens/ERC1155.sol/ERC1155.json'
 import { COVEN_ADDRESS, TWERKY_ADDRESS } from './constants'
