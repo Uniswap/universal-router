@@ -59,7 +59,7 @@ describe('Check Ownership', () => {
       ])
 
       const { commands, inputs } = planner
-      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE )).to.be.revertedWith(
+      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.be.revertedWith(
         'ExecutionFailed(0, "0x")'
       )
     })
