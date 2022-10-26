@@ -2,7 +2,7 @@ import type { Contract } from '@ethersproject/contracts'
 import { CurrencyAmount, Ether, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import { Route as V2RouteSDK, Pair } from '@uniswap/v2-sdk'
 import { Route as V3RouteSDK, FeeAmount } from '@uniswap/v3-sdk'
-import { SwapRouter, MixedRouteSDK, Trade } from '@uniswap/router-sdk'
+import { SwapRouter, Trade } from '@uniswap/router-sdk'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import deployRouter from './../shared/deployRouter'
 import {
@@ -15,15 +15,14 @@ import {
   pool_USDC_USDT,
   pool_WETH_USDT,
 } from '../shared/swapRouter02Helpers'
-import { BigNumber } from 'ethers'
+import { BigNumber, BigNumberish } from 'ethers'
 import { Router } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { executeSwap, resetFork, WETH, DAI, USDC, USDT } from '../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE } from '../shared/constants'
+import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE, ONE_PERCENT_BIPS } from '../shared/constants'
 import { expandTo18DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import { defaultAbiCoder } from 'ethers/lib/utils'
 import { RoutePlanner, CommandType } from '../shared/planner'
 const { ethers } = hre
 
@@ -37,6 +36,7 @@ function encodePathExactOutput(tokens: string[]) {
 
 describe('Uniswap Gas Tests', () => {
   let alice: SignerWithAddress
+  let bob: SignerWithAddress
   let router: Router
   let daiContract: Contract
   let wethContract: Contract
@@ -54,6 +54,7 @@ describe('Uniswap Gas Tests', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
+    bob = (await ethers.getSigners())[1]
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, alice)
     router = (await deployRouter()).connect(alice) as Router
@@ -79,7 +80,7 @@ describe('Uniswap Gas Tests', () => {
         amountOut = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
       })
 
-      it('gas: exactIn, one trade, one hop', async () => {
+      it('gas: ERC20 --> ERC20 exactIn, one trade, one hop', async () => {
         v2TradeExactIn = await Trade.fromRoute(
           new V2RouteSDK([pair_DAI_WETH], DAI, WETH),
           amountInDAI,
@@ -94,7 +95,7 @@ describe('Uniswap Gas Tests', () => {
         await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
-      it('gas: exactIn, one trade, two hops', async () => {
+      it('gas: ERC20 --> ERC20 exactIn, one trade, two hops', async () => {
         v2TradeExactIn = await Trade.fromRoute(
           new V2RouteSDK([pair_DAI_USDC, pair_USDC_WETH], DAI, WETH),
           amountInDAI,
@@ -109,7 +110,7 @@ describe('Uniswap Gas Tests', () => {
         await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
-      it('gas: exactIn ETH, one trade, one hop', async () => {
+      it('gas: ETH --> ERC20 exactIn, one trade, one hop', async () => {
         const trade = await Trade.fromRoute(
           new V2RouteSDK([pair_DAI_WETH], Ether.onChain(1), DAI),
           amountInETH,
@@ -124,7 +125,7 @@ describe('Uniswap Gas Tests', () => {
         await snapshotGasCost(executeSwap({ value, calldata }, DAI, WETH, alice))
       })
 
-      it('gas: exactOut, one trade, one hop', async () => {
+      it('gas: ERC20 --> ERC20 exactOut, one trade, one hop', async () => {
         v2TradeExactOut = await Trade.fromRoute(
           new V2RouteSDK([pair_DAI_WETH], WETH, DAI),
           amountOut,
@@ -139,7 +140,7 @@ describe('Uniswap Gas Tests', () => {
         await snapshotGasCost(executeSwap({ value: '0', calldata }, WETH, DAI, alice))
       })
 
-      it('gas: exactOut ETH, one trade, one hop', async () => {
+      it('gas: ERC20 --> ETH exactOut ETH, one trade, one hop', async () => {
         const amountOutETH = CurrencyAmount.fromRawAmount(Ether.onChain(1), expandTo18Decimals(5))
         const trade = await Trade.fromRoute(
           new V2RouteSDK([pair_DAI_WETH], DAI, Ether.onChain(1)),
@@ -166,131 +167,184 @@ describe('Uniswap Gas Tests', () => {
         await wethContract.approve(router.address, expandTo18DecimalsBN(5000))
       })
 
-      it('gas: exactIn, one trade, one hop', async () => {
-        let commands: string = '0x'
-        let inputs: string[] = []
-        let input: string
+      describe('ERC20 --> ERC20', () => {
+        it('gas: exactIn, one trade, one hop', async () => {
+          planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], alice.address])
 
-        // add the transfer command
-        commands = commands.concat('01')
-        input = defaultAbiCoder.encode(
-          ['address', 'address', 'uint256'],
-          [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn]
-        )
-        inputs.push(input)
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
 
-        //add v2 exact in command
-        commands = commands.concat('04')
-        input = defaultAbiCoder.encode(
-          ['uint256', 'address[]', 'address'],
-          [1, [DAI.address, WETH.address], alice.address]
-        )
-        inputs.push(input)
+        it('gas: exactIn, one trade, two hops', async () => {
+          planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            1,
+            [DAI.address, USDC.address, WETH.address],
+            alice.address,
+          ])
+          const { commands, inputs } = planner
 
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactIn, one trade, three hops', async () => {
+          planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            1,
+            [DAI.address, USDC.address, USDT.address, WETH.address],
+            alice.address,
+          ])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactIn, one trade, three hops, no deadline', async () => {
+          planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            1,
+            [DAI.address, USDC.address, USDT.address, WETH.address],
+            alice.address,
+          ])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[])'](commands, inputs))
+        })
+
+        it('gas: exactIn trade, where an output fee is taken', async () => {
+          // will likely make the most sense to take fees on input with permit post in most situations
+          planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
+          // back to the router so someone can take a fee
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
+          planner.addCommand(CommandType.SWEEP_WITH_FEE, [
+            WETH.address,
+            alice.address,
+            1,
+            ONE_PERCENT_BIPS,
+            bob.address,
+          ])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactOut, one trade, one hop', async () => {
+          await wethContract.transfer(router.address, expandTo18DecimalsBN(100))
+          planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+            expandTo18DecimalsBN(5),
+            expandTo18DecimalsBN(100),
+            [WETH.address, DAI.address],
+            alice.address,
+          ])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactOut, one trade, two hops', async () => {
+          await wethContract.transfer(router.address, expandTo18DecimalsBN(100))
+          planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+            expandTo18DecimalsBN(5),
+            expandTo18DecimalsBN(100),
+            [WETH.address, USDC.address, DAI.address],
+            alice.address,
+          ])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactOut, one trade, three hops', async () => {
+          await wethContract.transfer(router.address, expandTo18DecimalsBN(100))
+          planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+            expandTo18DecimalsBN(5),
+            expandTo18DecimalsBN(100),
+            [WETH.address, USDT.address, USDC.address, DAI.address],
+            alice.address,
+          ])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
       })
 
-      it('gas: exactIn, one trade, one hop, no deadline', async () => {
-        planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
-        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], alice.address])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[])'](commands, inputs))
+      describe('ERC20 --> ETH', () => {
+        it('gas: exactIn, one trade, one hop', async () => {
+          planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
+          planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactOut, one trade, one hop', async () => {
+          const amountOut = expandTo18DecimalsBN(1)
+          planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+            amountOut,
+            expandTo18DecimalsBN(10000),
+            [DAI.address, WETH.address],
+            router.address,
+          ])
+          planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, amountOut])
+          planner.addCommand(CommandType.SWEEP, [DAI.address, alice.address, 0])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactOut, with ETH fee', async () => {
+          const amountOut = expandTo18DecimalsBN(1)
+          planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+            amountOut,
+            expandTo18DecimalsBN(10000),
+            [DAI.address, WETH.address],
+            router.address,
+          ])
+          planner.addCommand(CommandType.UNWRAP_WETH_WITH_FEE, [
+            alice.address,
+            CONTRACT_BALANCE,
+            ONE_PERCENT_BIPS,
+            bob.address,
+          ])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(
+            router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountIn })
+          )
+        })
       })
 
-      it('gas: exactIn, one trade, two hops', async () => {
-        planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn])
-        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, USDC.address, WETH.address], alice.address])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-      })
+      describe('ETH --> ERC20', () => {
+        it('gas: exactIn, one trade, one hop', async () => {
+          const minAmountOut = expandTo18DecimalsBN(0.001)
+          const pairAddress = Pair.getAddress(DAI, WETH)
+          planner.addCommand(CommandType.WRAP_ETH, [pairAddress, amountIn])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [minAmountOut, [WETH.address, DAI.address], alice.address])
 
-      it('gas: exactIn, one trade, three hops', async () => {
-        planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn])
-        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
-          1,
-          [DAI.address, USDC.address, USDT.address, WETH.address],
-          alice.address,
-        ])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-      })
+          const { commands, inputs } = planner
+          await snapshotGasCost(
+            router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountIn })
+          )
+        })
 
-      it('gas: exactIn, one trade, three hops, no deadline', async () => {
-        planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_USDC.liquidityToken.address, amountIn])
-        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
-          1,
-          [DAI.address, USDC.address, USDT.address, WETH.address],
-          alice.address,
-        ])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[])'](commands, inputs))
-      })
+        it('gas: exactOut, one trade, one hop', async () => {
+          const amountOut = expandTo18DecimalsBN(100)
+          const value = expandTo18DecimalsBN(1)
 
-      it('gas: exactIn ETH, one trade, one hop', async () => {
-        const pairAddress = Pair.getAddress(DAI, WETH)
-        planner.addCommand(CommandType.WRAP_ETH, [pairAddress, amountIn])
-        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [amountIn, [WETH.address, DAI.address], alice.address])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountIn }))
-      })
+          planner.addCommand(CommandType.WRAP_ETH, [router.address, value])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+            amountOut,
+            expandTo18DecimalsBN(1),
+            [WETH.address, DAI.address],
+            alice.address,
+          ])
+          planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
 
-      it('gas: exactOut, one trade, one hop', async () => {
-        await wethContract.transfer(router.address, expandTo18DecimalsBN(100))
-        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-          expandTo18DecimalsBN(5),
-          expandTo18DecimalsBN(100),
-          [WETH.address, DAI.address],
-          alice.address,
-        ])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-      })
-
-      it('gas: exactOut, one trade, two hops', async () => {
-        await wethContract.transfer(router.address, expandTo18DecimalsBN(100))
-        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-          expandTo18DecimalsBN(5),
-          expandTo18DecimalsBN(100),
-          [WETH.address, USDC.address, DAI.address],
-          alice.address,
-        ])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-      })
-
-      it('gas: exactOut, one trade, three hops', async () => {
-        await wethContract.transfer(router.address, expandTo18DecimalsBN(100))
-        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-          expandTo18DecimalsBN(5),
-          expandTo18DecimalsBN(100),
-          [WETH.address, USDT.address, USDC.address, DAI.address],
-          alice.address,
-        ])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-      })
-
-      it('gas: exactOut ETH, one trade, one hop', async () => {
-        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-          expandTo18DecimalsBN(1),
-          expandTo18DecimalsBN(10000),
-          [DAI.address, WETH.address],
-          router.address,
-        ])
-        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
-        planner.addCommand(CommandType.SWEEP, [DAI.address, alice.address, 0]) //exactOut will have to sweep tokens w/ PermitPost
-
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+        })
       })
     })
   })
@@ -315,7 +369,7 @@ describe('Uniswap Gas Tests', () => {
         )
       })
 
-      it('gas: exactIn, one trade, one hop', async () => {
+      it('gas: ERC20 --> ERC20 exactIn, one trade, one hop', async () => {
         const { calldata } = SwapRouter.swapCallParameters(v3ExactIn, {
           slippageTolerance,
           recipient: alice.address,
@@ -325,7 +379,7 @@ describe('Uniswap Gas Tests', () => {
         await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
-      it('gas: exactIn, one trade, two hops', async () => {
+      it('gas: ERC20 --> ERC20 exactIn, one trade, two hops', async () => {
         v3ExactInMultihop = await Trade.fromRoute(
           new V3RouteSDK([pool_DAI_USDC, pool_USDC_WETH], DAI, WETH),
           amountIn,
@@ -340,7 +394,7 @@ describe('Uniswap Gas Tests', () => {
         await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
-      it('gas: exactIn, one trade, three hops', async () => {
+      it('gas: ERC20 --> ERC20 exactIn, one trade, three hops', async () => {
         v3ExactInMultihop = await Trade.fromRoute(
           new V3RouteSDK([pool_DAI_USDC, pool_USDC_USDT, pool_WETH_USDT], DAI, WETH),
           amountIn,
@@ -355,7 +409,7 @@ describe('Uniswap Gas Tests', () => {
         await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
-      it('gas: exactOut, one trade, one hop', async () => {
+      it('gas: ERC20 --> ERC20 exactOut, one trade, one hop', async () => {
         const { calldata } = SwapRouter.swapCallParameters(v3ExactOut, {
           slippageTolerance,
           recipient: alice.address,
@@ -365,7 +419,7 @@ describe('Uniswap Gas Tests', () => {
         await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
-      it('gas: exactOut, one trade, two hops', async () => {
+      it('gas: ERC20 --> ERC20 exactOut, one trade, two hops', async () => {
         v3ExactOutMultihop = await Trade.fromRoute(
           new V3RouteSDK([pool_DAI_USDC, pool_USDC_WETH], DAI, WETH),
           amountOut,
@@ -380,7 +434,7 @@ describe('Uniswap Gas Tests', () => {
         await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
       })
 
-      it('gas: exactOut, one trade, three hops', async () => {
+      it('gas: ERC20 --> ERC20 exactOut, one trade, three hops', async () => {
         v3ExactOutMultihop = await Trade.fromRoute(
           new V3RouteSDK([pool_DAI_USDC, pool_USDC_USDT, pool_WETH_USDT], DAI, WETH),
           amountOut,
@@ -397,19 +451,20 @@ describe('Uniswap Gas Tests', () => {
     })
 
     describe('with Narwhal Router.', () => {
-      const amountIn: BigNumber = expandTo18DecimalsBN(5)
+      const amountIn: BigNumber = expandTo18DecimalsBN(500)
       const amountInMax: BigNumber = expandTo18DecimalsBN(2000)
       const amountOut: BigNumber = expandTo18DecimalsBN(1)
 
       const addV3ExactInTrades = (
         planner: RoutePlanner,
-        numTrades: number,
-        amountOutMin: number,
+        numTrades: BigNumberish,
+        amountOutMin: BigNumberish,
+        recipient?: string,
         tokens: string[] = [DAI.address, WETH.address]
       ) => {
         const path = encodePathExactInput(tokens)
         for (let i = 0; i < numTrades; i++) {
-          planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [alice.address, amountIn, amountOutMin, path])
+          planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [recipient ?? alice.address, amountIn, amountOutMin, path])
         }
       }
 
@@ -418,174 +473,258 @@ describe('Uniswap Gas Tests', () => {
         await daiContract.transfer(router.address, expandTo18DecimalsBN(1000000))
       })
 
-      it('gas: exactIn, one trade, one hop', async () => {
-        const amountOutMin: number = 0.0005 * 10 ** 18
-        addV3ExactInTrades(planner, 1, amountOutMin)
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+      describe('ERC20 --> ERC20', () => {
+        it('gas: exactIn, one trade, one hop', async () => {
+          const amountOutMin: number = 0.0005 * 10 ** 18
+          addV3ExactInTrades(planner, 1, amountOutMin)
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactIn, one trade, two hops', async () => {
+          const amountOutMin: number = 3 * 10 ** 6
+          addV3ExactInTrades(planner, 1, amountOutMin, alice.address, [DAI.address, WETH.address, USDC.address])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactIn, one trade, three hops', async () => {
+          const amountOutMin: number = 3 * 10 ** 6
+          addV3ExactInTrades(planner, 1, amountOutMin, alice.address, [
+            DAI.address,
+            WETH.address,
+            USDT.address,
+            USDC.address,
+          ])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactOut, one trade, one hop', async () => {
+          const tokens = [DAI.address, WETH.address]
+          const path = encodePathExactOutput(tokens)
+          planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactOut, one trade, two hops', async () => {
+          // trade DAI in for WETH out
+          const tokens = [DAI.address, USDC.address, WETH.address]
+          const path = encodePathExactOutput(tokens)
+
+          planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactOut, one trade, three hops', async () => {
+          // trade DAI in for WETH out
+          const tokens = [DAI.address, USDC.address, USDT.address, WETH.address]
+          const path = encodePathExactOutput(tokens)
+
+          planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
       })
 
-      it('gas: exactIn, one trade, two hops', async () => {
-        const amountOutMin: number = 3 * 10 ** 6
-        addV3ExactInTrades(planner, 1, amountOutMin, [DAI.address, WETH.address, USDC.address])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+      describe('ERC20 --> ETH', () => {
+        it('gas: exactIn swap', async () => {
+          const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
+          addV3ExactInTrades(planner, 1, amountOutMin, router.address)
+          planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactOut swap', async () => {
+          // trade DAI in for WETH out
+          const tokens = [DAI.address, WETH.address]
+          const path = encodePathExactOutput(tokens)
+          planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [router.address, amountOut, amountInMax, path])
+          planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, amountOut])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
       })
 
-      it('gas: exactIn, one trade, three hops', async () => {
-        const amountOutMin: number = 3 * 10 ** 6
-        addV3ExactInTrades(planner, 1, amountOutMin, [DAI.address, WETH.address, USDT.address, USDC.address])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-      })
+      describe('ETH --> ERC20', () => {
+        it('gas: exactIn swap', async () => {
+          const tokens = [WETH.address, DAI.address]
+          const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
 
-      it('gas: exactOut, one trade, one hop', async () => {
-        const tokens = [DAI.address, WETH.address]
-        const path = encodePathExactOutput(tokens)
-        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-      })
+          planner.addCommand(CommandType.WRAP_ETH, [router.address, amountIn])
+          addV3ExactInTrades(planner, 1, amountOutMin, alice.address, tokens)
 
-      it('gas: exactOut, one trade, two hops', async () => {
-        // trade DAI in for WETH out
-        const tokens = [DAI.address, USDC.address, WETH.address]
-        const path = encodePathExactOutput(tokens)
+          const { commands, inputs } = planner
+          await snapshotGasCost(
+            router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountIn })
+          )
+        })
 
-        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-      })
+        it('gas: exactOut swap', async () => {
+          const tokens = [WETH.address, DAI.address]
+          const path = encodePathExactOutput(tokens)
 
-      it('gas: exactOut, one trade, three hops', async () => {
-        // trade DAI in for WETH out
-        const tokens = [DAI.address, USDC.address, USDT.address, WETH.address]
-        const path = encodePathExactOutput(tokens)
+          planner.addCommand(CommandType.WRAP_ETH, [router.address, amountInMax])
+          planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
+          planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, CONTRACT_BALANCE])
 
-        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [alice.address, amountOut, amountInMax, path])
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+          const { commands, inputs } = planner
+          await snapshotGasCost(
+            router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: amountInMax })
+          )
+        })
       })
     })
   })
 
   describe('Mixing V2 and V3', () => {
-    describe('with Router02.', () => {
-      let amountIn: CurrencyAmount<Token>
-      let mixedRoute: MixedRouteSDK<Token, Token>
-      let mixedTradeExactIn: Trade<Token, Token, TradeType.EXACT_INPUT>
-
-      const slippageTolerance = new Percent(10, 100)
-      const recipient = '0x0000000000000000000000000000000000000003'
-
-      it('gas: V3, then V2', async () => {
-        amountIn = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
-
-        // trades a v3 pool then a v2 pair
-        mixedRoute = new MixedRouteSDK([pool_DAI_USDC, pair_USDC_WETH], DAI, WETH)
-        mixedTradeExactIn = await Trade.fromRoute(mixedRoute, amountIn, TradeType.EXACT_INPUT)
-
-        const { calldata } = SwapRouter.swapCallParameters(mixedTradeExactIn, {
-          slippageTolerance,
-          recipient,
-          deadlineOrPreviousBlockhash: DEADLINE,
-        })
-
-        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
-      })
-
-      it('gas: V2, then V3', async () => {
-        amountIn = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
-
-        // trades a v2 pair, then a v3 pool
-        mixedRoute = new MixedRouteSDK([pair_DAI_USDC, pool_USDC_WETH], DAI, WETH)
-        mixedTradeExactIn = await Trade.fromRoute(mixedRoute, amountIn, TradeType.EXACT_INPUT)
-
-        const { calldata } = SwapRouter.swapCallParameters(mixedTradeExactIn, {
-          slippageTolerance,
-          recipient,
-          deadlineOrPreviousBlockhash: DEADLINE,
-        })
-
-        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
-      })
-    })
-
     describe('with Narwhal Router.', () => {
       beforeEach(async () => {
         planner = new RoutePlanner()
-        await daiContract.transfer(router.address, expandTo18DecimalsBN(1000000))
+        await daiContract.transfer(router.address, expandTo18DecimalsBN(1000))
       })
 
-      it('gas: V3, then V2', async () => {
-        const v3Tokens = [DAI.address, USDC.address]
-        const v2Tokens = [USDC.address, WETH.address]
-        const v3AmountIn: BigNumber = expandTo18DecimalsBN(5)
-        const v3AmountOutMin = 0 // doesnt matter how much USDC it is, what matters is the end of the trade
-        const v2AmountOutMin = 0.0005 * 10 ** 18
-        // V3 trades DAI for USDC, recipient of first trade is the v2 pool for second trade
-        planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
-          Pair.getAddress(USDC, WETH),
-          v3AmountIn,
-          v3AmountOutMin,
-          encodePathExactInput(v3Tokens),
-        ])
+      describe('Interleaving routes', () => {
+        it('gas: V3, then V2', async () => {
+          const v3Tokens = [DAI.address, USDC.address]
+          const v2Tokens = [USDC.address, WETH.address]
+          const v3AmountIn: BigNumber = expandTo18DecimalsBN(5)
+          const v3AmountOutMin = 0
+          const v2AmountOutMin = expandTo18DecimalsBN(0.0005)
 
-        // V2 trades USDC for WETH, sending the tokens to Alice again
-        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountOutMin, v2Tokens, alice.address])
+          planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            Pair.getAddress(USDC, WETH),
+            v3AmountIn,
+            v3AmountOutMin,
+            encodePathExactInput(v3Tokens),
+          ])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountOutMin, v2Tokens, alice.address])
 
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: V2, then V3', async () => {
+          const v2Tokens = [DAI.address, USDC.address]
+          const v3Tokens = [USDC.address, WETH.address]
+          const v2AmountIn: BigNumber = expandTo18DecimalsBN(5)
+          const v2AmountOutMin = 0 // doesnt matter how much USDC it is, what matters is the end of the trade
+          const v3AmountOutMin = expandTo18DecimalsBN(0.0005)
+
+          planner.addCommand(CommandType.TRANSFER, [DAI.address, Pair.getAddress(DAI, USDC), v2AmountIn])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountOutMin, v2Tokens, router.address])
+          planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            alice.address,
+            CONTRACT_BALANCE,
+            v3AmountOutMin,
+            encodePathExactInput(v3Tokens),
+          ])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
       })
 
-      it('gas: V2, then V3', async () => {
-        const v2Tokens = [DAI.address, USDC.address]
-        const v3Tokens = [USDC.address, WETH.address]
-        const v2AmountIn: BigNumber = expandTo18DecimalsBN(5)
-        const v2AmountOutMin = 0 // doesnt matter how much USDC it is, what matters is the end of the trade
-        const v3AmountOutMin = 0.0005 * 10 ** 18
-        planner.addCommand(CommandType.TRANSFER, [DAI.address, Pair.getAddress(DAI, USDC), v2AmountIn])
-        // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
-        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountOutMin, v2Tokens, router.address])
-        // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
-        planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
-          alice.address,
-          CONTRACT_BALANCE,
-          v3AmountOutMin,
-          encodePathExactInput(v3Tokens),
-        ])
+      describe('Split routes', () => {
+        it('gas: ERC20 --> ERC20 split V2 and V3, one hop', async () => {
+          const tokens = [DAI.address, WETH.address]
+          const v2AmountIn: BigNumber = expandTo18DecimalsBN(2)
+          const v3AmountIn: BigNumber = expandTo18DecimalsBN(3)
 
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-      })
+          planner.addCommand(CommandType.TRANSFER, [DAI.address, Pair.getAddress(DAI, WETH), v2AmountIn])
+          // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, tokens, router.address])
+          // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
+          planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            router.address,
+            v3AmountIn,
+            0,
+            encodePathExactInput(tokens),
+          ])
+          // aggregate slippate check
+          planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, expandTo18DecimalsBN(0.0005)])
 
-      it('gas: split V2 and V3, one hop', async () => {
-        const tokens = [DAI.address, WETH.address]
-        const v2AmountIn: BigNumber = expandTo18DecimalsBN(2)
-        const v2AmountOutMin = 0.0002 * 10 ** 18
-        const v3AmountOutMin = 0.0003 * 10 ** 18
-        planner.addCommand(CommandType.TRANSFER, [DAI.address, Pair.getAddress(DAI, WETH), v2AmountIn])
-        // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
-        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountOutMin, tokens, alice.address])
-        // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
-        planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
-          alice.address,
-          CONTRACT_BALANCE,
-          v3AmountOutMin,
-          encodePathExactInput(tokens),
-        ])
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
 
-        const commands = planner.commands
-        const inputs = planner.inputs
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        it('gas: ETH --> ERC20 split V2 and V3, one hop', async () => {
+          const tokens = [WETH.address, USDC.address]
+          const v2AmountIn: BigNumber = expandTo18DecimalsBN(2)
+          const v3AmountIn: BigNumber = expandTo18DecimalsBN(3)
+          const value = v2AmountIn.add(v3AmountIn)
+
+          planner.addCommand(CommandType.WRAP_ETH, [router.address, value])
+          planner.addCommand(CommandType.TRANSFER, [WETH.address, Pair.getAddress(USDC, WETH), v2AmountIn])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, tokens, router.address])
+          planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            router.address,
+            v3AmountIn,
+            0,
+            encodePathExactInput(tokens),
+          ])
+          // aggregate slippate check
+          planner.addCommand(CommandType.SWEEP, [USDC.address, alice.address, 0.0005 * 10 ** 6])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+        })
+
+        it('gas: ERC20 --> ETH split V2 and V3, one hop', async () => {
+          const tokens = [DAI.address, WETH.address]
+          const v2AmountIn: BigNumber = expandTo18DecimalsBN(20)
+          const v3AmountIn: BigNumber = expandTo18DecimalsBN(30)
+
+          planner.addCommand(CommandType.TRANSFER, [DAI.address, Pair.getAddress(DAI, WETH), v2AmountIn])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, tokens, router.address])
+          planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            router.address,
+            v3AmountIn,
+            0,
+            encodePathExactInput(tokens),
+          ])
+          // aggregate slippate check
+          planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, expandTo18DecimalsBN(0.0005)])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: ERC20 --> ETH split V2 and V3, exactOut, one hop', async () => {
+          // TODO: Use permit
+          await daiContract.transfer(router.address, expandTo18DecimalsBN(4000))
+
+          const tokens = [DAI.address, WETH.address]
+          const v2AmountOut: BigNumber = expandTo18DecimalsBN(0.5)
+          const v3AmountOut: BigNumber = expandTo18DecimalsBN(1)
+          const path = encodePathExactOutput(tokens)
+          const maxAmountIn = expandTo18DecimalsBN(4000)
+          const fullAmountOut = v2AmountOut.add(v3AmountOut)
+
+          planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+            v2AmountOut,
+            maxAmountIn,
+            [DAI.address, WETH.address],
+            router.address,
+          ])
+          planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [router.address, v3AmountOut, maxAmountIn, path])
+          // aggregate slippate check
+          planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, fullAmountOut])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
       })
     })
   })

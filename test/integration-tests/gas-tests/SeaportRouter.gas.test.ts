@@ -35,8 +35,8 @@ describe('Seaport Gas Tests', () => {
     ])
 
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
+
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 
@@ -68,8 +68,8 @@ describe('Seaport Gas Tests', () => {
     ])
 
     planner.addCommand(CommandType.SEAPORT, [value, calldata])
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
+
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 })
