@@ -1,6 +1,6 @@
 import type { Contract } from '@ethersproject/contracts'
 import { Router, Permit2 } from '../../../typechain'
-import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
+import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import { resetFork, DAI, WETH } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from '../shared/constants'
 import { expandTo18DecimalsBN } from '../shared/helpers'
