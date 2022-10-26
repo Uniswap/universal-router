@@ -1,5 +1,7 @@
 import { BigNumber } from 'ethers'
+import bn from 'bignumber.js'
 
 export function expandTo18DecimalsBN(n: number): BigNumber {
-  return BigNumber.from(n).mul(BigNumber.from(10).pow(18))
+  // use bn intermediately to allow decimals in intermediate calculations
+  return BigNumber.from(new bn(n).times(new bn(10).pow(18)).toFixed())
 }

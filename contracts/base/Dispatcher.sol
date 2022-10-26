@@ -50,9 +50,9 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 abi.decode(inputs, (uint256, uint256, address[], address));
             v2SwapExactOutput(amountOut, amountInMax, path, recipient);
         } else if (command == Commands.V3_SWAP_EXACT_IN) {
-            (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
+            (address recipient, uint256 amountOut, uint256 amountInMaximum, bytes memory path) =
                 abi.decode(inputs, (address, uint256, uint256, bytes));
-            v3SwapExactInput(recipient, amountIn, amountOutMin, path);
+            v3SwapExactInput(recipient, amountOut, amountInMaximum, path);
         } else if (command == Commands.V3_SWAP_EXACT_OUT) {
             (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
                 abi.decode(inputs, (address, uint256, uint256, bytes));

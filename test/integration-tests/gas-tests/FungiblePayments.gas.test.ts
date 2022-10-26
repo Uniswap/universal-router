@@ -44,8 +44,7 @@ describe('FungiblePayments Gas Tests', () => {
       await daiContract.transfer(router.address, amountOfDAI)
 
       planner.addCommand(CommandType.TRANSFER, [DAI.address, ALICE_ADDRESS, amountOfDAI])
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })
@@ -56,8 +55,7 @@ describe('FungiblePayments Gas Tests', () => {
       await wethContract.transfer(router.address, amount)
 
       planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, amount])
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })
@@ -86,8 +84,7 @@ describe('FungiblePayments Gas Tests', () => {
       await daiContract.transfer(router.address, amountOfDAI)
 
       planner.addCommand(CommandType.SWEEP, [DAI.address, ALICE_ADDRESS, amountOfDAI])
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })
@@ -116,8 +113,7 @@ describe('FungiblePayments Gas Tests', () => {
       await wethContract.transfer(router.address, amount)
 
       planner.addCommand(CommandType.UNWRAP_WETH_WITH_FEE, [alice.address, amount, 50, bob.address])
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })
@@ -128,8 +124,7 @@ describe('FungiblePayments Gas Tests', () => {
       await daiContract.transfer(router.address, amountOfDAI)
 
       planner.addCommand(CommandType.SWEEP_WITH_FEE, [DAI.address, ALICE_ADDRESS, amountOfDAI, 50, bob.address])
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })

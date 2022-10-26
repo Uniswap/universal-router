@@ -50,8 +50,7 @@ describe('Sudoswap', () => {
         1665685098,
       ])
       planner.addCommand(CommandType.SUDOSWAP, [value, calldata])
-      const commands = planner.commands
-      const inputs = planner.inputs
+      const { commands, inputs } = planner
 
       const aliceBalance = await ethers.provider.getBalance(alice.address)
       const receipt = await (
