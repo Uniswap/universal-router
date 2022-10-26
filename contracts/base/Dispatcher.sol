@@ -3,7 +3,7 @@ pragma solidity ^0.8.15;
 
 import '../modules/uniswap/v2/V2SwapRouter.sol';
 import '../modules/uniswap/v3/V3SwapRouter.sol';
-import '../modules/FungiblePayments.sol';
+import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
 import '../libraries/Commands.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
@@ -40,7 +40,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
         } else if (command == Commands.TRANSFER) {
             (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
-            FungiblePayments.pay(token, recipient, value);
+            Payments.pay(token, recipient, value);
         } else if (command == Commands.V2_SWAP_EXACT_IN) {
             (uint256 amountOutMin, address[] memory path, address recipient) =
                 abi.decode(inputs, (uint256, address[], address));
@@ -81,21 +81,21 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (success, output) = Constants.NFT20_ZAP.call{value: value}(data);
         } else if (command == Commands.SWEEP) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
-            FungiblePayments.sweep(token, recipient, amountMin);
+            Payments.sweep(token, recipient, amountMin);
         } else if (command == Commands.WRAP_ETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
-            FungiblePayments.wrapETH(recipient, amountMin);
+            Payments.wrapETH(recipient, amountMin);
         } else if (command == Commands.UNWRAP_WETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
-            FungiblePayments.unwrapWETH9(recipient, amountMin);
+            Payments.unwrapWETH9(recipient, amountMin);
         } else if (command == Commands.SWEEP_WITH_FEE) {
             (address token, address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
                 abi.decode(inputs, (address, address, uint256, uint256, address));
-            FungiblePayments.sweepWithFee(token, recipient, amountMin, feeBips, feeRecipient);
+            Payments.sweepWithFee(token, recipient, amountMin, feeBips, feeRecipient);
         } else if (command == Commands.UNWRAP_WETH_WITH_FEE) {
             (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
                 abi.decode(inputs, (address, uint256, uint256, address));
-            FungiblePayments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
+            Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
         } else {
             revert InvalidCommandType(command);
         }

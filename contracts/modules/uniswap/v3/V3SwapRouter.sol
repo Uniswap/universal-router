@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
-import '../../FungiblePayments.sol';
+import '../../Payments.sol';
 import './V3Path.sol';
 import '../UniswapPoolHelper.sol';
 import '../../../libraries/Constants.sol';
@@ -51,7 +51,7 @@ abstract contract V3SwapRouter {
 
         if (isExactInput) {
             // Pay the pool (msg.sender)
-            FungiblePayments.pay(tokenIn, msg.sender, amountToPay);
+            Payments.pay(tokenIn, msg.sender, amountToPay);
         } else {
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
@@ -59,7 +59,7 @@ abstract contract V3SwapRouter {
             } else {
                 amountInCached = amountToPay;
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
-                FungiblePayments.pay(tokenOut, msg.sender, amountToPay);
+                Payments.pay(tokenOut, msg.sender, amountToPay);
             }
         }
     }
