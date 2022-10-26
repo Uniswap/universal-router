@@ -9,8 +9,7 @@ contract MintableERC20 is ERC20 {
     }
 
     function mint(address to, uint256 amount) public {
-        uint256 balanceNext = balanceOf[to] + amount;
-        require(balanceNext >= amount, 'overflow balance');
-        balanceOf[to] = balanceNext;
+        balanceOf[to]+=amount;
+        totalSupply+=amount;
     }
 }

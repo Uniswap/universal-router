@@ -14,7 +14,7 @@ contract RewardsCollector is IRewardsCollector {
 
     address public immutable routerRewardsDistributor;
     address public immutable looksRareRewardsDistributor;
-    ERC20 immutable looksRareToken;
+    ERC20  public immutable looksRareToken;
 
     constructor(address _routerRewardsDistributor, address _looksRareRewardsDistributor, address _looksRareToken) {
         routerRewardsDistributor = _routerRewardsDistributor;
