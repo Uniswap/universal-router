@@ -32,7 +32,6 @@ describe.only('Uniswap UX Tests:', () => {
   let router: Router
   let permit2: Permit2
   let usdcContract: ERC20
-  let daiContract: ERC20
   let planner: RoutePlanner
 
   let SIMPLE_SWAP: Trade<Token, Token, TradeType.EXACT_INPUT>
@@ -53,7 +52,6 @@ describe.only('Uniswap UX Tests:', () => {
     bob = (await ethers.getSigners())[1]
 
     usdcContract = ERC20__factory.connect(USDC.address, alice)
-    daiContract = ERC20__factory.connect(DAI.address, alice)
 
     permit2 = (await deployPermit2()).connect(bob) as Permit2
     router = (await deployRouter(permit2)).connect(bob) as Router
