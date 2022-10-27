@@ -256,7 +256,7 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
-        let totalGas = BigNumber.from(0)
+        let totalGas = approveSwapRouter02Gas
 
         // Swap 1 (complex)
         const tx1 = await executeSwapRouter02Swap({ value: '0', calldata: callDataComplex }, bob)
@@ -296,7 +296,7 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
-        let totalGas = BigNumber.from(0)
+        let totalGas = approveSwapRouter02Gas
 
         // Do 5 complex swaps
         for (let i = 0; i < 5; i++) {
