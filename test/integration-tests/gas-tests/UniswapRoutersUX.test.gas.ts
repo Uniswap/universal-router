@@ -505,16 +505,14 @@ describe.only('Uniswap UX Tests:', () => {
         let totalGas = approvePermit2Gas
         let calldata: string
         let gasUsed: BigNumber
-        let nonce: number = 0
 
         // Do 5 complex swaps
         for (let i = 0; i < 5; i++) {
-          COMPLEX_SWAP_PERMIT.nonce = nonce
+          COMPLEX_SWAP_PERMIT.nonce = i
           calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2.address)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
           gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
-          nonce += 1
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
         }
@@ -524,13 +522,12 @@ describe.only('Uniswap UX Tests:', () => {
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
-          SIMPLE_SWAP_PERMIT.nonce = nonce
+          SIMPLE_SWAP_PERMIT.nonce = i
           SIMPLE_SWAP_PERMIT.spender = router2.address
           calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2.address)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
           gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP, router2)
 
-          nonce += 1
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
         }
@@ -540,13 +537,12 @@ describe.only('Uniswap UX Tests:', () => {
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
-          SIMPLE_SWAP_PERMIT.nonce = nonce
+          SIMPLE_SWAP_PERMIT.nonce = i
           SIMPLE_SWAP_PERMIT.spender = router3.address
           calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2.address)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
           gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP, router3)
 
-          nonce += 1
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
         }
