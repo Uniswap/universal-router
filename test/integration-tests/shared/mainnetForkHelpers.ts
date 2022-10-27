@@ -19,16 +19,16 @@ export const USDT = new Token(1, '0xdAC17F958D2ee523a2206206994597C13D831ec7', 6
 export const SWAP_ROUTER_V2 = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
 export const V2_FACTORY = 0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f
 
-export const approveSwapRouter02 = async (alice: SignerWithAddress, currency: Currency) => {
+export const approveSwapRouter02 = async (alice: SignerWithAddress, currency: Currency, overrideSwapRouter02Address?: string) => {
   if (currency.isToken) {
     const aliceTokenIn: ERC20 = ERC20__factory.connect(currency.address, alice)
     // const aliceTokenIn = new ethers.Contract(currency.address, ERC20_ABI, alice) as EthersContract
 
     if (currency.symbol == 'USDT') {
-      await (await aliceTokenIn.approve(SWAP_ROUTER_V2, 0)).wait()
+      await (await aliceTokenIn.approve(overrideSwapRouter02Address ?? SWAP_ROUTER_V2, 0)).wait()
     }
 
-    return await (await aliceTokenIn.approve(SWAP_ROUTER_V2, constants.MaxUint256)).wait()
+    return await (await aliceTokenIn.approve(overrideSwapRouter02Address ?? SWAP_ROUTER_V2, constants.MaxUint256)).wait()
   }
 }
 
