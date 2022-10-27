@@ -156,7 +156,10 @@ describe.only('Uniswap UX Tests:', () => {
     }
   })
 
-  async function executeTradeNarwhal(planner: RoutePlanner, trade: Trade<Token, Token, TradeType.EXACT_INPUT>) : Promise<BigNumber> {
+  async function executeTradeNarwhal(
+    planner: RoutePlanner,
+    trade: Trade<Token, Token, TradeType.EXACT_INPUT>
+  ): Promise<BigNumber> {
     for (let i = 0; i < trade.swaps.length; i++) {
       let swap = trade.swaps[i]
       let route = trade.routes[i]
@@ -222,7 +225,7 @@ describe.only('Uniswap UX Tests:', () => {
       it('Permit2 Sign Per Swap', async () => {
         const calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2.address)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
-  
+
         const gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
 
         await snapshotGasCost(approvePermit2Gas.add(gasUsed))
@@ -455,7 +458,7 @@ describe.only('Uniswap UX Tests:', () => {
     const addresses = routeToAddresses(route)
     const feeTiers = new Array(addresses.length - 1)
     for (let i = 0; i < feeTiers.length; i++) {
-      feeTiers[i] = (addresses[i] == WETH.address || addresses[i+1] == WETH.address) ? FeeAmount.HIGH : FeeAmount.LOWEST
+      feeTiers[i] = addresses[i] == WETH.address || addresses[i + 1] == WETH.address ? FeeAmount.HIGH : FeeAmount.LOWEST
     }
     return encodePath(addresses, feeTiers)
   }
@@ -464,5 +467,4 @@ describe.only('Uniswap UX Tests:', () => {
     const tokens = route.path
     return tokens.map((t) => t.address)
   }
-
 })
