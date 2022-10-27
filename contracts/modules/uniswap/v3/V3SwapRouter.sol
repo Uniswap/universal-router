@@ -73,7 +73,7 @@ abstract contract V3SwapRouter is Permit2Payments {
 
                 amountInCached = amountToPay;
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
-                            
+
                 if (payer == address(this)) Payments.payERC20(tokenOut, msg.sender, amountToPay);
                 permit2TransferFrom(tokenOut, payer, msg.sender, uint160(amountToPay));
             }

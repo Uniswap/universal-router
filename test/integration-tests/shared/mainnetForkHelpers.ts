@@ -6,7 +6,7 @@ import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contract
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
 import { TransactionResponse, TransactionReceipt } from '@ethersproject/abstract-provider'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { BigNumber, constants, Contract as EthersContract, } from 'ethers'
+import { BigNumber, constants, Contract as EthersContract } from 'ethers'
 import hre from 'hardhat'
 import { MethodParameters } from '@uniswap/v3-sdk'
 import { Pair } from '@uniswap/v2-sdk'

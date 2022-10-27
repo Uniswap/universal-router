@@ -1,18 +1,22 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Uniswap UX Tests Narwhal: Comparisons Casual Swapper - 3 swaps SwapRouter02 1`] = `1112634`;
+exports[`Uniswap UX Tests: Comparisons Casual Swapper - 3 swaps SwapRouter02 1`] = `1172945`;
 
-exports[`Uniswap UX Tests Narwhal: Comparisons Frequent Swapper - 10 swaps SwapRouter02 1`] = `3260309`;
+exports[`Uniswap UX Tests: Comparisons Frequent Swapper - 10 swaps SwapRouter02 1`] = `3320620`;
 
-exports[`Uniswap UX Tests Narwhal: Comparisons One Time Swapper - Complex Swap SwapRouter02 1`] = `520492`;
+exports[`Uniswap UX Tests: Comparisons One Time Swapper - Complex Swap Permit2 Max Approval Swap 1`] = `1198782`;
 
-exports[`Uniswap UX Tests Narwhal: Comparisons One Time Swapper - Simple Swap Permit2 Max Approval Swap 1`] = `306664`;
+exports[`Uniswap UX Tests: Comparisons One Time Swapper - Complex Swap Permit2 Sign Per Swap 1`] = `1199540`;
 
-exports[`Uniswap UX Tests Narwhal: Comparisons One Time Swapper - Simple Swap Permit2 Sign Per Swap 1`] = `306788`;
+exports[`Uniswap UX Tests: Comparisons One Time Swapper - Complex Swap SwapRouter02 1`] = `520492`;
 
-exports[`Uniswap UX Tests Narwhal: Comparisons One Time Swapper - Simple Swap SwapRouter02 1`] = `278117`;
+exports[`Uniswap UX Tests: Comparisons One Time Swapper - Simple Swap Permit2 Max Approval Swap 1`] = `306488`;
 
-exports[`Uniswap UX Tests Narwhal: Narwhal Estimates Approvals Cost for infinite approval of permit2/swaprouter02 contract 1`] = `
+exports[`Uniswap UX Tests: Comparisons One Time Swapper - Simple Swap Permit2 Sign Per Swap 1`] = `306578`;
+
+exports[`Uniswap UX Tests: Comparisons One Time Swapper - Simple Swap SwapRouter02 1`] = `278117`;
+
+exports[`Uniswap UX Tests: Narwhal Estimates Approvals Cost for infinite approval of permit2/swaprouter02 contract 1`] = `
 Object {
   "calldataByteLength": 68,
   "gasUsed": 60311,

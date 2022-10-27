@@ -49,9 +49,13 @@ contract V2SwapRouter is Permit2Payments {
         require(amountOut >= amountOutMin, 'Too little received');
     }
 
-    function v2SwapExactOutput(uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient, address payer)
-        internal
-    {
+    function v2SwapExactOutput(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] memory path,
+        address recipient,
+        address payer
+    ) internal {
         (uint256 amountIn, address pair) =
             UniswapV2Library.getAmountInMultihop(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path);
         require(amountIn <= amountInMax, 'Too much requested');

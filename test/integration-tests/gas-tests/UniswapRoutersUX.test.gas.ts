@@ -26,7 +26,7 @@ import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { IRoute, Trade } from '@uniswap/router-sdk'
 const { ethers } = hre
 
-describe.only('Uniswap UX Tests Narwhal:', () => {
+describe.only('Uniswap UX Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router
@@ -130,7 +130,7 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
       token: COMPLEX_SWAP.inputAmount.currency.address,
       spender: router.address,
       amount: BigNumber.from(MAX_UINT160),
-      expiration: 0, // expiration of 0 is block.timestamp
+      expiration: DEADLINE, // not the end of time, cheaper gas-wise
       nonce: 0, // this is his first trade
       sigDeadline: DEADLINE,
     }
@@ -152,8 +152,34 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
       nonce: 0, // this is his first trade
       sigDeadline: DEADLINE,
     }
-    COMPLEX_SWAP_PERMIT
   })
+
+  async function executeTradeNarwhal(planner: RoutePlanner, trade: Trade<Token, Token, TradeType.EXACT_INPUT>) : Promise<BigNumber> {
+    for (let i = 0; i < trade.swaps.length; i++) {
+      let swap = trade.swaps[i]
+      let route = trade.routes[i]
+      let amountIn = BigNumber.from(swap.inputAmount.quotient.toString())
+
+      if (swap.route.protocol == 'V2') {
+        const firstPairAddress = Pair.getAddress(route.path[0], route.path[1])
+        let pathAddresses = routeToAddresses(route)
+
+        planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [pathAddresses[0], firstPairAddress, amountIn])
+        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, pathAddresses, bob.address])
+      } else if (swap.route.protocol == 'V3') {
+        let path = encodePathExactInput(route)
+        planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [bob.address, amountIn, 0, path, MSG_SENDER])
+      } else {
+        console.log('invalid protocol')
+      }
+    }
+
+    const { commands, inputs } = planner
+    const tx = await router['execute(bytes,bytes[])'](commands, inputs)
+    const gasUsed = (await tx.wait()).gasUsed
+
+    return gasUsed
+  }
 
   describe('Narwhal Estimates', async () => {
     describe('Approvals', async () => {
@@ -185,6 +211,8 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
+        console.log()
+
         const swapTx = await (await executeSwapRouter02Swap({ value: '0', calldata }, bob)).wait()
         const swapGas = swapTx.gasUsed
 
@@ -193,29 +221,18 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
 
       it('Permit2 Sign Per Swap', async () => {
         const calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2.address)
-        const path = encodePathExactInput(SIMPLE_SWAP.routes[0])
-
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
-        planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [bob.address, SIMPLE_SWAP_PERMIT.amount, 0, path, MSG_SENDER])
 
-        const { commands, inputs } = planner
-
-        const tx = await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
-        const gasUsed = (await tx.wait()).gasUsed
+        const gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
 
         await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
 
       it('Permit2 Max Approval Swap', async () => {
         const calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2.address)
-        const path = encodePathExactInput(SIMPLE_SWAP.routes[0])
-
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
-        planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [bob.address, SIMPLE_SWAP_PERMIT.amount, 0, path, MSG_SENDER])
 
-        const { commands, inputs } = planner
-        const tx = await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
-        const gasUsed = (await tx.wait()).gasUsed
+        const gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
 
         await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
@@ -234,11 +251,26 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
 
         await snapshotGasCost(approveSwapRouter02Gas.add(swapGas))
       })
+
       it('Permit2 Sign Per Swap', async () => {
-        return
+        // sign the permit for this swap
+        const calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2.address)
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+
+        const gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+
+        await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
+
       it('Permit2 Max Approval Swap', async () => {
-        return
+        // send approval for the total input amount
+        const calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2.address)
+
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+
+        const gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+
+        await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
     })
 
@@ -274,11 +306,62 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
       })
 
       it('Permit2 Sign Per Swap', async () => {
-        return
+        let totalGas = approvePermit2Gas
+
+        // Swap 1: complex
+        let calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2.address)
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        let gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+
+        console.log('one complete')
+
+        totalGas = totalGas.add(gasUsed)
+        planner = new RoutePlanner()
+
+        // Swap 2: complex
+        COMPLEX_SWAP_PERMIT.nonce = 1
+        calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2.address)
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+        console.log('two complete')
+
+        totalGas = totalGas.add(gasUsed)
+        planner = new RoutePlanner()
+
+        // Swap 3: simple
+        SIMPLE_SWAP_PERMIT.nonce = 2
+        calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2.address)
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
+
+        totalGas = totalGas.add(gasUsed)
+        await snapshotGasCost(totalGas)
       })
 
       it('Permit2 Max Approval Swap', async () => {
-        return
+        let totalGas = approvePermit2Gas
+
+        // Swap 1: complex, but give max approval no more approvals needed
+        let calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2.address)
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        let gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+        console.log('one complete')
+
+        totalGas = totalGas.add(gasUsed)
+        planner = new RoutePlanner()
+
+        // Swap 2: complex
+        gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+        console.log('two complete')
+
+        totalGas = totalGas.add(gasUsed)
+        planner = new RoutePlanner()
+
+        // Swap 3: simple
+        gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
+
+        totalGas = totalGas.add(gasUsed)
+        await snapshotGasCost(totalGas)
       })
     })
 
@@ -314,24 +397,73 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
       })
 
       it('Permit2 Sign Per Swap', async () => {
-        return
+        let totalGas = approvePermit2Gas
+        let calldata: string
+        let gasUsed: BigNumber
+        let nonce: number = 0
+
+        // Do 5 complex swaps
+        for (let i = 0; i < 5; i++) {
+          COMPLEX_SWAP_PERMIT.nonce = nonce
+          calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2.address)
+          planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+          gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+
+          nonce += 1
+          totalGas = totalGas.add(gasUsed)
+          planner = new RoutePlanner()
+        }
+
+        // Do 5 simple swaps
+        for (let i = 0; i < 5; i++) {
+          SIMPLE_SWAP_PERMIT.nonce = nonce
+          calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2.address)
+          planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+          gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
+
+          nonce += 1
+          totalGas = totalGas.add(gasUsed)
+          planner = new RoutePlanner()
+        }
+
+        await snapshotGasCost(totalGas)
       })
 
       it('Permit2 Max Approval Swap', async () => {
-        return
+        let totalGas = approvePermit2Gas
+        let gasUsed: BigNumber
+
+        // The first trade contains a max permit, all others contain no permit
+        let calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2.address)
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+
+        // Do 5 complex swaps
+        for (let i = 0; i < 5; i++) {
+          gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+          totalGas = totalGas.add(gasUsed)
+          planner = new RoutePlanner()
+        }
+
+        // Do 5 simple swaps
+        for (let i = 0; i < 5; i++) {
+          gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
+          totalGas = totalGas.add(gasUsed)
+          planner = new RoutePlanner()
+        }
+
+        await snapshotGasCost(totalGas)
       })
     })
   })
 
   function encodePathExactInput(route: IRoute<Token, Token, Pool | Pair>) {
-    const tokens = route.path
-    return encodePath(
-      tokens.map((t) => t.address),
-      new Array(tokens.length - 1).fill(FeeAmount.MEDIUM)
-    )
+    const addresses = routeToAddresses(route)
+    return encodePath(addresses, new Array(addresses.length - 1).fill(FeeAmount.MEDIUM))
   }
 
-  // function encodePathExactOutput(tokens: Token[]) {
-  //   return encodePath(tokens.slice().reverse(), new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
-  // }
+  function routeToAddresses(route: IRoute<Token, Token, Pool | Pair>) {
+    const tokens = route.path
+    return tokens.map((t) => t.address)
+  }
+
 })
