@@ -32,6 +32,7 @@ describe.only('Uniswap UX Tests:', () => {
   let router: Router
   let permit2: Permit2
   let usdcContract: ERC20
+  let daiContract: ERC20
   let planner: RoutePlanner
 
   let SIMPLE_SWAP: Trade<Token, Token, TradeType.EXACT_INPUT>
@@ -52,6 +53,7 @@ describe.only('Uniswap UX Tests:', () => {
     bob = (await ethers.getSigners())[1]
 
     usdcContract = ERC20__factory.connect(USDC.address, alice)
+    daiContract = ERC20__factory.connect(DAI.address, alice)
 
     permit2 = (await deployPermit2()).connect(bob) as Permit2
     router = (await deployRouter(permit2)).connect(bob) as Router
@@ -203,7 +205,7 @@ describe.only('Uniswap UX Tests:', () => {
       approveSwapRouter02Gas = swapRouter02ApprovalTx.gasUsed
     })
 
-    describe('One Time Swapper - Simple Swap', async () => {
+    describe.only('One Time Swapper - Simple Swap', async () => {
       it('SwapRouter02', async () => {
         const { calldata } = SwapRouter.swapCallParameters(SIMPLE_SWAP, {
           slippageTolerance: new Percent(10, 100),
@@ -211,10 +213,14 @@ describe.only('Uniswap UX Tests:', () => {
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
-        console.log()
-
         const swapTx = await (await executeSwapRouter02Swap({ value: '0', calldata }, bob)).wait()
         const swapGas = swapTx.gasUsed
+
+        const bobBalanceUSDCAfter = await usdcContract.balanceOf(bob.address)
+        const bobBalanceDAIAfter = await daiContract.balanceOf(bob.address)
+
+        console.log('USDC after swaprouter02: ' + bobBalanceUSDCAfter)
+        console.log('DAI after swaprouter02: ' + bobBalanceDAIAfter)
 
         await snapshotGasCost(approveSwapRouter02Gas.add(swapGas))
       })
@@ -222,8 +228,14 @@ describe.only('Uniswap UX Tests:', () => {
       it('Permit2 Sign Per Swap', async () => {
         const calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2.address)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
-
+  
         const gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
+
+        const bobBalanceUSDCAfter = await usdcContract.balanceOf(bob.address)
+        const bobBalanceDAIAfter = await daiContract.balanceOf(bob.address)
+
+        console.log('USDC after narwhal: ' + bobBalanceUSDCAfter)
+        console.log('DAI after narwhal: ' + bobBalanceDAIAfter)
 
         await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
@@ -238,7 +250,7 @@ describe.only('Uniswap UX Tests:', () => {
       })
     })
 
-    describe('One Time Swapper - Complex Swap', async () => {
+    describe.only('One Time Swapper - Complex Swap', async () => {
       it('SwapRouter02', async () => {
         const { calldata } = SwapRouter.swapCallParameters(COMPLEX_SWAP, {
           slippageTolerance: new Percent(50, 100),
@@ -249,6 +261,13 @@ describe.only('Uniswap UX Tests:', () => {
         const swapTx = await (await executeSwapRouter02Swap({ value: '0', calldata }, bob)).wait()
         const swapGas = swapTx.gasUsed
 
+
+        const bobBalanceUSDCAfter = await usdcContract.balanceOf(bob.address)
+        const bobBalanceDAIAfter = await daiContract.balanceOf(bob.address)
+
+        console.log('USDC after swaprouter02: ' + bobBalanceUSDCAfter)
+        console.log('DAI after swaprouter02: ' + bobBalanceDAIAfter)
+
         await snapshotGasCost(approveSwapRouter02Gas.add(swapGas))
       })
 
@@ -258,6 +277,12 @@ describe.only('Uniswap UX Tests:', () => {
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
 
         const gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+
+        const bobBalanceUSDCAfter = await usdcContract.balanceOf(bob.address)
+        const bobBalanceDAIAfter = await daiContract.balanceOf(bob.address)
+
+        console.log('USDC after narwhal: ' + bobBalanceUSDCAfter)
+        console.log('DAI after narwhal: ' + bobBalanceDAIAfter)
 
         await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })

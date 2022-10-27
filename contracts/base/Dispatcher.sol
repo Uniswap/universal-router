@@ -8,6 +8,7 @@ import '../base/RouterCallbacks.sol';
 import '../libraries/Commands.sol';
 import {ERC721} from 'solmate/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/tokens/ERC1155.sol';
+import 'hardhat/console.sol';
 
 contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     error InvalidCommandType(uint256 commandType);
