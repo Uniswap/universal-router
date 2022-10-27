@@ -220,20 +220,14 @@ describe('Router', () => {
         // invalid Seaport order
         let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
         invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
-        let seaportOrder: Order
-        let seaportValue: BigNumber
-        ;({ order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder))
-        const calldataOpensea = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
-          seaportOrder,
-          [],
-          OPENSEA_CONDUIT_KEY,
-          alice.address,
-        ])
-        planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldataOpensea])
+        const { order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder)
+        const calldataOpensea = seaportInterface.encodeFunctionData('fulfillOrder', [seaportOrder, OPENSEA_CONDUIT_KEY])
+        planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldataOpensea], true)
 
         // valid NFTX order
         let nftxValue: BigNumber = expandTo18DecimalsBN(4)
         let numCovensNFTX = 2
+
         const calldataNFTX = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
           NFTX_COVEN_VAULT_ID,
           numCovensNFTX,
