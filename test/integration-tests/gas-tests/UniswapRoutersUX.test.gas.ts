@@ -1,12 +1,19 @@
-import { TransactionReceipt } from '@ethersproject/abstract-provider'
-import { FeeAmount, Pool } from '@uniswap/v3-sdk'
+import { encodeSqrtRatioX96, FeeAmount, Pool, TickMath } from '@uniswap/v3-sdk'
 import { Pair, Route as V2RouteSDK } from '@uniswap/v2-sdk'
 import { Route as V3RouteSDK } from '@uniswap/v3-sdk'
-import { encodePath } from '../shared/swapRouter02Helpers'
+import { encodePath, expandTo18Decimals } from '../shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
 import { SwapRouter } from '@uniswap/router-sdk'
-import { executeSwap as executeSwapRouter02Swap, resetFork, WETH, DAI, USDC, USDT } from '../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, MAX_UINT } from '../shared/constants'
+import {
+  executeSwapRouter02Swap,
+  resetFork,
+  WETH,
+  DAI,
+  USDC,
+  USDT,
+  approveSwapRouter02,
+} from '../shared/mainnetForkHelpers'
+import { ALICE_ADDRESS, DEADLINE, MAX_UINT, MAX_UINT160 } from '../shared/constants'
 import { expandTo6DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployRouter, { deployPermit2 } from '../shared/deployRouter'
@@ -15,7 +22,6 @@ import hre from 'hardhat'
 import { Router, Permit2, ERC20__factory, ERC20 } from '../../../typechain'
 import { signPermitAndConstructCalldata, Permit } from '../shared/protocolHelpers/permit2'
 import { CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
-import { UniswapMulticallProvider, V3PoolProvider, ChainId, V2PoolProvider } from '@uniswap/smart-order-router'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { IRoute, Trade } from '@uniswap/router-sdk'
 const { ethers } = hre
@@ -35,7 +41,6 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
   let COMPLEX_SWAP_PERMIT: Permit
 
   let MSG_SENDER: boolean = true
-  let ROUTER: boolean = false
 
   beforeEach(async () => {
     await resetFork()
@@ -53,59 +58,78 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
     planner = new RoutePlanner()
 
     // Alice gives bob some tokens
-    await usdcContract.connect(alice.address).transfer(bob.address, expandTo6DecimalsBN(10000000))
+    await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(10000000))
 
     /*
       Simple Swap =
       1000 USDC —V3→ ETH —V3→ DAI
 
       Complex Swap =
-      30000 USDC —V3—> ETH — V3—> DAI
-      40000 USDC —V3—> USDT —V3—>DAI
-      30000 USDC —V2—> DAI
+      3000 USDC —V3—> ETH — V3—> DAI
+      4000 USDC —V3—> USDT —V3—>DAI
+      3000 USDC —V2—> DAI
     */
-    const multicall2Provider = new UniswapMulticallProvider(ChainId.MAINNET, ethers.provider as any)
 
-    const v3PoolProvider = new V3PoolProvider(ChainId.MAINNET, multicall2Provider)
-    const v3PoolAccessor = await v3PoolProvider.getPools([
-      [USDC, WETH, FeeAmount.HIGH],
-      [DAI, WETH, FeeAmount.HIGH],
-      [USDC, USDT, FeeAmount.LOWEST],
-      [USDT, DAI, FeeAmount.LOWEST],
-    ])
-    const USDC_WETH = v3PoolAccessor.getPool(USDC, WETH, FeeAmount.HIGH)!
-    const DAI_WETH = v3PoolAccessor.getPool(DAI, WETH, FeeAmount.HIGH)!
-    const USDC_USDT = v3PoolAccessor.getPool(USDC, USDT, FeeAmount.LOWEST)!
-    const USDT_DAI = v3PoolAccessor.getPool(USDT, DAI, FeeAmount.LOWEST)!
+    const createPool = (tokenA: Token, tokenB: Token, fee: FeeAmount) => {
+      return new Pool(tokenA, tokenB, fee, sqrtRatioX96, 1_000_000, TickMath.getTickAtSqrtRatio(sqrtRatioX96))
+    }
 
-    const v2PoolProvider = new V2PoolProvider(ChainId.MAINNET, multicall2Provider)
-    const v2PoolAccessor = await v2PoolProvider.getPools([[USDC, DAI]])
-    const USDC_DAI_V2 = v2PoolAccessor.getPool(USDC, DAI)!
+    const sqrtRatioX96 = encodeSqrtRatioX96(1, 1)
+    const USDC_WETH = createPool(USDC, WETH, FeeAmount.HIGH)
+    const DAI_WETH = createPool(DAI, WETH, FeeAmount.HIGH)
+    const USDC_USDT = createPool(USDC, USDT, FeeAmount.LOWEST)
+    const USDT_DAI = createPool(DAI, USDT, FeeAmount.LOWEST)
 
-    const simpleSwapAmountInUSDC = CurrencyAmount.fromRawAmount(USDC, 1000)
-    const complexSwapAmountInSplit1 = CurrencyAmount.fromRawAmount(USDC, 30000)
-    const complexSwapAmountInSplit2 = CurrencyAmount.fromRawAmount(USDC, 40000)
-    const complexSwapAmountInSplit3 = CurrencyAmount.fromRawAmount(USDC, 30000)
-
-    SIMPLE_SWAP = await Trade.fromRoute(
-      new V3RouteSDK([USDC_WETH, DAI_WETH], USDC, DAI),
-      simpleSwapAmountInUSDC,
-      TradeType.EXACT_INPUT
+    const USDC_DAI_V2 = new Pair(
+      CurrencyAmount.fromRawAmount(USDC, 10000000),
+      CurrencyAmount.fromRawAmount(DAI, 10000000)
     )
 
-    COMPLEX_SWAP = await Trade.fromRoutes(
-      [{ routev2: new V2RouteSDK([USDC_DAI_V2], USDC, DAI), amount: complexSwapAmountInSplit3 }],
-      [
-        { routev3: new V3RouteSDK([USDC_WETH, DAI_WETH], USDC, DAI), amount: complexSwapAmountInSplit1 },
-        { routev3: new V3RouteSDK([USDC_USDT, USDT_DAI], USDC, DAI), amount: complexSwapAmountInSplit2 },
+    const simpleSwapAmountInUSDC = CurrencyAmount.fromRawAmount(USDC, expandTo6DecimalsBN(1000).toString())
+    const complexSwapAmountInSplit1 = CurrencyAmount.fromRawAmount(USDC, expandTo6DecimalsBN(3000).toString())
+    const complexSwapAmountInSplit2 = CurrencyAmount.fromRawAmount(USDC, expandTo6DecimalsBN(4000).toString())
+    const complexSwapAmountInSplit3 = CurrencyAmount.fromRawAmount(USDC, expandTo6DecimalsBN(3000).toString())
+
+    SIMPLE_SWAP = new Trade({
+      v3Routes: [
+        {
+          routev3: new V3RouteSDK([USDC_WETH, DAI_WETH], USDC, DAI),
+          inputAmount: simpleSwapAmountInUSDC,
+          outputAmount: CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(1000)),
+        },
       ],
-      TradeType.EXACT_INPUT
-    )
+      v2Routes: [],
+      tradeType: TradeType.EXACT_INPUT,
+    })
+
+    COMPLEX_SWAP = new Trade({
+      v3Routes: [
+        {
+          routev3: new V3RouteSDK([USDC_WETH, DAI_WETH], USDC, DAI),
+          inputAmount: complexSwapAmountInSplit1,
+          outputAmount: CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(3000)),
+        },
+        {
+          routev3: new V3RouteSDK([USDC_USDT, USDT_DAI], USDC, DAI),
+          inputAmount: complexSwapAmountInSplit2,
+          outputAmount: CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(4000)),
+        },
+      ],
+      v2Routes: [
+        {
+          routev2: new V2RouteSDK([USDC_DAI_V2], USDC, DAI),
+          inputAmount: complexSwapAmountInSplit3,
+          outputAmount: CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(3000)),
+        },
+      ],
+
+      tradeType: TradeType.EXACT_INPUT,
+    })
 
     MAX_PERMIT = {
       token: COMPLEX_SWAP.inputAmount.currency.address,
       spender: router.address,
-      amount: BigNumber.from(MAX_UINT),
+      amount: BigNumber.from(MAX_UINT160),
       expiration: 0, // expiration of 0 is block.timestamp
       nonce: 0, // this is his first trade
       sigDeadline: DEADLINE,
@@ -114,7 +138,7 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
     SIMPLE_SWAP_PERMIT = {
       token: SIMPLE_SWAP.inputAmount.currency.address,
       spender: router.address,
-      amount: BigNumber.from(SIMPLE_SWAP.inputAmount.quotient),
+      amount: BigNumber.from(SIMPLE_SWAP.inputAmount.quotient.toString()),
       expiration: 0, // expiration of 0 is block.timestamp
       nonce: 0, // this is his first trade
       sigDeadline: DEADLINE,
@@ -123,11 +147,12 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
     COMPLEX_SWAP_PERMIT = {
       token: COMPLEX_SWAP.inputAmount.currency.address,
       spender: router.address,
-      amount: BigNumber.from(COMPLEX_SWAP.inputAmount.quotient),
+      amount: BigNumber.from(COMPLEX_SWAP.inputAmount.quotient.toString()),
       expiration: 0, // expiration of 0 is block.timestamp
       nonce: 0, // this is his first trade
       sigDeadline: DEADLINE,
     }
+    COMPLEX_SWAP_PERMIT
   })
 
   describe('Narwhal Estimates', async () => {
@@ -140,9 +165,16 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
   })
 
   describe('Comparisons', async () => {
+    let approvePermit2Gas: BigNumber
+    let approveSwapRouter02Gas: BigNumber
+
     beforeEach(async () => {
       // bob has already given his infinite approval of USDC to permit2
-      await usdcContract.connect(bob).approve(permit2.address, MAX_UINT)
+      const permitApprovalTx = await usdcContract.connect(bob).approve(permit2.address, MAX_UINT)
+      approvePermit2Gas = (await permitApprovalTx.wait()).gasUsed
+
+      const swapRouter02ApprovalTx = (await approveSwapRouter02(bob, USDC))!
+      approveSwapRouter02Gas = swapRouter02ApprovalTx.gasUsed
     })
 
     describe('One Time Swapper - Simple Swap', async () => {
@@ -153,14 +185,10 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
-        await snapshotGasCost(
-          executeSwapRouter02Swap(
-            { value: '0', calldata },
-            SIMPLE_SWAP.inputAmount.currency,
-            SIMPLE_SWAP.outputAmount.currency,
-            bob
-          )
-        )
+        const swapTx = await (await executeSwapRouter02Swap({ value: '0', calldata }, bob)).wait()
+        const swapGas = swapTx.gasUsed
+
+        await snapshotGasCost(approveSwapRouter02Gas.add(swapGas))
       })
 
       it('Permit2 Sign Per Swap', async () => {
@@ -171,7 +199,11 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
         planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [bob.address, SIMPLE_SWAP_PERMIT.amount, 0, path, MSG_SENDER])
 
         const { commands, inputs } = planner
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+
+        const tx = await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        const gasUsed = (await tx.wait()).gasUsed
+
+        await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
 
       it('Permit2 Max Approval Swap', async () => {
@@ -182,26 +214,25 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
         planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [bob.address, SIMPLE_SWAP_PERMIT.amount, 0, path, MSG_SENDER])
 
         const { commands, inputs } = planner
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        const tx = await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        const gasUsed = (await tx.wait()).gasUsed
+
+        await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
     })
 
     describe('One Time Swapper - Complex Swap', async () => {
       it('SwapRouter02', async () => {
         const { calldata } = SwapRouter.swapCallParameters(COMPLEX_SWAP, {
-          slippageTolerance: new Percent(10, 100),
+          slippageTolerance: new Percent(50, 100),
           recipient: bob.address,
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
-        await snapshotGasCost(
-          executeSwapRouter02Swap(
-            { value: '0', calldata },
-            COMPLEX_SWAP.inputAmount.currency,
-            COMPLEX_SWAP.outputAmount.currency,
-            bob
-          )
-        )
+        const swapTx = await (await executeSwapRouter02Swap({ value: '0', calldata }, bob)).wait()
+        const swapGas = swapTx.gasUsed
+
+        await snapshotGasCost(approveSwapRouter02Gas.add(swapGas))
       })
       it('Permit2 Sign Per Swap', async () => {
         return
@@ -213,39 +244,39 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
 
     describe('Casual Swapper - 3 swaps', async () => {
       it('SwapRouter02', async () => {
-        const { calldata } = SwapRouter.swapCallParameters(COMPLEX_SWAP, {
-          slippageTolerance: new Percent(10, 100),
+        const { calldata: callDataComplex } = SwapRouter.swapCallParameters(COMPLEX_SWAP, {
+          slippageTolerance: new Percent(50, 100),
           recipient: bob.address,
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
+        const { calldata: callDataSimple } = SwapRouter.swapCallParameters(SIMPLE_SWAP, {
+          slippageTolerance: new Percent(50, 100),
+          recipient: bob.address,
+          deadlineOrPreviousBlockhash: DEADLINE,
+        })
+
+        let totalGas = BigNumber.from(0)
+
         // Swap 1 (complex)
-        await executeSwapRouter02Swap(
-          { value: '0', calldata },
-          COMPLEX_SWAP.inputAmount.currency,
-          COMPLEX_SWAP.outputAmount.currency,
-          bob
-        )
+        const tx1 = await executeSwapRouter02Swap({ value: '0', calldata: callDataComplex }, bob)
+        totalGas = totalGas.add((await tx1.wait()).gasUsed)
 
         // Swap 2 (complex)
-        await executeSwapRouter02Swap(
-          { value: '0', calldata },
-          COMPLEX_SWAP.inputAmount.currency,
-          COMPLEX_SWAP.outputAmount.currency,
-          bob
-        )
+        const tx2 = await executeSwapRouter02Swap({ value: '0', calldata: callDataComplex }, bob)
+        totalGas = totalGas.add((await tx2.wait()).gasUsed)
 
         // Swap 3 (simple)
-        await executeSwapRouter02Swap(
-          { value: '0', calldata },
-          SIMPLE_SWAP.inputAmount.currency,
-          SIMPLE_SWAP.outputAmount.currency,
-          bob
-        )
+        const tx3 = await executeSwapRouter02Swap({ value: '0', calldata: callDataSimple }, bob)
+        totalGas = totalGas.add((await tx3.wait()).gasUsed)
+
+        await snapshotGasCost(totalGas)
       })
+
       it('Permit2 Sign Per Swap', async () => {
         return
       })
+
       it('Permit2 Max Approval Swap', async () => {
         return
       })
@@ -253,35 +284,39 @@ describe.only('Uniswap UX Tests Narwhal:', () => {
 
     describe('Frequent Swapper - 10 swaps', async () => {
       it('SwapRouter02', async () => {
-        const { calldata } = SwapRouter.swapCallParameters(COMPLEX_SWAP, {
-          slippageTolerance: new Percent(10, 100),
+        const { calldata: callDataComplex } = SwapRouter.swapCallParameters(COMPLEX_SWAP, {
+          slippageTolerance: new Percent(50, 100),
           recipient: bob.address,
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
+        const { calldata: callDataSimple } = SwapRouter.swapCallParameters(SIMPLE_SWAP, {
+          slippageTolerance: new Percent(50, 100),
+          recipient: bob.address,
+          deadlineOrPreviousBlockhash: DEADLINE,
+        })
+
+        let totalGas = BigNumber.from(0)
+
         // Do 5 complex swaps
         for (let i = 0; i < 5; i++) {
-          await executeSwapRouter02Swap(
-            { value: '0', calldata },
-            COMPLEX_SWAP.inputAmount.currency,
-            COMPLEX_SWAP.outputAmount.currency,
-            bob
-          )
+          const tx = await executeSwapRouter02Swap({ value: '0', calldata: callDataComplex }, bob)
+          totalGas = totalGas.add((await tx.wait()).gasUsed)
         }
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
-          await executeSwapRouter02Swap(
-            { value: '0', calldata },
-            SIMPLE_SWAP.inputAmount.currency,
-            SIMPLE_SWAP.outputAmount.currency,
-            bob
-          )
+          const tx = await executeSwapRouter02Swap({ value: '0', calldata: callDataSimple }, bob)
+          totalGas = totalGas.add((await tx.wait()).gasUsed)
         }
+
+        await snapshotGasCost(totalGas)
       })
+
       it('Permit2 Sign Per Swap', async () => {
         return
       })
+
       it('Permit2 Max Approval Swap', async () => {
         return
       })

@@ -18,7 +18,7 @@ import {
 import { BigNumber, BigNumberish } from 'ethers'
 import { Router, Permit2 } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
-import { executeSwap, resetFork, WETH, DAI, USDC, USDT } from '../shared/mainnetForkHelpers'
+import { approveAndExecuteSwapRouter02, resetFork, WETH, DAI, USDC, USDT } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE, ONE_PERCENT_BIPS } from '../shared/constants'
 import { expandTo18DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -94,7 +94,7 @@ describe('Uniswap Gas Tests', () => {
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
-        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
+        await snapshotGasCost(approveAndExecuteSwapRouter02({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: ERC20 --> ERC20 exactIn, one trade, two hops', async () => {
@@ -109,7 +109,7 @@ describe('Uniswap Gas Tests', () => {
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
-        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
+        await snapshotGasCost(approveAndExecuteSwapRouter02({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: ETH --> ERC20 exactIn, one trade, one hop', async () => {
@@ -124,7 +124,7 @@ describe('Uniswap Gas Tests', () => {
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
-        await snapshotGasCost(executeSwap({ value, calldata }, DAI, WETH, alice))
+        await snapshotGasCost(approveAndExecuteSwapRouter02({ value, calldata }, DAI, WETH, alice))
       })
 
       it('gas: ERC20 --> ERC20 exactOut, one trade, one hop', async () => {
@@ -139,7 +139,7 @@ describe('Uniswap Gas Tests', () => {
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
-        await snapshotGasCost(executeSwap({ value: '0', calldata }, WETH, DAI, alice))
+        await snapshotGasCost(approveAndExecuteSwapRouter02({ value: '0', calldata }, WETH, DAI, alice))
       })
 
       it('gas: ERC20 --> ETH exactOut ETH, one trade, one hop', async () => {
@@ -155,7 +155,7 @@ describe('Uniswap Gas Tests', () => {
           deadlineOrPreviousBlockhash: DEADLINE,
         })
 
-        await snapshotGasCost(executeSwap({ value, calldata }, DAI, WETH, alice))
+        await snapshotGasCost(approveAndExecuteSwapRouter02({ value, calldata }, DAI, WETH, alice))
       })
     })
 
@@ -378,7 +378,7 @@ describe('Uniswap Gas Tests', () => {
           deadlineOrPreviousBlockhash: 2000000000,
         })
 
-        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
+        await snapshotGasCost(approveAndExecuteSwapRouter02({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: ERC20 --> ERC20 exactIn, one trade, two hops', async () => {
@@ -393,7 +393,7 @@ describe('Uniswap Gas Tests', () => {
           deadlineOrPreviousBlockhash: 2000000000,
         })
 
-        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
+        await snapshotGasCost(approveAndExecuteSwapRouter02({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: ERC20 --> ERC20 exactIn, one trade, three hops', async () => {
@@ -408,7 +408,7 @@ describe('Uniswap Gas Tests', () => {
           deadlineOrPreviousBlockhash: 2000000000,
         })
 
-        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
+        await snapshotGasCost(approveAndExecuteSwapRouter02({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: ERC20 --> ERC20 exactOut, one trade, one hop', async () => {
@@ -418,7 +418,7 @@ describe('Uniswap Gas Tests', () => {
           deadlineOrPreviousBlockhash: 2000000000,
         })
 
-        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
+        await snapshotGasCost(approveAndExecuteSwapRouter02({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: ERC20 --> ERC20 exactOut, one trade, two hops', async () => {
@@ -433,7 +433,7 @@ describe('Uniswap Gas Tests', () => {
           deadlineOrPreviousBlockhash: 2000000000,
         })
 
-        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
+        await snapshotGasCost(approveAndExecuteSwapRouter02({ value: '0', calldata }, DAI, WETH, alice))
       })
 
       it('gas: ERC20 --> ERC20 exactOut, one trade, three hops', async () => {
@@ -448,7 +448,7 @@ describe('Uniswap Gas Tests', () => {
           deadlineOrPreviousBlockhash: 2000000000,
         })
 
-        await snapshotGasCost(executeSwap({ value: '0', calldata }, DAI, WETH, alice))
+        await snapshotGasCost(approveAndExecuteSwapRouter02({ value: '0', calldata }, DAI, WETH, alice))
       })
     })
 

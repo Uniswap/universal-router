@@ -16,12 +16,12 @@ export default async (permit2: Permit2): Promise<Router> => {
     V3_FACTORY_MAINNET,
     V2_INIT_CODE_HASH_MAINNET,
     V3_INIT_CODE_HASH_MAINNET
-  )) as Router
+  )) as unknown as Router
   return router
 }
 
 export async function deployPermit2(): Promise<Permit2> {
   const permit2Factory = await ethers.getContractFactory('Permit2')
-  const permit2 = (await permit2Factory.deploy()) as Permit2
+  const permit2 = (await permit2Factory.deploy()) as unknown as Permit2
   return permit2
 }
