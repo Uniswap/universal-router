@@ -205,7 +205,7 @@ describe.only('Uniswap UX Tests:', () => {
       approveSwapRouter02Gas = swapRouter02ApprovalTx.gasUsed
     })
 
-    describe.only('One Time Swapper - Simple Swap', async () => {
+    describe('One Time Swapper - Simple Swap', async () => {
       it('SwapRouter02', async () => {
         const { calldata } = SwapRouter.swapCallParameters(SIMPLE_SWAP, {
           slippageTolerance: new Percent(10, 100),
@@ -216,12 +216,6 @@ describe.only('Uniswap UX Tests:', () => {
         const swapTx = await (await executeSwapRouter02Swap({ value: '0', calldata }, bob)).wait()
         const swapGas = swapTx.gasUsed
 
-        const bobBalanceUSDCAfter = await usdcContract.balanceOf(bob.address)
-        const bobBalanceDAIAfter = await daiContract.balanceOf(bob.address)
-
-        console.log('USDC after swaprouter02: ' + bobBalanceUSDCAfter)
-        console.log('DAI after swaprouter02: ' + bobBalanceDAIAfter)
-
         await snapshotGasCost(approveSwapRouter02Gas.add(swapGas))
       })
 
@@ -230,12 +224,6 @@ describe.only('Uniswap UX Tests:', () => {
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
   
         const gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
-
-        const bobBalanceUSDCAfter = await usdcContract.balanceOf(bob.address)
-        const bobBalanceDAIAfter = await daiContract.balanceOf(bob.address)
-
-        console.log('USDC after narwhal: ' + bobBalanceUSDCAfter)
-        console.log('DAI after narwhal: ' + bobBalanceDAIAfter)
 
         await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
@@ -250,7 +238,7 @@ describe.only('Uniswap UX Tests:', () => {
       })
     })
 
-    describe.only('One Time Swapper - Complex Swap', async () => {
+    describe('One Time Swapper - Complex Swap', async () => {
       it('SwapRouter02', async () => {
         const { calldata } = SwapRouter.swapCallParameters(COMPLEX_SWAP, {
           slippageTolerance: new Percent(50, 100),
@@ -261,13 +249,6 @@ describe.only('Uniswap UX Tests:', () => {
         const swapTx = await (await executeSwapRouter02Swap({ value: '0', calldata }, bob)).wait()
         const swapGas = swapTx.gasUsed
 
-
-        const bobBalanceUSDCAfter = await usdcContract.balanceOf(bob.address)
-        const bobBalanceDAIAfter = await daiContract.balanceOf(bob.address)
-
-        console.log('USDC after swaprouter02: ' + bobBalanceUSDCAfter)
-        console.log('DAI after swaprouter02: ' + bobBalanceDAIAfter)
-
         await snapshotGasCost(approveSwapRouter02Gas.add(swapGas))
       })
 
@@ -277,12 +258,6 @@ describe.only('Uniswap UX Tests:', () => {
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
 
         const gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
-
-        const bobBalanceUSDCAfter = await usdcContract.balanceOf(bob.address)
-        const bobBalanceDAIAfter = await daiContract.balanceOf(bob.address)
-
-        console.log('USDC after narwhal: ' + bobBalanceUSDCAfter)
-        console.log('DAI after narwhal: ' + bobBalanceDAIAfter)
 
         await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
@@ -338,8 +313,6 @@ describe.only('Uniswap UX Tests:', () => {
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
         let gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
-        console.log('one complete')
-
         totalGas = totalGas.add(gasUsed)
         planner = new RoutePlanner()
 
@@ -348,7 +321,6 @@ describe.only('Uniswap UX Tests:', () => {
         calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2.address)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
         gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
-        console.log('two complete')
 
         totalGas = totalGas.add(gasUsed)
         planner = new RoutePlanner()
@@ -370,14 +342,12 @@ describe.only('Uniswap UX Tests:', () => {
         let calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2.address)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
         let gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
-        console.log('one complete')
 
         totalGas = totalGas.add(gasUsed)
         planner = new RoutePlanner()
 
         // Swap 2: complex
         gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
-        console.log('two complete')
 
         totalGas = totalGas.add(gasUsed)
         planner = new RoutePlanner()
@@ -483,7 +453,11 @@ describe.only('Uniswap UX Tests:', () => {
 
   function encodePathExactInput(route: IRoute<Token, Token, Pool | Pair>) {
     const addresses = routeToAddresses(route)
-    return encodePath(addresses, new Array(addresses.length - 1).fill(FeeAmount.MEDIUM))
+    const feeTiers = new Array(addresses.length - 1)
+    for (let i = 0; i < feeTiers.length; i++) {
+      feeTiers[i] = (addresses[i] == WETH.address || addresses[i+1] == WETH.address) ? FeeAmount.HIGH : FeeAmount.LOWEST
+    }
+    return encodePath(addresses, feeTiers)
   }
 
   function routeToAddresses(route: IRoute<Token, Token, Pool | Pair>) {

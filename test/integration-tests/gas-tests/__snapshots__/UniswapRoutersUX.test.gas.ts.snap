@@ -1,18 +1,26 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Uniswap UX Tests: Comparisons Casual Swapper - 3 swaps Permit2 Max Approval Swap 1`] = `1188614`;
+
+exports[`Uniswap UX Tests: Comparisons Casual Swapper - 3 swaps Permit2 Sign Per Swap 1`] = `1228441`;
+
 exports[`Uniswap UX Tests: Comparisons Casual Swapper - 3 swaps SwapRouter02 1`] = `1172945`;
+
+exports[`Uniswap UX Tests: Comparisons Frequent Swapper - 10 swaps Permit2 Max Approval Swap 1`] = `3307798`;
+
+exports[`Uniswap UX Tests: Comparisons Frequent Swapper - 10 swaps Permit2 Sign Per Swap 1`] = `3483994`;
 
 exports[`Uniswap UX Tests: Comparisons Frequent Swapper - 10 swaps SwapRouter02 1`] = `3320620`;
 
-exports[`Uniswap UX Tests: Comparisons One Time Swapper - Complex Swap Permit2 Max Approval Swap 1`] = `1198782`;
+exports[`Uniswap UX Tests: Comparisons One Time Swapper - Complex Swap Permit2 Max Approval Swap 1`] = `545968`;
 
-exports[`Uniswap UX Tests: Comparisons One Time Swapper - Complex Swap Permit2 Sign Per Swap 1`] = `1199540`;
+exports[`Uniswap UX Tests: Comparisons One Time Swapper - Complex Swap Permit2 Sign Per Swap 1`] = `546726`;
 
 exports[`Uniswap UX Tests: Comparisons One Time Swapper - Complex Swap SwapRouter02 1`] = `520492`;
 
-exports[`Uniswap UX Tests: Comparisons One Time Swapper - Simple Swap Permit2 Max Approval Swap 1`] = `306488`;
+exports[`Uniswap UX Tests: Comparisons One Time Swapper - Simple Swap Permit2 Max Approval Swap 1`] = `315231`;
 
-exports[`Uniswap UX Tests: Comparisons One Time Swapper - Simple Swap Permit2 Sign Per Swap 1`] = `306578`;
+exports[`Uniswap UX Tests: Comparisons One Time Swapper - Simple Swap Permit2 Sign Per Swap 1`] = `315321`;
 
 exports[`Uniswap UX Tests: Comparisons One Time Swapper - Simple Swap SwapRouter02 1`] = `278117`;
 
