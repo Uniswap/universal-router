@@ -205,6 +205,51 @@ describe('Router', () => {
         const covenBalanceAfter = await covenContract.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
       })
+
+      it.only('completes a trade for ERC20 --> ETH --> NFTs, invalid Seaport order', async () => {
+        const maxAmountIn = expandTo18DecimalsBN(100_000)
+        await daiContract.transfer(router.address, maxAmountIn)
+        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+          value,
+          maxAmountIn,
+          [DAI.address, WETH.address],
+          router.address,
+        ])
+        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
+
+        // invalid Seaport order
+        let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
+        invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
+        let seaportOrder: Order
+        let seaportValue: BigNumber
+        ;({ order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder))
+        const calldataOpensea = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+          seaportOrder,
+          [],
+          OPENSEA_CONDUIT_KEY,
+          alice.address,
+        ])
+        planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldataOpensea])
+
+        // valid NFTX order
+        let nftxValue: BigNumber = expandTo18DecimalsBN(4)
+        let numCovensNFTX = 2
+        const calldataNFTX = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
+          NFTX_COVEN_VAULT_ID,
+          numCovensNFTX,
+          [],
+          [WETH.address, NFTX_COVEN_VAULT],
+          alice.address,
+        ])
+        planner.addCommand(CommandType.NFTX, [nftxValue, calldataNFTX])
+
+        const { commands, inputs } = planner
+        let totalValue = seaportValue.add(nftxValue)
+        const covenBalanceBefore = await covenContract.balanceOf(alice.address)
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: totalValue })
+        const covenBalanceAfter = await covenContract.balanceOf(alice.address)
+        expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovensNFTX)
+      })
     })
   })
 
