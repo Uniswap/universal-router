@@ -78,7 +78,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           nonce: 0, // this is his first trade
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2.address)
+        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
 
         // 1) permit the router to access funds, 2) withdraw the funds into the pair, 3) trade
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
@@ -106,7 +106,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           nonce: 0, // this is his first trade
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2.address)
+        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
 
         // 1) permit the router to access funds, 2) trade - the transfer happens within the trade for exactOut
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
@@ -138,7 +138,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           nonce: 0, // this is his first trade
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2.address)
+        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
 
         const path = encodePathExactInput([DAI.address, WETH.address])
 
@@ -166,7 +166,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           nonce: 0, // this is his first trade
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2.address)
+        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
 
         const path = encodePathExactOutput([DAI.address, WETH.address])
 

@@ -2,6 +2,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber } from 'ethers'
 import hre from 'hardhat'
 import PERMIT2_COMPILE from '../../../../artifacts/permit2/src/Permit2.sol/Permit2.json'
+import { Permit2 } from '../../../../typechain'
 
 const { ethers } = hre
 
@@ -51,10 +52,13 @@ export async function signPermit(
 export async function signPermitAndConstructCalldata(
   permit: Permit,
   signer: SignerWithAddress,
-  verifyingContract: string
+  permit2: Permit2
 ): Promise<string> {
-  const signature = await signPermit(permit, signer, verifyingContract)
+  // look up the correct nonce for this permit
+  const nextNonce = (await permit2.allowance(signer.address, permit.token, permit.spender)).nonce
+  permit.nonce = nextNonce
 
+  const signature = await signPermit(permit, signer, permit2.address)
   const calldata = PERMIT2_INTERFACE.encodeFunctionData('permit', [ethers.constants.AddressZero, permit, signature])
 
   // Remove function signature and first parameter (the router fills these in itself)

@@ -224,7 +224,7 @@ describe.only('Uniswap UX Tests:', () => {
       })
 
       it('Permit2 Sign Per Swap', async () => {
-        const calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2.address)
+        const calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
 
         const gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
@@ -233,7 +233,7 @@ describe.only('Uniswap UX Tests:', () => {
       })
 
       it('Permit2 Max Approval Swap', async () => {
-        const calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2.address)
+        const calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
 
         const gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
@@ -258,7 +258,7 @@ describe.only('Uniswap UX Tests:', () => {
 
       it('Permit2 Sign Per Swap', async () => {
         // sign the permit for this swap
-        const calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2.address)
+        const calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
 
         const gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
@@ -268,7 +268,7 @@ describe.only('Uniswap UX Tests:', () => {
 
       it('Permit2 Max Approval Swap', async () => {
         // send approval for the total input amount
-        const calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2.address)
+        const calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
 
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
 
@@ -313,7 +313,7 @@ describe.only('Uniswap UX Tests:', () => {
         let totalGas = approvePermit2Gas
 
         // Swap 1: complex
-        let calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2.address)
+        let calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
         let gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
@@ -321,8 +321,7 @@ describe.only('Uniswap UX Tests:', () => {
         planner = new RoutePlanner()
 
         // Swap 2: complex
-        COMPLEX_SWAP_PERMIT.nonce = 1
-        calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2.address)
+        calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
         gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
@@ -330,8 +329,7 @@ describe.only('Uniswap UX Tests:', () => {
         planner = new RoutePlanner()
 
         // Swap 3: simple
-        SIMPLE_SWAP_PERMIT.nonce = 2
-        calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2.address)
+        calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
         gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
 
@@ -343,7 +341,7 @@ describe.only('Uniswap UX Tests:', () => {
         let totalGas = approvePermit2Gas
 
         // Swap 1: complex, but give max approval no more approvals needed
-        let calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2.address)
+        let calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
         let gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
@@ -399,28 +397,23 @@ describe.only('Uniswap UX Tests:', () => {
         let totalGas = approvePermit2Gas
         let calldata: string
         let gasUsed: BigNumber
-        let nonce: number = 0
 
         // Do 5 complex swaps
         for (let i = 0; i < 5; i++) {
-          COMPLEX_SWAP_PERMIT.nonce = nonce
-          calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2.address)
+          calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
           gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
-          nonce += 1
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
         }
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
-          SIMPLE_SWAP_PERMIT.nonce = nonce
-          calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2.address)
+          calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
           gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
 
-          nonce += 1
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
         }
@@ -433,7 +426,7 @@ describe.only('Uniswap UX Tests:', () => {
         let gasUsed: BigNumber
 
         // The first trade contains a max permit, all others contain no permit
-        let calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2.address)
+        let calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
 
         // Do 5 complex swaps
@@ -508,8 +501,7 @@ describe.only('Uniswap UX Tests:', () => {
 
         // Do 5 complex swaps
         for (let i = 0; i < 5; i++) {
-          COMPLEX_SWAP_PERMIT.nonce = i
-          calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2.address)
+          calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
           gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
@@ -522,9 +514,8 @@ describe.only('Uniswap UX Tests:', () => {
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
-          SIMPLE_SWAP_PERMIT.nonce = i
           SIMPLE_SWAP_PERMIT.spender = router2.address
-          calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2.address)
+          calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
           gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP, router2)
 
@@ -537,9 +528,8 @@ describe.only('Uniswap UX Tests:', () => {
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
-          SIMPLE_SWAP_PERMIT.nonce = i
           SIMPLE_SWAP_PERMIT.spender = router3.address
-          calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2.address)
+          calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
           gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP, router3)
 
@@ -555,7 +545,7 @@ describe.only('Uniswap UX Tests:', () => {
         let gasUsed: BigNumber
 
         // The first trade contains a max permit, all others contain no permit
-        let calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2.address)
+        let calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
 
         // Do 5 complex swaps
@@ -568,7 +558,7 @@ describe.only('Uniswap UX Tests:', () => {
         // Launch narwhal v2
         const router2 = (await deployRouter(permit2)).connect(bob) as Router
         MAX_PERMIT.spender = router2.address
-        let calldata2 = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2.address)
+        let calldata2 = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata2])
 
         // Do 5 simple swaps
@@ -581,7 +571,7 @@ describe.only('Uniswap UX Tests:', () => {
         // Launch narwhal v3
         const router3 = (await deployRouter(permit2)).connect(bob) as Router
         MAX_PERMIT.spender = router3.address
-        let calldata3 = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2.address)
+        let calldata3 = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata3])
 
         // Do 5 simple swaps
