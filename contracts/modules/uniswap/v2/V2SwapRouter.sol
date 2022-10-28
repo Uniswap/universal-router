@@ -10,6 +10,9 @@ contract V2SwapRouter {
     address internal immutable V2_FACTORY;
     bytes32 internal immutable PAIR_INIT_CODE_HASH;
 
+    error V2TooLittleReceived();
+    error V2TooMuchRequested();
+
     constructor(address v2Factory, bytes32 pairInitCodeHash) {
         V2_FACTORY = v2Factory;
         PAIR_INIT_CODE_HASH = pairInitCodeHash;
@@ -45,7 +48,7 @@ contract V2SwapRouter {
         _v2Swap(path, recipient);
 
         uint256 amountOut = IERC20(path[path.length - 1]).balanceOf(recipient) - balanceBefore;
-        require(amountOut >= amountOutMin, 'Too little received');
+        if (amountOut < amountOutMin) revert V2TooLittleReceived();
     }
 
     function v2SwapExactOutput(uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient)
@@ -53,7 +56,7 @@ contract V2SwapRouter {
     {
         (uint256 amountIn, address pair) =
             UniswapV2Library.getAmountInMultihop(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path);
-        require(amountIn <= amountInMax, 'Too much requested');
+        if (amountIn > amountInMax) revert V2TooMuchRequested();
         Payments.pay(path[0], pair, amountIn);
         _v2Swap(path, recipient);
     }
