@@ -198,27 +198,30 @@ describe('Router', () => {
           [DAI.address, WETH.address],
           router.address,
         ])
-        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
+        planner.addCommand(CommandType.UNWRAP_WETH, [router.address, value])
         planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
         const { commands, inputs } = planner
         const covenBalanceBefore = await covenContract.balanceOf(alice.address)
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
         const covenBalanceAfter = await covenContract.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
       })
 
-      it.only('completes a trade for ERC20 --> ETH --> NFTs, invalid Seaport order', async () => {
+      it('completes a trade for ERC20 --> ETH --> NFTs, invalid Seaport order', async () => {
         const maxAmountIn = expandTo18DecimalsBN(100_000)
+
         await daiContract.transfer(router.address, maxAmountIn)
         let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
         const { order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder)
+        let nftxValue: BigNumber = expandTo18DecimalsBN(4)
+        let totalValue = seaportValue.add(nftxValue)
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-          seaportValue,
+          totalValue,
           maxAmountIn,
           [DAI.address, WETH.address],
           router.address,
         ])
-        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, seaportValue])
+        planner.addCommand(CommandType.UNWRAP_WETH, [router.address, totalValue])
 
         // invalidate Seaport order
         invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
@@ -226,9 +229,7 @@ describe('Router', () => {
         planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldataOpensea], true)
 
         // valid NFTX order
-        let nftxValue: BigNumber = expandTo18DecimalsBN(4)
         let numCovensNFTX = 2
-
         const calldataNFTX = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
           NFTX_COVEN_VAULT_ID,
           numCovensNFTX,
@@ -239,14 +240,14 @@ describe('Router', () => {
         planner.addCommand(CommandType.NFTX, [nftxValue, calldataNFTX])
 
         const { commands, inputs } = planner
-        let totalValue = seaportValue.add(nftxValue)
+
         const covenBalanceBefore = await covenContract.balanceOf(alice.address)
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: totalValue })
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
         const covenBalanceAfter = await covenContract.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovensNFTX)
       })
 
-      it.only('completes a trade for ERC20 --> ETH --> NFTs with Seaport, partial fill', async () => {
+      it('completes a trade for ERC20 --> ETH --> NFTs with Seaport, partial fill', async () => {
         const maxAmountIn = expandTo18DecimalsBN(100_000)
         await daiContract.transfer(router.address, maxAmountIn)
 
@@ -262,7 +263,7 @@ describe('Router', () => {
           [DAI.address, WETH.address],
           router.address,
         ])
-        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, totalValue])
+        planner.addCommand(CommandType.UNWRAP_WETH, [router.address, totalValue])
 
         const calldata = defaultAvailableAdvancedOrders(alice.address, advancedOrder0, advancedOrder1)
         planner.addCommand(CommandType.SEAPORT, [totalValue, calldata])
@@ -275,13 +276,7 @@ describe('Router', () => {
         const owner1Before = await covenContract.ownerOf(nftId1)
         const ethBefore = await ethers.provider.getBalance(alice.address)
 
-        // shouldn't have to send eth bc we are unwrapping the dai - weth trade, but this fails:
         const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
-
-        // This succeeds:
-        // const receipt = await (
-        //   await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: totalValue })
-        // ).wait()
 
         const owner0After = await covenContract.ownerOf(nftId0)
         const owner1After = await covenContract.ownerOf(nftId1)

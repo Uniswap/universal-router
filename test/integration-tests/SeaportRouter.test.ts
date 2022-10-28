@@ -61,7 +61,7 @@ describe('Seaport', () => {
     expect(ethDelta.sub(gasSpent)).to.eq(value)
   })
 
-  it.only('completes a fulfillAvailableAdvancedOrders type', async () => {
+  it('completes a fulfillAvailableAdvancedOrders type', async () => {
     const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
     const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
     const params0 = advancedOrder0.parameters
