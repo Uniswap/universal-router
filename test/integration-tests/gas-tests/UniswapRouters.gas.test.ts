@@ -667,7 +667,7 @@ describe('Uniswap Gas Tests', () => {
     describe('with Narwhal Router.', () => {
       beforeEach(async () => {
         planner = new RoutePlanner()
-            
+
         // Bob max-approves the permit2 contract to access his DAI and WETH
         await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
         await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
