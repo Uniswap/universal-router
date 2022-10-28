@@ -3,6 +3,7 @@ import { BigNumber } from 'ethers'
 import { expandTo18DecimalsBN } from '../helpers'
 import fs from 'fs'
 import hre from 'hardhat'
+import { OPENSEA_CONDUIT_KEY } from '../constants'
 const { ethers } = hre
 
 export const seaportOrders = JSON.parse(
@@ -74,4 +75,35 @@ export function calculateValue(considerations: ConsiderationItem[]): BigNumber {
     (amt: BigNumber, consideration: ConsiderationItem) => amt.add(consideration.startAmount),
     expandTo18DecimalsBN(0)
   )
+}
+
+export function defaultAvailableAdvancedOrders(
+  address: string,
+  advancedOrder0: AdvancedOrder,
+  advancedOrder1: AdvancedOrder
+): string {
+  const considerationFulfillment = [
+    [[0, 0]],
+    [
+      [0, 1],
+      [1, 1],
+    ],
+    [
+      [0, 2],
+      [1, 2],
+    ],
+    [[1, 0]],
+  ]
+
+  const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
+    [advancedOrder0, advancedOrder1],
+    [],
+    [[[0, 0]], [[1, 0]]],
+    considerationFulfillment,
+    OPENSEA_CONDUIT_KEY,
+    address,
+    100,
+  ])
+
+  return calldata
 }
