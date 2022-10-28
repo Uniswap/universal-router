@@ -28,13 +28,12 @@ abstract contract V3SwapRouter is Permit2Payments {
     address internal immutable V3_FACTORY;
     bytes32 internal immutable POOL_INIT_CODE_HASH_V3;
 
-    /// @dev Used as the placeholder value for amountInCached, because the computed amount in for an exact output swap
+    /// @dev Used as the placeholder value for maxAmountIn, because the computed amount in for an exact output swap
     /// can never actually be this value
     uint256 private constant DEFAULT_AMOUNT_IN_CACHED = type(uint256).max;
 
-    /// @dev Transient storage variable used for returning the computed amount in for an exact output swap.
-    uint256 private amountInCached = DEFAULT_AMOUNT_IN_CACHED;
-
+    /// @dev Transient storage variable used for checking slippage
+    uint256 private maxAmountInCached = DEFAULT_AMOUNT_IN_CACHED;
     /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
     uint160 internal constant MIN_SQRT_RATIO = 4295128739;
 
@@ -70,10 +69,8 @@ abstract contract V3SwapRouter is Permit2Payments {
                 _swap(-amountToPay.toInt256(), msg.sender, path.skipToken(), data.payer, false);
             } else {
                 address payer = data.payer;
-
-                amountInCached = amountToPay;
+                require(amountToPay <= maxAmountInCached);
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
-
                 if (payer == address(this)) Payments.payERC20(tokenOut, msg.sender, amountToPay);
                 else permit2TransferFrom(tokenOut, payer, msg.sender, uint160(amountToPay));
             }
@@ -128,6 +125,7 @@ abstract contract V3SwapRouter is Permit2Payments {
         bytes memory path,
         address payer
     ) internal {
+        maxAmountInCached = amountInMaximum;
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
             _swap(-amountOut.toInt256(), recipient, path, payer, false);
 
@@ -137,9 +135,8 @@ abstract contract V3SwapRouter is Permit2Payments {
 
         require(amountOutReceived == amountOut);
 
-        amountIn = amountInCached;
         require(amountIn <= amountInMaximum, 'Too much requested');
-        amountInCached = DEFAULT_AMOUNT_IN_CACHED;
+        maxAmountInCached = DEFAULT_AMOUNT_IN_CACHED;
     }
 
     /// @dev Performs a single swap for both exactIn and exactOut
