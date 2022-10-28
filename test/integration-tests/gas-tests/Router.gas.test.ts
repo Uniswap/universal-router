@@ -1,7 +1,7 @@
 import { Router, Permit2 } from '../../../typechain'
 import { expect } from '../shared/expect'
 import type { Contract } from '@ethersproject/contracts'
-import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
+import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY, SOURCE_ROUTER } from '../shared/constants'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { resetFork, WETH, DAI } from '../shared/mainnetForkHelpers'
@@ -80,6 +80,7 @@ describe('Router Gas Tests', () => {
         maxAmountIn,
         [DAI.address, WETH.address],
         router.address,
+        SOURCE_ROUTER,
       ])
       planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
       planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])

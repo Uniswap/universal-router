@@ -14,6 +14,7 @@ import {
   OPENSEA_CONDUIT_KEY,
   NFTX_COVEN_VAULT,
   NFTX_COVEN_VAULT_ID,
+  SOURCE_ROUTER,
 } from './shared/constants'
 import {
   seaportOrders,
@@ -184,6 +185,7 @@ describe('Router', () => {
           maxAmountIn,
           [DAI.address, WETH.address],
           router.address,
+          SOURCE_ROUTER,
         ])
         planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
         planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])

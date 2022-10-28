@@ -13,7 +13,7 @@ import {
   USDT,
   approveSwapRouter02,
 } from '../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, MAX_UINT, MAX_UINT160 } from '../shared/constants'
+import { ALICE_ADDRESS, DEADLINE, MAX_UINT, MAX_UINT160, SOURCE_MSG_SENDER } from '../shared/constants'
 import { expandTo6DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployRouter, { deployPermit2 } from '../shared/deployRouter'
@@ -26,7 +26,7 @@ import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { IRoute, Trade } from '@uniswap/router-sdk'
 const { ethers } = hre
 
-describe.only('Uniswap UX Tests:', () => {
+describe('Uniswap UX Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router
@@ -40,8 +40,6 @@ describe.only('Uniswap UX Tests:', () => {
   let MAX_PERMIT: Permit
   let SIMPLE_SWAP_PERMIT: Permit
   let COMPLEX_SWAP_PERMIT: Permit
-
-  let MSG_SENDER: boolean = true
 
   beforeEach(async () => {
     await resetFork()
@@ -174,7 +172,7 @@ describe.only('Uniswap UX Tests:', () => {
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, pathAddresses, bob.address])
       } else if (swap.route.protocol == 'V3') {
         let path = encodePathExactInput(route)
-        planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [bob.address, amountIn, 0, path, MSG_SENDER])
+        planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [bob.address, amountIn, 0, path, SOURCE_MSG_SENDER])
       } else {
         console.log('invalid protocol')
       }
@@ -364,12 +362,6 @@ describe.only('Uniswap UX Tests:', () => {
 
     describe('Frequent Swapper - 10 swaps', async () => {
       it('SwapRouter02', async () => {
-        const { calldata: callDataComplex } = SwapRouter.swapCallParameters(COMPLEX_SWAP, {
-          slippageTolerance: new Percent(50, 100),
-          recipient: bob.address,
-          deadlineOrPreviousBlockhash: DEADLINE,
-        })
-
         const { calldata: callDataSimple } = SwapRouter.swapCallParameters(SIMPLE_SWAP, {
           slippageTolerance: new Percent(50, 100),
           recipient: bob.address,
@@ -378,14 +370,8 @@ describe.only('Uniswap UX Tests:', () => {
 
         let totalGas = approveSwapRouter02Gas
 
-        // Do 5 complex swaps
-        for (let i = 0; i < 5; i++) {
-          const tx = await executeSwapRouter02Swap({ value: '0', calldata: callDataComplex }, bob)
-          totalGas = totalGas.add((await tx.wait()).gasUsed)
-        }
-
         // Do 5 simple swaps
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 1; i++) {
           const tx = await executeSwapRouter02Swap({ value: '0', calldata: callDataSimple }, bob)
           totalGas = totalGas.add((await tx.wait()).gasUsed)
         }
