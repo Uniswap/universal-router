@@ -5,6 +5,9 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '../UniswapPoolHelper.sol';
 
 library UniswapV2Library {
+    error InvalidReserves();
+    error InvalidPath();
+
     // calculates the CREATE2 address for a pair without making any external calls
     function pairFor(address factory, bytes32 initCodeHash, address tokenA, address tokenB)
         internal
@@ -52,7 +55,7 @@ library UniswapV2Library {
         pure
         returns (uint256 amountOut)
     {
-        require(reserveIn > 0 && reserveOut > 0);
+        if (reserveIn == 0 || reserveOut == 0) revert InvalidReserves();
         uint256 amountInWithFee = amountIn * 997;
         uint256 numerator = amountInWithFee * reserveOut;
         uint256 denominator = reserveIn * 1000 + amountInWithFee;
@@ -65,7 +68,7 @@ library UniswapV2Library {
         pure
         returns (uint256 amountIn)
     {
-        require(reserveIn > 0 && reserveOut > 0);
+        if (reserveIn == 0 || reserveOut == 0) revert InvalidReserves();
         uint256 numerator = reserveIn * amountOut * 1000;
         uint256 denominator = (reserveOut - amountOut) * 997;
         amountIn = (numerator / denominator) + 1;
@@ -77,7 +80,7 @@ library UniswapV2Library {
         view
         returns (uint256 amount, address pair)
     {
-        require(path.length >= 2);
+        if (path.length < 2) revert InvalidPath();
         amount = amountOut;
         for (uint256 i = path.length - 1; i > 0; i--) {
             uint256 reserveIn;
