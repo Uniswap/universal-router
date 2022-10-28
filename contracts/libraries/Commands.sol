@@ -28,4 +28,5 @@ library Commands {
     uint256 constant UNWRAP_WETH_WITH_FEE = 0x11;
     uint256 constant SUDOSWAP = 0x12;
     uint256 constant NFT20 = 0x13;
+    uint256 constant CRYPTOPUNKS = 0x14;
 }

@@ -96,6 +96,9 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
                 abi.decode(inputs, (address, uint256, uint256, address));
             Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
+        } else if (command == Commands.CRYPTOPUNKS) {
+            (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
+            (success, output) = Constants.CRYPTOPUNKS.call{value: value}(data);
         } else {
             revert InvalidCommandType(command);
         }
