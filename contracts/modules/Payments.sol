@@ -5,13 +5,11 @@ import '../interfaces/external/IWETH9.sol';
 import '../libraries/Constants.sol';
 import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
-import {FixedPointMathLib} from 'solmate/src/utils/FixedPointMathLib.sol';
 
 
 library Payments {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for address;
-    using FixedPointMathLib for uint256;
 
     error InsufficientToken();
     error InsufficientETH();
@@ -100,7 +98,7 @@ library Payments {
             if (balance < amountMinimum) revert InsufficientToken();
             if (balance > 0) {
               unchecked {
-                  uint256 feeAmount = balance.mulDivDown(feeBips, FEE_BIPS_BASE);
+                  uint256 feeAmount = (balance * feeBips) / FEE_BIPS_BASE;
                   if (feeAmount > 0) ERC20(token).safeTransfer(feeRecipient, feeAmount);
                   ERC20(token).safeTransfer(recipient, balance - feeAmount);
               }
@@ -111,7 +109,7 @@ library Payments {
     // Calling function must verify that balance>0
     function transferETHWithFee(address recipient, uint256 balance, uint256 feeBips, address feeRecipient) private {
         unchecked {
-          uint256 feeAmount = balance.mulDivDown(feeBips, FEE_BIPS_BASE);
+          uint256 feeAmount = (balance * feeBips) / FEE_BIPS_BASE;
           if (feeAmount > 0) feeRecipient.safeTransferETH(feeAmount);
           recipient.safeTransferETH(balance - feeAmount);
         }
