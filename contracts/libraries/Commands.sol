@@ -28,4 +28,6 @@ library Commands {
     uint256 constant UNWRAP_WETH_WITH_FEE = 0x11;
     uint256 constant SUDOSWAP = 0x12;
     uint256 constant NFT20 = 0x13;
+    uint256 constant OWNERSHIP_CHECK_721 = 0x14;
+    uint256 constant OWNERSHIP_CHECK_1155 = 0x15;
 }

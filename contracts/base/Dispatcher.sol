@@ -13,6 +13,8 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     address immutable PERMIT_POST;
 
     error InvalidCommandType(uint256 commandType);
+    error InvalidOwnerERC721();
+    error InvalidOwnerERC1155();
 
     constructor(
         address permitPost,
@@ -88,6 +90,15 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         } else if (command == Commands.UNWRAP_WETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.unwrapWETH9(recipient, amountMin);
+        } else if (command == Commands.OWNERSHIP_CHECK_721) {
+            (address owner, address token, uint256 id) = abi.decode(inputs, (address, address, uint256));
+            success = (ERC721(token).ownerOf(id) == owner);
+            if (!success) output = abi.encodeWithSignature('InvalidOwnerERC721()');
+        } else if (command == Commands.OWNERSHIP_CHECK_1155) {
+            (address owner, address token, uint256 id, uint256 minBalance) =
+                abi.decode(inputs, (address, address, uint256, uint256));
+            success = (ERC1155(token).balanceOf(owner, id) >= minBalance);
+            if (!success) output = abi.encodeWithSignature('InvalidOwnerERC1155()');
         } else if (command == Commands.SWEEP_WITH_FEE) {
             (address token, address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
                 abi.decode(inputs, (address, address, uint256, uint256, address));
