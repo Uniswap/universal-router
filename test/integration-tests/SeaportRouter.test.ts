@@ -4,7 +4,12 @@ import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
 import { Router } from '../../typechain'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
-import { seaportOrders, seaportInterface, getAdvancedOrderParams } from './shared/protocolHelpers/seaport'
+import {
+  seaportOrders,
+  seaportInterface,
+  getAdvancedOrderParams,
+  defaultAvailableAdvancedOrders,
+} from './shared/protocolHelpers/seaport'
 import deployRouter from './shared/deployRouter'
 import { resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
@@ -56,46 +61,29 @@ describe('Seaport', () => {
     expect(ethDelta.sub(gasSpent)).to.eq(value)
   })
 
-  it('completes a fulfillAvailableAdvancedOrders type', async () => {
+  it.only('completes a fulfillAvailableAdvancedOrders type', async () => {
     const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
     const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
     const params0 = advancedOrder0.parameters
     const params1 = advancedOrder1.parameters
     const value = value1.add(value2)
-    const considerationFulfillment = [
-      [[0, 0]],
-      [
-        [0, 1],
-        [1, 1],
-      ],
-      [
-        [0, 2],
-        [1, 2],
-      ],
-      [[1, 0]],
-    ]
 
-    const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
-      [advancedOrder0, advancedOrder1],
-      [],
-      [[[0, 0]], [[1, 0]]],
-      considerationFulfillment,
-      OPENSEA_CONDUIT_KEY,
-      alice.address,
-      100,
-    ])
+    const calldata = defaultAvailableAdvancedOrders(alice.address, advancedOrder0, advancedOrder1)
 
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
     const { commands, inputs } = planner
 
-    const owner0Before = await covenContract.ownerOf(params0.offer[0].identifierOrCriteria)
-    const owner1Before = await covenContract.ownerOf(params1.offer[0].identifierOrCriteria)
+    const nftId0 = params0.offer[0].identifierOrCriteria
+    const nftId1 = params1.offer[0].identifierOrCriteria
+
+    const owner0Before = await covenContract.ownerOf(nftId0)
+    const owner1Before = await covenContract.ownerOf(nftId1)
     const ethBefore = await ethers.provider.getBalance(alice.address)
 
     const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
 
-    const owner0After = await covenContract.ownerOf(params0.offer[0].identifierOrCriteria)
-    const owner1After = await covenContract.ownerOf(params1.offer[0].identifierOrCriteria)
+    const owner0After = await covenContract.ownerOf(nftId0)
+    const owner1After = await covenContract.ownerOf(nftId1)
     const ethAfter = await ethers.provider.getBalance(alice.address)
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
     const ethDelta = ethBefore.sub(ethAfter)

@@ -22,6 +22,7 @@ import {
   getAdvancedOrderParams,
   AdvancedOrder,
   Order,
+  defaultAvailableAdvancedOrders,
 } from './shared/protocolHelpers/seaport'
 import { resetFork, WETH, DAI } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
@@ -209,18 +210,18 @@ describe('Router', () => {
       it.only('completes a trade for ERC20 --> ETH --> NFTs, invalid Seaport order', async () => {
         const maxAmountIn = expandTo18DecimalsBN(100_000)
         await daiContract.transfer(router.address, maxAmountIn)
+        let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
+        const { order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder)
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-          value,
+          seaportValue,
           maxAmountIn,
           [DAI.address, WETH.address],
           router.address,
         ])
-        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
+        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, seaportValue])
 
-        // invalid Seaport order
-        let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
+        // invalidate Seaport order
         invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
-        const { order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder)
         const calldataOpensea = seaportInterface.encodeFunctionData('fulfillOrder', [seaportOrder, OPENSEA_CONDUIT_KEY])
         planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldataOpensea], true)
 
@@ -243,6 +244,56 @@ describe('Router', () => {
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: totalValue })
         const covenBalanceAfter = await covenContract.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovensNFTX)
+      })
+
+      it.only('completes a trade for ERC20 --> ETH --> NFTs with Seaport, partial fill', async () => {
+        const maxAmountIn = expandTo18DecimalsBN(100_000)
+        await daiContract.transfer(router.address, maxAmountIn)
+
+        const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
+        const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
+        const params0 = advancedOrder0.parameters
+        const params1 = advancedOrder1.parameters
+        const totalValue = value1.add(value2)
+
+        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+          totalValue,
+          maxAmountIn,
+          [DAI.address, WETH.address],
+          router.address,
+        ])
+        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, totalValue])
+
+        const calldata = defaultAvailableAdvancedOrders(alice.address, advancedOrder0, advancedOrder1)
+        planner.addCommand(CommandType.SEAPORT, [totalValue, calldata])
+        const { commands, inputs } = planner
+
+        const nftId0 = params0.offer[0].identifierOrCriteria
+        const nftId1 = params1.offer[0].identifierOrCriteria
+
+        const owner0Before = await covenContract.ownerOf(nftId0)
+        const owner1Before = await covenContract.ownerOf(nftId1)
+        const ethBefore = await ethers.provider.getBalance(alice.address)
+
+        // shouldn't have to send eth bc we are unwrapping the dai - weth trade, but this fails:
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+
+        // This succeeds:
+        // const receipt = await (
+        //   await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: totalValue })
+        // ).wait()
+
+        const owner0After = await covenContract.ownerOf(nftId0)
+        const owner1After = await covenContract.ownerOf(nftId1)
+        const ethAfter = await ethers.provider.getBalance(alice.address)
+        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+        const ethDelta = ethBefore.sub(ethAfter)
+
+        expect(owner0Before.toLowerCase()).to.eq(params0.offerer)
+        expect(owner1Before.toLowerCase()).to.eq(params1.offerer)
+        expect(owner0After).to.eq(alice.address)
+        expect(owner1After).to.eq(alice.address)
+        expect(ethDelta).to.eq(gasSpent) // eth spent only on gas bc trade came from DAI
       })
     })
   })
