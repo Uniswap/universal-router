@@ -9,7 +9,16 @@ import { BigNumber, BigNumberish } from 'ethers'
 import { Permit2, Router } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE, MAX_UINT, MAX_UINT160, ONE_PERCENT_BIPS, SOURCE_MSG_SENDER, SOURCE_ROUTER } from './shared/constants'
+import {
+  ALICE_ADDRESS,
+  CONTRACT_BALANCE,
+  DEADLINE,
+  MAX_UINT,
+  MAX_UINT160,
+  ONE_PERCENT_BIPS,
+  SOURCE_MSG_SENDER,
+  SOURCE_ROUTER,
+} from './shared/constants'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
@@ -141,7 +150,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         // 1) permit the router to access funds, 2) trade, which takes the funds directly from permit2
         planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
-        planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [bob.address, amountInDAI, minAmountOutWETH, path, SOURCE_MSG_SENDER])
+        planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+          bob.address,
+          amountInDAI,
+          minAmountOutWETH,
+          path,
+          SOURCE_MSG_SENDER,
+        ])
         const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(planner)
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
@@ -409,7 +424,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       it('completes a V3 exactIn swap with longer path', async () => {
         const amountOutMin: number = 3 * 10 ** 6
-        addV3ExactInTrades(planner, 1, amountOutMin, bob.address, [DAI.address, WETH.address, USDC.address], SOURCE_MSG_SENDER)
+        addV3ExactInTrades(
+          planner,
+          1,
+          amountOutMin,
+          bob.address,
+          [DAI.address, WETH.address, USDC.address],
+          SOURCE_MSG_SENDER
+        )
 
         const {
           daiBalanceBefore,
@@ -430,7 +452,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const tokens = [DAI.address, WETH.address]
         const path = encodePathExactOutput(tokens)
 
-        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [bob.address, amountOut, amountInMax, path, SOURCE_MSG_SENDER])
+        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
+          bob.address,
+          amountOut,
+          amountInMax,
+          path,
+          SOURCE_MSG_SENDER,
+        ])
 
         const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(planner)
         const { amount0: daiTraded } = v3SwapEventArgs!
@@ -445,7 +473,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // for these tests Bob gives the router max approval on permit2
         // await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
 
-        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [bob.address, amountOut, amountInMax, path, SOURCE_MSG_SENDER])
+        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
+          bob.address,
+          amountOut,
+          amountInMax,
+          path,
+          SOURCE_MSG_SENDER,
+        ])
         const { commands, inputs } = planner
 
         const balanceWethBefore = await wethContract.balanceOf(bob.address)
@@ -473,7 +507,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const tokens = [DAI.address, WETH.address]
         const path = encodePathExactOutput(tokens)
 
-        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [router.address, amountOut, amountInMax, path, SOURCE_MSG_SENDER])
+        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
+          router.address,
+          amountOut,
+          amountInMax,
+          path,
+          SOURCE_MSG_SENDER,
+        ])
         planner.addCommand(CommandType.UNWRAP_WETH, [bob.address, amountOut])
 
         const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(planner)
@@ -669,7 +709,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
             router.address,
             SOURCE_MSG_SENDER,
           ])
-          planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [router.address, v3AmountOut, maxAmountIn, path, SOURCE_MSG_SENDER])
+          planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
+            router.address,
+            v3AmountOut,
+            maxAmountIn,
+            path,
+            SOURCE_MSG_SENDER,
+          ])
           // aggregate slippate check
           planner.addCommand(CommandType.UNWRAP_WETH, [bob.address, fullAmountOut])
 
