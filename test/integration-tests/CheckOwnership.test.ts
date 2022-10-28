@@ -9,7 +9,7 @@ import {
   getAdvancedOrderParams,
   purchaseDataForTwoCovensSeaport,
 } from './shared/protocolHelpers/seaport'
-import { createLooksRareOrders, looksRareOrders, LOOKS_RARE_1155_ORDER } from './shared/protocolHelpers/looksrare'
+import { createLooksRareOrders, looksRareOrders, LOOKS_RARE_1155_ORDER } from './shared/protocolHelpers/looksRare'
 import { resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
