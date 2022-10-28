@@ -28,6 +28,22 @@ library Payments {
         }
     }
 
+    /// @param token The token to pay (can be ETH using Constants.ETH)
+    /// @param recipient The entity that will receive payment
+    /// @param bips Portion in bips of whole balance of the contract
+    function payPortion(address token, address recipient, uint256 bips) internal {
+        if (token == Constants.ETH) {
+            uint256 balance = address(this).balance;
+            uint256 amount = (balance * bips) / FEE_BIPS_BASE;
+            recipient.safeTransferETH(amount);
+        } else {
+            uint256 balance = ERC20(token).balanceOf(address(this));
+            uint256 amount = (balance * bips) / FEE_BIPS_BASE;
+            // pay with tokens already in the contract (for the exact input multihop case)
+            ERC20(token).safeTransfer(recipient, amount);
+        }
+    }
+
     function sweep(address token, address recipient, uint256 amountMinimum) internal {
         uint256 balance;
         if (token == Constants.ETH) {
@@ -61,56 +77,6 @@ library Payments {
         if (value > 0) {
             IWETH9(Constants.WETH9).withdraw(value);
             recipient.safeTransferETH(value);
-        }
-    }
-
-    function unwrapWETH9WithFee(address recipient, uint256 amountMinimum, uint256 feeBips, address feeRecipient)
-        internal
-    {
-        if (feeBips == 0 || feeBips > 100) revert InvalidFeeBips();
-
-        uint256 balance = ERC20(Constants.WETH9).balanceOf(address(this));
-        if (balance < amountMinimum) revert InsufficientToken();
-
-        if (balance > 0) {
-            IWETH9(Constants.WETH9).withdraw(balance);
-            transferETHWithFee(recipient, balance, feeBips, feeRecipient);
-        }
-    }
-
-    function sweepWithFee(
-        address token,
-        address recipient,
-        uint256 amountMinimum,
-        uint256 feeBips,
-        address feeRecipient
-    ) internal {
-        if (feeBips == 0 || feeBips > 100) revert InvalidFeeBips();
-
-        uint256 balance;
-        if (token == Constants.ETH) {
-            balance = address(this).balance;
-            if (balance < amountMinimum) revert InsufficientETH();
-            if (balance > 0) transferETHWithFee(recipient, balance, feeBips, feeRecipient);
-        } else {
-            balance = ERC20(token).balanceOf(address(this));
-            if (balance < amountMinimum) revert InsufficientToken();
-            if (balance > 0) {
-                unchecked {
-                    uint256 feeAmount = (balance * feeBips) / FEE_BIPS_BASE;
-                    if (feeAmount > 0) ERC20(token).safeTransfer(feeRecipient, feeAmount);
-                    ERC20(token).safeTransfer(recipient, balance - feeAmount);
-                }
-            }
-        }
-    }
-
-    // Calling function must verify that balance>0
-    function transferETHWithFee(address recipient, uint256 balance, uint256 feeBips, address feeRecipient) private {
-        unchecked {
-            uint256 feeAmount = (balance * feeBips) / FEE_BIPS_BASE;
-            if (feeAmount > 0) feeRecipient.safeTransferETH(feeAmount);
-            recipient.safeTransferETH(balance - feeAmount);
         }
     }
 }

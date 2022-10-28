@@ -22,8 +22,7 @@ export enum CommandType {
   LOOKS_RARE_1155 = 0x0d,
   X2Y2_1155 = 0x0e,
   FOUNDATION = 0x0f,
-  SWEEP_WITH_FEE = 0x10,
-  UNWRAP_WETH_WITH_FEE = 0x11,
+  PAY_PORTION = 0x10,
   SUDOSWAP = 0x12,
   NFT20 = 0x13,
 }
@@ -59,8 +58,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.LOOKS_RARE_1155]: ['uint256', 'bytes', 'address', 'address', 'uint256', 'uint256'],
   [CommandType.X2Y2_1155]: ['uint256', 'bytes', 'address', 'address', 'uint256', 'uint256'],
   [CommandType.FOUNDATION]: ['uint256', 'bytes', 'address', 'address', 'uint256'],
-  [CommandType.SWEEP_WITH_FEE]: ['address', 'address', 'uint256', 'uint256', 'address'],
-  [CommandType.UNWRAP_WETH_WITH_FEE]: ['address', 'uint256', 'uint256', 'address'],
+  [CommandType.PAY_PORTION]: ['address', 'address', 'uint256'],
   [CommandType.SUDOSWAP]: ['uint256', 'bytes'],
   [CommandType.NFT20]: ['uint256', 'bytes'],
 }

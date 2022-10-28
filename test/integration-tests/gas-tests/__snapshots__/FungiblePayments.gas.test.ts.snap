@@ -9,8 +9,8 @@ Object {
 
 exports[`Payments Gas Tests Individual Command Tests gas: SWEEP_WITH_FEE 1`] = `
 Object {
-  "calldataByteLength": 420,
-  "gasUsed": 63908,
+  "calldataByteLength": 516,
+  "gasUsed": 66790,
 }
 `;
 
@@ -37,8 +37,8 @@ Object {
 
 exports[`Payments Gas Tests Individual Command Tests gas: UNWRAP_WETH_WITH_FEE 1`] = `
 Object {
-  "calldataByteLength": 388,
-  "gasUsed": 55124,
+  "calldataByteLength": 644,
+  "gasUsed": 52571,
 }
 `;
 
