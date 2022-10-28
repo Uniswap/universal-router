@@ -60,7 +60,7 @@ describe('Check Ownership', () => {
 
       const { commands, inputs } = planner
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.be.revertedWith(
-        'ExecutionFailed(0, "0x")'
+        'ExecutionFailed(0, "0x7dbe7e89")'
       )
     })
 
@@ -161,7 +161,7 @@ describe('Check Ownership', () => {
 
       const { commands, inputs } = planner
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.be.revertedWith(
-        'ExecutionFailed(0, "0x")'
+        'ExecutionFailed(0, "0x483a6929")'
       )
     })
   })
