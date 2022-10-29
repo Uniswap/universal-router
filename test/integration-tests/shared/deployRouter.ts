@@ -11,7 +11,11 @@ import {
   LOOKSRARE_TOKEN,
 } from './constants'
 
-export default async (permit2: Permit2, mockLooksRareRewardsDistributor?: string, mockLooksRareToken?: string): Promise<Router> => {
+export default async (
+  permit2: Permit2,
+  mockLooksRareRewardsDistributor?: string,
+  mockLooksRareToken?: string
+): Promise<Router> => {
   const routerFactory = await ethers.getContractFactory('Router')
   const router = (await routerFactory.deploy(
     permit2.address,
