@@ -43,8 +43,7 @@ describe('Check Ownership Gas', () => {
 
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
 
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 
@@ -65,8 +64,7 @@ describe('Check Ownership Gas', () => {
       params.offer[0].identifierOrCriteria,
     ])
 
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 
@@ -87,8 +85,7 @@ describe('Check Ownership Gas', () => {
       params1.offer[0].identifierOrCriteria,
     ])
 
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 
@@ -102,8 +99,7 @@ describe('Check Ownership Gas', () => {
       params.offer[0].identifierOrCriteria,
     ])
 
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
   })
 })

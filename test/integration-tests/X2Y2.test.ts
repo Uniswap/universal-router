@@ -13,7 +13,7 @@ const { ethers } = hre
 
 const ERC721_INTERFACE = new ethers.utils.Interface(ERC721_ABI)
 
-describe('X2Y2', () => {
+describe.only('X2Y2', () => {
   let alice: SignerWithAddress
   let router: Router
   let permit2: Permit2
@@ -48,8 +48,7 @@ describe('X2Y2', () => {
         ENS_721.address,
         erc721Order.token_id,
       ])
-      commands = planner.commands
-      inputs = planner.inputs
+      { commands, inputs } = planner
     })
 
     it('purchases 1 ERC-721 on X2Y2', async () => {
@@ -91,8 +90,7 @@ describe('X2Y2', () => {
         erc1155Order.token_id,
         1,
       ])
-      commands = planner.commands
-      inputs = planner.inputs
+      ;({commands, inputs} = planner)
     })
 
     it('purchases 1 ERC-1155 on X2Y2', async () => {

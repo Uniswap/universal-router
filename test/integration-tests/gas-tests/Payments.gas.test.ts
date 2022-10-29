@@ -67,15 +67,13 @@ describe('Payments Gas Tests', () => {
       const amount: BigNumber = expandTo18DecimalsBN(3)
       await wethContract.transfer(router.address, amount)
       planner.addCommand(CommandType.UNWRAP_WETH, [router.address, amount])
-      let commands = planner.commands
-      let inputs = planner.inputs
+      let { commands, inputs } = planner
       await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
 
       // now do a transfer of those ETH as the command
       planner = new RoutePlanner()
       planner.addCommand(CommandType.TRANSFER, [ethers.constants.AddressZero, ALICE_ADDRESS, amount])
-      commands = planner.commands
-      inputs = planner.inputs
+      ;({ commands, inputs } = planner)
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })
@@ -96,15 +94,13 @@ describe('Payments Gas Tests', () => {
       const amount: BigNumber = expandTo18DecimalsBN(3)
       await wethContract.transfer(router.address, amount)
       planner.addCommand(CommandType.UNWRAP_WETH, [router.address, amount])
-      let commands = planner.commands
-      let inputs = planner.inputs
+      let { commands, inputs } = planner
       await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
 
       // now wrap those ETH as the command
       planner = new RoutePlanner()
       planner.addCommand(CommandType.WRAP_ETH, [ALICE_ADDRESS, amount])
-      commands = planner.commands
-      inputs = planner.inputs
+      ;({ commands, inputs } = planner)
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })

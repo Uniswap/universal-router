@@ -90,8 +90,7 @@ describe('LooksRare Gas Tests', () => {
         makerOrder,
       ])
       planner.addCommand(CommandType.LOOKS_RARE_1155, [value, calldata, ALICE_ADDRESS, TWERKY_ADDRESS, tokenId, 1])
-      commands = planner.commands
-      inputs = planner.inputs
+      ;({ commands, inputs } = planner)
     })
 
     it('gas: buy 1 ERC-1155 on looks rare', async () => {

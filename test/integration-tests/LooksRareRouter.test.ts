@@ -90,8 +90,7 @@ describe('LooksRare', () => {
         makerOrder,
       ])
       planner.addCommand(CommandType.LOOKS_RARE_1155, [value, calldata, ALICE_ADDRESS, TWERKY_ADDRESS, tokenId, 1])
-      commands = planner.commands
-      inputs = planner.inputs
+      ;({commands, inputs} = planner)
     })
 
     it('Buys a Twerky', async () => {
