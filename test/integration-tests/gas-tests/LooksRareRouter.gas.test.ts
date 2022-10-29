@@ -15,7 +15,7 @@ import {
   looksRareInterface,
   LOOKS_RARE_1155_ORDER,
   LOOKS_RARE_721_ORDER,
-} from '../shared/protocolHelpers/looksrare'
+} from '../shared/protocolHelpers/looksRare'
 import deployRouter, { deployPermit2 } from '../shared/deployRouter'
 
 describe('LooksRare Gas Tests', () => {

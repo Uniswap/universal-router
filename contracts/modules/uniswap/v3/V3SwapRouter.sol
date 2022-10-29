@@ -13,6 +13,11 @@ abstract contract V3SwapRouter is Permit2Payments {
     using V3Path for bytes;
     using SafeCast for uint256;
 
+    error InvalidSwap();
+    error V3TooLittleReceived();
+    error V3TooMuchRequested();
+    error V3InvalidAmountOut();
+
     /// @notice The identifying key of the pool
     struct PoolKey {
         address token0;
@@ -30,10 +35,10 @@ abstract contract V3SwapRouter is Permit2Payments {
 
     /// @dev Used as the placeholder value for maxAmountIn, because the computed amount in for an exact output swap
     /// can never actually be this value
-    uint256 private constant DEFAULT_AMOUNT_IN_CACHED = type(uint256).max;
+    uint256 private constant DEFAULT_MAX_AMOUNT_IN = type(uint256).max;
 
     /// @dev Transient storage variable used for checking slippage
-    uint256 private maxAmountInCached = DEFAULT_AMOUNT_IN_CACHED;
+    uint256 private maxAmountInCached = DEFAULT_MAX_AMOUNT_IN;
     /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
     uint160 internal constant MIN_SQRT_RATIO = 4295128739;
 
@@ -46,7 +51,7 @@ abstract contract V3SwapRouter is Permit2Payments {
     }
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) external {
-        require(amount0Delta > 0 || amount1Delta > 0); // swaps entirely within 0-liquidity regions are not supported
+        if (amount0Delta <= 0 && amount1Delta <= 0) revert InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
         SwapCallbackData memory data = abi.decode(_data, (SwapCallbackData));
         bytes memory path = data.path;
 
@@ -115,7 +120,7 @@ abstract contract V3SwapRouter is Permit2Payments {
             }
         }
 
-        require(amountOut >= amountOutMinimum, 'Too little received');
+        if (amountOut < amountOutMinimum) revert V3TooLittleReceived();
     }
 
     function v3SwapExactOutput(
@@ -133,10 +138,10 @@ abstract contract V3SwapRouter is Permit2Payments {
             ? (uint256(amount0Delta), uint256(-amount1Delta))
             : (uint256(amount1Delta), uint256(-amount0Delta));
 
-        require(amountOutReceived == amountOut);
+        if (amountOutReceived != amountOut) revert V3InvalidAmountOut();
 
-        require(amountIn <= amountInMaximum, 'Too much requested');
-        maxAmountInCached = DEFAULT_AMOUNT_IN_CACHED;
+        if (amountIn > amountInMaximum) revert V3TooMuchRequested();
+        maxAmountInCached = DEFAULT_MAX_AMOUNT_IN;
     }
 
     /// @dev Performs a single swap for both exactIn and exactOut

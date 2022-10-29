@@ -9,10 +9,17 @@
 pragma solidity ^0.8.0;
 
 library BytesLib {
+    error SliceOverflow();
+    error SliceOutOfBounds();
+    error ToAddressOverflow();
+    error ToAddressOutOfBounds();
+    error ToUint24Overflow();
+    error ToUint24OutOfBounds();
+
     function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
-        require(_length + 31 >= _length, 'slice_overflow');
-        require(_start + _length >= _start, 'slice_overflow');
-        require(_bytes.length >= _start + _length, 'slice_outOfBounds');
+        if (_length + 31 < _length) revert SliceOverflow();
+        if (_start + _length < _start) revert SliceOverflow();
+        if (_bytes.length < _start + _length) revert SliceOutOfBounds();
 
         bytes memory tempBytes;
 
@@ -66,8 +73,8 @@ library BytesLib {
     }
 
     function toAddress(bytes memory _bytes, uint256 _start) internal pure returns (address) {
-        require(_start + 20 >= _start, 'toAddress_overflow');
-        require(_bytes.length >= _start + 20, 'toAddress_outOfBounds');
+        if (_start + 20 < _start) revert ToAddressOverflow();
+        if (_bytes.length < _start + 20) revert ToAddressOutOfBounds();
         address tempAddress;
 
         assembly {
@@ -78,8 +85,8 @@ library BytesLib {
     }
 
     function toUint24(bytes memory _bytes, uint256 _start) internal pure returns (uint24) {
-        require(_start + 3 >= _start, 'toUint24_overflow');
-        require(_bytes.length >= _start + 3, 'toUint24_outOfBounds');
+        if (_start + 3 < _start) revert ToUint24Overflow();
+        if (_bytes.length < _start + 3) revert ToUint24OutOfBounds();
         uint24 tempUint;
 
         assembly {

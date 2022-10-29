@@ -1,6 +1,7 @@
 import SEAPORT_ABI from '../abis/Seaport.json'
-import { BigNumber } from 'ethers'
+import { BigNumber, BigNumberish } from 'ethers'
 import { expandTo18DecimalsBN } from '../helpers'
+import { OPENSEA_CONDUIT_KEY } from '../constants'
 import fs from 'fs'
 import hre from 'hardhat'
 const { ethers } = hre
@@ -74,4 +75,40 @@ export function calculateValue(considerations: ConsiderationItem[]): BigNumber {
     (amt: BigNumber, consideration: ConsiderationItem) => amt.add(consideration.startAmount),
     expandTo18DecimalsBN(0)
   )
+}
+
+type BuyCovensReturnData = {
+  calldata: string
+  advancedOrder0: AdvancedOrder
+  advancedOrder1: AdvancedOrder
+  value: BigNumberish
+}
+
+export function purchaseDataForTwoCovensSeaport(receipient: string): BuyCovensReturnData {
+  const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
+  const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
+  const value = value1.add(value2)
+  const considerationFulfillment = [
+    [[0, 0]],
+    [
+      [0, 1],
+      [1, 1],
+    ],
+    [
+      [0, 2],
+      [1, 2],
+    ],
+    [[1, 0]],
+  ]
+
+  const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
+    [advancedOrder0, advancedOrder1],
+    [],
+    [[[0, 0]], [[1, 0]]],
+    considerationFulfillment,
+    OPENSEA_CONDUIT_KEY,
+    receipient,
+    100,
+  ])
+  return { calldata, advancedOrder0, advancedOrder1, value }
 }

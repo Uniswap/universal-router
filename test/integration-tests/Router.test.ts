@@ -1,6 +1,5 @@
-import { Router, Permit2, ERC721 } from '../../typechain'
-import type { Contract } from '@ethersproject/contracts'
-import { BigNumber } from 'ethers'
+import { Router, Permit2, ERC721, ERC20, MockLooksRareRewardsDistributor } from '../../typechain'
+import { BigNumber, BigNumberish } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
@@ -15,6 +14,7 @@ import {
   NFTX_COVEN_VAULT,
   NFTX_COVEN_VAULT_ID,
   SOURCE_ROUTER,
+  ROUTER_REWARDS_DISTRIBUTOR,
 } from './shared/constants'
 import {
   seaportOrders,
@@ -38,7 +38,9 @@ describe('Router', () => {
   let alice: SignerWithAddress
   let router: Router
   let permit2: Permit2
-  let daiContract: Contract
+  let daiContract: ERC20
+  let mockLooksRareToken: ERC20
+  let mockLooksRareRewardsDistributor: MockLooksRareRewardsDistributor
   let pair_DAI_WETH: Pair
 
   beforeEach(async () => {
@@ -48,13 +50,25 @@ describe('Router', () => {
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
     })
-    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
+
+    // mock rewards contracts
+    const tokenFactory = await ethers.getContractFactory('MintableERC20')
+    const mockDistributorFactory = await ethers.getContractFactory('MockLooksRareRewardsDistributor')
+    mockLooksRareToken = (await tokenFactory.connect(alice).deploy(expandTo18DecimalsBN(5))) as ERC20
+    mockLooksRareRewardsDistributor = (await mockDistributorFactory.deploy(
+      ROUTER_REWARDS_DISTRIBUTOR,
+      mockLooksRareToken.address
+    )) as MockLooksRareRewardsDistributor
+
+    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
-    permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployRouter(permit2)).connect(alice) as Router
+  permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2, mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)).connect(
+      alice
+    ) as Router
   })
 
-  describe('#execute', async () => {
+  describe('#execute', () => {
     let planner: RoutePlanner
 
     beforeEach(async () => {
@@ -195,6 +209,21 @@ describe('Router', () => {
         const covenBalanceAfter = await covenContract.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
       })
+    })
+  })
+
+  describe('#collectRewards', () => {
+    let amountRewards: BigNumberish
+    beforeEach(async () => {
+      amountRewards = expandTo18DecimalsBN(0.5)
+      mockLooksRareToken.connect(alice).transfer(mockLooksRareRewardsDistributor.address, amountRewards)
+    })
+
+    it('transfers owed rewards into the distributor contract', async () => {
+      const balanceBefore = await mockLooksRareToken.balanceOf(ROUTER_REWARDS_DISTRIBUTOR)
+      await router.collectRewards('0x00')
+      const balanceAfter = await mockLooksRareToken.balanceOf(ROUTER_REWARDS_DISTRIBUTOR)
+      expect(balanceAfter.sub(balanceBefore)).to.eq(amountRewards)
     })
   })
 })

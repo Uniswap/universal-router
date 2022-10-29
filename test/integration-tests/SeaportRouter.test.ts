@@ -4,7 +4,12 @@ import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
 import { Router, Permit2 } from '../../typechain'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
-import { seaportOrders, seaportInterface, getAdvancedOrderParams } from './shared/protocolHelpers/seaport'
+import {
+  seaportOrders,
+  seaportInterface,
+  getAdvancedOrderParams,
+  purchaseDataForTwoCovensSeaport,
+} from './shared/protocolHelpers/seaport'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
@@ -59,34 +64,9 @@ describe('Seaport', () => {
   })
 
   it('completes a fulfillAvailableAdvancedOrders type', async () => {
-    const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
-    const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
+    const { calldata, advancedOrder0, advancedOrder1, value } = purchaseDataForTwoCovensSeaport(alice.address)
     const params0 = advancedOrder0.parameters
     const params1 = advancedOrder1.parameters
-    const value = value1.add(value2)
-    const considerationFulfillment = [
-      [[0, 0]],
-      [
-        [0, 1],
-        [1, 1],
-      ],
-      [
-        [0, 2],
-        [1, 2],
-      ],
-      [[1, 0]],
-    ]
-
-    const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
-      [advancedOrder0, advancedOrder1],
-      [],
-      [[[0, 0]], [[1, 0]]],
-      considerationFulfillment,
-      OPENSEA_CONDUIT_KEY,
-      alice.address,
-      100,
-    ])
-
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
     const { commands, inputs } = planner
 
