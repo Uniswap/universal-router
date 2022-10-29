@@ -44,7 +44,7 @@ describe('X2Y2', () => {
         ENS_721.address,
         erc721Order.token_id,
       ])
-      ;({commands, inputs} = planner)
+      ;({ commands, inputs } = planner)
     })
 
     it('gas: purchases 1 ERC-721 on X2Y2', async () => {
@@ -79,7 +79,7 @@ describe('X2Y2', () => {
         erc1155Order.token_id,
         1,
       ])
-      ;({commands, inputs} = planner)
+      ;({ commands, inputs } = planner)
     })
 
     it('gas: purchases 1 ERC-1155 on X2Y2', async () => {
