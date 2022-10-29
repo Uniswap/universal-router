@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
-import {ERC20} from 'solmate/src/tokens/ERC20.sol';
+import {ERC20} from 'solmate/tokens/ERC20.sol';
 
 interface IRewardsCollector {
     function routerRewardsDistributor() external returns (address);
