@@ -1,16 +1,16 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Payments Gas Tests Individual Command Tests gas: SWEEP with ERC20 1`] = `
+exports[`Payments Gas Tests Individual Command Tests gas: SWEEP_ERC20 with ERC20 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 37465,
+  "gasUsed": 37444,
 }
 `;
 
-exports[`Payments Gas Tests Individual Command Tests gas: SWEEP_WITH_FEE 1`] = `
+exports[`Payments Gas Tests Individual Command Tests gas: SWEEP_ERC20_WITH_FEE 1`] = `
 Object {
-  "calldataByteLength": 516,
-  "gasUsed": 67009,
+  "calldataByteLength": 420,
+  "gasUsed": 64195,
 }
 `;
 
@@ -31,14 +31,14 @@ Object {
 exports[`Payments Gas Tests Individual Command Tests gas: UNWRAP_WETH 1`] = `
 Object {
   "calldataByteLength": 324,
-  "gasUsed": 44954,
+  "gasUsed": 44972,
 }
 `;
 
 exports[`Payments Gas Tests Individual Command Tests gas: UNWRAP_WETH_WITH_FEE 1`] = `
 Object {
-  "calldataByteLength": 644,
-  "gasUsed": 52891,
+  "calldataByteLength": 388,
+  "gasUsed": 55404,
 }
 `;
 
