@@ -25,11 +25,6 @@ abstract contract V3SwapRouter is Permit2Payments {
         uint24 fee;
     }
 
-    struct SwapCallbackData {
-        bytes path;
-        address payer;
-    }
-
     address internal immutable V3_FACTORY;
     bytes32 internal immutable POOL_INIT_CODE_HASH_V3;
 
@@ -50,10 +45,9 @@ abstract contract V3SwapRouter is Permit2Payments {
         POOL_INIT_CODE_HASH_V3 = poolInitCodeHash;
     }
 
-    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) external {
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         if (amount0Delta <= 0 && amount1Delta <= 0) revert InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
-        SwapCallbackData memory data = abi.decode(_data, (SwapCallbackData));
-        bytes memory path = data.path;
+        (bytes memory path, address payer) = abi.decode(data, (bytes, address));
 
         // because exact output swaps are executed in reverse order, in this case tokenOut is actually tokenIn
         (address tokenIn, address tokenOut,) = path.decodeFirstPool();
@@ -62,8 +56,6 @@ abstract contract V3SwapRouter is Permit2Payments {
             amount0Delta > 0 ? (tokenIn < tokenOut, uint256(amount0Delta)) : (tokenOut < tokenIn, uint256(amount1Delta));
 
         if (isExactInput) {
-            address payer = data.payer;
-
             // Pay the pool (msg.sender)
             if (payer == address(this)) Payments.payERC20(tokenIn, msg.sender, amountToPay);
             else permit2TransferFrom(tokenIn, payer, msg.sender, uint160(amountToPay));
@@ -71,9 +63,8 @@ abstract contract V3SwapRouter is Permit2Payments {
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
                 // this is an intermediate step so the payer is actually this contract
-                _swap(-amountToPay.toInt256(), msg.sender, path.skipToken(), data.payer, false);
+                _swap(-amountToPay.toInt256(), msg.sender, path.skipToken(), payer, false);
             } else {
-                address payer = data.payer;
                 require(amountToPay <= maxAmountInCached);
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
                 if (payer == address(this)) Payments.payERC20(tokenOut, msg.sender, amountToPay);
@@ -163,7 +154,7 @@ abstract contract V3SwapRouter is Permit2Payments {
             zeroForOne,
             amount,
             (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1),
-            abi.encode(SwapCallbackData({path: path, payer: payer}))
+            abi.encode(path, payer)
         );
     }
 
