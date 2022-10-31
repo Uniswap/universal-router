@@ -1,7 +1,14 @@
 import { Router, Permit2 } from '../../../typechain'
 import { expect } from '../shared/expect'
 import type { Contract } from '@ethersproject/contracts'
-import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY, SOURCE_ROUTER } from '../shared/constants'
+import {
+  ALICE_ADDRESS,
+  DEADLINE,
+  MAX_UINT,
+  MAX_UINT160,
+  OPENSEA_CONDUIT_KEY,
+  SOURCE_MSG_SENDER,
+} from '../shared/constants'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { resetFork, WETH, DAI } from '../shared/mainnetForkHelpers'
@@ -50,6 +57,8 @@ describe('Router Gas Tests', () => {
 
     beforeEach(async () => {
       ;({ advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0]))
+      await daiContract.approve(permit2.address, MAX_UINT)
+      await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
     })
 
     it('gas: ETH --> Seaport NFT', async () => {
@@ -67,7 +76,6 @@ describe('Router Gas Tests', () => {
 
     it('gas: ERC20 --> ETH --> Seaport NFT', async () => {
       const maxAmountIn = expandTo18DecimalsBN(100_000)
-      await daiContract.transfer(router.address, maxAmountIn)
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
         [],
@@ -80,7 +88,7 @@ describe('Router Gas Tests', () => {
         maxAmountIn,
         [DAI.address, WETH.address],
         router.address,
-        SOURCE_ROUTER,
+        SOURCE_MSG_SENDER,
       ])
       planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
       planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
