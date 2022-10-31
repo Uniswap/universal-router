@@ -30,5 +30,5 @@ library Commands {
     uint256 constant NFT20 = 0x13;
     uint256 constant OWNERSHIP_CHECK_721 = 0x14;
     uint256 constant OWNERSHIP_CHECK_1155 = 0x15;
-    uint256 constant APPROVE = 0x16;
+    uint256 constant APPROVE_ERC20 = 0x16;
 }

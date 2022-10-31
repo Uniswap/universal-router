@@ -9,6 +9,7 @@ import '../libraries/Commands.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
+import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 
 contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     address immutable PERMIT_POST;
@@ -108,9 +109,9 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
                 abi.decode(inputs, (address, uint256, uint256, address));
             Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
-        } else if (command == Commands.APPROVE) {
+        } else if (command == Commands.APPROVE_ERC20) {
             (address token, address spender, uint256 amount) = abi.decode(inputs, (address, address, uint256));
-            ERC20(token).approve(spender, amount);
+            SafeTransferLib.safeApprove(ERC20(token), spender, amount);
         } else {
             revert InvalidCommandType(command);
         }
