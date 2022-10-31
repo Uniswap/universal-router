@@ -13,7 +13,7 @@ const { ethers } = hre
 import WETH_ABI from '../../../artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
 import { BigNumber } from 'ethers'
 
-describe.only('Payments Gas Tests', () => {
+describe('Payments Gas Tests', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router
