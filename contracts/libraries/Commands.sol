@@ -24,8 +24,7 @@ library Commands {
     uint256 constant UNWRAP_WETH = 0x08;
     uint256 constant SWEEP = 0x09;
     uint256 constant FOUNDATION = 0x0f;
-    uint256 constant SWEEP_WITH_FEE = 0x10;
-    uint256 constant UNWRAP_WETH_WITH_FEE = 0x11;
+    uint256 constant PAY_PORTION = 0x10;
     uint256 constant SUDOSWAP = 0x12;
     uint256 constant NFT20 = 0x13;
     uint256 constant OWNERSHIP_CHECK_721 = 0x14;

@@ -56,7 +56,7 @@ abstract contract V3SwapRouter {
 
         if (isExactInput) {
             // Pay the pool (msg.sender)
-            Payments.payERC20(tokenIn, msg.sender, amountToPay);
+            Payments.pay(tokenIn, msg.sender, amountToPay);
         } else {
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
@@ -64,7 +64,7 @@ abstract contract V3SwapRouter {
             } else {
                 amountInCached = amountToPay;
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
-                Payments.payERC20(tokenOut, msg.sender, amountToPay);
+                Payments.pay(tokenOut, msg.sender, amountToPay);
             }
         }
     }

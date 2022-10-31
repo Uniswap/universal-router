@@ -57,7 +57,7 @@ contract V2SwapRouter {
         (uint256 amountIn, address pair) =
             UniswapV2Library.getAmountInMultihop(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path);
         if (amountIn > amountInMax) revert V2TooMuchRequested();
-        Payments.payERC20(path[0], pair, amountIn);
+        Payments.pay(path[0], pair, amountIn);
         _v2Swap(path, recipient);
     }
 }

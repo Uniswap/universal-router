@@ -43,7 +43,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
         } else if (command == Commands.TRANSFER) {
             (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
-            Payments.payERC20(token, recipient, value);
+            Payments.pay(token, recipient, value);
         } else if (command == Commands.V2_SWAP_EXACT_IN) {
             (uint256 amountOutMin, address[] memory path, address recipient) =
                 abi.decode(inputs, (uint256, address[], address));
@@ -84,13 +84,16 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (success, output) = Constants.NFT20_ZAP.call{value: value}(data);
         } else if (command == Commands.SWEEP) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
-            Payments.sweepToken(token, recipient, amountMin);
+            Payments.sweep(token, recipient, amountMin);
         } else if (command == Commands.WRAP_ETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.wrapETH(recipient, amountMin);
         } else if (command == Commands.UNWRAP_WETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.unwrapWETH9(recipient, amountMin);
+        } else if (command == Commands.PAY_PORTION) {
+            (address token, address recipient, uint256 bips) = abi.decode(inputs, (address, address, uint256));
+            Payments.payPortion(token, recipient, bips);
         } else if (command == Commands.OWNERSHIP_CHECK_721) {
             (address owner, address token, uint256 id) = abi.decode(inputs, (address, address, uint256));
             success = (ERC721(token).ownerOf(id) == owner);
@@ -100,14 +103,6 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 abi.decode(inputs, (address, address, uint256, uint256));
             success = (ERC1155(token).balanceOf(owner, id) >= minBalance);
             if (!success) output = abi.encodeWithSignature('InvalidOwnerERC1155()');
-        } else if (command == Commands.SWEEP_WITH_FEE) {
-            (address token, address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
-                abi.decode(inputs, (address, address, uint256, uint256, address));
-            Payments.sweepTokenWithFee(token, recipient, amountMin, feeBips, feeRecipient);
-        } else if (command == Commands.UNWRAP_WETH_WITH_FEE) {
-            (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
-                abi.decode(inputs, (address, uint256, uint256, address));
-            Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
         } else if (command == Commands.CRYPTOPUNKS) {
             (uint256 punkId, address recipient, uint256 value) = abi.decode(inputs, (uint256, address, uint256));
             try ICryptoPunksMarket(Constants.CRYPTOPUNKS).buyPunk{value: value}(punkId) {

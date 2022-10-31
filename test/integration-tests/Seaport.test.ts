@@ -12,7 +12,7 @@ import {
 } from './shared/protocolHelpers/seaport'
 import deployRouter from './shared/deployRouter'
 import { resetFork } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
+import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, ETH_ADDRESS, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 const { ethers } = hre
@@ -59,6 +59,40 @@ describe('Seaport', () => {
     expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
     expect(ownerAfter).to.eq(alice.address)
     expect(ethDelta.sub(gasSpent)).to.eq(value)
+  })
+
+  it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
+    let { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
+    const params = advancedOrder.parameters
+    const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+      advancedOrder,
+      [],
+      OPENSEA_CONDUIT_KEY,
+      alice.address,
+    ])
+
+    // Allow seaport to revert
+    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata], true)
+    planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
+
+    const commands = planner.commands
+    const inputs = planner.inputs
+
+    const ownerBefore = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
+    const ethBefore = await ethers.provider.getBalance(alice.address)
+
+    // don't send enough ETH, so the seaport purchase reverts
+    value = BigNumber.from(value).sub('1')
+    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
+
+    const ownerAfter = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
+    const ethAfter = await ethers.provider.getBalance(alice.address)
+    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+    const ethDelta = ethBefore.sub(ethAfter)
+
+    // The owner was unchanged, the user got the eth back
+    expect(ownerBefore.toLowerCase()).to.eq(ownerAfter.toLowerCase())
+    expect(ethDelta).to.eq(gasSpent)
   })
 
   it('completes a fulfillAvailableAdvancedOrders type', async () => {

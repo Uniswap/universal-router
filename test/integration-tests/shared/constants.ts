@@ -1,15 +1,19 @@
+import hre from 'hardhat'
+const { ethers } = hre
+
 // Router Helpers
 export const MAX_UINT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
 export const DEADLINE = 2000000000
 export const CONTRACT_BALANCE = 0
 export const ALICE_ADDRESS = '0xf977814e90da44bfa03b6295a0616a897441acec'
+export const ETH_ADDRESS = ethers.constants.AddressZero
 export const ONE_PERCENT_BIPS = 100
 
 // Protocol Data
 export const OPENSEA_CONDUIT = '0x1e0049783f008a0085193e00003d00cd54003c71'
 export const OPENSEA_CONDUIT_KEY = '0x0000007b02230091a7ed01230072f7006a004d60a8d4e71d599b8104250f0000'
 
-// NFT ADDRESSES
+// NFT Addresses
 export const COVEN_ADDRESS = '0x5180db8f5c931aae63c74266b211f580155ecac8'
 export const TWERKY_ADDRESS = '0xf4680c917a873e2dd6ead72f9f433e74eb9c623c'
 export const ALPHABETTIES_ADDRESS = '0x6d05064fe99e40f1c3464e7310a23ffaded56e20'
@@ -19,7 +23,7 @@ export const NFTX_COVEN_VAULT_ID = '333'
 export const NFTX_ERC_1155_VAULT = '0x78e09c5ec42d505742a52fd10078a57ea186002a'
 export const NFTX_ERC_1155_VAULT_ID = '61'
 
-// constructor params
+// Constructor Params
 export const V2_FACTORY_MAINNET = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
 export const V3_FACTORY_MAINNET = '0x1F98431c8aD98523631AE4a59f267346ea31F984'
 export const V3_INIT_CODE_HASH_MAINNET = '0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54'

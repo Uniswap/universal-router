@@ -2,7 +2,7 @@ import type { Contract } from '@ethersproject/contracts'
 import { Router } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { resetFork, DAI, WETH } from '../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE } from '../shared/constants'
+import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, ONE_PERCENT_BIPS } from '../shared/constants'
 import { expandTo18DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -71,7 +71,7 @@ describe('Payments Gas Tests', () => {
 
       // now do a transfer of those ETH as the command
       planner = new RoutePlanner()
-      planner.addCommand(CommandType.TRANSFER, [ethers.constants.AddressZero, ALICE_ADDRESS, amount])
+      planner.addCommand(CommandType.TRANSFER, [ETH_ADDRESS, ALICE_ADDRESS, amount])
       commands = planner.commands
       inputs = planner.inputs
 
@@ -112,7 +112,9 @@ describe('Payments Gas Tests', () => {
       const amount: BigNumber = expandTo18DecimalsBN(3)
       await wethContract.transfer(router.address, amount)
 
-      planner.addCommand(CommandType.UNWRAP_WETH_WITH_FEE, [alice.address, amount, 50, bob.address])
+      planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, amount])
+      planner.addCommand(CommandType.PAY_PORTION, [ETH_ADDRESS, bob.address, 50])
+      planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
       const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -123,7 +125,8 @@ describe('Payments Gas Tests', () => {
       const amountOfDAI: BigNumber = expandTo18DecimalsBN(3)
       await daiContract.transfer(router.address, amountOfDAI)
 
-      planner.addCommand(CommandType.SWEEP_WITH_FEE, [DAI.address, ALICE_ADDRESS, amountOfDAI, 50, bob.address])
+      planner.addCommand(CommandType.PAY_PORTION, [DAI.address, bob.address, ONE_PERCENT_BIPS])
+      planner.addCommand(CommandType.SWEEP, [DAI.address, alice.address, 1])
       const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))

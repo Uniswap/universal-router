@@ -19,7 +19,7 @@ import { BigNumber, BigNumberish } from 'ethers'
 import { Router } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { executeSwap, resetFork, WETH, DAI, USDC, USDT } from '../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE, ONE_PERCENT_BIPS } from '../shared/constants'
+import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE, ETH_ADDRESS, ONE_PERCENT_BIPS } from '../shared/constants'
 import { expandTo18DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -217,13 +217,8 @@ describe('Uniswap Gas Tests', () => {
           planner.addCommand(CommandType.TRANSFER, [DAI.address, pair_DAI_WETH.liquidityToken.address, amountIn])
           // back to the router so someone can take a fee
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
-          planner.addCommand(CommandType.SWEEP_WITH_FEE, [
-            WETH.address,
-            alice.address,
-            1,
-            ONE_PERCENT_BIPS,
-            bob.address,
-          ])
+          planner.addCommand(CommandType.PAY_PORTION, [WETH.address, bob.address, ONE_PERCENT_BIPS])
+          planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, 1])
 
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -302,12 +297,9 @@ describe('Uniswap Gas Tests', () => {
             [DAI.address, WETH.address],
             router.address,
           ])
-          planner.addCommand(CommandType.UNWRAP_WETH_WITH_FEE, [
-            alice.address,
-            CONTRACT_BALANCE,
-            ONE_PERCENT_BIPS,
-            bob.address,
-          ])
+          planner.addCommand(CommandType.UNWRAP_WETH, [router.address, amountOut])
+          planner.addCommand(CommandType.PAY_PORTION, [ETH_ADDRESS, bob.address, 50])
+          planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
 
           const { commands, inputs } = planner
           await snapshotGasCost(
