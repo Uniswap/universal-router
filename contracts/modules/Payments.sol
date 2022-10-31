@@ -5,6 +5,8 @@ import '../interfaces/external/IWETH9.sol';
 import '../libraries/Constants.sol';
 import {SafeTransferLib} from 'solmate/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';
+import {ERC721} from 'solmate/tokens/ERC721.sol';
+import {ERC1155} from 'solmate/tokens/ERC1155.sol';
 
 library Payments {
     using SafeTransferLib for ERC20;
@@ -56,6 +58,14 @@ library Payments {
             if (balance < amountMinimum) revert InsufficientToken();
             if (balance > 0) ERC20(token).safeTransfer(recipient, balance);
         }
+    }
+
+    function sweepERC721(address token, address recipient, uint256 id) internal {
+        ERC721(token).safeTransferFrom(address(this), recipient, id);
+    }
+
+    function sweepERC1155(address token, address recipient, uint256 id, uint256 amount) internal {
+        ERC1155(token).safeTransferFrom(address(this), recipient, id, amount, bytes(''));
     }
 
     function wrapETH(address recipient, uint256 amount) internal {

@@ -15,7 +15,7 @@ export enum CommandType {
   SEAPORT = 0x06,
   WRAP_ETH = 0x07,
   UNWRAP_WETH = 0x08,
-  SWEEP = 0x09,
+  SWEEP_ERC20 = 0x09,
   NFTX = 0x0a,
   LOOKS_RARE_721 = 0x0b,
   X2Y2_721 = 0x0c,
@@ -23,7 +23,7 @@ export enum CommandType {
   X2Y2_1155 = 0x0e,
   FOUNDATION = 0x0f,
   PAY_PORTION = 0x10,
-  // 0x11
+  SWEEP_ERC721 = 0x11,
   SUDOSWAP = 0x12,
   NFT20 = 0x13,
   OWNER_CHECK_721 = 0x14,
@@ -32,6 +32,7 @@ export enum CommandType {
   PERMIT2_TRANSFER_FROM = 0x17,
   PERMIT2_TRANSFER_FROM_BATCH = 0x18,
   PERMIT2_PERMIT_BATCH = 0x19,
+  SWEEP_ERC1155 = 0x1a,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -61,7 +62,9 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.SEAPORT]: ['uint256', 'bytes'],
   [CommandType.WRAP_ETH]: ['address', 'uint256'],
   [CommandType.UNWRAP_WETH]: ['address', 'uint256'],
-  [CommandType.SWEEP]: ['address', 'address', 'uint256'],
+  [CommandType.SWEEP_ERC20]: ['address', 'address', 'uint256'],
+  [CommandType.SWEEP_ERC721]: ['address', 'address', 'uint256'],
+  [CommandType.SWEEP_ERC1155]: ['address', 'address', 'uint256', 'uint256'],
   [CommandType.NFTX]: ['uint256', 'bytes'],
   [CommandType.LOOKS_RARE_721]: ['uint256', 'bytes', 'address', 'address', 'uint256'],
   [CommandType.X2Y2_721]: ['uint256', 'bytes', 'address', 'address', 'uint256'],

@@ -92,9 +92,22 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         } else if (command == Commands.NFT20) {
             (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
             (success, output) = Constants.NFT20_ZAP.call{value: value}(data);
-        } else if (command == Commands.SWEEP) {
+        } else if (command == Commands.CRYPTOPUNKS) {
+            (uint256 punkId, address recipient, uint256 value) = abi.decode(inputs, (uint256, address, uint256));
+            try ICryptoPunksMarket(Constants.CRYPTOPUNKS).buyPunk{value: value}(punkId) {
+                ICryptoPunksMarket(Constants.CRYPTOPUNKS).transferPunk(recipient, punkId);
+            } catch {
+                success = false;
+            }
+        } else if (command == Commands.SWEEP_ERC20) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
             Payments.sweep(token, recipient, amountMin);
+        } else if (command == Commands.SWEEP_ERC721) {
+            (address token, address recipient, uint256 id) = abi.decode(inputs, (address, address, uint256));
+            Payments.sweepERC721(token, recipient, id);
+        } else if (command == Commands.SWEEP_ERC1155) {
+            (address token, address recipient, uint256 id, uint256 amount) = abi.decode(inputs, (address, address, uint256, uint256));
+            Payments.sweepERC1155(token, recipient, id, amount);
         } else if (command == Commands.WRAP_ETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.wrapETH(recipient, amountMin);
@@ -113,13 +126,6 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 abi.decode(inputs, (address, address, uint256, uint256));
             success = (ERC1155(token).balanceOf(owner, id) >= minBalance);
             if (!success) output = abi.encodeWithSignature('InvalidOwnerERC1155()');
-        } else if (command == Commands.CRYPTOPUNKS) {
-            (uint256 punkId, address recipient, uint256 value) = abi.decode(inputs, (uint256, address, uint256));
-            try ICryptoPunksMarket(Constants.CRYPTOPUNKS).buyPunk{value: value}(punkId) {
-                ICryptoPunksMarket(Constants.CRYPTOPUNKS).transferPunk(recipient, punkId);
-            } catch {
-                success = false;
-            }
         } else {
             revert InvalidCommandType(command);
         }
