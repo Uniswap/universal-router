@@ -106,7 +106,8 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (address token, address recipient, uint256 id) = abi.decode(inputs, (address, address, uint256));
             Payments.sweepERC721(token, recipient, id);
         } else if (command == Commands.SWEEP_ERC1155) {
-            (address token, address recipient, uint256 id, uint256 amount) = abi.decode(inputs, (address, address, uint256, uint256));
+            (address token, address recipient, uint256 id, uint256 amount) =
+                abi.decode(inputs, (address, address, uint256, uint256));
             Payments.sweepERC1155(token, recipient, id, amount);
         } else if (command == Commands.WRAP_ETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
