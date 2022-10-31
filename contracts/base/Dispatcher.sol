@@ -103,7 +103,6 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 abi.decode(inputs, (address, address, uint256, uint256));
             success = (ERC1155(token).balanceOf(owner, id) >= minBalance);
             if (!success) output = abi.encodeWithSignature('InvalidOwnerERC1155()');
-
         } else if (command == Commands.CRYPTOPUNKS) {
             (uint256 punkId, address recipient, uint256 value) = abi.decode(inputs, (uint256, address, uint256));
             try ICryptoPunksMarket(Constants.CRYPTOPUNKS).buyPunk{value: value}(punkId) {
