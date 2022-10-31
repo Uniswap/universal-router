@@ -27,6 +27,7 @@ export enum CommandType {
   NFT20 = 0x13,
   OWNER_CHECK_721 = 0x14,
   OWNER_CHECK_1155 = 0x15,
+  CRYPTOPUNKS = 0x16,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -65,6 +66,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.OWNER_CHECK_721]: ['address', 'address', 'uint256'],
   [CommandType.OWNER_CHECK_1155]: ['address', 'address', 'uint256', 'uint256'],
   [CommandType.NFT20]: ['uint256', 'bytes'],
+  [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
 }
 
 export class RoutePlanner {
