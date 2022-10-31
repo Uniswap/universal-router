@@ -88,14 +88,9 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         } else if (command == Commands.UNWRAP_WETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.unwrapWETH9(recipient, amountMin);
-        } else if (command == Commands.SWEEP_WITH_FEE) {
-            (address token, address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
-                abi.decode(inputs, (address, address, uint256, uint256, address));
-            Payments.sweepWithFee(token, recipient, amountMin, feeBips, feeRecipient);
-        } else if (command == Commands.UNWRAP_WETH_WITH_FEE) {
-            (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
-                abi.decode(inputs, (address, uint256, uint256, address));
-            Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
+        } else if (command == Commands.PAY_PORTION) {
+            (address token, address recipient, uint256 bips) = abi.decode(inputs, (address, address, uint256));
+            Payments.payPortion(token, recipient, bips);
         } else {
             revert InvalidCommandType(command);
         }
