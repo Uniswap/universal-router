@@ -209,24 +209,17 @@ describe('Router', () => {
 
       it('completes a trade for ERC20 --> ETH --> NFTs, invalid Seaport order', async () => {
         const maxAmountIn = expandTo18DecimalsBN(100_000)
-
+        // in this case there is leftover dai in the router, and the unspent eth gets sent to alice
         await daiContract.transfer(router.address, maxAmountIn)
+
         let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
         const { order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder)
         let nftxValue: BigNumber = expandTo18DecimalsBN(4)
         let totalValue = seaportValue.add(nftxValue)
-        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-          totalValue,
-          maxAmountIn,
-          [DAI.address, WETH.address],
-          router.address,
-        ])
-        planner.addCommand(CommandType.UNWRAP_WETH, [router.address, totalValue])
 
         // invalidate Seaport order
         invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
         const calldataOpensea = seaportInterface.encodeFunctionData('fulfillOrder', [seaportOrder, OPENSEA_CONDUIT_KEY])
-        planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldataOpensea], true)
 
         // valid NFTX order
         let numCovensNFTX = 2
@@ -237,18 +230,35 @@ describe('Router', () => {
           [WETH.address, NFTX_COVEN_VAULT],
           alice.address,
         ])
+
+        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+          totalValue,
+          maxAmountIn,
+          [DAI.address, WETH.address],
+          router.address,
+        ])
+        planner.addCommand(CommandType.UNWRAP_WETH, [router.address, totalValue])
+        planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldataOpensea], true)
+
         planner.addCommand(CommandType.NFTX, [nftxValue, calldataNFTX])
 
         const { commands, inputs } = planner
 
+        const routerEthBalanceBefore = await ethers.provider.getBalance(router.address)
         const covenBalanceBefore = await covenContract.balanceOf(alice.address)
+
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+
         const covenBalanceAfter = await covenContract.balanceOf(alice.address)
+        const routerEthBalanceAfter = await ethers.provider.getBalance(router.address)
+
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovensNFTX)
+        expect(routerEthBalanceAfter).to.eq(routerEthBalanceBefore)
       })
 
-      it('completes a trade for ERC20 --> ETH --> NFTs with Seaport, partial fill', async () => {
+      it('completes a trade for ERC20 --> ETH --> NFTs with Seaport, fulfillAvailableAdvancedOrders fill', async () => {
         const maxAmountIn = expandTo18DecimalsBN(100_000)
+        // in this case there is leftover dai in the router and all eth gets spent on the nfts
         await daiContract.transfer(router.address, maxAmountIn)
 
         const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
@@ -256,6 +266,8 @@ describe('Router', () => {
         const params0 = advancedOrder0.parameters
         const params1 = advancedOrder1.parameters
         const totalValue = value1.add(value2)
+
+        const calldata = defaultAvailableAdvancedOrders(alice.address, advancedOrder0, advancedOrder1)
 
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           totalValue,
@@ -265,7 +277,6 @@ describe('Router', () => {
         ])
         planner.addCommand(CommandType.UNWRAP_WETH, [router.address, totalValue])
 
-        const calldata = defaultAvailableAdvancedOrders(alice.address, advancedOrder0, advancedOrder1)
         planner.addCommand(CommandType.SEAPORT, [totalValue, calldata])
         const { commands, inputs } = planner
 
@@ -275,12 +286,14 @@ describe('Router', () => {
         const owner0Before = await covenContract.ownerOf(nftId0)
         const owner1Before = await covenContract.ownerOf(nftId1)
         const ethBefore = await ethers.provider.getBalance(alice.address)
+        const routerEthBalanceBefore = await ethers.provider.getBalance(router.address)
 
         const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
 
         const owner0After = await covenContract.ownerOf(nftId0)
         const owner1After = await covenContract.ownerOf(nftId1)
         const ethAfter = await ethers.provider.getBalance(alice.address)
+        const routerEthBalanceAfter = await ethers.provider.getBalance(router.address)
         const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
         const ethDelta = ethBefore.sub(ethAfter)
 
@@ -289,6 +302,7 @@ describe('Router', () => {
         expect(owner0After).to.eq(alice.address)
         expect(owner1After).to.eq(alice.address)
         expect(ethDelta).to.eq(gasSpent) // eth spent only on gas bc trade came from DAI
+        expect(routerEthBalanceBefore).to.eq(routerEthBalanceAfter) // ensure no eth is left in the router
       })
     })
   })
