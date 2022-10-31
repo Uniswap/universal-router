@@ -8,6 +8,7 @@ import '../base/RouterCallbacks.sol';
 import '../libraries/Commands.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
+import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
 contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     address immutable PERMIT_POST;
@@ -108,8 +109,12 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 abi.decode(inputs, (address, uint256, uint256, address));
             Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
         } else if (command == Commands.CRYPTOPUNKS) {
-            (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
-            (success, output) = Constants.CRYPTOPUNKS.call{value: value}(data);
+            (uint256 punkId, address recipient, uint256 value) = abi.decode(inputs, (uint256, address, uint256));
+            try ICryptoPunksMarket(Constants.CRYPTOPUNKS).buyPunk{value: value}(punkId) {
+                ICryptoPunksMarket(Constants.CRYPTOPUNKS).transferPunk(recipient, punkId);
+            } catch {
+                success = false;
+            }
         } else {
             revert InvalidCommandType(command);
         }

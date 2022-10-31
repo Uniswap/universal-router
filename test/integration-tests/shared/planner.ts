@@ -68,7 +68,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.OWNER_CHECK_721]: ['address', 'address', 'uint256'],
   [CommandType.OWNER_CHECK_1155]: ['address', 'address', 'uint256', 'uint256'],
   [CommandType.NFT20]: ['uint256', 'bytes'],
-  [CommandType.CRYPTOPUNKS]: ['uint256', 'bytes'],
+  [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
 }
 
 export class RoutePlanner {

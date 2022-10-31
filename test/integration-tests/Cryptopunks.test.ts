@@ -11,8 +11,6 @@ import deployRouter from './shared/deployRouter'
 
 const { ethers } = hre
 
-const CRYPTOPUNKS_INTERFACE = new ethers.utils.Interface(CRYPTOPUNKS_ABI)
-
 describe('Cryptopunks', () => {
     let alice: SignerWithAddress
     let router: Router
@@ -37,15 +35,7 @@ describe('Cryptopunks', () => {
     describe('Buy 1 crypto punk', () => {
         it('purchases token ids 2976', async () => {
             const value = BigNumber.from('74950000000000000000')
-            const buyPunkCalldata = CRYPTOPUNKS_INTERFACE.encodeFunctionData('buyPunk', [
-                2976
-            ])
-            planner.addCommand(CommandType.CRYPTOPUNKS, [value, buyPunkCalldata])
-            const transferPunkCalldata = CRYPTOPUNKS_INTERFACE.encodeFunctionData('transferPunk', [
-                ALICE_ADDRESS,
-                2976
-            ])
-            planner.addCommand(CommandType.CRYPTOPUNKS, [0, transferPunkCalldata])
+            planner.addCommand(CommandType.CRYPTOPUNKS, [2976, ALICE_ADDRESS, value])
             const { commands, inputs } = planner
 
             const aliceBalance = await ethers.provider.getBalance(alice.address)
