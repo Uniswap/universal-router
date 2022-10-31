@@ -2,6 +2,7 @@ import { ERC721, ERC1155 } from '../../../typechain'
 import { abi as ERC20_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { abi as ERC721_ABI } from '../../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC1155_ABI } from '../../../artifacts/solmate/src/tokens/ERC1155.sol/ERC1155.json'
+import CRYPTOPUNKS_ABI from './abis/Cryptopunks.json'
 import {
   ALPHABETTIES_ADDRESS,
   CAMEO_ADDRESS,
@@ -9,6 +10,7 @@ import {
   ENS_NFT_ADDRESS,
   MENTAL_WORLDS_ADDRESS,
   TWERKY_ADDRESS,
+  CRYPTOPUNKS_MARKET_ADDRESS
 } from './constants'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
@@ -95,3 +97,4 @@ export const MENTAL_WORLDS_721 = new ethers.Contract(MENTAL_WORLDS_ADDRESS, ERC7
 export const ALPHABETTIES_721 = new ethers.Contract(ALPHABETTIES_ADDRESS, ERC721_ABI) as ERC721
 export const TWERKY_1155 = new ethers.Contract(TWERKY_ADDRESS, ERC1155_ABI) as ERC1155
 export const CAMEO_1155 = new ethers.Contract(CAMEO_ADDRESS, ERC1155_ABI) as ERC1155
+export const CRYPTOPUNKS_MARKET = new ethers.Contract(CRYPTOPUNKS_MARKET_ADDRESS, CRYPTOPUNKS_ABI)
