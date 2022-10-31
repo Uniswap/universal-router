@@ -6,20 +6,10 @@ import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
 import { makePair, encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
-import { Permit2, Router } from '../../typechain'
-import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
-import { resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
-import {
-  ALICE_ADDRESS,
-  CONTRACT_BALANCE,
-  DEADLINE,
-  ETH_ADDRESS,
-  MAX_UINT,
-  MAX_UINT160,
-  ONE_PERCENT_BIPS,
-  SOURCE_MSG_SENDER,
-  SOURCE_ROUTER,
-} from './shared/constants'
+import { Router } from '../../typechain'
+import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
+import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
+import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE, ETH_ADDRESS, ONE_PERCENT_BIPS } from './shared/constants'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
@@ -328,8 +318,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
         planner.addCommand(CommandType.UNWRAP_WETH, [router.address, amountOut])
-        planner.addCommand(CommandType.PAY_PORTION, [ETH_ADDRESS, alice.address, ONE_PERCENT_BIPS])
-        planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, bob.address, 0])
+        planner.addCommand(CommandType.PAY_PORTION, [ETH_ADDRESS, bob.address, ONE_PERCENT_BIPS])
+        planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
 
         const { commands, inputs } = planner
         const ethBalanceBeforeAlice = await ethers.provider.getBalance(alice.address)
