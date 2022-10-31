@@ -259,11 +259,11 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
         const wethBalanceAfterBob = await wethContract.balanceOf(bob.address)
 
-        const bobFee = wethBalanceAfterBob.sub(wethBalanceBeforeBob)
-        const aliceEarnings = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
+        const aliceFee = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
+        const bobEarnings = wethBalanceAfterBob.sub(wethBalanceBeforeBob)
 
-        expect(aliceEarnings).to.be.gt(0)
-        expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(bobFee)
+        expect(bobEarnings).to.be.gt(0)
+        expect(aliceFee.add(bobEarnings).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
       })
 
       it('completes a V2 exactIn swap with longer path', async () => {
@@ -328,8 +328,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
         planner.addCommand(CommandType.UNWRAP_WETH, [router.address, amountOut])
-        planner.addCommand(CommandType.PAY_PORTION, [ETH_ADDRESS, bob.address, ONE_PERCENT_BIPS])
-        planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
+        planner.addCommand(CommandType.PAY_PORTION, [ETH_ADDRESS, alice.address, ONE_PERCENT_BIPS])
+        planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, bob.address, 0])
 
         const { commands, inputs } = planner
         const ethBalanceBeforeAlice = await ethers.provider.getBalance(alice.address)

@@ -259,8 +259,8 @@ describe('Uniswap Gas Tests', () => {
           ])
           // back to the router so someone can take a fee
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
-          planner.addCommand(CommandType.PAY_PORTION, [WETH.address, bob.address, ONE_PERCENT_BIPS])
-          planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, 1])
+          planner.addCommand(CommandType.PAY_PORTION, [WETH.address, alice.address, ONE_PERCENT_BIPS])
+          planner.addCommand(CommandType.SWEEP, [WETH.address, bob.address, 1])
 
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -721,7 +721,7 @@ describe('Uniswap Gas Tests', () => {
       })
 
       describe('Split routes', () => {
-        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop', async () => {
+        it('gas: ERC20 --> ERC20 split V2 and V2 different routes, each two hop', async () => {
           const route1 = [DAI.address, USDC.address, WETH.address]
           const route2 = [DAI.address, USDT.address, WETH.address]
           const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
