@@ -6,10 +6,20 @@ import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
 import { makePair, encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
-import { Router } from '../../typechain'
-import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, CONTRACT_BALANCE, DEADLINE, ETH_ADDRESS, ONE_PERCENT_BIPS } from './shared/constants'
+import { Permit2, Router } from '../../typechain'
+import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
+import { resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
+import {
+  ALICE_ADDRESS,
+  CONTRACT_BALANCE,
+  DEADLINE,
+  ETH_ADDRESS,
+  MAX_UINT,
+  MAX_UINT160,
+  ONE_PERCENT_BIPS,
+  SOURCE_MSG_SENDER,
+  SOURCE_ROUTER,
+} from './shared/constants'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
@@ -237,8 +247,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
         ])
         // back to the router so someone can take a fee
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
-        planner.addCommand(CommandType.PAY_PORTION, [WETH.address, bob.address, ONE_PERCENT_BIPS])
-        planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, 1])
+        planner.addCommand(CommandType.PAY_PORTION, [WETH.address, alice.address, ONE_PERCENT_BIPS])
+        planner.addCommand(CommandType.SWEEP, [WETH.address, bob.address, 1])
 
         const { commands, inputs } = planner
         const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
@@ -308,7 +318,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(wethTraded.sub(gasSpent))
       })
 
-      it.only('completes a V2 exactOut swap, with ETH fee', async () => {
+      it('completes a V2 exactOut swap, with ETH fee', async () => {
         const amountOut = expandTo18DecimalsBN(1)
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           amountOut,
