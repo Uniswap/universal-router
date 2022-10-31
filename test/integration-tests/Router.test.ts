@@ -1,4 +1,4 @@
-import { Router, ERC721, ERC20, MockLooksRareRewardsDistributor } from '../../typechain'
+import { Router, ERC721, ERC20, MockLooksRareRewardsDistributor, PullTokens } from '../../typechain'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
@@ -169,6 +169,26 @@ describe('Router', () => {
         const covenBalanceAfter = await covenContract.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
       })
+    })
+
+    it('approves tokens to be pulled', async () => {
+      const amount = await daiContract.balanceOf(router.address)
+      expect(amount).to.be.gt(0) // just use amount balance until we can take this out with Permit.
+
+      const pullTokenFactory = await ethers.getContractFactory('PullTokens')
+      const pullTokensContract = (await pullTokenFactory.connect(alice).deploy()) as PullTokens
+      await expect(pullTokensContract.pull(DAI.address, router.address, amount)).to.be.revertedWith(
+        'Dai/insufficient-allowance'
+      )
+
+      planner.addCommand(CommandType.APPROVE, [DAI.address, pullTokensContract.address, amount])
+      const { commands, inputs } = planner
+      await router['execute(bytes,bytes[])'](commands, inputs)
+
+      await expect(pullTokensContract.pull(DAI.address, router.address, amount)).to.not.be.reverted
+
+      expect(await daiContract.balanceOf(pullTokensContract.address)).to.eq(amount)
+      expect(await daiContract.balanceOf(router.address)).to.eq(0)
     })
 
     describe('ERC20 --> NFT', () => {

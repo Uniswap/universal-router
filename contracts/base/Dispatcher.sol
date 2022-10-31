@@ -6,6 +6,7 @@ import '../modules/uniswap/v3/V3SwapRouter.sol';
 import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
 import '../libraries/Commands.sol';
+import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
@@ -107,6 +108,9 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
                 abi.decode(inputs, (address, uint256, uint256, address));
             Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
+        } else if (command == Commands.APPROVE) {
+            (address token, address spender, uint256 amount) = abi.decode(inputs, (address, address, uint256));
+            ERC20(token).approve(spender, amount);
         } else {
             revert InvalidCommandType(command);
         }
