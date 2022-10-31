@@ -23,6 +23,7 @@ import {
   ALICE_ADDRESS,
   CONTRACT_BALANCE,
   DEADLINE,
+  ETH_ADDRESS,
   MAX_UINT,
   MAX_UINT160,
   ONE_PERCENT_BIPS,
@@ -258,7 +259,8 @@ describe('Uniswap Gas Tests', () => {
           ])
           // back to the router so someone can take a fee
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], router.address])
-          planner.addCommand(CommandType.SWEEP_WITH_FEE, [WETH.address, bob.address, 1, ONE_PERCENT_BIPS, bob.address])
+          planner.addCommand(CommandType.PAY_PORTION, [WETH.address, bob.address, ONE_PERCENT_BIPS])
+          planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, 1])
 
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -343,12 +345,9 @@ describe('Uniswap Gas Tests', () => {
             router.address,
             SOURCE_MSG_SENDER,
           ])
-          planner.addCommand(CommandType.UNWRAP_WETH_WITH_FEE, [
-            bob.address,
-            CONTRACT_BALANCE,
-            ONE_PERCENT_BIPS,
-            bob.address,
-          ])
+          planner.addCommand(CommandType.UNWRAP_WETH, [router.address, amountOut])
+          planner.addCommand(CommandType.PAY_PORTION, [ETH_ADDRESS, bob.address, 50])
+          planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
 
           const { commands, inputs } = planner
           await snapshotGasCost(

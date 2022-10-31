@@ -15,7 +15,7 @@ contract Permit2Payments {
     }
 
     function payOrPermit2Transfer(address token, address payer, address recipient, uint256 amount) internal {
-        if (payer == address(this)) Payments.payERC20(token, recipient, amount);
+        if (payer == address(this)) Payments.pay(token, recipient, amount);
         else permit2TransferFrom(token, payer, recipient, uint160(amount));
     }
 }

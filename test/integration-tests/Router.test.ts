@@ -116,6 +116,14 @@ describe('Router', () => {
       )
     })
 
+    it('reverts if paying a portion over 100% of contract balance', async () => {
+      await daiContract.transfer(router.address, expandTo18DecimalsBN(1))
+      planner.addCommand(CommandType.PAY_PORTION, [WETH.address, alice.address, 11_000])
+      planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, 1])
+      const { commands, inputs } = planner
+      await expect(router['execute(bytes,bytes[])'](commands, inputs)).to.be.revertedWith('InvalidBips()')
+    })
+
     describe('partial fills', async () => {
       let covenContract: ERC721
       let nftxValue: BigNumber
