@@ -63,8 +63,7 @@ contract V2SwapRouter is Permit2Payments {
             UniswapV2Library.getAmountInMultihop(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path);
         if (amountIn > amountInMax) revert V2TooMuchRequested();
 
-        if (payer == address(this)) Payments.payERC20(path[0], pair, amountIn);
-        else permit2TransferFrom(path[0], payer, pair, uint160(amountIn));
+        payOrPermit2Transfer(path[0], payer, pair, amountIn);
         _v2Swap(path, recipient);
     }
 }

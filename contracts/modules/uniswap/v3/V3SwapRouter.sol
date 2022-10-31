@@ -57,8 +57,7 @@ abstract contract V3SwapRouter is Permit2Payments {
 
         if (isExactInput) {
             // Pay the pool (msg.sender)
-            if (payer == address(this)) Payments.payERC20(tokenIn, msg.sender, amountToPay);
-            else permit2TransferFrom(tokenIn, payer, msg.sender, uint160(amountToPay));
+            payOrPermit2Transfer(tokenIn, payer, msg.sender, amountToPay);
         } else {
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
@@ -67,8 +66,7 @@ abstract contract V3SwapRouter is Permit2Payments {
             } else {
                 require(amountToPay <= maxAmountInCached);
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
-                if (payer == address(this)) Payments.payERC20(tokenOut, msg.sender, amountToPay);
-                else permit2TransferFrom(tokenOut, payer, msg.sender, uint160(amountToPay));
+                payOrPermit2Transfer(tokenOut, payer, msg.sender, amountToPay);
             }
         }
     }
