@@ -26,6 +26,7 @@ export enum CommandType {
   UNWRAP_WETH_WITH_FEE = 0x11,
   SUDOSWAP = 0x12,
   NFT20 = 0x13,
+  CRYPTOPUNKS = 0x14,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -63,6 +64,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.UNWRAP_WETH_WITH_FEE]: ['address', 'uint256', 'uint256', 'address'],
   [CommandType.SUDOSWAP]: ['uint256', 'bytes'],
   [CommandType.NFT20]: ['uint256', 'bytes'],
+  [CommandType.CRYPTOPUNKS]: ['uint256', 'bytes'],
 }
 
 export class RoutePlanner {
