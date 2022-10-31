@@ -33,6 +33,7 @@ import { expandTo18DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { RoutePlanner, CommandType } from '../shared/planner'
+import { constructBatchTransferFromCalldata, TransferDetail } from '../shared/protocolHelpers/permit2'
 const { ethers } = hre
 
 function encodePathExactInput(tokens: string[]) {
@@ -721,6 +722,39 @@ describe('Uniswap Gas Tests', () => {
       })
 
       describe('Split routes', () => {
+        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop', async () => {
+          const route1 = [DAI.address, USDC.address, WETH.address]
+          const route2 = [DAI.address, USDT.address, WETH.address]
+          const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
+          const v2AmountIn2: BigNumber = expandTo18DecimalsBN(30)
+          const minAmountOut1 = expandTo18DecimalsBN(0.005)
+          const minAmountOut2 = expandTo18DecimalsBN(0.0075)
+
+          const transferDetail1: TransferDetail = {
+            token: DAI.address,
+            amount: v2AmountIn1,
+            to: Pair.getAddress(DAI, USDC),
+          }
+
+          const transferDetail2: TransferDetail = {
+            token: DAI.address,
+            amount: v2AmountIn2,
+            to: Pair.getAddress(DAI, USDT),
+          }
+
+          const calldata = await constructBatchTransferFromCalldata([transferDetail1, transferDetail2])
+
+          // 1) transfer funds into DAI-USDC and DAI-USDT pairs to trade
+          planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM_BATCH, [calldata])
+          // 2) trade route1 and return tokens to bob
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [minAmountOut1, route1, bob.address])
+          // 3) trade route2 and return tokens to bob
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [minAmountOut2, route2, bob.address])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
         it('gas: ERC20 --> ERC20 split V2 and V3, one hop', async () => {
           const tokens = [DAI.address, WETH.address]
           const v2AmountIn: BigNumber = expandTo18DecimalsBN(2)

@@ -17,6 +17,12 @@ export type Permit = {
   sigDeadline: number | BigNumber
 }
 
+export type TransferDetail = {
+  token: string
+  amount: number | BigNumber
+  to: string
+}
+
 export const PERMIT2_PERMIT_TYPE = {
   Permit: [
     { name: 'token', type: 'address' },
@@ -60,6 +66,16 @@ export async function signPermitAndConstructCalldata(
 
   const signature = await signPermit(permit, signer, permit2.address)
   const calldata = PERMIT2_INTERFACE.encodeFunctionData('permit', [ethers.constants.AddressZero, permit, signature])
+
+  // Remove function signature and first parameter (the router fills these in itself)
+  return '0x' + calldata.slice(74)
+}
+
+export async function constructBatchTransferFromCalldata(transferDetails: TransferDetail[]): Promise<string> {
+  const calldata = PERMIT2_INTERFACE.encodeFunctionData('batchTransferFrom', [
+    ethers.constants.AddressZero,
+    transferDetails,
+  ])
 
   // Remove function signature and first parameter (the router fills these in itself)
   return '0x' + calldata.slice(74)

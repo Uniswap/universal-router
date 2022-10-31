@@ -8,7 +8,7 @@ import { makePair, encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Permit2, Router } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
-import { resetFork, WETH, DAI, USDC } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   CONTRACT_BALANCE,
@@ -24,7 +24,12 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
-import { signPermitAndConstructCalldata, Permit } from './shared/protocolHelpers/permit2'
+import {
+  signPermitAndConstructCalldata,
+  constructBatchTransferFromCalldata,
+  Permit,
+  TransferDetail,
+} from './shared/protocolHelpers/permit2'
 const { ethers } = hre
 
 describe('Uniswap V2 and V3 Tests:', () => {
@@ -610,6 +615,39 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       describe('Split routes', () => {
+        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop', async () => {
+          const route1 = [DAI.address, USDC.address, WETH.address]
+          const route2 = [DAI.address, USDT.address, WETH.address]
+          const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
+          const v2AmountIn2: BigNumber = expandTo18DecimalsBN(30)
+          const minAmountOut1 = expandTo18DecimalsBN(0.005)
+          const minAmountOut2 = expandTo18DecimalsBN(0.0075)
+
+          const transferDetail1: TransferDetail = {
+            token: DAI.address,
+            amount: v2AmountIn1,
+            to: Pair.getAddress(DAI, USDC),
+          }
+
+          const transferDetail2: TransferDetail = {
+            token: DAI.address,
+            amount: v2AmountIn2,
+            to: Pair.getAddress(DAI, USDT),
+          }
+
+          const calldata = await constructBatchTransferFromCalldata([transferDetail1, transferDetail2])
+
+          // 1) transfer funds into DAI-USDC and DAI-USDT pairs to trade
+          planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM_BATCH, [calldata])
+          // 2) trade route1 and return tokens to bob
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [minAmountOut1, route1, bob.address])
+          // 3) trade route2 and return tokens to bob
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [minAmountOut2, route2, bob.address])
+
+          const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+          expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
+        })
+
         it('ERC20 --> ERC20 split V2 and V3, one hop', async () => {
           const tokens = [DAI.address, WETH.address]
           const v2AmountIn: BigNumber = expandTo18DecimalsBN(2)
