@@ -45,7 +45,7 @@ Object {
 exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ERC20 gas: exactIn trade, where an output fee is taken 1`] = `
 Object {
   "calldataByteLength": 932,
-  "gasUsed": 139747,
+  "gasUsed": 139842,
 }
 `;
 
@@ -115,7 +115,7 @@ Object {
 exports[`Uniswap Gas Tests Trade on UniswapV2 with Narwhal Router. ERC20 --> ETH gas: exactOut, with ETH fee 1`] = `
 Object {
   "calldataByteLength": 932,
-  "gasUsed": 137970,
+  "gasUsed": 138050,
 }
 `;
 

@@ -99,7 +99,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const bobFee = wethBalanceAfterBob.sub(wethBalanceBeforeBob)
         const aliceEarnings = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
 
-        expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT_BIPS).div(10000)).to.eq(bobFee)
+        expect(aliceEarnings).to.be.gt(0)
+        expect(bobFee.add(aliceEarnings).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(bobFee)
       })
 
       it('completes a V2 exactIn swap with longer path', async () => {

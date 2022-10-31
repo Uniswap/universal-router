@@ -12,7 +12,7 @@ library Payments {
 
     error InsufficientToken();
     error InsufficientETH();
-    error InvalidFeeBips();
+    error InvalidBips();
 
     uint256 internal constant FEE_BIPS_BASE = 10_000;
 
@@ -32,6 +32,7 @@ library Payments {
     /// @param recipient The entity that will receive payment
     /// @param bips Portion in bips of whole balance of the contract
     function payPortion(address token, address recipient, uint256 bips) internal {
+        if (bips == 0 || bips > 10_000) revert InvalidBips();
         if (token == Constants.ETH) {
             uint256 balance = address(this).balance;
             uint256 amount = (balance * bips) / FEE_BIPS_BASE;
