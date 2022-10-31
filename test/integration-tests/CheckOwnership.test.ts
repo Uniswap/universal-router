@@ -1,8 +1,6 @@
-import type { Contract } from '@ethersproject/contracts'
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
 import { Router } from '../../typechain'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import {
   seaportOrders,
   seaportInterface,
@@ -10,7 +8,7 @@ import {
   purchaseDataForTwoCovensSeaport,
 } from './shared/protocolHelpers/seaport'
 import { createLooksRareOrders, looksRareOrders, LOOKS_RARE_1155_ORDER } from './shared/protocolHelpers/looksRare'
-import { resetFork } from './shared/mainnetForkHelpers'
+import { resetFork, COVEN_721 } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -20,7 +18,6 @@ const { ethers } = hre
 describe('Check Ownership', () => {
   let alice: SignerWithAddress
   let router: Router
-  let covenContract: Contract
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -30,7 +27,6 @@ describe('Check Ownership', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
     router = (await deployRouter()).connect(alice) as Router
     planner = new RoutePlanner()
   })
@@ -83,12 +79,12 @@ describe('Check Ownership', () => {
 
       const { commands, inputs } = planner
 
-      const ownerBefore = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
+      const ownerBefore = await COVEN_721.ownerOf(params.offer[0].identifierOrCriteria)
       const ethBefore = await ethers.provider.getBalance(alice.address)
       const receipt = await (
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
       ).wait()
-      const ownerAfter = await covenContract.ownerOf(params.offer[0].identifierOrCriteria)
+      const ownerAfter = await COVEN_721.ownerOf(params.offer[0].identifierOrCriteria)
       const ethAfter = await ethers.provider.getBalance(alice.address)
       const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
       const ethDelta = ethBefore.sub(ethAfter)
@@ -117,16 +113,16 @@ describe('Check Ownership', () => {
 
       const { commands, inputs } = planner
 
-      const owner0Before = await covenContract.ownerOf(params0.offer[0].identifierOrCriteria)
-      const owner1Before = await covenContract.ownerOf(params1.offer[0].identifierOrCriteria)
+      const owner0Before = await COVEN_721.ownerOf(params0.offer[0].identifierOrCriteria)
+      const owner1Before = await COVEN_721.ownerOf(params1.offer[0].identifierOrCriteria)
       const ethBefore = await ethers.provider.getBalance(alice.address)
 
       const receipt = await (
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
       ).wait()
 
-      const owner0After = await covenContract.ownerOf(params0.offer[0].identifierOrCriteria)
-      const owner1After = await covenContract.ownerOf(params1.offer[0].identifierOrCriteria)
+      const owner0After = await COVEN_721.ownerOf(params0.offer[0].identifierOrCriteria)
+      const owner1After = await COVEN_721.ownerOf(params1.offer[0].identifierOrCriteria)
       const ethAfter = await ethers.provider.getBalance(alice.address)
       const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
       const ethDelta = ethBefore.sub(ethAfter)

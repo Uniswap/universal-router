@@ -1,14 +1,12 @@
-import { Router, ERC721, ERC20, MockLooksRareRewardsDistributor } from '../../typechain'
+import { Router, ERC20, MockLooksRareRewardsDistributor } from '../../typechain'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import deployRouter from './shared/deployRouter'
 import {
   ALICE_ADDRESS,
-  COVEN_ADDRESS,
   DEADLINE,
   OPENSEA_CONDUIT_KEY,
   NFTX_COVEN_VAULT,
@@ -117,7 +115,6 @@ describe('Router', () => {
     })
 
     describe('partial fills', async () => {
-      let covenContract: ERC721
       let nftxValue: BigNumber
       let numCovens: number
       let value: BigNumber
@@ -125,7 +122,6 @@ describe('Router', () => {
       let seaportValue: BigNumber
 
       beforeEach(async () => {
-        covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice) as ERC721
         // add valid nftx order to planner
         nftxValue = expandTo18DecimalsBN(4)
         numCovens = 2
@@ -164,9 +160,9 @@ describe('Router', () => {
         planner.addCommand(CommandType.SEAPORT, [seaportValue, invalidSeaportCalldata], true)
         const { commands, inputs } = planner
 
-        const covenBalanceBefore = await covenContract.balanceOf(alice.address)
+        const covenBalanceBefore = await COVEN_721.balanceOf(alice.address)
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
-        const covenBalanceAfter = await covenContract.balanceOf(alice.address)
+        const covenBalanceAfter = await COVEN_721.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
       })
     })
@@ -174,10 +170,8 @@ describe('Router', () => {
     describe('ERC20 --> NFT', () => {
       let advancedOrder: AdvancedOrder
       let value: BigNumber
-      let covenContract: ERC721
 
       beforeEach(async () => {
-        covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice) as ERC721
         ;({ advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0]))
       })
 
@@ -200,9 +194,9 @@ describe('Router', () => {
         planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
         planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
         const { commands, inputs } = planner
-        const covenBalanceBefore = await covenContract.balanceOf(alice.address)
+        const covenBalanceBefore = await COVEN_721.balanceOf(alice.address)
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
-        const covenBalanceAfter = await covenContract.balanceOf(alice.address)
+        const covenBalanceAfter = await COVEN_721.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
       })
     })
