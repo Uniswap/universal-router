@@ -8,6 +8,7 @@ import '../base/RouterCallbacks.sol';
 import '../libraries/Commands.sol';
 import {ERC721} from 'solmate/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/tokens/ERC1155.sol';
+import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
 contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     error InvalidCommandType(uint256 commandType);
@@ -117,6 +118,13 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
                 abi.decode(inputs, (address, uint256, uint256, address));
             Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
+        } else if (command == Commands.CRYPTOPUNKS) {
+            (uint256 punkId, address recipient, uint256 value) = abi.decode(inputs, (uint256, address, uint256));
+            try ICryptoPunksMarket(Constants.CRYPTOPUNKS).buyPunk{value: value}(punkId) {
+                ICryptoPunksMarket(Constants.CRYPTOPUNKS).transferPunk(recipient, punkId);
+            } catch {
+                success = false;
+            }
         } else {
             revert InvalidCommandType(command);
         }

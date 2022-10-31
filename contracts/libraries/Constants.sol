@@ -42,4 +42,7 @@ library Constants {
 
     // @dev the address of NFT20's zap contract on mainnet
     address internal constant NFT20_ZAP = 0xA42f6cADa809Bcf417DeefbdD69C5C5A909249C0;
+
+    // @dev the address of Larva Lab's cryptopunks marketplace on mainnet
+    address internal constant CRYPTOPUNKS = 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB;
 }
