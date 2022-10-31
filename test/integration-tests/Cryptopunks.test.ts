@@ -1,7 +1,6 @@
 import { CommandType, RoutePlanner } from './shared/planner'
-import CRYPTOPUNKS_ABI from './shared/abis/Cryptopunks.json'
 import { Router } from '../../typechain'
-import { resetFork } from './shared/mainnetForkHelpers'
+import { resetFork, CRYPTOPUNKS_MARKET } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -27,8 +26,7 @@ describe('Cryptopunks', () => {
       params: [ALICE_ADDRESS],
     })
     router = (await deployRouter()).connect(alice) as Router
-    cryptopunkContract = new ethers.Contract('0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB', CRYPTOPUNKS_ABI)
-    cryptopunkContract = cryptopunkContract.connect(alice)
+    cryptopunkContract = CRYPTOPUNKS_MARKET.connect(alice)
   })
 
   // In this test we will buy crypto punk # 2976 for 74.95 ETH
