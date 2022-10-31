@@ -9,7 +9,7 @@ library Commands {
 
     // Command Types. Maximum supported command at this moment is 0x1F.
     uint256 constant PERMIT2_PERMIT = 0x00;
-    uint256 constant PERMIT2_PERMIT_BATCH = 0x16;
+    uint256 constant PERMIT2_PERMIT_BATCH = 0x19;
     uint256 constant PERMIT2_TRANSFER_FROM = 0x17;
     uint256 constant PERMIT2_TRANSFER_FROM_BATCH = 0x18;
     uint256 constant TRANSFER = 0x01;

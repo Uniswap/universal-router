@@ -7,7 +7,7 @@ import { defaultAbiCoder } from 'ethers/lib/utils'
  */
 export enum CommandType {
   PERMIT2_PERMIT = 0x00,
-  PERMIT2_PERMIT_BATCH = 0x16,
+  PERMIT2_PERMIT_BATCH = 0x19,
   PERMIT2_TRANSFER_FROM = 0x17,
   PERMIT2_TRANSFER_FROM_BATCH = 0x18,
   TRANSFER = 0x01,
