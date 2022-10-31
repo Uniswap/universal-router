@@ -1,6 +1,6 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
 import { Router } from '../../../typechain'
-import { resetFork, ENS_721 } from './../shared/mainnetForkHelpers'
+import { resetFork } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, CAMEO_ADDRESS, DEADLINE, ENS_NFT_ADDRESS } from './../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'

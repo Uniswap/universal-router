@@ -1,6 +1,6 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import NFT20_ABI from './shared/abis/NFT20.json'
-import { ERC721, Router } from '../../typechain'
+import { Router } from '../../typechain'
 import { ALPHABETTIES_721, resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, ALPHABETTIES_ADDRESS, DEADLINE } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -16,7 +16,6 @@ describe('NFT20', () => {
   let alice: SignerWithAddress
   let router: Router
   let planner: RoutePlanner
-  let alphabetties: ERC721
 
   beforeEach(async () => {
     planner = new RoutePlanner()

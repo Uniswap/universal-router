@@ -21,7 +21,7 @@ import {
   AdvancedOrder,
   Order,
 } from './shared/protocolHelpers/seaport'
-import { resetFork, WETH, DAI } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, COVEN_721 } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
 import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
