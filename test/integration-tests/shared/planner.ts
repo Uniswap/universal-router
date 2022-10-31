@@ -25,6 +25,8 @@ export enum CommandType {
   PAY_PORTION = 0x10,
   SUDOSWAP = 0x12,
   NFT20 = 0x13,
+  OWNER_CHECK_721 = 0x14,
+  OWNER_CHECK_1155 = 0x15,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -60,6 +62,8 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.FOUNDATION]: ['uint256', 'bytes', 'address', 'address', 'uint256'],
   [CommandType.PAY_PORTION]: ['address', 'address', 'uint256'],
   [CommandType.SUDOSWAP]: ['uint256', 'bytes'],
+  [CommandType.OWNER_CHECK_721]: ['address', 'address', 'uint256'],
+  [CommandType.OWNER_CHECK_1155]: ['address', 'address', 'uint256', 'uint256'],
   [CommandType.NFT20]: ['uint256', 'bytes'],
 }
 
