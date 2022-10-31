@@ -2,7 +2,8 @@ import { ERC721, ERC1155 } from '../../../typechain'
 import { abi as ERC20_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
 import { abi as ERC721_ABI } from '../../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC1155_ABI } from '../../../artifacts/solmate/src/tokens/ERC1155.sol/ERC1155.json'
-import { COVEN_ADDRESS, TWERKY_ADDRESS } from './constants'
+import CRYPTOPUNKS_ABI from './abis/Cryptopunks.json'
+import { COVEN_ADDRESS, TWERKY_ADDRESS, CRYPTOPUNKS_MARKET_ADDRESS } from './constants'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
 import { TransactionResponse } from '@ethersproject/abstract-provider'
@@ -88,3 +89,4 @@ export const ENS_721 = new ethers.Contract('0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af1
 
 export const TWERKY_1155 = new ethers.Contract(TWERKY_ADDRESS, ERC1155_ABI) as ERC1155
 export const CAMEO_1155 = new ethers.Contract('0x93317E87a3a47821803CAADC54Ae418Af80603DA', ERC1155_ABI) as ERC1155
+export const CRYPTOPUNKS_MARKET = new ethers.Contract(CRYPTOPUNKS_MARKET_ADDRESS, CRYPTOPUNKS_ABI)
