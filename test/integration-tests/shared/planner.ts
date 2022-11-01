@@ -6,7 +6,7 @@ import { defaultAbiCoder } from 'ethers/lib/utils'
  * @enum {number}
  */
 export enum CommandType {
-  PERMIT = 0x00,
+  PERMIT2_PERMIT = 0x00,
   TRANSFER = 0x01,
   V3_SWAP_EXACT_IN = 0x02,
   V3_SWAP_EXACT_OUT = 0x03,
@@ -23,11 +23,15 @@ export enum CommandType {
   X2Y2_1155 = 0x0e,
   FOUNDATION = 0x0f,
   PAY_PORTION = 0x10,
+  // 0x11
   SUDOSWAP = 0x12,
   NFT20 = 0x13,
   OWNER_CHECK_721 = 0x14,
   OWNER_CHECK_1155 = 0x15,
   CRYPTOPUNKS = 0x16,
+  PERMIT2_TRANSFER_FROM = 0x17,
+  PERMIT2_TRANSFER_FROM_BATCH = 0x18,
+  PERMIT2_PERMIT_BATCH = 0x19,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -45,12 +49,15 @@ const REVERTABLE_COMMANDS = new Set<CommandType>([
 ])
 
 const ABI_DEFINITION: { [key in CommandType]: string[] } = {
-  [CommandType.PERMIT]: [],
+  [CommandType.PERMIT2_PERMIT]: ['bytes'],
+  [CommandType.PERMIT2_PERMIT_BATCH]: ['bytes'],
+  [CommandType.PERMIT2_TRANSFER_FROM]: ['address', 'address', 'uint160'],
+  [CommandType.PERMIT2_TRANSFER_FROM_BATCH]: ['bytes'],
   [CommandType.TRANSFER]: ['address', 'address', 'uint256'],
-  [CommandType.V3_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'bytes'],
-  [CommandType.V3_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'bytes'],
+  [CommandType.V3_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
+  [CommandType.V3_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
   [CommandType.V2_SWAP_EXACT_IN]: ['uint256', 'address[]', 'address'],
-  [CommandType.V2_SWAP_EXACT_OUT]: ['uint256', 'uint256', 'address[]', 'address'],
+  [CommandType.V2_SWAP_EXACT_OUT]: ['uint256', 'uint256', 'address[]', 'address', 'bool'],
   [CommandType.SEAPORT]: ['uint256', 'bytes'],
   [CommandType.WRAP_ETH]: ['address', 'uint256'],
   [CommandType.UNWRAP_WETH]: ['address', 'uint256'],

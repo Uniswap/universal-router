@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.17;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import './UniswapV2Library.sol';
 import '../../Payments.sol';
+import '../../Permit2Payments.sol';
 
-contract V2SwapRouter {
+contract V2SwapRouter is Permit2Payments {
     address internal immutable V2_FACTORY;
     bytes32 internal immutable PAIR_INIT_CODE_HASH;
 
     error V2TooLittleReceived();
     error V2TooMuchRequested();
 
-    constructor(address v2Factory, bytes32 pairInitCodeHash) {
+    constructor(address v2Factory, bytes32 pairInitCodeHash, address permit2) Permit2Payments(permit2) {
         V2_FACTORY = v2Factory;
         PAIR_INIT_CODE_HASH = pairInitCodeHash;
     }
@@ -51,13 +52,18 @@ contract V2SwapRouter {
         if (amountOut < amountOutMin) revert V2TooLittleReceived();
     }
 
-    function v2SwapExactOutput(uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient)
-        internal
-    {
+    function v2SwapExactOutput(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] memory path,
+        address recipient,
+        address payer
+    ) internal {
         (uint256 amountIn, address pair) =
             UniswapV2Library.getAmountInMultihop(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path);
         if (amountIn > amountInMax) revert V2TooMuchRequested();
-        Payments.pay(path[0], pair, amountIn);
+
+        payOrPermit2Transfer(path[0], payer, pair, amountIn);
         _v2Swap(path, recipient);
     }
 }

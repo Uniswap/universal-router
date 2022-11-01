@@ -1,8 +1,8 @@
 import type { Contract } from '@ethersproject/contracts'
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
-import { Router } from '../../typechain'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import { Permit2, Router } from '../../typechain'
+import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import {
   seaportOrders,
   seaportInterface,
@@ -14,12 +14,13 @@ import { resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import deployRouter from './shared/deployRouter'
+import deployRouter, { deployPermit2 } from './shared/deployRouter'
 const { ethers } = hre
 
 describe('Check Ownership', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let covenContract: Contract
   let planner: RoutePlanner
 
@@ -31,7 +32,8 @@ describe('Check Ownership', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     covenContract = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI, alice)
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
     planner = new RoutePlanner()
   })
 

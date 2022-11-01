@@ -1,17 +1,18 @@
 import { CommandType, RoutePlanner } from '../shared/planner'
-import { Router } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { seaportOrders, seaportInterface, getAdvancedOrderParams } from '../shared/protocolHelpers/seaport'
 import { resetFork } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import deployRouter from '../shared/deployRouter'
+import deployRouter, { deployPermit2 } from '../shared/deployRouter'
 const { ethers } = hre
 
 describe('Seaport Gas Tests', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -21,7 +22,8 @@ describe('Seaport Gas Tests', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
     planner = new RoutePlanner()
   })
 

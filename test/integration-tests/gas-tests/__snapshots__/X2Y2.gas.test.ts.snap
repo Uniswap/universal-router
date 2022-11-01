@@ -3,13 +3,13 @@
 exports[`X2Y2 ERC-721 purchase gas: purchases 1 ERC-721 on X2Y2 1`] = `
 Object {
   "calldataByteLength": 2212,
-  "gasUsed": 212371,
+  "gasUsed": 212377,
 }
 `;
 
 exports[`X2Y2 ERC-1155 purchase gas: purchases 1 ERC-1155 on X2Y2 1`] = `
 Object {
   "calldataByteLength": 2276,
-  "gasUsed": 213559,
+  "gasUsed": 213588,
 }
 `;

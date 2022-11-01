@@ -1,11 +1,11 @@
-import { Router, ERC721, ERC20, MockLooksRareRewardsDistributor } from '../../typechain'
+import { Router, Permit2, ERC721, ERC20, MockLooksRareRewardsDistributor } from '../../typechain'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
-import { abi as TOKEN_ABI } from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
+import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
-import deployRouter from './shared/deployRouter'
+import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import {
   ALICE_ADDRESS,
   COVEN_ADDRESS,
@@ -14,6 +14,9 @@ import {
   NFTX_COVEN_VAULT,
   NFTX_COVEN_VAULT_ID,
   ROUTER_REWARDS_DISTRIBUTOR,
+  SOURCE_MSG_SENDER,
+  MAX_UINT160,
+  MAX_UINT,
 } from './shared/constants'
 import {
   seaportOrders,
@@ -36,6 +39,7 @@ const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
 describe('Router', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let daiContract: ERC20
   let mockLooksRareToken: ERC20
   let mockLooksRareRewardsDistributor: MockLooksRareRewardsDistributor
@@ -57,10 +61,10 @@ describe('Router', () => {
       ROUTER_REWARDS_DISTRIBUTOR,
       mockLooksRareToken.address
     )) as MockLooksRareRewardsDistributor
-
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
-    router = (await deployRouter(mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)).connect(
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2, mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)).connect(
       alice
     ) as Router
   })
@@ -70,15 +74,11 @@ describe('Router', () => {
 
     beforeEach(async () => {
       planner = new RoutePlanner()
-      await daiContract.transfer(router.address, expandTo18DecimalsBN(5000))
+      await daiContract.approve(permit2.address, MAX_UINT)
+      await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
     })
 
     it('reverts if block.timestamp exceeds the deadline', async () => {
-      planner.addCommand(CommandType.TRANSFER, [
-        DAI.address,
-        pair_DAI_WETH.liquidityToken.address,
-        expandTo18DecimalsBN(1),
-      ])
       planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], alice.address])
       const invalidDeadline = 10
 
@@ -100,7 +100,7 @@ describe('Router', () => {
 
     it('reverts for an invalid command at index 1', async () => {
       const invalidCommand = 'ff'
-      planner.addCommand(CommandType.TRANSFER, [
+      planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [
         DAI.address,
         pair_DAI_WETH.liquidityToken.address,
         expandTo18DecimalsBN(1),
@@ -191,7 +191,6 @@ describe('Router', () => {
 
       it('completes a trade for ERC20 --> ETH --> Seaport NFT', async () => {
         const maxAmountIn = expandTo18DecimalsBN(100_000)
-        await daiContract.transfer(router.address, maxAmountIn)
         const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
           advancedOrder,
           [],
@@ -204,6 +203,7 @@ describe('Router', () => {
           maxAmountIn,
           [DAI.address, WETH.address],
           router.address,
+          SOURCE_MSG_SENDER,
         ])
         planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
         planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
