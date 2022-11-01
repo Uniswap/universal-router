@@ -99,7 +99,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             } catch {
                 success = false;
             }
-        } else if (command == Commands.SWEEP_ERC20) {
+        } else if (command == Commands.SWEEP) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
             Payments.sweep(token, recipient, amountMin);
         } else if (command == Commands.SWEEP_ERC721) {

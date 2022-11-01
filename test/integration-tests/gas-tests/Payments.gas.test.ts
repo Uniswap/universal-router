@@ -78,12 +78,12 @@ describe('Payments Gas Tests', () => {
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })
 
-    it('gas: SWEEP_ERC20 with ERC20', async () => {
+    it('gas: SWEEP with ERC20', async () => {
       // seed router with tokens
       const amountOfDAI: BigNumber = expandTo18DecimalsBN(3)
       await daiContract.transfer(router.address, amountOfDAI)
 
-      planner.addCommand(CommandType.SWEEP_ERC20, [DAI.address, ALICE_ADDRESS, amountOfDAI])
+      planner.addCommand(CommandType.SWEEP, [DAI.address, ALICE_ADDRESS, amountOfDAI])
       const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -118,7 +118,7 @@ describe('Payments Gas Tests', () => {
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })
 
-    it('gas: SWEEP_ERC20_WITH_FEE', async () => {
+    it('gas: SWEEP_WITH_FEE', async () => {
       // seed router with tokens
       const amountOfDAI: BigNumber = expandTo18DecimalsBN(3)
       await daiContract.transfer(router.address, amountOfDAI)
