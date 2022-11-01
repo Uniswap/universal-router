@@ -25,7 +25,7 @@ library Commands {
     uint256 constant X2Y2_1155 = 0x0e;
     uint256 constant FOUNDATION = 0x0f;
     uint256 constant PAY_PORTION = 0x10;
-    // 0x11
+    uint256 constant SWEEP_ERC721 = 0x11;
     uint256 constant SUDOSWAP = 0x12;
     uint256 constant NFT20 = 0x13;
     uint256 constant OWNERSHIP_CHECK_721 = 0x14;
@@ -34,4 +34,5 @@ library Commands {
     uint256 constant PERMIT2_TRANSFER_FROM = 0x17;
     uint256 constant PERMIT2_TRANSFER_FROM_BATCH = 0x18;
     uint256 constant PERMIT2_PERMIT_BATCH = 0x19;
+    uint256 constant SWEEP_ERC1155 = 0x1a;
 }
