@@ -35,6 +35,7 @@ export enum CommandType {
   SWEEP_ERC1155 = 0x1a,
 }
 
+
 const ALLOW_REVERT_FLAG = 0x80
 
 const REVERTABLE_COMMANDS = new Set<CommandType>([
