@@ -1,5 +1,5 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
-import { Router } from '../../../typechain'
+import { Permit2, Router } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import {
   seaportOrders,
@@ -11,12 +11,13 @@ import { resetFork } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import deployRouter from './../shared/deployRouter'
+import deployRouter, { deployPermit2 } from './../shared/deployRouter'
 const { ethers } = hre
 
 describe('Check Ownership Gas', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -26,7 +27,8 @@ describe('Check Ownership Gas', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
     planner = new RoutePlanner()
   })
 
@@ -41,8 +43,7 @@ describe('Check Ownership Gas', () => {
 
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
 
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 
@@ -63,8 +64,7 @@ describe('Check Ownership Gas', () => {
       params.offer[0].identifierOrCriteria,
     ])
 
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 
@@ -85,8 +85,7 @@ describe('Check Ownership Gas', () => {
       params1.offer[0].identifierOrCriteria,
     ])
 
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 
@@ -100,8 +99,7 @@ describe('Check Ownership Gas', () => {
       params.offer[0].identifierOrCriteria,
     ])
 
-    const commands = planner.commands
-    const inputs = planner.inputs
+    const { commands, inputs } = planner
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
   })
 })

@@ -1,7 +1,7 @@
 import FOUNDATION_ABI from './shared/abis/Foundation.json'
-import { Router } from '../../typechain'
-import deployRouter from './shared/deployRouter'
-import { MENTAL_WORLDS_721, resetFork } from './shared/mainnetForkHelpers'
+import { Router, Permit2 } from '../../typechain'
+import deployRouter, { deployPermit2 } from './shared/deployRouter'
+import { resetFork, MENTAL_WORLDS_721 } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, MENTAL_WORLDS_ADDRESS } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -16,6 +16,7 @@ const REFERRER = '0x459e213D8B5E79d706aB22b945e3aF983d51BC4C'
 describe('Foundation', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -32,7 +33,8 @@ describe('Foundation', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      router = (await deployRouter()).connect(alice) as Router
+      permit2 = (await deployPermit2()).connect(alice) as Permit2
+      router = (await deployRouter(permit2)).connect(alice) as Router
     })
 
     it('purchases token id 32 of mental worlds', async () => {

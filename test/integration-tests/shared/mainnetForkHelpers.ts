@@ -1,7 +1,6 @@
-import { ERC721, ERC1155 } from '../../../typechain'
-import { abi as ERC20_ABI } from '../../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
-import { abi as ERC721_ABI } from '../../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
-import { abi as ERC1155_ABI } from '../../../artifacts/solmate/src/tokens/ERC1155.sol/ERC1155.json'
+import { ERC721, ERC1155, ERC20, ERC20__factory } from '../../../typechain'
+import { abi as ERC721_ABI } from '../../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
+import { abi as ERC1155_ABI } from '../../../artifacts/solmate/tokens/ERC1155.sol/ERC1155.json'
 import CRYPTOPUNKS_ABI from './abis/Cryptopunks.json'
 import {
   ALPHABETTIES_ADDRESS,
@@ -16,7 +15,7 @@ import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contract
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
 import { TransactionResponse } from '@ethersproject/abstract-provider'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { BigNumber, constants, Contract as EthersContract } from 'ethers'
+import { BigNumber, constants } from 'ethers'
 import hre from 'hardhat'
 import { MethodParameters } from '@uniswap/v3-sdk'
 import { Pair } from '@uniswap/v2-sdk'
@@ -29,16 +28,21 @@ export const USDT = new Token(1, '0xdAC17F958D2ee523a2206206994597C13D831ec7', 6
 export const SWAP_ROUTER_V2 = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
 export const V2_FACTORY = 0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f
 
-const approveToken = async (alice: SignerWithAddress, approveTarget: string, currency: Currency) => {
+export const approveSwapRouter02 = async (
+  alice: SignerWithAddress,
+  currency: Currency,
+  overrideSwapRouter02Address?: string
+) => {
   if (currency.isToken) {
-    // const aliceTokenIn: Erc20 = Erc20__factory.connect(currency.address, alice);
-    const aliceTokenIn = new ethers.Contract(currency.address, ERC20_ABI, alice) as EthersContract
+    const aliceTokenIn: ERC20 = ERC20__factory.connect(currency.address, alice)
 
     if (currency.symbol == 'USDT') {
-      await (await aliceTokenIn.approve(approveTarget, 0)).wait()
+      await (await aliceTokenIn.approve(overrideSwapRouter02Address ?? SWAP_ROUTER_V2, 0)).wait()
     }
 
-    await (await aliceTokenIn.approve(approveTarget, constants.MaxUint256)).wait()
+    return await (
+      await aliceTokenIn.approve(overrideSwapRouter02Address ?? SWAP_ROUTER_V2, constants.MaxUint256)
+    ).wait()
   }
 }
 
@@ -55,15 +59,32 @@ export const getV2PoolReserves = async (alice: SignerWithAddress, tokenA: Token,
   return { reserve0, reserve1 }
 }
 
-export const executeSwap = async (
+export const approveAndExecuteSwapRouter02 = async (
   methodParameters: MethodParameters,
   tokenIn: Currency,
   tokenOut: Currency,
   alice: SignerWithAddress
 ): Promise<TransactionResponse> => {
   if (tokenIn.symbol == tokenOut.symbol) throw 'Cannot trade token for itself'
-  await approveToken(alice, SWAP_ROUTER_V2, tokenIn)
+  await approveSwapRouter02(alice, tokenIn)
 
+  const transaction = {
+    data: methodParameters.calldata,
+    to: SWAP_ROUTER_V2,
+    value: BigNumber.from(methodParameters.value),
+    from: alice.address,
+    gasPrice: BigNumber.from(2000000000000),
+    type: 1,
+  }
+
+  const transactionResponse = await alice.sendTransaction(transaction)
+  return transactionResponse
+}
+
+export const executeSwapRouter02Swap = async (
+  methodParameters: MethodParameters,
+  alice: SignerWithAddress
+): Promise<TransactionResponse> => {
   const transaction = {
     data: methodParameters.calldata,
     to: SWAP_ROUTER_V2,

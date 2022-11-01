@@ -1,7 +1,7 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
-import { Router, ERC721, ERC1155 } from '../../typechain'
-import deployRouter from './shared/deployRouter'
+import { Router, Permit2, ERC721, ERC1155 } from '../../typechain'
+import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { parseEvents } from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import { COVEN_721, TWERKY_1155, resetFork, WETH } from './shared/mainnetForkHelpers'
@@ -23,7 +23,8 @@ const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
 describe('NFTX', () => {
   let alice: SignerWithAddress
   let router: Router
-  let covenContract: ERC721
+  let permit2: Permit2
+  let cryptoCovens: ERC721
   let twerkyContract: ERC1155
   let planner: RoutePlanner
 
@@ -34,9 +35,10 @@ describe('NFTX', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    covenContract = COVEN_721.connect(alice)
+    cryptoCovens = COVEN_721.connect(alice)
     twerkyContract = TWERKY_1155.connect(alice)
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
     planner = new RoutePlanner()
   })
 
@@ -54,9 +56,9 @@ describe('NFTX', () => {
     planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
     const { commands, inputs } = planner
 
-    const covenBalanceBefore = await covenContract.balanceOf(alice.address)
+    const covenBalanceBefore = await cryptoCovens.balanceOf(alice.address)
     await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
-    const covenBalanceAfter = await covenContract.balanceOf(alice.address)
+    const covenBalanceAfter = await cryptoCovens.balanceOf(alice.address)
 
     expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
   })
@@ -75,13 +77,13 @@ describe('NFTX', () => {
     planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
     const { commands, inputs } = planner
 
-    const covenBalanceBefore = await covenContract.balanceOf(alice.address)
-    const covenOwner584Before = await covenContract.ownerOf(584)
-    const covenOwner3033Before = await covenContract.ownerOf(3033)
+    const covenBalanceBefore = await cryptoCovens.balanceOf(alice.address)
+    const covenOwner584Before = await cryptoCovens.ownerOf(584)
+    const covenOwner3033Before = await cryptoCovens.ownerOf(3033)
     await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
-    const covenBalanceAfter = await covenContract.balanceOf(alice.address)
-    const covenOwner584After = await covenContract.ownerOf(584)
-    const covenOwner3033After = await covenContract.ownerOf(3033)
+    const covenBalanceAfter = await cryptoCovens.balanceOf(alice.address)
+    const covenOwner584After = await cryptoCovens.ownerOf(584)
+    const covenOwner3033After = await cryptoCovens.ownerOf(3033)
 
     expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
     expect(covenOwner584Before).to.not.eq(alice.address)

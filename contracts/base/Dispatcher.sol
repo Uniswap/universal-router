@@ -1,31 +1,27 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.17;
 
 import '../modules/uniswap/v2/V2SwapRouter.sol';
 import '../modules/uniswap/v3/V3SwapRouter.sol';
 import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
 import '../libraries/Commands.sol';
-import {ERC721} from 'solmate/src/tokens/ERC721.sol';
-import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
+import {ERC721} from 'solmate/tokens/ERC721.sol';
+import {ERC1155} from 'solmate/tokens/ERC1155.sol';
 import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
 contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
-    address immutable PERMIT_POST;
-
     error InvalidCommandType(uint256 commandType);
     error InvalidOwnerERC721();
     error InvalidOwnerERC1155();
 
     constructor(
-        address permitPost,
+        address permit2,
         address v2Factory,
         address v3Factory,
         bytes32 pairInitCodeHash,
         bytes32 poolInitCodeHash
-    ) V2SwapRouter(v2Factory, pairInitCodeHash) V3SwapRouter(v3Factory, poolInitCodeHash) {
-        PERMIT_POST = permitPost;
-    }
+    ) V2SwapRouter(v2Factory, pairInitCodeHash, permit2) V3SwapRouter(v3Factory, poolInitCodeHash) {}
 
     /// @notice executes the given command with the given inputs
     /// @param command The command to execute
@@ -34,32 +30,46 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     /// @return output The outputs, if any from the command
     function dispatch(uint256 command, bytes memory inputs) internal returns (bool success, bytes memory output) {
         success = true;
-        if (command == Commands.PERMIT) {
-            // state[state.length] = abi.encode(msg.sender);
-            // (success, output) = permitPost.call(state[0]);
-            // bytes memory inputs = state.build(bytes4(0), indices);
-            // (address some, address parameters, uint256 forPermit) = abi.decode(inputs, (address, address, uint));
-            //
-            // permitPost.permitWithNonce(msg.sender, some, parameters, forPermit);
+        if (command == Commands.PERMIT2_PERMIT) {
+            (bytes memory data) = abi.decode(inputs, (bytes));
+            // pass in the msg.sender as the first parameter `owner`
+            data = bytes.concat(IAllowanceTransfer.permit.selector, abi.encode(msg.sender), data);
+            (success, output) = PERMIT2.call(data);
+        } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
+            (bytes memory data) = abi.decode(inputs, (bytes));
+            // pass in the msg.sender as the first parameter `owner`
+            data = bytes.concat(IAllowanceTransfer.permitBatch.selector, abi.encode(msg.sender), data);
+            (success, output) = PERMIT2.call(data);
+        } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
+            (address token, address recipient, uint160 amount) = abi.decode(inputs, (address, address, uint160));
+            permit2TransferFrom(token, msg.sender, recipient, amount);
+        } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
+            (bytes memory data) = abi.decode(inputs, (bytes));
+            // pass in the msg.sender as the first parameter `owner`
+            data = bytes.concat(IAllowanceTransfer.batchTransferFrom.selector, abi.encode(msg.sender), data);
+            (success, output) = PERMIT2.call(data);
         } else if (command == Commands.TRANSFER) {
             (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
-            Payments.payERC20(token, recipient, value);
+            Payments.pay(token, recipient, value);
         } else if (command == Commands.V2_SWAP_EXACT_IN) {
             (uint256 amountOutMin, address[] memory path, address recipient) =
                 abi.decode(inputs, (uint256, address[], address));
             v2SwapExactInput(amountOutMin, path, recipient);
         } else if (command == Commands.V2_SWAP_EXACT_OUT) {
-            (uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient) =
-                abi.decode(inputs, (uint256, uint256, address[], address));
-            v2SwapExactOutput(amountOut, amountInMax, path, recipient);
+            (uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient, bool payerIsUser) =
+                abi.decode(inputs, (uint256, uint256, address[], address, bool));
+            address payer = payerIsUser ? msg.sender : address(this);
+            v2SwapExactOutput(amountOut, amountInMax, path, recipient, payer);
         } else if (command == Commands.V3_SWAP_EXACT_IN) {
-            (address recipient, uint256 amountOut, uint256 amountInMaximum, bytes memory path) =
-                abi.decode(inputs, (address, uint256, uint256, bytes));
-            v3SwapExactInput(recipient, amountOut, amountInMaximum, path);
+            (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path, bool payerIsUser) =
+                abi.decode(inputs, (address, uint256, uint256, bytes, bool));
+            address payer = payerIsUser ? msg.sender : address(this);
+            v3SwapExactInput(recipient, amountIn, amountOutMin, path, payer);
         } else if (command == Commands.V3_SWAP_EXACT_OUT) {
-            (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path) =
-                abi.decode(inputs, (address, uint256, uint256, bytes));
-            v3SwapExactOutput(recipient, amountIn, amountOutMin, path);
+            (address recipient, uint256 amountOut, uint256 amountInMax, bytes memory path, bool payerIsUser) =
+                abi.decode(inputs, (address, uint256, uint256, bytes, bool));
+            address payer = payerIsUser ? msg.sender : address(this);
+            v3SwapExactOutput(recipient, amountOut, amountInMax, path, payer);
         } else if (command == Commands.SEAPORT) {
             (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
             (success, output) = Constants.SEAPORT.call{value: value}(data);
@@ -82,15 +92,32 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         } else if (command == Commands.NFT20) {
             (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
             (success, output) = Constants.NFT20_ZAP.call{value: value}(data);
+        } else if (command == Commands.CRYPTOPUNKS) {
+            (uint256 punkId, address recipient, uint256 value) = abi.decode(inputs, (uint256, address, uint256));
+            try ICryptoPunksMarket(Constants.CRYPTOPUNKS).buyPunk{value: value}(punkId) {
+                ICryptoPunksMarket(Constants.CRYPTOPUNKS).transferPunk(recipient, punkId);
+            } catch {
+                success = false;
+            }
         } else if (command == Commands.SWEEP) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
-            Payments.sweepToken(token, recipient, amountMin);
+            Payments.sweep(token, recipient, amountMin);
+        } else if (command == Commands.SWEEP_ERC721) {
+            (address token, address recipient, uint256 id) = abi.decode(inputs, (address, address, uint256));
+            Payments.sweepERC721(token, recipient, id);
+        } else if (command == Commands.SWEEP_ERC1155) {
+            (address token, address recipient, uint256 id, uint256 amount) =
+                abi.decode(inputs, (address, address, uint256, uint256));
+            Payments.sweepERC1155(token, recipient, id, amount);
         } else if (command == Commands.WRAP_ETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.wrapETH(recipient, amountMin);
         } else if (command == Commands.UNWRAP_WETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
             Payments.unwrapWETH9(recipient, amountMin);
+        } else if (command == Commands.PAY_PORTION) {
+            (address token, address recipient, uint256 bips) = abi.decode(inputs, (address, address, uint256));
+            Payments.payPortion(token, recipient, bips);
         } else if (command == Commands.OWNERSHIP_CHECK_721) {
             (address owner, address token, uint256 id) = abi.decode(inputs, (address, address, uint256));
             success = (ERC721(token).ownerOf(id) == owner);
@@ -100,21 +127,6 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 abi.decode(inputs, (address, address, uint256, uint256));
             success = (ERC1155(token).balanceOf(owner, id) >= minBalance);
             if (!success) output = abi.encodeWithSignature('InvalidOwnerERC1155()');
-        } else if (command == Commands.SWEEP_WITH_FEE) {
-            (address token, address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
-                abi.decode(inputs, (address, address, uint256, uint256, address));
-            Payments.sweepTokenWithFee(token, recipient, amountMin, feeBips, feeRecipient);
-        } else if (command == Commands.UNWRAP_WETH_WITH_FEE) {
-            (address recipient, uint256 amountMin, uint256 feeBips, address feeRecipient) =
-                abi.decode(inputs, (address, uint256, uint256, address));
-            Payments.unwrapWETH9WithFee(recipient, amountMin, feeBips, feeRecipient);
-        } else if (command == Commands.CRYPTOPUNKS) {
-            (uint256 punkId, address recipient, uint256 value) = abi.decode(inputs, (uint256, address, uint256));
-            try ICryptoPunksMarket(Constants.CRYPTOPUNKS).buyPunk{value: value}(punkId) {
-                ICryptoPunksMarket(Constants.CRYPTOPUNKS).transferPunk(recipient, punkId);
-            } catch {
-                success = false;
-            }
         } else {
             revert InvalidCommandType(command);
         }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.17;
 
 import './base/Dispatcher.sol';
 import './base/RewardsCollector.sol';
@@ -14,7 +14,7 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
     }
 
     constructor(
-        address permitPost,
+        address permit2,
         address routerRewardsDistributor,
         address looksRareRewardsDistributor,
         address looksRareToken,
@@ -23,7 +23,7 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
         bytes32 pairInitCodeHash,
         bytes32 poolInitCodeHash
     )
-        Dispatcher(permitPost, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash)
+        Dispatcher(permit2, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash)
         RewardsCollector(routerRewardsDistributor, looksRareRewardsDistributor, looksRareToken)
     {}
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.17;
 
 /// @title Constant state
 /// @notice Constant state used by the swap router

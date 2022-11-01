@@ -1450,7 +1450,7 @@
 
 "@typechain/ethers-v5@^4.0.0":
   version "4.0.0"
-  resolved "https://registry.npmjs.org/@typechain/ethers-v5/-/ethers-v5-4.0.0.tgz"
+  resolved "https://registry.yarnpkg.com/@typechain/ethers-v5/-/ethers-v5-4.0.0.tgz#2a8be5e108d23f3b8e6354d1618fdc2abcb00b07"
   integrity sha512-Rw4WHPIuwTXWcHfmn9ICQISQhmJa6Ug5IjqPYLpsKqlED2L4W2JgQ6S9hYt4IKVmT//1yxIxD+iaa5tSQEEx1A==
 
 "@types/abstract-leveldown@*":
@@ -6228,7 +6228,7 @@ lodash@4.17.20:
 
 lodash@^4.17.11, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.4:
   version "4.17.21"
-  resolved "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
 
 log-symbols@4.1.0:
@@ -6530,7 +6530,7 @@ minimatch@5.0.1:
 
 minimatch@^3.0.4, minimatch@^3.1.1:
   version "3.1.2"
-  resolved "https://registry.npmjs.org/minimatch/-/minimatch-3.1.2.tgz"
+  resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-3.1.2.tgz#19cd194bfd3e428f049a70817c038d89ab4be35b"
   integrity sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==
   dependencies:
     brace-expansion "^1.1.7"
@@ -6577,14 +6577,14 @@ mkdirp@*:
 
 mkdirp@^0.5.1, mkdirp@^0.5.5:
   version "0.5.6"
-  resolved "https://registry.npmjs.org/mkdirp/-/mkdirp-0.5.6.tgz"
+  resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-0.5.6.tgz#7def03d2432dcae4ba1d611445c48396062255f6"
   integrity sha512-FP+p8RB8OWpF3YZBCrP5gtADmtXApB5AMLn+vdyA+PyxCjrCs00mjyUozssO33cwDeT3wNGdLxJ5M//YqtHAJw==
   dependencies:
     minimist "^1.2.6"
 
 mnemonist@^0.38.0:
   version "0.38.5"
-  resolved "https://registry.npmjs.org/mnemonist/-/mnemonist-0.38.5.tgz"
+  resolved "https://registry.yarnpkg.com/mnemonist/-/mnemonist-0.38.5.tgz#4adc7f4200491237fe0fa689ac0b86539685cade"
   integrity sha512-bZTFT5rrPKtPJxj8KSV0WkPyNxl72vQepqqVUAW2ARUpUSF2qXMB6jZj7hW5/k7C1rtpzqbD/IIbJwLXUjCHeg==
   dependencies:
     obliterator "^2.0.0"
@@ -8587,7 +8587,7 @@ typechain@^3.0.0:
 
 typechain@^4.0.0:
   version "4.0.3"
-  resolved "https://registry.npmjs.org/typechain/-/typechain-4.0.3.tgz"
+  resolved "https://registry.yarnpkg.com/typechain/-/typechain-4.0.3.tgz#e8fcd6c984676858c64eeeb155ea783a10b73779"
   integrity sha512-tmoHQeXZWHxIdeLK+i6dU0CU0vOd9Cndr3jFTZIMzak5/YpFZ8XoiYpTZcngygGBqZo+Z1EUmttLbW9KkFZLgQ==
   dependencies:
     command-line-args "^4.0.7"

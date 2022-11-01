@@ -1,13 +1,13 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
 import NFT20_ABI from './../shared/abis/NFT20.json'
-import { Router } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain'
 import { resetFork } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, ALPHABETTIES_ADDRESS, DEADLINE } from './../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
-import deployRouter from './../shared/deployRouter'
+import deployRouter, { deployPermit2 } from '../shared/deployRouter'
 const { ethers } = hre
 
 const NFT20_INTERFACE = new ethers.utils.Interface(NFT20_ABI)
@@ -15,6 +15,7 @@ const NFT20_INTERFACE = new ethers.utils.Interface(NFT20_ABI)
 describe('NFT20', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -26,7 +27,8 @@ describe('NFT20', () => {
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
     })
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
   })
 
   // In this test we will buy token ids 129, 193, 278 of Alphabetties (0x6d05064fe99e40f1c3464e7310a23ffaded56e20).

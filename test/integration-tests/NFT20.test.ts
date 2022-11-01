@@ -1,13 +1,13 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import NFT20_ABI from './shared/abis/NFT20.json'
-import { Router } from '../../typechain'
+import { Router, Permit2, ERC721 } from '../../typechain'
 import { ALPHABETTIES_721, resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, ALPHABETTIES_ADDRESS, DEADLINE } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
 import { expect } from 'chai'
-import deployRouter from './shared/deployRouter'
+import deployRouter, { deployPermit2 } from './shared/deployRouter'
 const { ethers } = hre
 
 const NFT20_INTERFACE = new ethers.utils.Interface(NFT20_ABI)
@@ -15,7 +15,9 @@ const NFT20_INTERFACE = new ethers.utils.Interface(NFT20_ABI)
 describe('NFT20', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let planner: RoutePlanner
+  let alphabetties: ERC721
 
   beforeEach(async () => {
     planner = new RoutePlanner()
@@ -26,7 +28,9 @@ describe('NFT20', () => {
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
     })
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
+    alphabetties = ALPHABETTIES_721.connect(alice) as ERC721
   })
 
   // In this test we will buy token ids 129, 193, 278 of Alphabetties (0x6d05064fe99e40f1c3464e7310a23ffaded56e20).
@@ -51,9 +55,9 @@ describe('NFT20', () => {
       ).wait()
 
       // Expect that alice has the NFTs
-      await expect((await ALPHABETTIES_721.ownerOf(129)).toLowerCase()).to.eq(ALICE_ADDRESS)
-      await expect((await ALPHABETTIES_721.ownerOf(193)).toLowerCase()).to.eq(ALICE_ADDRESS)
-      await expect((await ALPHABETTIES_721.ownerOf(278)).toLowerCase()).to.eq(ALICE_ADDRESS)
+      await expect((await alphabetties.ownerOf(129)).toLowerCase()).to.eq(ALICE_ADDRESS)
+      await expect((await alphabetties.ownerOf(193)).toLowerCase()).to.eq(ALICE_ADDRESS)
+      await expect((await alphabetties.ownerOf(278)).toLowerCase()).to.eq(ALICE_ADDRESS)
       // Expect that alice's account has 0.021 (plus gas, minus refund) less ETH in it
       await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
         value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice)).sub(BigNumber.from('1086067487962785'))

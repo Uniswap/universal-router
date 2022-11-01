@@ -1,8 +1,8 @@
 import { CommandType, RoutePlanner } from './shared/planner'
-import { Router, ERC721, ERC1155 } from '../../typechain'
+import { Router, Permit2, ERC721, ERC1155 } from '../../typechain'
 import { resetFork, COVEN_721, TWERKY_1155 } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE } from './shared/constants'
-import deployRouter from './shared/deployRouter'
+import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { expect } from 'chai'
@@ -21,14 +21,15 @@ import {
 describe('LooksRare', () => {
   let alice: SignerWithAddress
   let router: Router
+  let permit2: Permit2
   let value: BigNumber
   let planner: RoutePlanner
-  let covenContract: ERC721
+  let cryptoCovens: ERC721
   let twerkyContract: ERC1155
 
   beforeEach(async () => {
     await resetFork()
-    covenContract = COVEN_721.connect(alice)
+    cryptoCovens = COVEN_721.connect(alice)
     twerkyContract = TWERKY_1155.connect(alice)
 
     await hre.network.provider.request({
@@ -37,7 +38,8 @@ describe('LooksRare', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
 
-    router = (await deployRouter()).connect(alice) as Router
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
     planner = new RoutePlanner()
   })
 
@@ -65,7 +67,7 @@ describe('LooksRare', () => {
 
       await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
 
-      await expect((await covenContract.connect(alice).ownerOf(tokenId)).toLowerCase()).to.eq(ALICE_ADDRESS)
+      await expect((await cryptoCovens.connect(alice).ownerOf(tokenId)).toLowerCase()).to.eq(ALICE_ADDRESS)
     })
   })
 
@@ -88,8 +90,7 @@ describe('LooksRare', () => {
         makerOrder,
       ])
       planner.addCommand(CommandType.LOOKS_RARE_1155, [value, calldata, ALICE_ADDRESS, TWERKY_ADDRESS, tokenId, 1])
-      commands = planner.commands
-      inputs = planner.inputs
+      ;({ commands, inputs } = planner)
     })
 
     it('Buys a Twerky', async () => {
