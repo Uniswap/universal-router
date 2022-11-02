@@ -11,6 +11,7 @@ import {
   TWERKY_ADDRESS,
   CRYPTOPUNKS_MARKET_ADDRESS,
 } from './constants'
+import GENIE_SWAP_ABI from './abis/GenieSwap.json'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
 import { TransactionResponse } from '@ethersproject/abstract-provider'
@@ -119,3 +120,5 @@ export const ALPHABETTIES_721 = new ethers.Contract(ALPHABETTIES_ADDRESS, ERC721
 export const TWERKY_1155 = new ethers.Contract(TWERKY_ADDRESS, ERC1155_ABI) as ERC1155
 export const CAMEO_1155 = new ethers.Contract(CAMEO_ADDRESS, ERC1155_ABI) as ERC1155
 export const CRYPTOPUNKS_MARKET = new ethers.Contract(CRYPTOPUNKS_MARKET_ADDRESS, CRYPTOPUNKS_ABI)
+
+export const GENIE_SWAP = new ethers.Contract(GENIE_SWAP_ADDRESS, GENIE_SWAP_ABI)
