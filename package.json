@@ -5,7 +5,7 @@
   "publishConfig": {
     "access": "private"
   },
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "keywords": [
     "narwhal"
   ],
@@ -19,10 +19,10 @@
     "contracts/libraries",
     "contracts",
     "typechain",
-    "artifacts/ src/**/*.json",
-    "!artifacts/src/**/*.dbg.json",
-    "!artifacts/src/test/**/*",
-    "!artifacts/src/base/**/*"
+    "artifacts/contracts/**/*.json",
+    "!artifacts/contracts/**/*.dbg.json",
+    "!artifacts/contracts/test/**/*",
+    "!artifacts/contracts/base/**/*"
   ],
   "engines": {
     "node": ">=16"
