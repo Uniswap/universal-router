@@ -8,17 +8,17 @@ export const genieInterface = new ethers.utils.Interface(GENIE_SWAP_ABI)
 export const genieX2Y2MarketInterface = new ethers.utils.Interface(GENIE_X2Y2_MARKET_ABI)
 
 export type GenieSwapInput = {
-    erc20Details: any[]
-    erc721Details: any[]
-    erc1155Details: any[]
-    conversionDetails: any[]
-    tradeDetails: TradeDetails[]
-    dustTokens: string[]
-    feeDetails: number[]
+  erc20Details: any[]
+  erc721Details: any[]
+  erc1155Details: any[]
+  conversionDetails: any[]
+  tradeDetails: TradeDetails[]
+  dustTokens: string[]
+  feeDetails: number[]
 }
 
 export type TradeDetails = {
-    marketId: number
-    value: number | BigNumber
-    tradeData: string
+  marketId: number
+  value: number | BigNumber
+  tradeData: string
 }

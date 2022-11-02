@@ -1,7 +1,12 @@
 import { CommandType, RoutePlanner } from '../shared/planner'
 import { Router, Permit2, ERC721 } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import { seaportOrders, seaportInterface, getAdvancedOrderParams, AdvancedOrder } from '../shared/protocolHelpers/seaport'
+import {
+  seaportOrders,
+  seaportInterface,
+  getAdvancedOrderParams,
+  AdvancedOrder,
+} from '../shared/protocolHelpers/seaport'
 import { COVEN_721, ENS_721, GENIE_SWAP, resetFork } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -50,7 +55,7 @@ describe('NFT UX Tests', () => {
       ])
       cryptoCovens = COVEN_721.connect(alice) as ERC721
     })
-    
+
     describe('Narwhal', async () => {
       it('ETH -> NFT', async () => {
         planner.addCommand(CommandType.SEAPORT, [value.toString(), seaportCalldata])
@@ -70,25 +75,27 @@ describe('NFT UX Tests', () => {
             marketId: 21,
             value: value,
             tradeData: seaportCalldata,
-          }
+          },
         ]
-          
-        await snapshotGasCost(genieSwap.multiAssetSwap(
-          [[], []],
-          [],
-          [],
-          [],
-          tradeDetails,
-          ["0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"],
-          [0, 0]
-        , { value }))
+
+        await snapshotGasCost(
+          genieSwap.multiAssetSwap(
+            [[], []],
+            [],
+            [],
+            [],
+            tradeDetails,
+            ['0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'],
+            [0, 0],
+            { value }
+          )
+        )
       })
 
       const ownerAfter = await cryptoCovens.ownerOf(advancedOrder.parameters.offer[0].identifierOrCriteria)
       expect(ownerAfter.toLowerCase()).to.eq(ALICE_ADDRESS)
     })
   })
-
 
   describe('X2Y2', () => {
     let x2y2Calldata: string
@@ -103,18 +110,12 @@ describe('NFT UX Tests', () => {
       tokenId = erc721Order.token_id
       nftAddress = ENS_721.address
     })
-    
+
     describe('Narwhal', async () => {
       it('ETH -> NFT', async () => {
         x2y2Calldata = functionSelector + erc721Order.input.slice(2)
 
-        planner.addCommand(CommandType.X2Y2_721, [
-          value,
-          x2y2Calldata,
-          ALICE_ADDRESS,
-          nftAddress,
-          tokenId,
-        ])
+        planner.addCommand(CommandType.X2Y2_721, [value, x2y2Calldata, ALICE_ADDRESS, nftAddress, tokenId])
         const { commands, inputs } = planner
 
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
@@ -144,18 +145,21 @@ describe('NFT UX Tests', () => {
             marketId: 19,
             value: value,
             tradeData: genieCalldata,
-          }
+          },
         ]
 
-        await snapshotGasCost(genieSwap.multiAssetSwap(
-          [[], []],
-          [],
-          [],
-          [],
-          tradeDetails,
-          ["0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"],
-          [0, 0]
-        , { value }))
+        await snapshotGasCost(
+          genieSwap.multiAssetSwap(
+            [[], []],
+            [],
+            [],
+            [],
+            tradeDetails,
+            ['0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'],
+            [0, 0],
+            { value }
+          )
+        )
 
         const ownerAfter = await ENS_721.connect(alice).ownerOf(tokenId)
         expect(ownerAfter.toLowerCase()).to.eq(ALICE_ADDRESS)
