@@ -1,7 +1,7 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
 import { Router, Permit2 } from '../../../typechain'
-import { resetFork, ENS_721 } from './../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE } from './../shared/constants'
+import { resetFork } from './../shared/mainnetForkHelpers'
+import { ALICE_ADDRESS, DEADLINE, ENS_NFT_ADDRESS, CAMEO_ADDRESS } from './../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -41,7 +41,7 @@ describe('X2Y2', () => {
         erc721Order.price,
         calldata,
         ALICE_ADDRESS,
-        ENS_721.address,
+        ENS_NFT_ADDRESS,
         erc721Order.token_id,
       ])
       ;({ commands, inputs } = planner)
@@ -75,7 +75,7 @@ describe('X2Y2', () => {
         erc1155Order.price,
         calldata,
         ALICE_ADDRESS,
-        '0x93317E87a3a47821803CAADC54Ae418Af80603DA',
+        CAMEO_ADDRESS,
         erc1155Order.token_id,
         1,
       ])

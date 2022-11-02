@@ -2,7 +2,15 @@ import { ERC721, ERC1155, ERC20, ERC20__factory } from '../../../typechain'
 import { abi as ERC721_ABI } from '../../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC1155_ABI } from '../../../artifacts/solmate/tokens/ERC1155.sol/ERC1155.json'
 import CRYPTOPUNKS_ABI from './abis/Cryptopunks.json'
-import { COVEN_ADDRESS, TWERKY_ADDRESS, CRYPTOPUNKS_MARKET_ADDRESS } from './constants'
+import {
+  ALPHABETTIES_ADDRESS,
+  CAMEO_ADDRESS,
+  COVEN_ADDRESS,
+  ENS_NFT_ADDRESS,
+  MENTAL_WORLDS_ADDRESS,
+  TWERKY_ADDRESS,
+  CRYPTOPUNKS_MARKET_ADDRESS,
+} from './constants'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
 import { TransactionResponse } from '@ethersproject/abstract-provider'
@@ -105,9 +113,9 @@ export const resetFork = async (block: number = 15360000) => {
 }
 
 export const COVEN_721 = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI) as ERC721
-export const DYSTOMICE_721 = new ethers.Contract('0xe440654A00B757446B4914C56aD56A804a6BC6af', ERC721_ABI) as ERC721
-export const ENS_721 = new ethers.Contract('0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85', ERC721_ABI) as ERC721
-
+export const ENS_721 = new ethers.Contract(ENS_NFT_ADDRESS, ERC721_ABI) as ERC721
+export const MENTAL_WORLDS_721 = new ethers.Contract(MENTAL_WORLDS_ADDRESS, ERC721_ABI) as ERC721
+export const ALPHABETTIES_721 = new ethers.Contract(ALPHABETTIES_ADDRESS, ERC721_ABI) as ERC721
 export const TWERKY_1155 = new ethers.Contract(TWERKY_ADDRESS, ERC1155_ABI) as ERC1155
-export const CAMEO_1155 = new ethers.Contract('0x93317E87a3a47821803CAADC54Ae418Af80603DA', ERC1155_ABI) as ERC1155
+export const CAMEO_1155 = new ethers.Contract(CAMEO_ADDRESS, ERC1155_ABI) as ERC1155
 export const CRYPTOPUNKS_MARKET = new ethers.Contract(CRYPTOPUNKS_MARKET_ADDRESS, CRYPTOPUNKS_ABI)

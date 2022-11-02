@@ -4,7 +4,7 @@ import { resetFork, CRYPTOPUNKS_MARKET } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import { BigNumber } from 'ethers'
+import { BigNumber, Contract } from 'ethers'
 import { expect } from 'chai'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
 
@@ -15,7 +15,7 @@ describe('Cryptopunks', () => {
   let router: Router
   let permit2: Permit2
   let planner: RoutePlanner
-  let cryptopunkContract: any
+  let cryptopunks: Contract
 
   beforeEach(async () => {
     planner = new RoutePlanner()
@@ -28,7 +28,7 @@ describe('Cryptopunks', () => {
     })
     permit2 = (await deployPermit2()).connect(alice) as Permit2
     router = (await deployRouter(permit2)).connect(alice) as Router
-    cryptopunkContract = CRYPTOPUNKS_MARKET.connect(alice)
+    cryptopunks = CRYPTOPUNKS_MARKET.connect(alice)
   })
 
   // In this test we will buy crypto punk # 2976 for 74.95 ETH
@@ -44,7 +44,7 @@ describe('Cryptopunks', () => {
       ).wait()
 
       // Expect that alice has the NFT
-      await expect((await cryptopunkContract.punkIndexToAddress(2976)).toLowerCase()).to.eq(ALICE_ADDRESS)
+      await expect((await cryptopunks.punkIndexToAddress(2976)).toLowerCase()).to.eq(ALICE_ADDRESS)
       await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
         value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice))
       )

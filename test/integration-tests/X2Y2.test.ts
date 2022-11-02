@@ -2,7 +2,7 @@ import { CommandType, RoutePlanner } from './shared/planner'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import { Router, Permit2 } from '../../typechain'
 import { resetFork, ENS_721, CAMEO_1155 } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
+import { ALICE_ADDRESS, CAMEO_ADDRESS, DEADLINE, ENS_NFT_ADDRESS } from './shared/constants'
 import { parseEvents } from './shared/parseEvents'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -45,7 +45,7 @@ describe('X2Y2', () => {
         erc721Order.price,
         calldata,
         ALICE_ADDRESS,
-        ENS_721.address,
+        ENS_NFT_ADDRESS,
         erc721Order.token_id,
       ])
       ;({ commands, inputs } = planner)
@@ -86,7 +86,7 @@ describe('X2Y2', () => {
         erc1155Order.price,
         calldata,
         ALICE_ADDRESS,
-        '0x93317E87a3a47821803CAADC54Ae418Af80603DA',
+        CAMEO_ADDRESS,
         erc1155Order.token_id,
         1,
       ])

@@ -24,12 +24,12 @@ describe('LooksRare', () => {
   let permit2: Permit2
   let value: BigNumber
   let planner: RoutePlanner
-  let covenContract: ERC721
+  let cryptoCovens: ERC721
   let twerkyContract: ERC1155
 
   beforeEach(async () => {
     await resetFork()
-    covenContract = COVEN_721.connect(alice)
+    cryptoCovens = COVEN_721.connect(alice)
     twerkyContract = TWERKY_1155.connect(alice)
 
     await hre.network.provider.request({
@@ -67,7 +67,7 @@ describe('LooksRare', () => {
 
       await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
 
-      await expect((await covenContract.connect(alice).ownerOf(tokenId)).toLowerCase()).to.eq(ALICE_ADDRESS)
+      await expect((await cryptoCovens.connect(alice).ownerOf(tokenId)).toLowerCase()).to.eq(ALICE_ADDRESS)
     })
   })
 

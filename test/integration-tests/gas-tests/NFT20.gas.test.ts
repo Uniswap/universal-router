@@ -1,13 +1,12 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
 import NFT20_ABI from './../shared/abis/NFT20.json'
-import { ERC721, Router, Permit2 } from '../../../typechain'
+import { Router, Permit2 } from '../../../typechain'
 import { resetFork } from './../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, ALPHABETTIES_ADDRESS } from './../shared/constants'
+import { ALICE_ADDRESS, ALPHABETTIES_ADDRESS, DEADLINE } from './../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
-import { abi as ERC721_ABI } from '../../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import deployRouter, { deployPermit2 } from '../shared/deployRouter'
 const { ethers } = hre
 
@@ -18,7 +17,6 @@ describe('NFT20', () => {
   let router: Router
   let permit2: Permit2
   let planner: RoutePlanner
-  let alphabetties: ERC721
 
   beforeEach(async () => {
     planner = new RoutePlanner()
@@ -31,9 +29,6 @@ describe('NFT20', () => {
     })
     permit2 = (await deployPermit2()).connect(alice) as Permit2
     router = (await deployRouter(permit2)).connect(alice) as Router
-
-    alphabetties = new ethers.Contract(ALPHABETTIES_ADDRESS, ERC721_ABI) as ERC721
-    alphabetties = alphabetties.connect(alice)
   })
 
   // In this test we will buy token ids 129, 193, 278 of Alphabetties (0x6d05064fe99e40f1c3464e7310a23ffaded56e20).
@@ -42,7 +37,7 @@ describe('NFT20', () => {
     it('gas: purchases token ids 129, 193, 278 of Alphabetties', async () => {
       const value = BigNumber.from('20583701229648230')
       const calldata = NFT20_INTERFACE.encodeFunctionData('ethForNft', [
-        '0x6d05064fe99e40f1c3464e7310a23ffaded56e20',
+        ALPHABETTIES_ADDRESS,
         ['129', '193', '278'],
         ['1', '1', '1'],
         ALICE_ADDRESS,
