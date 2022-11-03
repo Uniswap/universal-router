@@ -30,23 +30,6 @@ describe('NFTX Gas Tests', () => {
     planner = new RoutePlanner()
   })
 
-  it('gas: buyAndRedeem w/ random selection', async () => {
-    const value = expandTo18DecimalsBN(4)
-    const numCovens = 2
-    const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      NFTX_COVEN_VAULT_ID,
-      numCovens,
-      [],
-      [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
-      alice.address,
-    ])
-
-    planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
-    const { commands, inputs } = planner
-
-    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
-  })
-
   it('gas: buyAndRedeem w/ specific selection', async () => {
     const value = expandTo18DecimalsBN(4)
     const numCovens = 2
