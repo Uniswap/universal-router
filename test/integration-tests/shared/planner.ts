@@ -57,7 +57,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.TRANSFER]: ['address', 'address', 'uint256'],
   [CommandType.V3_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
   [CommandType.V3_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
-  [CommandType.V2_SWAP_EXACT_IN]: ['uint256', 'address[]', 'address'],
+  [CommandType.V2_SWAP_EXACT_IN]: ['uint256', 'uint256', 'address[]', 'address', 'bool'],
   [CommandType.V2_SWAP_EXACT_OUT]: ['uint256', 'uint256', 'address[]', 'address', 'bool'],
   [CommandType.SEAPORT]: ['uint256', 'bytes'],
   [CommandType.WRAP_ETH]: ['address', 'uint256'],

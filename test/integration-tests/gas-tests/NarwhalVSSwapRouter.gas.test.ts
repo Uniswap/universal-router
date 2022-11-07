@@ -165,11 +165,8 @@ describe('Uniswap UX Tests:', () => {
       let amountIn = BigNumber.from(swap.inputAmount.quotient.toString())
 
       if (swap.route.protocol == 'V2') {
-        const firstPairAddress = Pair.getAddress(route.path[0], route.path[1])
         let pathAddresses = routeToAddresses(route)
-
-        planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [pathAddresses[0], firstPairAddress, amountIn])
-        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, pathAddresses, bob.address])
+        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [amountIn, 0, pathAddresses, bob.address, SOURCE_MSG_SENDER])
       } else if (swap.route.protocol == 'V3') {
         let path = encodePathExactInput(route)
         planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [bob.address, amountIn, 0, path, SOURCE_MSG_SENDER])
