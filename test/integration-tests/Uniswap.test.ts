@@ -4,7 +4,7 @@ import { Pair } from '@uniswap/v2-sdk'
 import { FeeAmount } from '@uniswap/v3-sdk'
 import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
-import { makePair, encodePath } from './shared/swapRouter02Helpers'
+import { encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Permit2, Router } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
@@ -43,10 +43,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
   let usdcContract: Contract
   let planner: RoutePlanner
 
-  // 6 pairs for gas tests with high numbers of trades
-  let pair_DAI_WETH: Pair
-  let pair_DAI_USDC: Pair
-
   beforeEach(async () => {
     await resetFork()
     await hre.network.provider.request({
@@ -60,8 +56,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = (await deployPermit2()).connect(bob) as Permit2
     router = (await deployRouter(permit2)).connect(bob) as Router
-    pair_DAI_WETH = await makePair(bob, DAI, WETH)
-    pair_DAI_USDC = await makePair(bob, DAI, USDC)
     planner = new RoutePlanner()
 
     // alice gives bob some tokens

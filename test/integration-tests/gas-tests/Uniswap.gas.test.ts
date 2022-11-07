@@ -772,7 +772,7 @@ describe('Uniswap Gas Tests', () => {
           const minAmountOut1 = expandTo18DecimalsBN(0.005)
           const minAmountOut2 = expandTo18DecimalsBN(0.0075)
 
-          // 2) trade route1 and return tokens to bob
+          // 1) trade route1 and return tokens to bob
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
             v2AmountIn1,
             minAmountOut1,
@@ -780,7 +780,7 @@ describe('Uniswap Gas Tests', () => {
             bob.address,
             SOURCE_MSG_SENDER,
           ])
-          // 3) trade route2 and return tokens to bob
+          // 2) trade route2 and return tokens to bob
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
             v2AmountIn2,
             minAmountOut2,
