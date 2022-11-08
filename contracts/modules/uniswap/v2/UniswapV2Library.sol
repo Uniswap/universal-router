@@ -28,7 +28,7 @@ library UniswapV2Library {
         pair = pairForPreSorted(factory, initCodeHash, token0, token1);
     }
 
-   function pairForPreSorted(address factory, bytes32 initCodeHash, address token0, address token1)
+    function pairForPreSorted(address factory, bytes32 initCodeHash, address token0, address token1)
         private
         pure
         returns (address pair)
