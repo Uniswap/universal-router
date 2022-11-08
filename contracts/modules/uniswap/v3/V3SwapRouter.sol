@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import '../../Payments.sol';
 import './V3Path.sol';
 import '../../../libraries/Constants.sol';
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
@@ -12,7 +11,7 @@ abstract contract V3SwapRouter is Permit2Payments {
     using V3Path for bytes;
     using SafeCast for uint256;
 
-    error InvalidSwap();
+    error V3InvalidSwap();
     error V3TooLittleReceived();
     error V3TooMuchRequested();
     error V3InvalidAmountOut();
@@ -27,6 +26,7 @@ abstract contract V3SwapRouter is Permit2Payments {
 
     /// @dev Transient storage variable used for checking slippage
     uint256 private maxAmountInCached = DEFAULT_MAX_AMOUNT_IN;
+
     /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
     uint160 internal constant MIN_SQRT_RATIO = 4295128739;
 
@@ -39,7 +39,7 @@ abstract contract V3SwapRouter is Permit2Payments {
     }
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
-        if (amount0Delta <= 0 && amount1Delta <= 0) revert InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
+        if (amount0Delta <= 0 && amount1Delta <= 0) revert V3InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
         (bytes memory path, address payer) = abi.decode(data, (bytes, address));
 
         // because exact output swaps are executed in reverse order, in this case tokenOut is actually tokenIn
