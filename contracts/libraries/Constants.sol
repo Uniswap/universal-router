@@ -5,7 +5,10 @@ pragma solidity ^0.8.17;
 /// @notice Constant state used by the swap router
 library Constants {
     /// @dev Used for identifying cases when this contract's balance of a token is to be used
-    uint256 internal constant CONTRACT_BALANCE = 0;
+    uint256 internal constant CONTRACT_BALANCE = type(uint256).max;
+
+    /// @dev Used for identifying cases when ta v2 pair has already received the input money
+    uint256 internal constant ALREADY_PAID = 0;
 
     /// @dev Used as a flag for identifying the transfer of ETH instead a token
     address internal constant ETH = address(0);
