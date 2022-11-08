@@ -19,13 +19,6 @@ abstract contract V3SwapRouter is Permit2Payments {
     error V3InvalidAmountOut();
     error V3InvalidCaller();
 
-    /// @notice The identifying key of the pool
-    struct PoolKey {
-        address token0;
-        address token1;
-        uint24 fee;
-    }
-
     address internal immutable V3_FACTORY;
     bytes32 internal immutable POOL_INIT_CODE_HASH_V3;
 
@@ -143,29 +136,13 @@ abstract contract V3SwapRouter is Permit2Payments {
 
         zeroForOne = isExactIn ? tokenIn < tokenOut : tokenOut < tokenIn;
 
-        (amount0Delta, amount1Delta) = IUniswapV3Pool(
-            UniswapPoolHelper.computePoolAddress(
-                V3_FACTORY, abi.encode(getPoolKey(tokenIn, tokenOut, fee)), POOL_INIT_CODE_HASH_V3
-            )
-        ).swap(
+        (amount0Delta, amount1Delta) = IUniswapV3Pool(computePoolAddress(tokenIn, tokenOut, fee)).swap(
             recipient,
             zeroForOne,
             amount,
             (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1),
             abi.encode(path, payer)
         );
-    }
-
-    /// @notice Returns PoolKey: the ordered tokens with the matched fee levels
-    /// @param tokenA The first token of a pool, unsorted
-    /// @param tokenB The second token of a pool, unsorted
-    /// @param fee The fee level of the pool
-    /// @return Poolkey The pool details with ordered token0 and token1 assignments
-    function getPoolKey(address tokenA, address tokenB, uint24 fee) internal pure returns (PoolKey memory) {
-        if (tokenA > tokenB) {
-            (tokenA, tokenB) = (tokenB, tokenA);
-        }
-        return PoolKey({token0: tokenA, token1: tokenB, fee: fee});
     }
 
     function computePoolAddress(address tokenA, address tokenB, uint24 fee) private view returns (address pool) {
