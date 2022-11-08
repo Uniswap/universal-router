@@ -17,6 +17,7 @@ abstract contract V3SwapRouter is Permit2Payments {
     error V3TooLittleReceived();
     error V3TooMuchRequested();
     error V3InvalidAmountOut();
+    error V3InvalidCaller();
 
     /// @notice The identifying key of the pool
     struct PoolKey {
@@ -50,7 +51,9 @@ abstract contract V3SwapRouter is Permit2Payments {
         (bytes memory path, address payer) = abi.decode(data, (bytes, address));
 
         // because exact output swaps are executed in reverse order, in this case tokenOut is actually tokenIn
-        (address tokenIn, address tokenOut,) = path.decodeFirstPool();
+        (address tokenIn, address tokenOut, uint24 fee) = path.decodeFirstPool();
+
+        if (computePoolAddress(tokenIn, tokenOut, fee) != msg.sender) revert V3InvalidCaller();
 
         (bool isExactInput, uint256 amountToPay) =
             amount0Delta > 0 ? (tokenIn < tokenOut, uint256(amount0Delta)) : (tokenOut < tokenIn, uint256(amount1Delta));
@@ -123,13 +126,10 @@ abstract contract V3SwapRouter is Permit2Payments {
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
             _swap(-amountOut.toInt256(), recipient, path, payer, false);
 
-        (uint256 amountIn, uint256 amountOutReceived) = zeroForOne
-            ? (uint256(amount0Delta), uint256(-amount1Delta))
-            : (uint256(amount1Delta), uint256(-amount0Delta));
+        uint256 amountOutReceived = zeroForOne ? uint256(-amount1Delta) : uint256(-amount0Delta);
 
         if (amountOutReceived != amountOut) revert V3InvalidAmountOut();
 
-        if (amountIn > amountInMaximum) revert V3TooMuchRequested();
         maxAmountInCached = DEFAULT_MAX_AMOUNT_IN;
     }
 
@@ -166,5 +166,20 @@ abstract contract V3SwapRouter is Permit2Payments {
             (tokenA, tokenB) = (tokenB, tokenA);
         }
         return PoolKey({token0: tokenA, token1: tokenB, fee: fee});
+    }
+
+    function computePoolAddress(address tokenA, address tokenB, uint24 fee) private view returns (address pool) {
+        if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA);
+        pool = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            hex'ff', V3_FACTORY, keccak256(abi.encode(tokenA, tokenB, fee)), POOL_INIT_CODE_HASH_V3
+                        )
+                    )
+                )
+            )
+        );
     }
 }
