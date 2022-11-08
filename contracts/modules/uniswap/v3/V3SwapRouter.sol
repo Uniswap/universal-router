@@ -145,12 +145,17 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
         );
     }
 
-    function computePoolAddress(address tokenA, address tokenB, uint24 fee) internal view returns (address pool) {
+    function computePoolAddress(address tokenA, address tokenB, uint24 fee) private view returns (address pool) {
         if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA);
-        bytes memory identifier = abi.encode(tokenA, tokenB, fee);
         pool = address(
             uint160(
-                uint256(keccak256(abi.encodePacked(hex'ff', V3_FACTORY, keccak256(identifier), POOL_INIT_CODE_HASH_V3)))
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            hex'ff', V3_FACTORY, keccak256(abi.encode(tokenA, tokenB, fee)), POOL_INIT_CODE_HASH_V3
+                        )
+                    )
+                )
             )
         );
     }

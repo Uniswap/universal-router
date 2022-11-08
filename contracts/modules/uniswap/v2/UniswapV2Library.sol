@@ -29,7 +29,7 @@ library UniswapV2Library {
     }
 
     function pairForPreSorted(address factory, bytes32 initCodeHash, address token0, address token1)
-        internal
+        private
         pure
         returns (address pair)
     {
@@ -38,7 +38,7 @@ library UniswapV2Library {
 
     // fetches and sorts the reserves for a pair of tokens
     function pairAndReservesFor(address factory, bytes32 initCodeHash, address tokenA, address tokenB)
-        internal
+        private
         view
         returns (address pair, uint256 reserveA, uint256 reserveB)
     {
@@ -91,7 +91,7 @@ library UniswapV2Library {
     }
 
     function computePoolAddress(address factory, bytes memory identifier, bytes32 initCodeHash)
-        internal
+        private
         pure
         returns (address pool)
     {
