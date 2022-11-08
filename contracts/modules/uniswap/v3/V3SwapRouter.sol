@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import '../../Payments.sol';
 import './V3Path.sol';
-import '../UniswapPoolHelper.sol';
 import '../../../libraries/Constants.sol';
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
