@@ -8,12 +8,19 @@ const { ethers } = hre
 
 const chainId: number = hre.network.config.chainId ? hre.network.config.chainId : 1
 
-export type Permit = {
+const PERMIT_SIGNATURE = "permit(address,((address,uint160,uint64,uint32),address,uint256),bytes)"
+// const PERMIT_BATCH_SIGNATURE = "permit(address,((address,uint160,uint64,uint32)[],address,uint256),bytes)"
+
+export type PermitDetails = {
   token: string
-  spender: string
   amount: number | BigNumber
   expiration: number | BigNumber
   nonce: number | BigNumber
+}
+
+export type PermitSingle = {
+  details: PermitDetails
+  spender: string
   sigDeadline: number | BigNumber
 }
 
@@ -24,12 +31,15 @@ export type TransferDetail = {
 }
 
 export const PERMIT2_PERMIT_TYPE = {
-  Permit: [
+  PermitDetails: [
     { name: 'token', type: 'address' },
-    { name: 'spender', type: 'address' },
     { name: 'amount', type: 'uint160' },
     { name: 'expiration', type: 'uint64' },
-    { name: 'nonce', type: 'uint32' },
+    { name: 'nonce', type: 'uint32' }
+  ],
+  PermitSingle: [
+    { name: 'details', type: 'PermitDetails' },
+    { name: 'spender', type: 'address' },
     { name: 'sigDeadline', type: 'uint256' },
   ],
 }
@@ -45,7 +55,7 @@ export function getEip712Domain(chainId: number, verifyingContract: string) {
 }
 
 export async function signPermit(
-  permit: Permit,
+  permit: PermitSingle,
   signer: SignerWithAddress,
   verifyingContract: string
 ): Promise<string> {
@@ -56,16 +66,16 @@ export async function signPermit(
 }
 
 export async function signPermitAndConstructCalldata(
-  permit: Permit,
+  permit: PermitSingle,
   signer: SignerWithAddress,
   permit2: Permit2
 ): Promise<string> {
   // look up the correct nonce for this permit
-  const nextNonce = (await permit2.allowance(signer.address, permit.token, permit.spender)).nonce
-  permit.nonce = nextNonce
+  const nextNonce = (await permit2.allowance(signer.address, permit.details.token, permit.spender)).nonce
+  permit.details.nonce = nextNonce
 
   const signature = await signPermit(permit, signer, permit2.address)
-  const calldata = PERMIT2_INTERFACE.encodeFunctionData('permit', [ethers.constants.AddressZero, permit, signature])
+  const calldata = PERMIT2_INTERFACE.encodeFunctionData(PERMIT_SIGNATURE, [ethers.constants.AddressZero, permit, signature])
 
   // Remove function signature and first parameter (the router fills these in itself)
   return '0x' + calldata.slice(74)

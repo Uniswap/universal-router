@@ -20,7 +20,7 @@ import deployRouter, { deployPermit2 } from '../shared/deployRouter'
 import { RoutePlanner, CommandType } from '../shared/planner'
 import hre from 'hardhat'
 import { Router, Permit2, ERC20__factory, ERC20 } from '../../../typechain'
-import { signPermitAndConstructCalldata, Permit } from '../shared/protocolHelpers/permit2'
+import { signPermitAndConstructCalldata, PermitSingle } from '../shared/protocolHelpers/permit2'
 import { CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { IRoute, Trade } from '@uniswap/router-sdk'
@@ -37,9 +37,9 @@ describe('Uniswap UX Tests:', () => {
 
   let SIMPLE_SWAP: Trade<Token, Token, TradeType.EXACT_INPUT>
   let COMPLEX_SWAP: Trade<Token, Token, TradeType.EXACT_INPUT>
-  let MAX_PERMIT: Permit
-  let SIMPLE_SWAP_PERMIT: Permit
-  let COMPLEX_SWAP_PERMIT: Permit
+  let MAX_PERMIT: PermitSingle
+  let SIMPLE_SWAP_PERMIT: PermitSingle
+  let COMPLEX_SWAP_PERMIT: PermitSingle
 
   beforeEach(async () => {
     await resetFork()
@@ -127,29 +127,35 @@ describe('Uniswap UX Tests:', () => {
     })
 
     MAX_PERMIT = {
-      token: COMPLEX_SWAP.inputAmount.currency.address,
+      details: {
+        token: COMPLEX_SWAP.inputAmount.currency.address,
+        amount: BigNumber.from(MAX_UINT160),
+        expiration: DEADLINE, // not the end of time, cheaper gas-wise
+        nonce: 0, // this is his first trade
+      },
       spender: router.address,
-      amount: BigNumber.from(MAX_UINT160),
-      expiration: DEADLINE, // not the end of time, cheaper gas-wise
-      nonce: 0, // this is his first trade
       sigDeadline: DEADLINE,
     }
 
     SIMPLE_SWAP_PERMIT = {
-      token: SIMPLE_SWAP.inputAmount.currency.address,
+      details: {
+        token: SIMPLE_SWAP.inputAmount.currency.address,
+        amount: BigNumber.from(SIMPLE_SWAP.inputAmount.quotient.toString()),
+        expiration: 0, // expiration of 0 is block.timestamp
+        nonce: 0, // this is his first trade
+      },
       spender: router.address,
-      amount: BigNumber.from(SIMPLE_SWAP.inputAmount.quotient.toString()),
-      expiration: 0, // expiration of 0 is block.timestamp
-      nonce: 0, // this is his first trade
       sigDeadline: DEADLINE,
     }
 
     COMPLEX_SWAP_PERMIT = {
-      token: COMPLEX_SWAP.inputAmount.currency.address,
+      details: {
+        token: COMPLEX_SWAP.inputAmount.currency.address,
+        amount: BigNumber.from(COMPLEX_SWAP.inputAmount.quotient.toString()),
+        expiration: 0, // expiration of 0 is block.timestamp
+        nonce: 0, // this is his first trade
+      },
       spender: router.address,
-      amount: BigNumber.from(COMPLEX_SWAP.inputAmount.quotient.toString()),
-      expiration: 0, // expiration of 0 is block.timestamp
-      nonce: 0, // this is his first trade
       sigDeadline: DEADLINE,
     }
   })
