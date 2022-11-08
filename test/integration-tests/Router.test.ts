@@ -79,7 +79,13 @@ describe('Router', () => {
     })
 
     it('reverts if block.timestamp exceeds the deadline', async () => {
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [1, [DAI.address, WETH.address], alice.address])
+      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+        1,
+        1,
+        [DAI.address, WETH.address],
+        alice.address,
+        SOURCE_MSG_SENDER,
+      ])
       const invalidDeadline = 10
 
       const { commands, inputs } = planner
