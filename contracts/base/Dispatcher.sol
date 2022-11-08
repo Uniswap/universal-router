@@ -33,19 +33,19 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         if (command == Commands.PERMIT2_PERMIT) {
             (bytes memory data) = abi.decode(inputs, (bytes));
             // pass in the msg.sender as the first parameter `owner`
-            data = bytes.concat(IAllowanceTransfer.permit.selector, abi.encode(msg.sender), data);
+            data = bytes.concat(Constants.PERMIT_SELECTOR, abi.encode(msg.sender), data);
             (success, output) = PERMIT2.call(data);
         } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
             (bytes memory data) = abi.decode(inputs, (bytes));
             // pass in the msg.sender as the first parameter `owner`
-            data = bytes.concat(IAllowanceTransfer.permitBatch.selector, abi.encode(msg.sender), data);
+            data = bytes.concat(Constants.PERMIT_BATCH_SELECTOR, abi.encode(msg.sender), data);
             (success, output) = PERMIT2.call(data);
         } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
             (address token, address recipient, uint160 amount) = abi.decode(inputs, (address, address, uint160));
             permit2TransferFrom(token, msg.sender, recipient, amount);
         } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
             (bytes memory data) = abi.decode(inputs, (bytes));
-            // pass in the msg.sender as the first parameter `owner`
+            // pass in the msg.sender as the first parameter `from`
             data = bytes.concat(IAllowanceTransfer.batchTransferFrom.selector, abi.encode(msg.sender), data);
             (success, output) = PERMIT2.call(data);
         } else if (command == Commands.TRANSFER) {

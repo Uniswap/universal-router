@@ -28,7 +28,7 @@ import hre from 'hardhat'
 import {
   signPermitAndConstructCalldata,
   constructBatchTransferFromCalldata,
-  Permit,
+  PermitSingle,
   TransferDetail,
 } from './shared/protocolHelpers/permit2'
 const { ethers } = hre
@@ -69,7 +69,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
   describe('Trade on Uniswap with Permit2, giving approval every time', () => {
     describe('ERC20 --> ERC20', () => {
-      let permit: Permit
+      let permit: PermitSingle
 
       it('V2 exactIn, permiting the exact amount', async () => {
         const amountInDAI = expandTo18DecimalsBN(100)
@@ -77,11 +77,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         // second bob signs a permit to allow the router to access his DAI
         permit = {
-          token: DAI.address,
+          details: {
+            token: DAI.address,
+            amount: amountInDAI,
+            expiration: 0, // expiration of 0 is block.timestamp
+            nonce: 0, // this is his first trade
+          },
           spender: router.address,
-          amount: amountInDAI,
-          expiration: 0, // expiration of 0 is block.timestamp
-          nonce: 0, // this is his first trade
           sigDeadline: DEADLINE,
         }
         const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
@@ -106,11 +108,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         // second bob signs a permit to allow the router to access his DAI
         permit = {
-          token: DAI.address,
+          details: {
+            token: DAI.address,
+            amount: maxAmountInDAI,
+            expiration: 0, // expiration of 0 is block.timestamp
+            nonce: 0, // this is his first trade
+          },
           spender: router.address,
-          amount: maxAmountInDAI,
-          expiration: 0, // expiration of 0 is block.timestamp
-          nonce: 0, // this is his first trade
           sigDeadline: DEADLINE,
         }
         const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
@@ -138,11 +142,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         // second bob signs a permit to allow the router to access his DAI
         permit = {
-          token: DAI.address,
+          details: {
+            token: DAI.address,
+            amount: amountInDAI,
+            expiration: 0, // expiration of 0 is block.timestamp
+            nonce: 0, // this is his first trade
+          },
           spender: router.address,
-          amount: amountInDAI,
-          expiration: 0, // expiration of 0 is block.timestamp
-          nonce: 0, // this is his first trade
           sigDeadline: DEADLINE,
         }
         const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
@@ -172,11 +178,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         // second bob signs a permit to allow the router to access his DAI
         permit = {
-          token: DAI.address,
+          details: {
+            token: DAI.address,
+            amount: maxAmountInDAI,
+            expiration: 0, // expiration of 0 is block.timestamp
+            nonce: 0, // this is his first trade
+          },
           spender: router.address,
-          amount: maxAmountInDAI,
-          expiration: 0, // expiration of 0 is block.timestamp
-          nonce: 0, // this is his first trade
           sigDeadline: DEADLINE,
         }
         const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
