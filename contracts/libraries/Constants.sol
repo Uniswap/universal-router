@@ -7,7 +7,7 @@ library Constants {
     /// @dev Used for identifying cases when this contract's balance of a token is to be used
     uint256 internal constant CONTRACT_BALANCE = type(uint256).max;
 
-    /// @dev Used for identifying cases when ta v2 pair has already received the input money
+    /// @dev Used for identifying cases when a v2 pair has already received the input money
     uint256 internal constant ALREADY_PAID = 0;
 
     /// @dev Used as a flag for identifying the transfer of ETH instead a token
