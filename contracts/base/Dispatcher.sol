@@ -52,9 +52,10 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
             Payments.pay(token, recipient, value);
         } else if (command == Commands.V2_SWAP_EXACT_IN) {
-            (uint256 amountOutMin, address[] memory path, address recipient) =
-                abi.decode(inputs, (uint256, address[], address));
-            v2SwapExactInput(amountOutMin, path, recipient);
+            (uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient, bool payerIsUser) =
+                abi.decode(inputs, (uint256, uint256, address[], address, bool));
+            address payer = payerIsUser ? msg.sender : address(this);
+            v2SwapExactInput(amountIn, amountOutMin, path, recipient, payer);
         } else if (command == Commands.V2_SWAP_EXACT_OUT) {
             (uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient, bool payerIsUser) =
                 abi.decode(inputs, (uint256, uint256, address[], address, bool));

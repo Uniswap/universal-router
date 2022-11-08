@@ -17,7 +17,7 @@ Object {
 exports[`Payments Gas Tests Individual Command Tests gas: TRANSFER with ERC20 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 36039,
+  "gasUsed": 36044,
 }
 `;
 

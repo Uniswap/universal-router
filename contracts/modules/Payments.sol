@@ -25,6 +25,10 @@ library Payments {
         if (token == Constants.ETH) {
             recipient.safeTransferETH(value);
         } else {
+            if (value == Constants.CONTRACT_BALANCE) {
+                value = ERC20(token).balanceOf(address(this));
+            }
+
             // pay with tokens already in the contract (for the exact input multihop case)
             ERC20(token).safeTransfer(recipient, value);
         }
