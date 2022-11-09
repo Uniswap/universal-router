@@ -3,7 +3,7 @@
 exports[`Uniswap Gas Tests Mixing V2 and V3 with Narwhal Router. Interleaving routes gas: V2, then V3 1`] = `
 Object {
   "calldataByteLength": 836,
-  "gasUsed": 198363,
+  "gasUsed": 197991,
 }
 `;
 
