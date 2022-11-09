@@ -27,6 +27,24 @@ forge build
 forge test
 ```
 
+### To Deploy
+```console
+forge script \
+--rpc-url <RPC-URL> \
+--broadcast \
+--private-key <RAW_PRIVATE_KEY> \
+--sig 'run(address permit2,address routerRewardsDistributor,address looksRareRewardsDistributor,address looksRareToken,address v2Factory,address v3Factory,bytes32 pairInitCodeHash,bytes32 poolInitCodeHash)' \
+scripts/DeployRouter.s.sol:DeployRouter \
+<PERMIT2_ADDRESS> \
+<ROUTER_REWARDS_DISTRIBUTOR_ADDRESS> \
+<LOOKSRARE_REWARDS_DISTRIBUTOR_ADDRESS> \
+<LOOKS_RARE_TOKEN_ADDRESS> \
+<V2_FACTORY_ADDRESS> \
+<V3_FACTORY_ADDRESS> \
+<V2_PAIR_INIT_CODEHASH> \
+<V3_POOL_INIT_CODEHASH> \
+```
+
 ## Calldata Overview
 
 ### Router.execute parameters
