@@ -33,7 +33,7 @@ forge script \
 --rpc-url <RPC-URL> \
 --broadcast \
 --private-key <RAW_PRIVATE_KEY> \
---sig 'run(address permit2,address routerRewardsDistributor,address looksRareRewardsDistributor,address looksRareToken,address v2Factory,address v3Factory,bytes32 pairInitCodeHash,bytes32 poolInitCodeHash)' \
+--sig 'run(address,address,address,address,address,address,bytes32,bytes32)' \
 scripts/DeployRouter.s.sol:DeployRouter \
 <PERMIT2_ADDRESS> \
 <ROUTER_REWARDS_DISTRIBUTOR_ADDRESS> \
