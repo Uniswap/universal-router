@@ -25,10 +25,10 @@ contract DeployRouter is Script {
 
     function setUp() public {}
 
-    function run(string memory network) public returns (Router router) {
+    function run(string memory pathToJSON) public returns (Router router) {
         vm.startBroadcast();
 
-        DeployParameters memory params = fetchParameters(network);
+        DeployParameters memory params = fetchParameters(pathToJSON);
 
         address permit2 = params.permit2;
         if (permit2 == address(0)) {
@@ -53,9 +53,9 @@ contract DeployRouter is Script {
         return router;
     }
 
-    function fetchParameters(string memory network) internal returns (DeployParameters memory params) {
+    function fetchParameters(string memory pathToJSON) internal returns (DeployParameters memory params) {
       string memory root = vm.projectRoot();
-      string memory json = vm.readFile(string.concat(root, "/scripts/deployParameters/", network, ".json"));
+      string memory json = vm.readFile(string.concat(root, "/", pathToJSON));
       bytes memory rawParams = json.parseRaw(".*");
       params = abi.decode(rawParams, (DeployParameters));
     }
