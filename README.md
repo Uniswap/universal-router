@@ -28,21 +28,13 @@ forge test
 ```
 
 ### To Deploy
+Fill out parameters in `scripts/DeployParameters.sol`
 ```console
 forge script \
 --rpc-url <RPC-URL> \
 --broadcast \
 --private-key <RAW_PRIVATE_KEY> \
---sig 'run(address,address,address,address,address,address,bytes32,bytes32)' \
 scripts/DeployRouter.s.sol:DeployRouter \
-<PERMIT2_ADDRESS> \
-<ROUTER_REWARDS_DISTRIBUTOR_ADDRESS> \
-<LOOKSRARE_REWARDS_DISTRIBUTOR_ADDRESS> \
-<LOOKS_RARE_TOKEN_ADDRESS> \
-<V2_FACTORY_ADDRESS> \
-<V3_FACTORY_ADDRESS> \
-<V2_PAIR_INIT_CODEHASH> \
-<V3_POOL_INIT_CODEHASH> \
 ```
 
 ## Calldata Overview
