@@ -26,7 +26,7 @@ contract DeployRouter is Script {
         if (permit2 == address(0)) {
           // if no permit contract is given then deploy
           permit2 = address(new Permit2{salt: SALT}());
-          console2.log("Permit Deployed:", address(permit2));
+          console2.log("Permit2 Deployed:", address(permit2));
         }
 
         router = new Router{salt: SALT}(
