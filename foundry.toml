@@ -4,7 +4,7 @@ out = 'out'
 libs = ['lib']
 via_ir = true
 solc_version = '0.8.17'
-fs_permissions = [{ access = "read", path = "./scripts/deployParameters/mainnet.json"}]
+fs_permissions = [{ access = "read", path = "./scripts/deployParameters/"}]
 
 
 [fmt]
