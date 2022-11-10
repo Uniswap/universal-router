@@ -56,18 +56,7 @@ contract DeployRouter is Script {
     function fetchParameters(string memory network) internal returns (DeployParameters memory params) {
       string memory root = vm.projectRoot();
       string memory json = vm.readFile(string.concat(root, "/scripts/deployParameters/", network, ".json"));
-      bytes memory rawParams = json.parseRaw(json);
+      bytes memory rawParams = json.parseRaw(".*");
       params = abi.decode(rawParams, (DeployParameters));
-    //   params = abi.decode(vm.parseJson(json, '.permit2'), (address)),
-    //   params = DeployParameters(
-    //     abi.decode(vm.parseJson(json, '.permit2'), (address)),
-    //     abi.decode(vm.parseJson(json, '.routerRewardsDistributor'), (address)),
-    //     abi.decode(vm.parseJson(json, '.looksRareRewardsDistributor'), (address)),
-    //     abi.decode(vm.parseJson(json, '.looksRareToken'), (address)),
-    //     abi.decode(vm.parseJson(json, '.v2Factory'), (address)),
-    //     abi.decode(vm.parseJson(json, '.v3Factory'), (address)),
-    //     abi.decode(vm.parseJson(json, '.v2PairInitCodehash'), (bytes32)),
-    //     abi.decode(vm.parseJson(json, '.v2PairInitCodehash'), (bytes32))
-    //   );
     }
 }
