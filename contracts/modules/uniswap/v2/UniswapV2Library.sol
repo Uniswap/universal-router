@@ -2,7 +2,6 @@
 pragma solidity >=0.5.0;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
-import '../UniswapPoolHelper.sol';
 
 library UniswapV2Library {
     error InvalidReserves();
@@ -14,8 +13,8 @@ library UniswapV2Library {
         pure
         returns (address pair)
     {
-        (address token0, address token1) = UniswapPoolHelper.sortTokens(tokenA, tokenB);
-        return pairForPreSorted(factory, initCodeHash, token0, token1);
+        (address token0, address token1) = sortTokens(tokenA, tokenB);
+        pair = pairForPreSorted(factory, initCodeHash, token0, token1);
     }
 
     // calculates the CREATE2 address for a pair and also returns token0 for sorting insight
@@ -25,21 +24,29 @@ library UniswapV2Library {
         returns (address pair, address token0)
     {
         address token1;
-        (token0, token1) = UniswapPoolHelper.sortTokens(tokenA, tokenB);
-        return (pairForPreSorted(factory, initCodeHash, token0, token1), token0);
+        (token0, token1) = sortTokens(tokenA, tokenB);
+        pair = pairForPreSorted(factory, initCodeHash, token0, token1);
     }
 
     function pairForPreSorted(address factory, bytes32 initCodeHash, address token0, address token1)
-        internal
+        private
         pure
         returns (address pair)
     {
-        return UniswapPoolHelper.computePoolAddress(factory, abi.encodePacked(token0, token1), initCodeHash);
+        pair = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(hex'ff', factory, keccak256(abi.encodePacked(token0, token1)), initCodeHash)
+                    )
+                )
+            )
+        );
     }
 
     // fetches and sorts the reserves for a pair of tokens
     function pairAndReservesFor(address factory, bytes32 initCodeHash, address tokenA, address tokenB)
-        internal
+        private
         view
         returns (address pair, uint256 reserveA, uint256 reserveB)
     {
@@ -89,5 +96,9 @@ library UniswapV2Library {
             (pair, reserveIn, reserveOut) = pairAndReservesFor(factory, initCodeHash, path[i - 1], path[i]);
             amount = getAmountIn(amount, reserveIn, reserveOut);
         }
+    }
+
+    function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
+        (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
     }
 }
