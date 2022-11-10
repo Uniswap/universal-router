@@ -295,7 +295,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           router.address,
           SOURCE_MSG_SENDER,
         ])
-        planner.addCommand(CommandType.UNWRAP_WETH, [bob.address, CONTRACT_BALANCE])
+        planner.addCommand(CommandType.UNWRAP_WETH, [bob.address, 0])
 
         const { gasSpent, ethBalanceBefore, ethBalanceAfter, v2SwapEventArgs } = await executeRouter(planner)
         const { amount1Out: wethTraded } = v2SwapEventArgs!
@@ -383,7 +383,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           bob.address,
           SOURCE_ROUTER,
         ])
-        planner.addCommand(CommandType.UNWRAP_WETH, [bob.address, CONTRACT_BALANCE])
+        planner.addCommand(CommandType.UNWRAP_WETH, [bob.address, 0])
 
         const { ethBalanceBefore, ethBalanceAfter, daiBalanceBefore, daiBalanceAfter, v2SwapEventArgs, gasSpent } =
           await executeRouter(planner, value)
@@ -508,7 +508,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       it('completes a V3 exactIn swap', async () => {
         const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
         addV3ExactInTrades(planner, 1, amountOutMin, router.address)
-        planner.addCommand(CommandType.UNWRAP_WETH, [bob.address, CONTRACT_BALANCE])
+        planner.addCommand(CommandType.UNWRAP_WETH, [bob.address, 0])
 
         const { ethBalanceBefore, ethBalanceAfter, v3SwapEventArgs, gasSpent } = await executeRouter(planner)
         const { amount1: wethTraded } = v3SwapEventArgs!
@@ -560,7 +560,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         planner.addCommand(CommandType.WRAP_ETH, [router.address, amountInMax])
         planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [bob.address, amountOut, amountInMax, path, SOURCE_ROUTER])
-        planner.addCommand(CommandType.UNWRAP_WETH, [bob.address, CONTRACT_BALANCE])
+        planner.addCommand(CommandType.UNWRAP_WETH, [bob.address, 0])
 
         const { ethBalanceBefore, ethBalanceAfter, daiBalanceBefore, daiBalanceAfter, gasSpent, v3SwapEventArgs } =
           await executeRouter(planner, amountInMax)
