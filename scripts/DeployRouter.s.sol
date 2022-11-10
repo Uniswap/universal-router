@@ -2,20 +2,33 @@
 pragma solidity ^0.8.15;
 
 import "forge-std/console2.sol";
+import "forge-std/StdJson.sol";
 import "forge-std/Script.sol";
 import {Router} from "contracts/Router.sol";
 import {Permit2} from 'permit2/src/Permit2.sol';
-import {DeployParameters} from './DeployParameters.sol';
+
+struct DeployParameters {
+  address permit2;
+  address routerRewardsDistributor;
+  address looksRareRewardsDistributor;
+  address looksRareToken;
+  address v2Factory;
+  address v3Factory;
+  bytes32 v2PairInitCodeHash;
+  bytes32 v3PoolInitCodeHash;
+}
 
 bytes32 constant SALT = bytes32(uint256(0x1234));
 
 contract DeployRouter is Script {
     function setUp() public {}
 
-    function run() public returns (Router router) {
+    function run(string memory network) public returns (Router router) {
         vm.startBroadcast();
 
-        address permit2 = DeployParameters.Permit2;
+        DeployParameters memory params = fetchParameters(network);
+
+        address permit2 = params.permit2;
         if (permit2 == address(0)) {
           // if no permit contract is given then deploy
           permit2 = address(new Permit2{salt: SALT}());
@@ -24,17 +37,32 @@ contract DeployRouter is Script {
 
         router = new Router{salt: SALT}(
           permit2,
-          DeployParameters.RouterRewardsDistributor,
-          DeployParameters.LooksRareRewardsDistributor,
-          DeployParameters.LooksRareToken,
-          DeployParameters.V2Factory,
-          DeployParameters.V3Factory,
-          DeployParameters.PairInitCodeHash,
-          DeployParameters.PoolInitCodeHash
+          params.routerRewardsDistributor,
+          params.looksRareRewardsDistributor,
+          params.looksRareToken,
+          params.v2Factory,
+          params.v3Factory,
+          params.v2PairInitCodeHash,
+          params.v3PoolInitCodeHash
         );
         console2.log("Router Deployed:", address(router));
         vm.stopBroadcast();
 
         return router;
+    }
+
+    function fetchParameters(string memory network) internal returns (DeployParameters memory params) {
+      string memory root = vm.projectRoot();
+      string memory json = vm.readFile(string.concat(root, "/scripts/deployParameters/", network, ".json"));
+      params = DeployParameters(
+        abi.decode(vm.parseJson(json, '.permit2'), (address)),
+        abi.decode(vm.parseJson(json, '.routerRewardsDistributor'), (address)),
+        abi.decode(vm.parseJson(json, '.looksRareRewardsDistributor'), (address)),
+        abi.decode(vm.parseJson(json, '.looksRareToken'), (address)),
+        abi.decode(vm.parseJson(json, '.v2Factory'), (address)),
+        abi.decode(vm.parseJson(json, '.v3Factory'), (address)),
+        abi.decode(vm.parseJson(json, '.v2PairInitCodehash'), (bytes32)),
+        abi.decode(vm.parseJson(json, '.v2PairInitCodehash'), (bytes32))
+      );
     }
 }
