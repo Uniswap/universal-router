@@ -7,6 +7,8 @@ import {Router} from "contracts/Router.sol";
 import {Permit2} from 'permit2/src/Permit2.sol';
 import {DeployParameters} from './DeployParameters.sol';
 
+bytes32 constant SALT = bytes32(uint256(0x1234));
+
 contract DeployRouter is Script {
     function setUp() public {}
 
@@ -16,10 +18,11 @@ contract DeployRouter is Script {
         address permit2 = DeployParameters.Permit2;
         if (permit2 == address(0)) {
           // if no permit contract is given then deploy
-          permit2 = address(new Permit2());
+          permit2 = address(new Permit2{salt: SALT}());
+          console2.log("Permit2 Deployed:", address(permit2));
         }
 
-        router = new Router(
+        router = new Router{salt: SALT}(
           permit2,
           DeployParameters.RouterRewardsDistributor,
           DeployParameters.LooksRareRewardsDistributor,
@@ -29,6 +32,7 @@ contract DeployRouter is Script {
           DeployParameters.PairInitCodeHash,
           DeployParameters.PoolInitCodeHash
         );
+        console2.log("Router Deployed:", address(router));
         vm.stopBroadcast();
 
         return router;
