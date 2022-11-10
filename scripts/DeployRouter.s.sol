@@ -2,27 +2,35 @@
 pragma solidity ^0.8.15;
 
 import "forge-std/console2.sol";
+import "forge-std/StdJson.sol";
 import "forge-std/Script.sol";
 import {Router} from "contracts/Router.sol";
 import {Permit2} from 'permit2/src/Permit2.sol';
 
+struct DeployParameters {
+  address permit2;
+  address routerRewardsDistributor;
+  address looksRareRewardsDistributor;
+  address looksRareToken;
+  address v2Factory;
+  address v3Factory;
+  bytes32 v2PairInitCodehash;
+  bytes32 v3PoolInitCodehash;
+}
+
 bytes32 constant SALT = bytes32(uint256(0x1234));
 
 contract DeployRouter is Script {
+  using stdJson for string;
+
     function setUp() public {}
 
-    function run(
-      address permit2,
-      address routerRewardsDistributor,
-      address looksRareRewardsDistributor,
-      address looksRareToken,
-      address v2Factory,
-      address v3Factory,
-      bytes32 pairInitCodeHash,
-      bytes32 poolInitCodeHash
-    ) public returns (Router router) {
+    function run(string memory pathToJSON) public returns (Router router) {
         vm.startBroadcast();
 
+        DeployParameters memory params = fetchParameters(pathToJSON);
+
+        address permit2 = params.permit2;
         if (permit2 == address(0)) {
           // if no permit contract is given then deploy
           permit2 = address(new Permit2{salt: SALT}());
@@ -31,17 +39,24 @@ contract DeployRouter is Script {
 
         router = new Router{salt: SALT}(
           permit2,
-          routerRewardsDistributor,
-          looksRareRewardsDistributor,
-          looksRareToken,
-          v2Factory,
-          v3Factory,
-          pairInitCodeHash,
-          poolInitCodeHash
+          params.routerRewardsDistributor,
+          params.looksRareRewardsDistributor,
+          params.looksRareToken,
+          params.v2Factory,
+          params.v3Factory,
+          params.v2PairInitCodehash,
+          params.v3PoolInitCodehash
         );
         console2.log("Router Deployed:", address(router));
         vm.stopBroadcast();
 
         return router;
+    }
+
+    function fetchParameters(string memory pathToJSON) internal returns (DeployParameters memory params) {
+      string memory root = vm.projectRoot();
+      string memory json = vm.readFile(string.concat(root, "/", pathToJSON));
+      bytes memory rawParams = json.parseRaw(".*");
+      params = abi.decode(rawParams, (DeployParameters));
     }
 }
