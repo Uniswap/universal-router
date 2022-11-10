@@ -6,6 +6,7 @@ import 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import './UniswapV2Library.sol';
 import '../../Payments.sol';
 import '../../Permit2Payments.sol';
+import '../../../libraries/Constants.sol';
 
 contract V2SwapRouter is Permit2Payments {
     address internal immutable V2_FACTORY;
@@ -22,7 +23,7 @@ contract V2SwapRouter is Permit2Payments {
     function _v2Swap(address[] memory path, address recipient, address pair) private {
         unchecked {
             // cached to save on duplicate operations
-            (address token0,) = UniswapPoolHelper.sortTokens(path[0], path[1]);
+            (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
             for (uint256 i; i < path.length - 1; i++) {
                 (address input, address output) = (path[i], path[i + 1]);
                 (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
@@ -51,7 +52,7 @@ contract V2SwapRouter is Permit2Payments {
     ) internal {
         address firstPair = UniswapV2Library.pairFor(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]);
         if (
-            amountIn > 0 // amountIn of 0 to signal that the pair already has the tokens
+            amountIn != Constants.ALREADY_PAID // amountIn of 0 to signal that the pair already has the tokens
         ) {
             payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
         }
