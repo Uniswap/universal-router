@@ -14,13 +14,15 @@ struct DeployParameters {
   address looksRareToken;
   address v2Factory;
   address v3Factory;
-  bytes32 v2PairInitCodeHash;
-  bytes32 v3PoolInitCodeHash;
+  bytes32 v2PairInitCodehash;
+  bytes32 v3PoolInitCodehash;
 }
 
 bytes32 constant SALT = bytes32(uint256(0x1234));
 
 contract DeployRouter is Script {
+  using stdJson for string;
+
     function setUp() public {}
 
     function run(string memory network) public returns (Router router) {
@@ -42,8 +44,8 @@ contract DeployRouter is Script {
           params.looksRareToken,
           params.v2Factory,
           params.v3Factory,
-          params.v2PairInitCodeHash,
-          params.v3PoolInitCodeHash
+          params.v2PairInitCodehash,
+          params.v3PoolInitCodehash
         );
         console2.log("Router Deployed:", address(router));
         vm.stopBroadcast();
@@ -54,15 +56,18 @@ contract DeployRouter is Script {
     function fetchParameters(string memory network) internal returns (DeployParameters memory params) {
       string memory root = vm.projectRoot();
       string memory json = vm.readFile(string.concat(root, "/scripts/deployParameters/", network, ".json"));
-      params = DeployParameters(
-        abi.decode(vm.parseJson(json, '.permit2'), (address)),
-        abi.decode(vm.parseJson(json, '.routerRewardsDistributor'), (address)),
-        abi.decode(vm.parseJson(json, '.looksRareRewardsDistributor'), (address)),
-        abi.decode(vm.parseJson(json, '.looksRareToken'), (address)),
-        abi.decode(vm.parseJson(json, '.v2Factory'), (address)),
-        abi.decode(vm.parseJson(json, '.v3Factory'), (address)),
-        abi.decode(vm.parseJson(json, '.v2PairInitCodehash'), (bytes32)),
-        abi.decode(vm.parseJson(json, '.v2PairInitCodehash'), (bytes32))
-      );
+      bytes memory rawParams = json.parseRaw(json);
+      params = abi.decode(rawParams, (DeployParameters));
+    //   params = abi.decode(vm.parseJson(json, '.permit2'), (address)),
+    //   params = DeployParameters(
+    //     abi.decode(vm.parseJson(json, '.permit2'), (address)),
+    //     abi.decode(vm.parseJson(json, '.routerRewardsDistributor'), (address)),
+    //     abi.decode(vm.parseJson(json, '.looksRareRewardsDistributor'), (address)),
+    //     abi.decode(vm.parseJson(json, '.looksRareToken'), (address)),
+    //     abi.decode(vm.parseJson(json, '.v2Factory'), (address)),
+    //     abi.decode(vm.parseJson(json, '.v3Factory'), (address)),
+    //     abi.decode(vm.parseJson(json, '.v2PairInitCodehash'), (bytes32)),
+    //     abi.decode(vm.parseJson(json, '.v2PairInitCodehash'), (bytes32))
+    //   );
     }
 }
