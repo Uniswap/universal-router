@@ -28,13 +28,9 @@ forge test
 ```
 
 ### To Deploy
-Fill out parameters in `scripts/DeployParameters.sol`
+Fill out parameters in `scripts/deployParameters/<network>.json`
 ```console
-forge script \
---rpc-url <RPC-URL> \
---broadcast \
---private-key <RAW_PRIVATE_KEY> \
-scripts/DeployRouter.s.sol:DeployRouter \
+forge script --rpc-url <RPC-URL> --broadcast --private-key <PRIVATE_KEY> scripts/DeployRouter.s.sol:DeployRouter <network>
 ```
 
 ## Calldata Overview
