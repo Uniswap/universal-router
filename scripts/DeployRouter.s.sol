@@ -5,22 +5,15 @@ import "forge-std/console2.sol";
 import "forge-std/Script.sol";
 import {Router} from "contracts/Router.sol";
 import {Permit2} from 'permit2/src/Permit2.sol';
+import {DeployParameters} from './DeployParameters.sol';
 
 contract DeployRouter is Script {
     function setUp() public {}
 
-    function run(
-      address permit2,
-      address routerRewardsDistributor,
-      address looksRareRewardsDistributor,
-      address looksRareToken,
-      address v2Factory,
-      address v3Factory,
-      bytes32 pairInitCodeHash,
-      bytes32 poolInitCodeHash
-    ) public returns (Router router) {
+    function run() public returns (Router router) {
         vm.startBroadcast();
 
+        address permit2 = DeployParameters.Permit2;
         if (permit2 == address(0)) {
           // if no permit contract is given then deploy
           permit2 = address(new Permit2());
@@ -28,18 +21,15 @@ contract DeployRouter is Script {
 
         router = new Router(
           permit2,
-          routerRewardsDistributor,
-          looksRareRewardsDistributor,
-          looksRareToken,
-          v2Factory,
-          v3Factory,
-          pairInitCodeHash,
-          poolInitCodeHash
+          DeployParameters.RouterRewardsDistributor,
+          DeployParameters.LooksRareRewardsDistributor,
+          DeployParameters.LooksRareToken,
+          DeployParameters.V2Factory,
+          DeployParameters.V3Factory,
+          DeployParameters.PairInitCodeHash,
+          DeployParameters.PoolInitCodeHash
         );
-        console2.log("Router", address(router));
         vm.stopBroadcast();
-
-        console2.log(address(router.looksRareToken()));
 
         return router;
     }
