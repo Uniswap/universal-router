@@ -6,6 +6,8 @@ import "forge-std/Script.sol";
 import {Router} from "contracts/Router.sol";
 import {Permit2} from 'permit2/src/Permit2.sol';
 
+bytes32 constant SALT = bytes32(uint256(0x1234));
+
 contract DeployRouter is Script {
     function setUp() public {}
 
@@ -23,10 +25,11 @@ contract DeployRouter is Script {
 
         if (permit2 == address(0)) {
           // if no permit contract is given then deploy
-          permit2 = address(new Permit2());
+          permit2 = address(new Permit2{salt: SALT}());
+          console2.log("Permit Deployed:", address(permit2));
         }
 
-        router = new Router(
+        router = new Router{salt: SALT}(
           permit2,
           routerRewardsDistributor,
           looksRareRewardsDistributor,
@@ -36,10 +39,8 @@ contract DeployRouter is Script {
           pairInitCodeHash,
           poolInitCodeHash
         );
-        console2.log("Router", address(router));
+        console2.log("Router Deployed:", address(router));
         vm.stopBroadcast();
-
-        console2.log(address(router.looksRareToken()));
 
         return router;
     }
