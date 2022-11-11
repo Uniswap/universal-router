@@ -85,12 +85,3 @@ export async function signPermitAndConstructCalldata(
   // Remove function signature and first parameter (the router fills these in itself)
   return '0x' + calldata.slice(74)
 }
-
-export async function constructBatchTransferFromCalldata(transferDetails: TransferDetail[]): Promise<string> {
-  const calldata = PERMIT2_INTERFACE.encodeFunctionData('transferFrom((address,address,uint160,address)[])', [
-    transferDetails,
-  ])
-
-  // Remove function signature and first parameter (the router fills these in itself)
-  return '0x' + calldata.slice(74)
-}

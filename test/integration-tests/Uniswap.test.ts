@@ -25,12 +25,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
-import {
-  signPermitAndConstructCalldata,
-  constructBatchTransferFromCalldata,
-  PermitSingle,
-  TransferDetail,
-} from './shared/protocolHelpers/permit2'
+import { signPermitAndConstructCalldata, PermitSingle } from './shared/protocolHelpers/permit2'
 const { ethers } = hre
 
 describe('Uniswap V2 and V3 Tests:', () => {
@@ -637,7 +632,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       describe('Split routes', () => {
-        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop, with batch permit', async () => {
+        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop, with explicit permit', async () => {
           const route1 = [DAI.address, USDC.address, WETH.address]
           const route2 = [DAI.address, USDT.address, WETH.address]
           const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
@@ -645,24 +640,11 @@ describe('Uniswap V2 and V3 Tests:', () => {
           const minAmountOut1 = expandTo18DecimalsBN(0.005)
           const minAmountOut2 = expandTo18DecimalsBN(0.0075)
 
-          const transferDetail1: TransferDetail = {
-            from: bob.address,
-            token: DAI.address,
-            amount: v2AmountIn1,
-            to: Pair.getAddress(DAI, USDC),
-          }
-
-          const transferDetail2: TransferDetail = {
-            token: DAI.address,
-            amount: v2AmountIn2,
-            from: bob.address,
-            to: Pair.getAddress(DAI, USDT),
-          }
-
-          const calldata = await constructBatchTransferFromCalldata([transferDetail1, transferDetail2])
-
           // 1) transfer funds into DAI-USDC and DAI-USDT pairs to trade
-          planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM_BATCH, [calldata])
+          planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [DAI.address, Pair.getAddress(DAI, USDC), v2AmountIn1])
+
+          planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [DAI.address, Pair.getAddress(DAI, USDT), v2AmountIn2])
+
           // 2) trade route1 and return tokens to bob
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, minAmountOut1, route1, bob.address, SOURCE_MSG_SENDER])
           // 3) trade route2 and return tokens to bob
@@ -672,7 +654,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
         })
 
-        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop, without batch permit', async () => {
+        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop, without explicit permit', async () => {
           const route1 = [DAI.address, USDC.address, WETH.address]
           const route2 = [DAI.address, USDT.address, WETH.address]
           const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
