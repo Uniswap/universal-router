@@ -21,6 +21,12 @@ export type PermitSingle = {
   sigDeadline: number | BigNumber
 }
 
+export type PermitBatch = {
+  details: PermitDetails[]
+  spender: string
+  sigDeadline: number | BigNumber
+}
+
 export type TransferDetail = {
   from: string
   to: string
@@ -37,6 +43,20 @@ export const PERMIT2_PERMIT_TYPE = {
   ],
   PermitSingle: [
     { name: 'details', type: 'PermitDetails' },
+    { name: 'spender', type: 'address' },
+    { name: 'sigDeadline', type: 'uint256' },
+  ],
+}
+
+export const PERMIT2_PERMIT_BATCH_TYPE = {
+  PermitDetails: [
+    { name: 'token', type: 'address' },
+    { name: 'amount', type: 'uint160' },
+    { name: 'expiration', type: 'uint48' },
+    { name: 'nonce', type: 'uint48' },
+  ],
+  PermitBatch: [
+    { name: 'details', type: 'PermitDetails[]' },
     { name: 'spender', type: 'address' },
     { name: 'sigDeadline', type: 'uint256' },
   ],
@@ -72,4 +92,28 @@ export async function getPermitSignature(
   const nextNonce = (await permit2.allowance(signer.address, permit.details.token, permit.spender)).nonce
   permit.details.nonce = nextNonce
   return await signPermit(permit, signer, permit2.address)
+}
+
+export async function getPermitBatchSignature(
+  permit: PermitBatch,
+  signer: SignerWithAddress,
+  permit2: Permit2
+): Promise<string> {
+  for (const i in permit.details) {
+    const nextNonce = (await permit2.allowance(signer.address, permit.details[i].token, permit.spender)).nonce
+    permit.details[i].nonce = nextNonce
+  }
+
+  return await signPermitBatch(permit, signer, permit2.address)
+}
+
+export async function signPermitBatch(
+  permit: PermitBatch,
+  signer: SignerWithAddress,
+  verifyingContract: string
+): Promise<string> {
+  const eip712Domain = getEip712Domain(chainId, verifyingContract)
+  const signature = await signer._signTypedData(eip712Domain, PERMIT2_PERMIT_BATCH_TYPE, permit)
+
+  return signature
 }

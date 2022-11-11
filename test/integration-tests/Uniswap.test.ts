@@ -25,7 +25,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
-import { getPermitSignature, PermitSingle } from './shared/protocolHelpers/permit2'
+import { getPermitSignature, getPermitBatchSignature, PermitSingle } from './shared/protocolHelpers/permit2'
 const { ethers } = hre
 
 describe('Uniswap V2 and V3 Tests:', () => {
@@ -574,6 +574,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
         await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
       })
+
       describe('Interleaving routes', () => {
         it('V3, then V2', async () => {
           const v3Tokens = [DAI.address, USDC.address]
@@ -632,7 +633,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       describe('Split routes', () => {
-        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop, with explicit permit', async () => {
+        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop, with explicit permit transfer from', async () => {
           const route1 = [DAI.address, USDC.address, WETH.address]
           const route2 = [DAI.address, USDT.address, WETH.address]
           const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
@@ -642,7 +643,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
           // 1) transfer funds into DAI-USDC and DAI-USDT pairs to trade
           planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [DAI.address, Pair.getAddress(DAI, USDC), v2AmountIn1])
-
           planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [DAI.address, Pair.getAddress(DAI, USDT), v2AmountIn2])
 
           // 2) trade route1 and return tokens to bob
@@ -681,6 +681,47 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
           const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
           expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
+        })
+
+        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop, with batch permit', async () => {
+          const route1 = [DAI.address, WETH.address, USDC.address]
+          const route2 = [WETH.address, DAI.address,  USDC.address]
+          const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
+          const v2AmountIn2: BigNumber = expandTo18DecimalsBN(5)
+          const minAmountOut1 = BigNumber.from(0.005 * 10 ** 6)
+          const minAmountOut2 = BigNumber.from(0.0075 * 10 ** 6)
+
+          const BATCH_PERMIT = {
+            details: [
+              {
+              token: DAI.address,
+              amount: v2AmountIn1,
+              expiration: 0, // expiration of 0 is block.timestamp
+              nonce: 0, // this is his first trade
+            },
+              {
+              token: WETH.address,
+              amount: v2AmountIn2,
+              expiration: 0, // expiration of 0 is block.timestamp
+              nonce: 0, // this is his first trade
+            }
+          ],
+            spender: router.address,
+            sigDeadline: DEADLINE,
+          }
+
+          const sig = await getPermitBatchSignature(BATCH_PERMIT, bob, permit2)
+
+          // 1) transfer funds into DAI-USDC and DAI-USDT pairs to trade
+          planner.addCommand(CommandType.PERMIT2_PERMIT_BATCH, [BATCH_PERMIT, sig])
+
+          // 2) trade route1 and return tokens to bob
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountIn1, minAmountOut1, route1, bob.address, SOURCE_MSG_SENDER])
+          // 3) trade route2 and return tokens to bob
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountIn2, minAmountOut2, route2, bob.address, SOURCE_MSG_SENDER])
+
+          const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(planner)
+          expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
         })
 
         it('ERC20 --> ERC20 split V2 and V3, one hop', async () => {
