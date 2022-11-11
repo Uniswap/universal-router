@@ -74,10 +74,11 @@ library BytesLib {
         return tempBytes;
     }
 
-    function toAddress(bytes memory _bytes, uint256 _start) internal pure returns (address) {
+    // requires that bytesLength IS bytes.length to work securely
+    function toAddress(bytes memory _bytes, uint256 _start, uint256 _bytesLength) internal pure returns (address) {
         unchecked {
             if (_start + 20 < _start) revert ToAddressOverflow();
-            if (_bytes.length < _start + 20) revert ToAddressOutOfBounds();
+            if (_bytesLength < _start + 20) revert ToAddressOutOfBounds();
         }
         address tempAddress;
 
@@ -88,10 +89,11 @@ library BytesLib {
         return tempAddress;
     }
 
-    function toUint24(bytes memory _bytes, uint256 _start) internal pure returns (uint24) {
+    // requires that bytesLength IS bytes.length to work securely
+    function toUint24(bytes memory _bytes, uint256 _start, uint256 _bytesLength) internal pure returns (uint24) {
         unchecked {
             if (_start + 3 < _start) revert ToUint24Overflow();
-            if (_bytes.length < _start + 3) revert ToUint24OutOfBounds();
+            if (_bytesLength < _start + 3) revert ToUint24OutOfBounds();
         }
         uint24 tempUint;
 
