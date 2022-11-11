@@ -4,13 +4,13 @@ pragma solidity ^0.8.17;
 import '../libraries/Constants.sol';
 
 library Recipient {
-    function map(address _recipient) internal view returns (address recipient) {
-        if (_recipient == Constants.MSG_SENDER) {
-            recipient = msg.sender;
-        } else if (_recipient == Constants.ADDRESS_THIS) {
-            recipient = address(this);
+    function map(address recipient) internal view returns (address) {
+        if (recipient == Constants.MSG_SENDER) {
+            return msg.sender;
+        } else if (recipient == Constants.ADDRESS_THIS) {
+            return address(this);
         } else {
-            recipient = _recipient;
+            return recipient;
         }
     }
 }
