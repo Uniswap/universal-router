@@ -43,9 +43,10 @@ library V3Path {
     /// @return tokenB The second token of the given pool
     /// @return fee The fee level of the pool
     function decodeFirstPool(bytes memory path) internal pure returns (address tokenA, address tokenB, uint24 fee) {
-        tokenA = path.toAddress(0);
-        fee = path.toUint24(ADDR_SIZE);
-        tokenB = path.toAddress(NEXT_OFFSET);
+        uint256 bytesLength = path.length;
+        tokenA = path.toAddress(0, bytesLength);
+        fee = path.toUint24(ADDR_SIZE, bytesLength);
+        tokenB = path.toAddress(NEXT_OFFSET, bytesLength);
     }
 
     /// @notice Gets the segment corresponding to the first pool in the path
@@ -56,7 +57,7 @@ library V3Path {
     }
 
     function decodeFirstToken(bytes memory path) internal pure returns (address tokenA) {
-        tokenA = path.toAddress(0);
+        tokenA = path.toAddress(0, path.length);
     }
 
     /// @notice Skips a token + fee element from the buffer and returns the remainder

@@ -26,7 +26,9 @@ contract V2SwapRouter is Permit2Payments {
         unchecked {
             // cached to save on duplicate operations
             (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
-            for (uint256 i; i < path.length - 1; i++) {
+            uint256 finalPairIndex = path.length - 1;
+            uint256 penultimatePairIndex = finalPairIndex - 1;
+            for (uint256 i; i < finalPairIndex; i++) {
                 (address input, address output) = (path[i], path[i + 1]);
                 (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
                 (uint256 reserveInput, uint256 reserveOutput) =
@@ -36,7 +38,7 @@ contract V2SwapRouter is Permit2Payments {
                 (uint256 amount0Out, uint256 amount1Out) =
                     input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
                 address nextPair;
-                (nextPair, token0) = i < path.length - 2
+                (nextPair, token0) = i < penultimatePairIndex
                     ? UniswapV2Library.pairAndToken0For(V2_FACTORY, PAIR_INIT_CODE_HASH, output, path[i + 2])
                     : (recipient, address(0));
                 IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));

@@ -65,7 +65,7 @@ library Payments {
         } else {
             balance = ERC20(token).balanceOf(address(this));
             if (balance < amountMinimum) revert InsufficientToken();
-            if (balance > 0) ERC20(token).safeTransfer(recipient.map(), balance);
+            if (balance > 0) ERC20(token).safeTransfer(recipient, balance);
         }
     }
 
