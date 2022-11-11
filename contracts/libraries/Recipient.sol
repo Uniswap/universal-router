@@ -5,9 +5,9 @@ import '../libraries/Constants.sol';
 
 library Recipient {
     function map(address _recipient) internal view returns (address recipient) {
-        if (recipient == Constants.MSG_SENDER) {
+        if (_recipient == Constants.MSG_SENDER) {
             recipient = msg.sender;
-        } else if (recipient == Constants.ADDRESS_THIS) {
+        } else if (_recipient == Constants.ADDRESS_THIS) {
             recipient = address(this);
         } else {
             recipient = _recipient;

@@ -12,6 +12,7 @@ import '../../../libraries/Recipient.sol';
 contract V2SwapRouter is Permit2Payments {
     address internal immutable V2_FACTORY;
     bytes32 internal immutable PAIR_INIT_CODE_HASH;
+
     using Recipient for address;
 
     error V2TooLittleReceived();
