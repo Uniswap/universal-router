@@ -74,15 +74,5 @@ export async function getPermitSignature(
   // look up the correct nonce for this permit
   const nextNonce = (await permit2.allowance(signer.address, permit.details.token, permit.spender)).nonce
   permit.details.nonce = nextNonce
-
-  const signature = await signPermit(permit, signer, permit2.address)
-  return signature
-  // const calldata = PERMIT2_INTERFACE.encodeFunctionData(PERMIT_SIGNATURE, [
-  //   ethers.constants.AddressZero,
-  //   permit,
-  //   signature,
-  // ])
-  //
-  // // Remove function signature and first parameter (the router fills these in itself)
-  // return '0x' + calldata.slice(74)
+  return await signPermit(permit, signer, permit2.address)
 }
