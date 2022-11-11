@@ -128,6 +128,36 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
       })
 
+      it('V2 exactIn, swapping more than max_uint160 should revert', async () => {
+        const max_uint = BigNumber.from(MAX_UINT160)
+        const minAmountOutWETH = expandTo18DecimalsBN(0.03)
+
+        // second bob signs a permit to allow the router to access his DAI
+        permit = {
+          details: {
+            token: DAI.address,
+            amount: max_uint,
+            expiration: 0, // expiration of 0 is block.timestamp
+            nonce: 0, // this is his first trade
+          },
+          spender: router.address,
+          sigDeadline: DEADLINE,
+        }
+        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
+
+        // 1) permit the router to access funds, 2) withdraw the funds into the pair, 3) trade
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+          BigNumber.from(MAX_UINT160).add(1),
+          minAmountOutWETH,
+          [DAI.address, WETH.address],
+          bob.address,
+          SOURCE_MSG_SENDER,
+        ])
+
+        await expect(executeRouter(planner)).to.be.revertedWith('UnsafeCast()')
+      })
+
       it('V3 exactIn, permiting the exact amount', async () => {
         const amountInDAI = expandTo18DecimalsBN(100)
         const minAmountOutWETH = expandTo18DecimalsBN(0.03)
