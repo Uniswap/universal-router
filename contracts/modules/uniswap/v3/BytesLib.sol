@@ -46,10 +46,11 @@ library BytesLib {
                 // because when slicing multiples of 32 bytes (lengthmod == 0)
                 // the following copy loop was copying the origin's length
                 // and then ending prematurely not copying everything it should.
-                let mc := add(add(tempBytes, lengthmod), mul(0x20, iszero(lengthmod)))
+                let x := add(lengthmod, mul(0x20, iszero(lengthmod)))
+                let mc := add(tempBytes, x)
                 let end := add(mc, _length)
 
-                for { let cc := add(add(add(_bytes, lengthmod), mul(0x20, iszero(lengthmod))), _start) } lt(mc, end) {
+                for { let cc := add(add(_bytes, x), _start) } lt(mc, end) {
                     mc := add(mc, 0x20)
                     cc := add(cc, 0x20)
                 } { mstore(mc, mload(cc)) }
