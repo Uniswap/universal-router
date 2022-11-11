@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import 'hardhat/console.sol';
 import './base/Dispatcher.sol';
 import './base/RewardsCollector.sol';
 import './libraries/Constants.sol';

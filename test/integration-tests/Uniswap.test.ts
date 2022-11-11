@@ -33,7 +33,7 @@ import {
 } from './shared/protocolHelpers/permit2'
 const { ethers } = hre
 
-describe.only('Uniswap V2 and V3 Tests:', () => {
+describe('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router
