@@ -2,15 +2,17 @@
 pragma solidity ^0.8.17;
 
 import './V3Path.sol';
-import '../../../libraries/Constants.sol';
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
 import '../../Permit2Payments.sol';
+import '../../../libraries/Constants.sol';
+import '../../../libraries/Recipient.sol';
 
 abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
     using V3Path for bytes;
     using SafeCast for uint256;
+    using Recipient for address;
 
     error V3InvalidSwap();
     error V3TooLittleReceived();
@@ -87,7 +89,7 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
             // the outputs of prior swaps become the inputs to subsequent ones
             (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = _swap(
                 amountIn.toInt256(),
-                hasMultiplePools ? address(this) : recipient, // for intermediate swaps, this contract custodies
+                hasMultiplePools ? address(this) : recipient.map(), // for intermediate swaps, this contract custodies
                 path.getFirstPool(), // only the first pool is needed
                 payer, // for intermediate swaps, this contract custodies
                 true
