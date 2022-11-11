@@ -8,9 +8,6 @@ const { ethers } = hre
 
 const chainId: number = hre.network.config.chainId ? hre.network.config.chainId : 1
 
-const PERMIT_SIGNATURE = 'permit(address,((address,uint160,uint48,uint48),address,uint256),bytes)'
-// const PERMIT_BATCH_SIGNATURE = "permit(address,((address,uint160,uint64,uint32)[],address,uint256),bytes)"
-
 export type PermitDetails = {
   token: string
   amount: number | BigNumber
