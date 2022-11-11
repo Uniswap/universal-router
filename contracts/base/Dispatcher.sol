@@ -43,11 +43,6 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
             (address token, address recipient, uint160 amount) = abi.decode(inputs, (address, address, uint160));
             permit2TransferFrom(token, msg.sender, recipient, amount);
-        } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
-            (bytes memory data) = abi.decode(inputs, (bytes));
-            // pass in the msg.sender as the first parameter `from`
-            data = bytes.concat(IAllowanceTransfer.batchTransferFrom.selector, abi.encode(msg.sender), data);
-            (success, output) = PERMIT2.call(data);
         } else if (command == Commands.TRANSFER) {
             (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
             Payments.pay(token, recipient, value);

@@ -2,6 +2,7 @@ pragma solidity ^0.8.17;
 
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import './Payments.sol';
+import '../libraries/Constants.sol';
 
 contract Permit2Payments {
     address immutable PERMIT2;
@@ -11,7 +12,7 @@ contract Permit2Payments {
     }
 
     function permit2TransferFrom(address token, address from, address to, uint160 amount) internal {
-        IAllowanceTransfer(PERMIT2).transferFrom(token, from, to, amount);
+        IAllowanceTransfer(PERMIT2).transferFrom(from, to, amount, token);
     }
 
     function payOrPermit2Transfer(address token, address payer, address recipient, uint256 amount) internal {

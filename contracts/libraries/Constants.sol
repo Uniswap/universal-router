@@ -51,6 +51,7 @@ library Constants {
     address internal constant CRYPTOPUNKS = 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB;
 
     // @dev the function selectors of the 2 functions named `permit` from Permit2
-    bytes4 internal constant PERMIT_SELECTOR = 0x501f749d;
-    bytes4 internal constant PERMIT_BATCH_SELECTOR = 0xe9cce9c1;
+    bytes4 internal constant PERMIT_SELECTOR = 0x2b67b570;
+    bytes4 internal constant PERMIT_BATCH_SELECTOR = 0x2a2d80d1;
+    bytes4 internal constant TRANSFER_FROM_SELECTOR = 0x36c78516;
 }

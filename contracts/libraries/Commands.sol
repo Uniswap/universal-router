@@ -32,7 +32,6 @@ library Commands {
     uint256 constant OWNERSHIP_CHECK_1155 = 0x15;
     uint256 constant CRYPTOPUNKS = 0x16;
     uint256 constant PERMIT2_TRANSFER_FROM = 0x17;
-    uint256 constant PERMIT2_TRANSFER_FROM_BATCH = 0x18;
     uint256 constant PERMIT2_PERMIT_BATCH = 0x19;
     uint256 constant SWEEP_ERC1155 = 0x1a;
 }

@@ -8,7 +8,7 @@ const { ethers } = hre
 
 const chainId: number = hre.network.config.chainId ? hre.network.config.chainId : 1
 
-const PERMIT_SIGNATURE = 'permit(address,((address,uint160,uint64,uint32),address,uint256),bytes)'
+const PERMIT_SIGNATURE = 'permit(address,((address,uint160,uint48,uint48),address,uint256),bytes)'
 // const PERMIT_BATCH_SIGNATURE = "permit(address,((address,uint160,uint64,uint32)[],address,uint256),bytes)"
 
 export type PermitDetails = {
@@ -25,17 +25,18 @@ export type PermitSingle = {
 }
 
 export type TransferDetail = {
-  token: string
-  amount: number | BigNumber
+  from: string
   to: string
+  amount: number | BigNumber
+  token: string
 }
 
 export const PERMIT2_PERMIT_TYPE = {
   PermitDetails: [
     { name: 'token', type: 'address' },
     { name: 'amount', type: 'uint160' },
-    { name: 'expiration', type: 'uint64' },
-    { name: 'nonce', type: 'uint32' },
+    { name: 'expiration', type: 'uint48' },
+    { name: 'nonce', type: 'uint48' },
   ],
   PermitSingle: [
     { name: 'details', type: 'PermitDetails' },
@@ -79,16 +80,6 @@ export async function signPermitAndConstructCalldata(
     ethers.constants.AddressZero,
     permit,
     signature,
-  ])
-
-  // Remove function signature and first parameter (the router fills these in itself)
-  return '0x' + calldata.slice(74)
-}
-
-export async function constructBatchTransferFromCalldata(transferDetails: TransferDetail[]): Promise<string> {
-  const calldata = PERMIT2_INTERFACE.encodeFunctionData('batchTransferFrom', [
-    ethers.constants.AddressZero,
-    transferDetails,
   ])
 
   // Remove function signature and first parameter (the router fills these in itself)
