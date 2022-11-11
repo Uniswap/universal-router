@@ -1,7 +1,7 @@
 pragma solidity ^0.8.17;
 
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
-import {SafeCast160} from '../libraries/SafeCast160.sol';
+import {SafeCast160} from 'permit2/src/libraries/SafeCast160.sol';
 import './Payments.sol';
 import '../libraries/Constants.sol';
 
