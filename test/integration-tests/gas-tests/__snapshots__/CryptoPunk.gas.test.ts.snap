@@ -3,6 +3,6 @@
 exports[`Cryptopunks Buy 1 crypto punk purchases token ids 2976 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 106025,
+  "gasUsed": 105996,
 }
 `;

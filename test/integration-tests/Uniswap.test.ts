@@ -25,7 +25,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
-import { signPermitAndConstructCalldata, PermitSingle } from './shared/protocolHelpers/permit2'
+import { getPermitSignature, PermitSingle } from './shared/protocolHelpers/permit2'
 const { ethers } = hre
 
 describe('Uniswap V2 and V3 Tests:', () => {
@@ -81,10 +81,10 @@ describe('Uniswap V2 and V3 Tests:', () => {
           spender: router.address,
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
+        const sig = await getPermitSignature(permit, bob, permit2)
 
         // 1) permit the router to access funds, 2) withdraw the funds into the pair, 3) trade
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
           amountInDAI,
           minAmountOutWETH,
@@ -112,10 +112,10 @@ describe('Uniswap V2 and V3 Tests:', () => {
           spender: router.address,
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
+        const sig = await getPermitSignature(permit, bob, permit2)
 
         // 1) permit the router to access funds, 2) trade - the transfer happens within the trade for exactOut
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           amountOutWETH,
           maxAmountInDAI,
@@ -146,12 +146,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
           spender: router.address,
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
+        const sig = await getPermitSignature(permit, bob, permit2)
 
         const path = encodePathExactInput([DAI.address, WETH.address])
 
         // 1) permit the router to access funds, 2) trade, which takes the funds directly from permit2
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
         planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
           bob.address,
           amountInDAI,
@@ -182,12 +182,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
           spender: router.address,
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
+        const sig = await getPermitSignature(permit, bob, permit2)
 
         const path = encodePathExactOutput([DAI.address, WETH.address])
 
         // 1) permit the router to access funds, 2) trade, which takes the funds directly from permit2
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
         planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
           bob.address,
           amountOutWETH,

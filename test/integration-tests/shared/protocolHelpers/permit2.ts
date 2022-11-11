@@ -66,7 +66,7 @@ export async function signPermit(
   return signature
 }
 
-export async function signPermitAndConstructCalldata(
+export async function getPermitSignature(
   permit: PermitSingle,
   signer: SignerWithAddress,
   permit2: Permit2
