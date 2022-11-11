@@ -90,9 +90,11 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (success, output) = Constants.NFT20_ZAP.call{value: value}(data);
         } else if (command == Commands.CRYPTOPUNKS) {
             (uint256 punkId, address recipient, uint256 value) = abi.decode(inputs, (uint256, address, uint256));
-            (success, output) = Constants.CRYPTOPUNKS.call{value: value}(abi.encodeWithSelector(ICryptoPunksMarket.buyPunk.selector, punkId));
-            if (success) { ICryptoPunksMarket(Constants.CRYPTOPUNKS).transferPunk(recipient, punkId); }
-            else { output = 'CryptoPunk Trade Failed'; }
+            (success, output) = Constants.CRYPTOPUNKS.call{value: value}(
+                abi.encodeWithSelector(ICryptoPunksMarket.buyPunk.selector, punkId)
+            );
+            if (success) ICryptoPunksMarket(Constants.CRYPTOPUNKS).transferPunk(recipient, punkId);
+            else output = 'CryptoPunk Trade Failed';
         } else if (command == Commands.SWEEP) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
             Payments.sweep(token, recipient, amountMin);
