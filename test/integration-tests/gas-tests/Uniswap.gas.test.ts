@@ -784,7 +784,7 @@ describe('Uniswap Gas Tests', () => {
 
         it('gas: ERC20 --> ERC20 split V2 and V2 different routes, different input tokens, each two hop, with batch permit', async () => {
           const route1 = [DAI.address, WETH.address, USDC.address]
-          const route2 = [WETH.address, DAI.address,  USDC.address]
+          const route2 = [WETH.address, DAI.address, USDC.address]
           const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
           const v2AmountIn2: BigNumber = expandTo18DecimalsBN(5)
           const minAmountOut1 = BigNumber.from(0.005 * 10 ** 6)
@@ -793,18 +793,18 @@ describe('Uniswap Gas Tests', () => {
           const BATCH_PERMIT = {
             details: [
               {
-              token: DAI.address,
-              amount: v2AmountIn1,
-              expiration: 0, // expiration of 0 is block.timestamp
-              nonce: 0, // this is his first trade
-            },
+                token: DAI.address,
+                amount: v2AmountIn1,
+                expiration: 0, // expiration of 0 is block.timestamp
+                nonce: 0, // this is his first trade
+              },
               {
-              token: WETH.address,
-              amount: v2AmountIn2,
-              expiration: 0, // expiration of 0 is block.timestamp
-              nonce: 0, // this is his first trade
-            }
-          ],
+                token: WETH.address,
+                amount: v2AmountIn2,
+                expiration: 0, // expiration of 0 is block.timestamp
+                nonce: 0, // this is his first trade
+              },
+            ],
             spender: router.address,
             sigDeadline: DEADLINE,
           }
@@ -815,9 +815,21 @@ describe('Uniswap Gas Tests', () => {
           planner.addCommand(CommandType.PERMIT2_PERMIT_BATCH, [BATCH_PERMIT, sig])
 
           // 2) trade route1 and return tokens to bob
-          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountIn1, minAmountOut1, route1, bob.address, SOURCE_MSG_SENDER])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            v2AmountIn1,
+            minAmountOut1,
+            route1,
+            bob.address,
+            SOURCE_MSG_SENDER,
+          ])
           // 3) trade route2 and return tokens to bob
-          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountIn2, minAmountOut2, route2, bob.address, SOURCE_MSG_SENDER])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            v2AmountIn2,
+            minAmountOut2,
+            route2,
+            bob.address,
+            SOURCE_MSG_SENDER,
+          ])
 
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
