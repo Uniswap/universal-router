@@ -17,9 +17,11 @@ library BytesLib {
     error ToUint24OutOfBounds();
 
     function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
-        if (_length + 31 < _length) revert SliceOverflow();
-        if (_start + _length < _start) revert SliceOverflow();
-        if (_bytes.length < _start + _length) revert SliceOutOfBounds();
+        unchecked {
+            if (_length + 31 < _length) revert SliceOverflow();
+            if (_start + _length < _start) revert SliceOverflow();
+            if (_bytes.length < _start + _length) revert SliceOutOfBounds();
+        }
 
         bytes memory tempBytes;
 
@@ -44,10 +46,11 @@ library BytesLib {
                 // because when slicing multiples of 32 bytes (lengthmod == 0)
                 // the following copy loop was copying the origin's length
                 // and then ending prematurely not copying everything it should.
-                let mc := add(add(tempBytes, lengthmod), mul(0x20, iszero(lengthmod)))
+                let x := add(lengthmod, mul(0x20, iszero(lengthmod)))
+                let mc := add(tempBytes, x)
                 let end := add(mc, _length)
 
-                for { let cc := add(add(add(_bytes, lengthmod), mul(0x20, iszero(lengthmod))), _start) } lt(mc, end) {
+                for { let cc := add(add(_bytes, x), _start) } lt(mc, end) {
                     mc := add(mc, 0x20)
                     cc := add(cc, 0x20)
                 } { mstore(mc, mload(cc)) }
@@ -72,21 +75,27 @@ library BytesLib {
         return tempBytes;
     }
 
-    function toAddress(bytes memory _bytes, uint256 _start) internal pure returns (address) {
-        if (_start + 20 < _start) revert ToAddressOverflow();
-        if (_bytes.length < _start + 20) revert ToAddressOutOfBounds();
+    // requires that bytesLength IS bytes.length to work securely
+    function toAddress(bytes memory _bytes, uint256 _start, uint256 _bytesLength) internal pure returns (address) {
+        unchecked {
+            if (_start + 20 < _start) revert ToAddressOverflow();
+            if (_bytesLength < _start + 20) revert ToAddressOutOfBounds();
+        }
         address tempAddress;
 
         assembly {
-            tempAddress := div(mload(add(add(_bytes, 0x20), _start)), 0x1000000000000000000000000)
+            tempAddress := mload(add(add(_bytes, 0x14), _start))
         }
 
         return tempAddress;
     }
 
-    function toUint24(bytes memory _bytes, uint256 _start) internal pure returns (uint24) {
-        if (_start + 3 < _start) revert ToUint24Overflow();
-        if (_bytes.length < _start + 3) revert ToUint24OutOfBounds();
+    // requires that bytesLength IS bytes.length to work securely
+    function toUint24(bytes memory _bytes, uint256 _start, uint256 _bytesLength) internal pure returns (uint24) {
+        unchecked {
+            if (_start + 3 < _start) revert ToUint24Overflow();
+            if (_bytesLength < _start + 3) revert ToUint24OutOfBounds();
+        }
         uint24 tempUint;
 
         assembly {
