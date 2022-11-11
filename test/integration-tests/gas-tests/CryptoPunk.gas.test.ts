@@ -29,14 +29,11 @@ describe('Cryptopunks', () => {
     router = (await deployRouter(permit2)).connect(alice) as Router
   })
 
-  // In this test we will buy crypto punk # 2976 for 74.95 ETH
-  describe.only('Buy 1 crypto punk', () => {
-    it('purchases token ids 2976', async () => {
-      const value = BigNumber.from('74950000000000000000')
-      planner.addCommand(CommandType.CRYPTOPUNKS, [2976, ALICE_ADDRESS, value])
-      const { commands, inputs } = planner
+  it('purchases 1 cryptopunk gas', async () => {
+    const value = BigNumber.from('74950000000000000000')
+    planner.addCommand(CommandType.CRYPTOPUNKS, [2976, ALICE_ADDRESS, value])
+    const { commands, inputs } = planner
 
-      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value }))
-    })
+    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value }))
   })
 })
