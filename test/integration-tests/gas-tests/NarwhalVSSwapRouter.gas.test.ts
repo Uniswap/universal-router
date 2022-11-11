@@ -225,8 +225,8 @@ describe('Uniswap UX Tests gas:', () => {
       })
 
       it('Permit2 Sign Per Swap', async () => {
-        const calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2)
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        const sig = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2)
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [SIMPLE_SWAP_PERMIT, sig])
 
         const gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
 
@@ -235,7 +235,7 @@ describe('Uniswap UX Tests gas:', () => {
 
       it('Permit2 Max Approval Swap', async () => {
         const calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata])
 
         const gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
 
@@ -260,7 +260,7 @@ describe('Uniswap UX Tests gas:', () => {
       it('Permit2 Sign Per Swap', async () => {
         // sign the permit for this swap
         const calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2)
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [COMPLEX_SWAP_PERMIT, calldata])
 
         const gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
@@ -271,7 +271,7 @@ describe('Uniswap UX Tests gas:', () => {
         // send approval for the total input amount
         const calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
 
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata])
 
         const gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
@@ -315,7 +315,7 @@ describe('Uniswap UX Tests gas:', () => {
 
         // Swap 1: complex
         let calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2)
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [COMPLEX_SWAP_PERMIT, calldata])
         let gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
         totalGas = totalGas.add(gasUsed)
@@ -323,7 +323,7 @@ describe('Uniswap UX Tests gas:', () => {
 
         // Swap 2: complex
         calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2)
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [COMPLEX_SWAP_PERMIT, calldata])
         gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
         totalGas = totalGas.add(gasUsed)
@@ -331,7 +331,7 @@ describe('Uniswap UX Tests gas:', () => {
 
         // Swap 3: simple
         calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2)
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [SIMPLE_SWAP_PERMIT, calldata])
         gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
 
         totalGas = totalGas.add(gasUsed)
@@ -343,7 +343,7 @@ describe('Uniswap UX Tests gas:', () => {
 
         // Swap 1: complex, but give max approval no more approvals needed
         let calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata])
         let gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
         totalGas = totalGas.add(gasUsed)
@@ -390,7 +390,7 @@ describe('Uniswap UX Tests gas:', () => {
         // Do 5 complex swaps
         for (let i = 0; i < 5; i++) {
           calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2)
-          planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+          planner.addCommand(CommandType.PERMIT2_PERMIT, [COMPLEX_SWAP_PERMIT, calldata])
           gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
           totalGas = totalGas.add(gasUsed)
@@ -400,7 +400,7 @@ describe('Uniswap UX Tests gas:', () => {
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
           calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2)
-          planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+          planner.addCommand(CommandType.PERMIT2_PERMIT, [SIMPLE_SWAP_PERMIT, calldata])
           gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
 
           totalGas = totalGas.add(gasUsed)
@@ -416,7 +416,7 @@ describe('Uniswap UX Tests gas:', () => {
 
         // The first trade contains a max permit, all others contain no permit
         let calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata])
 
         // Do 5 complex swaps
         for (let i = 0; i < 5; i++) {
@@ -491,7 +491,7 @@ describe('Uniswap UX Tests gas:', () => {
         // Do 5 complex swaps
         for (let i = 0; i < 5; i++) {
           calldata = await signPermitAndConstructCalldata(COMPLEX_SWAP_PERMIT, bob, permit2)
-          planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+          planner.addCommand(CommandType.PERMIT2_PERMIT, [COMPLEX_SWAP_PERMIT, calldata])
           gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
 
           totalGas = totalGas.add(gasUsed)
@@ -505,7 +505,7 @@ describe('Uniswap UX Tests gas:', () => {
         for (let i = 0; i < 5; i++) {
           SIMPLE_SWAP_PERMIT.spender = router2.address
           calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2)
-          planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+          planner.addCommand(CommandType.PERMIT2_PERMIT, [SIMPLE_SWAP_PERMIT, calldata])
           gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP, router2)
 
           totalGas = totalGas.add(gasUsed)
@@ -519,7 +519,7 @@ describe('Uniswap UX Tests gas:', () => {
         for (let i = 0; i < 5; i++) {
           SIMPLE_SWAP_PERMIT.spender = router3.address
           calldata = await signPermitAndConstructCalldata(SIMPLE_SWAP_PERMIT, bob, permit2)
-          planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+          planner.addCommand(CommandType.PERMIT2_PERMIT, [SIMPLE_SWAP_PERMIT, calldata])
           gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP, router3)
 
           totalGas = totalGas.add(gasUsed)
@@ -535,7 +535,7 @@ describe('Uniswap UX Tests gas:', () => {
 
         // The first trade contains a max permit, all others contain no permit
         let calldata = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata])
 
         // Do 5 complex swaps
         for (let i = 0; i < 5; i++) {
@@ -548,7 +548,7 @@ describe('Uniswap UX Tests gas:', () => {
         const router2 = (await deployRouter(permit2)).connect(bob) as Router
         MAX_PERMIT.spender = router2.address
         let calldata2 = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata2])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata2])
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
@@ -561,7 +561,7 @@ describe('Uniswap UX Tests gas:', () => {
         const router3 = (await deployRouter(permit2)).connect(bob) as Router
         MAX_PERMIT.spender = router3.address
         let calldata3 = await signPermitAndConstructCalldata(MAX_PERMIT, bob, permit2)
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata3])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata3])
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {

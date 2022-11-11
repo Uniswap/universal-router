@@ -76,12 +76,13 @@ export async function signPermitAndConstructCalldata(
   permit.details.nonce = nextNonce
 
   const signature = await signPermit(permit, signer, permit2.address)
-  const calldata = PERMIT2_INTERFACE.encodeFunctionData(PERMIT_SIGNATURE, [
-    ethers.constants.AddressZero,
-    permit,
-    signature,
-  ])
-
-  // Remove function signature and first parameter (the router fills these in itself)
-  return '0x' + calldata.slice(74)
+  return signature
+  // const calldata = PERMIT2_INTERFACE.encodeFunctionData(PERMIT_SIGNATURE, [
+  //   ethers.constants.AddressZero,
+  //   permit,
+  //   signature,
+  // ])
+  //
+  // // Remove function signature and first parameter (the router fills these in itself)
+  // return '0x' + calldata.slice(74)
 }

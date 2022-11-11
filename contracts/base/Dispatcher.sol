@@ -9,6 +9,7 @@ import '../libraries/Commands.sol';
 import {ERC721} from 'solmate/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/tokens/ERC1155.sol';
 import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
+import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 
 contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     error InvalidCommandType(uint256 commandType);
@@ -31,10 +32,9 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     function dispatch(uint256 command, bytes memory inputs) internal returns (bool success, bytes memory output) {
         success = true;
         if (command == Commands.PERMIT2_PERMIT) {
-            (bytes memory data) = abi.decode(inputs, (bytes));
-            // pass in the msg.sender as the first parameter `owner`
-            data = bytes.concat(Constants.PERMIT_SELECTOR, abi.encode(msg.sender), data);
-            (success, output) = PERMIT2.call(data);
+            (IAllowanceTransfer.PermitSingle memory permitSingle, bytes memory data) =
+                abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes));
+            IAllowanceTransfer(PERMIT2).permit(msg.sender, permitSingle, data);
         } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
             (bytes memory data) = abi.decode(inputs, (bytes));
             // pass in the msg.sender as the first parameter `owner`

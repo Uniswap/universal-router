@@ -1,0 +1,42 @@
+import { CommandType, RoutePlanner } from '../shared/planner'
+import snapshotGasCost from '@uniswap/snapshot-gas-cost'
+import { Router, Permit2 } from '../../../typechain'
+import { resetFork } from '../shared/mainnetForkHelpers'
+import { ALICE_ADDRESS, DEADLINE } from '../shared/constants'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import hre from 'hardhat'
+import { BigNumber } from 'ethers'
+import deployRouter, { deployPermit2 } from '../shared/deployRouter'
+
+const { ethers } = hre
+
+describe('Cryptopunks', () => {
+  let alice: SignerWithAddress
+  let router: Router
+  let permit2: Permit2
+  let planner: RoutePlanner
+
+  beforeEach(async () => {
+    planner = new RoutePlanner()
+    alice = await ethers.getSigner(ALICE_ADDRESS)
+
+    await resetFork(15848050)
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [ALICE_ADDRESS],
+    })
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployRouter(permit2)).connect(alice) as Router
+  })
+
+  // In this test we will buy crypto punk # 2976 for 74.95 ETH
+  describe('Buy 1 crypto punk', () => {
+    it('purchases token ids 2976', async () => {
+      const value = BigNumber.from('74950000000000000000')
+      planner.addCommand(CommandType.CRYPTOPUNKS, [2976, ALICE_ADDRESS, value])
+      const { commands, inputs } = planner
+
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value }))
+    })
+  })
+})

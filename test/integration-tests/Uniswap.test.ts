@@ -84,7 +84,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
 
         // 1) permit the router to access funds, 2) withdraw the funds into the pair, 3) trade
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, calldata])
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
           amountInDAI,
           minAmountOutWETH,
@@ -115,7 +115,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
 
         // 1) permit the router to access funds, 2) trade - the transfer happens within the trade for exactOut
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, calldata])
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           amountOutWETH,
           maxAmountInDAI,
@@ -151,7 +151,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const path = encodePathExactInput([DAI.address, WETH.address])
 
         // 1) permit the router to access funds, 2) trade, which takes the funds directly from permit2
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, calldata])
         planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
           bob.address,
           amountInDAI,
@@ -187,7 +187,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const path = encodePathExactOutput([DAI.address, WETH.address])
 
         // 1) permit the router to access funds, 2) trade, which takes the funds directly from permit2
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, calldata])
         planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
           bob.address,
           amountOutWETH,
