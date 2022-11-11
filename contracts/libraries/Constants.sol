@@ -53,4 +53,6 @@ library Constants {
     // @dev the function selectors of the 2 functions named `permit` from Permit2
     bytes4 internal constant PERMIT_SELECTOR = 0x501f749d;
     bytes4 internal constant PERMIT_BATCH_SELECTOR = 0xe9cce9c1;
+    bytes4 internal constant TRANSFER_FROM_SELECTOR = 0x36c78516;
+    bytes4 internal constant TRANSFER_FROM_BATCH_SELECTOR = 0x0d58b1db;
 }
