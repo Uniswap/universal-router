@@ -4,6 +4,7 @@ out = 'out'
 libs = ['lib']
 via_ir = true
 solc_version = '0.8.17'
+optimizer_runs = 1_000_000
 fs_permissions = [{ access = "read", path = "./scripts/deployParameters/"}]
 
 
