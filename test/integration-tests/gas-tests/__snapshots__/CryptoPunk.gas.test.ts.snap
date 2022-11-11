@@ -1,0 +1,8 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Cryptopunks Buy 1 crypto punk purchases token ids 2976 1`] = `
+Object {
+  "calldataByteLength": 356,
+  "gasUsed": 106007,
+}
+`;
