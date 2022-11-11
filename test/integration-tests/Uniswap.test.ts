@@ -75,7 +75,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           details: {
             token: DAI.address,
             amount: amountInDAI,
-            expiration: 0, // expiration of 0 is block.timestamp,
+            expiration: 0, // expiration of 0 is block.timestamp
             nonce: 0, // this is his first trade
           },
           spender: router.address,
@@ -106,7 +106,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           details: {
             token: DAI.address,
             amount: maxAmountInDAI,
-            expiration: 0, // expiration of 0 is block.timestamp,
+            expiration: 0, // expiration of 0 is block.timestamp
             nonce: 0, // this is his first trade
           },
           spender: router.address,
@@ -140,7 +140,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           details: {
             token: DAI.address,
             amount: amountInDAI,
-            expiration: 0, // expiration of 0 is block.timestamp,
+            expiration: 0, // expiration of 0 is block.timestamp
             nonce: 0, // this is his first trade
           },
           spender: router.address,
@@ -176,7 +176,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           details: {
             token: DAI.address,
             amount: maxAmountInDAI,
-            expiration: 0, // expiration of 0 is block.timestamp,
+            expiration: 0, // expiration of 0 is block.timestamp
             nonce: 0, // this is his first trade
           },
           spender: router.address,
