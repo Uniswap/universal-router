@@ -46,7 +46,7 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
         // loop through all given commands, execute them and pass along outputs as defined
         for (uint256 commandIndex = 0; commandIndex < numCommands;) {
             bytes1 command = commands[commandIndex];
-            uint256 commandType = uint256(uint8(command & Commands.COMMAND_TYPE_MASK));
+            uint256 commandType = uint8(command & Commands.COMMAND_TYPE_MASK);
 
             bytes memory input = inputs[commandIndex];
 

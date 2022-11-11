@@ -128,6 +128,36 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
       })
 
+      it('V2 exactIn, swapping more than max_uint160 should revert', async () => {
+        const max_uint = BigNumber.from(MAX_UINT160)
+        const minAmountOutWETH = expandTo18DecimalsBN(0.03)
+
+        // second bob signs a permit to allow the router to access his DAI
+        permit = {
+          details: {
+            token: DAI.address,
+            amount: max_uint,
+            expiration: 0, // expiration of 0 is block.timestamp
+            nonce: 0, // this is his first trade
+          },
+          spender: router.address,
+          sigDeadline: DEADLINE,
+        }
+        const sig = await getPermitSignature(permit, bob, permit2)
+
+        // 1) permit the router to access funds, 2) withdraw the funds into the pair, 3) trade
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
+        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+          BigNumber.from(MAX_UINT160).add(1),
+          minAmountOutWETH,
+          [DAI.address, WETH.address],
+          bob.address,
+          SOURCE_MSG_SENDER,
+        ])
+
+        await expect(executeRouter(planner)).to.be.revertedWith('UnsafeCast()')
+      })
+
       it('V3 exactIn, permiting the exact amount', async () => {
         const amountInDAI = expandTo18DecimalsBN(100)
         const minAmountOutWETH = expandTo18DecimalsBN(0.03)
@@ -683,7 +713,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
         })
 
-        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop, with batch permit', async () => {
+        it('ERC20 --> ERC20 split V2 and V2 different routes, different input tokens, each two hop, with batch permit', async () => {
           const route1 = [DAI.address, WETH.address, USDC.address]
           const route2 = [WETH.address, DAI.address,  USDC.address]
           const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
