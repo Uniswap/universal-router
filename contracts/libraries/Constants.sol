@@ -54,5 +54,4 @@ library Constants {
     bytes4 internal constant PERMIT_SELECTOR = 0x2b67b570;
     bytes4 internal constant PERMIT_BATCH_SELECTOR = 0x2a2d80d1;
     bytes4 internal constant TRANSFER_FROM_SELECTOR = 0x36c78516;
-    bytes4 internal constant TRANSFER_FROM_BATCH_SELECTOR = 0x0d58b1db;
 }

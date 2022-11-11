@@ -30,7 +30,6 @@ export enum CommandType {
   OWNER_CHECK_1155 = 0x15,
   CRYPTOPUNKS = 0x16,
   PERMIT2_TRANSFER_FROM = 0x17,
-  PERMIT2_TRANSFER_FROM_BATCH = 0x18,
   PERMIT2_PERMIT_BATCH = 0x19,
   SWEEP_ERC1155 = 0x1a,
 }
@@ -53,7 +52,6 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.PERMIT2_PERMIT]: ['bytes'],
   [CommandType.PERMIT2_PERMIT_BATCH]: ['bytes'],
   [CommandType.PERMIT2_TRANSFER_FROM]: ['address', 'address', 'uint160'],
-  [CommandType.PERMIT2_TRANSFER_FROM_BATCH]: ['bytes'],
   [CommandType.TRANSFER]: ['address', 'address', 'uint256'],
   [CommandType.V3_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
   [CommandType.V3_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
