@@ -740,12 +740,14 @@ describe('Uniswap Gas Tests', () => {
 
           const transferDetail1: TransferDetail = {
             token: DAI.address,
+            from: bob.address,
             amount: v2AmountIn1,
             to: Pair.getAddress(DAI, USDC),
           }
 
           const transferDetail2: TransferDetail = {
             token: DAI.address,
+            from: bob.address,
             amount: v2AmountIn2,
             to: Pair.getAddress(DAI, USDT),
           }

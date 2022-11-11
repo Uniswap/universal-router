@@ -33,7 +33,7 @@ import {
 } from './shared/protocolHelpers/permit2'
 const { ethers } = hre
 
-describe('Uniswap V2 and V3 Tests:', () => {
+describe.only('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router
@@ -80,7 +80,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           details: {
             token: DAI.address,
             amount: amountInDAI,
-            expiration: 0, // expiration of 0 is block.timestamp
+            expiration: DEADLINE,
             nonce: 0, // this is his first trade
           },
           spender: router.address,
@@ -111,7 +111,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           details: {
             token: DAI.address,
             amount: maxAmountInDAI,
-            expiration: 0, // expiration of 0 is block.timestamp
+            expiration: DEADLINE,
             nonce: 0, // this is his first trade
           },
           spender: router.address,
@@ -145,7 +145,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           details: {
             token: DAI.address,
             amount: amountInDAI,
-            expiration: 0, // expiration of 0 is block.timestamp
+            expiration: DEADLINE,
             nonce: 0, // this is his first trade
           },
           spender: router.address,
@@ -181,7 +181,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           details: {
             token: DAI.address,
             amount: maxAmountInDAI,
-            expiration: 0, // expiration of 0 is block.timestamp
+            expiration: DEADLINE,
             nonce: 0, // this is his first trade
           },
           spender: router.address,
@@ -646,6 +646,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           const minAmountOut2 = expandTo18DecimalsBN(0.0075)
 
           const transferDetail1: TransferDetail = {
+            from: bob.address,
             token: DAI.address,
             amount: v2AmountIn1,
             to: Pair.getAddress(DAI, USDC),
@@ -654,6 +655,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           const transferDetail2: TransferDetail = {
             token: DAI.address,
             amount: v2AmountIn2,
+            from: bob.address,
             to: Pair.getAddress(DAI, USDT),
           }
 
