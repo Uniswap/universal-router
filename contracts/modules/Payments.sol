@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import '../interfaces/external/IWETH9.sol';
 import '../libraries/Constants.sol';
-import '../libraries/Recipient.sol';
 import {SafeTransferLib} from 'solmate/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';
 import {ERC721} from 'solmate/tokens/ERC721.sol';
@@ -12,7 +11,6 @@ import {ERC1155} from 'solmate/tokens/ERC1155.sol';
 library Payments {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for address;
-    using Recipient for address;
 
     error InsufficientToken();
     error InsufficientETH();
@@ -24,7 +22,6 @@ library Payments {
     /// @param recipient The entity that will receive payment
     /// @param value The amount to pay
     function pay(address token, address recipient, uint256 value) internal {
-        recipient = recipient.map();
         if (token == Constants.ETH) {
             recipient.safeTransferETH(value);
         } else {
@@ -41,7 +38,6 @@ library Payments {
     /// @param recipient The entity that will receive payment
     /// @param bips Portion in bips of whole balance of the contract
     function payPortion(address token, address recipient, uint256 bips) internal {
-        recipient = recipient.map();
         if (bips == 0 || bips > 10_000) revert InvalidBips();
         if (token == Constants.ETH) {
             uint256 balance = address(this).balance;
@@ -56,7 +52,6 @@ library Payments {
     }
 
     function sweep(address token, address recipient, uint256 amountMinimum) internal {
-        recipient = recipient.map();
         uint256 balance;
         if (token == Constants.ETH) {
             balance = address(this).balance;
@@ -70,11 +65,11 @@ library Payments {
     }
 
     function sweepERC721(address token, address recipient, uint256 id) internal {
-        ERC721(token).safeTransferFrom(address(this), recipient.map(), id);
+        ERC721(token).safeTransferFrom(address(this), recipient, id);
     }
 
     function sweepERC1155(address token, address recipient, uint256 id, uint256 amount) internal {
-        ERC1155(token).safeTransferFrom(address(this), recipient.map(), id, amount, bytes(''));
+        ERC1155(token).safeTransferFrom(address(this), recipient, id, amount, bytes(''));
     }
 
     function wrapETH(address recipient, uint256 amount) internal {
@@ -85,7 +80,7 @@ library Payments {
         }
         if (amount > 0) {
             IWETH9(Constants.WETH9).deposit{value: amount}();
-            IWETH9(Constants.WETH9).transfer(recipient.map(), amount);
+            IWETH9(Constants.WETH9).transfer(recipient, amount);
         }
     }
 
@@ -96,7 +91,7 @@ library Payments {
         }
         if (value > 0) {
             IWETH9(Constants.WETH9).withdraw(value);
-            recipient.map().safeTransferETH(value);
+            recipient.safeTransferETH(value);
         }
     }
 }

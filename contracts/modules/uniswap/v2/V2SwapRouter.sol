@@ -7,13 +7,10 @@ import './UniswapV2Library.sol';
 import '../../Payments.sol';
 import '../../Permit2Payments.sol';
 import '../../../libraries/Constants.sol';
-import '../../../libraries/Recipient.sol';
 
 contract V2SwapRouter is Permit2Payments {
     address internal immutable V2_FACTORY;
     bytes32 internal immutable PAIR_INIT_CODE_HASH;
-
-    using Recipient for address;
 
     error V2TooLittleReceived();
     error V2TooMuchRequested();
@@ -62,8 +59,6 @@ contract V2SwapRouter is Permit2Payments {
             payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
         }
 
-        recipient = recipient.map();
-
         uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(recipient);
 
         _v2Swap(path, recipient, firstPair);
@@ -84,6 +79,6 @@ contract V2SwapRouter is Permit2Payments {
         if (amountIn > amountInMax) revert V2TooMuchRequested();
 
         payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
-        _v2Swap(path, recipient.map(), firstPair);
+        _v2Swap(path, recipient, firstPair);
     }
 }

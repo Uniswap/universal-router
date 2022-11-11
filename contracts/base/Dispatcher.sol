@@ -6,11 +6,14 @@ import '../modules/uniswap/v3/V3SwapRouter.sol';
 import '../modules/Payments.sol';
 import '../base/RouterCallbacks.sol';
 import '../libraries/Commands.sol';
+import '../libraries/Recipient.sol';
 import {ERC721} from 'solmate/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/tokens/ERC1155.sol';
 import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
 contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
+    using Recipient for address;
+
     error InvalidCommandType(uint256 commandType);
     error InvalidOwnerERC721();
     error InvalidOwnerERC1155();
@@ -45,27 +48,27 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             permit2TransferFrom(token, msg.sender, recipient, amount);
         } else if (command == Commands.TRANSFER) {
             (address token, address recipient, uint256 value) = abi.decode(inputs, (address, address, uint256));
-            Payments.pay(token, recipient, value);
+            Payments.pay(token, recipient.map(), value);
         } else if (command == Commands.V2_SWAP_EXACT_IN) {
             (uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient, bool payerIsUser) =
                 abi.decode(inputs, (uint256, uint256, address[], address, bool));
             address payer = payerIsUser ? msg.sender : address(this);
-            v2SwapExactInput(amountIn, amountOutMin, path, recipient, payer);
+            v2SwapExactInput(amountIn, amountOutMin, path, recipient.map(), payer);
         } else if (command == Commands.V2_SWAP_EXACT_OUT) {
             (uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient, bool payerIsUser) =
                 abi.decode(inputs, (uint256, uint256, address[], address, bool));
             address payer = payerIsUser ? msg.sender : address(this);
-            v2SwapExactOutput(amountOut, amountInMax, path, recipient, payer);
+            v2SwapExactOutput(amountOut, amountInMax, path, recipient.map(), payer);
         } else if (command == Commands.V3_SWAP_EXACT_IN) {
             (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path, bool payerIsUser) =
                 abi.decode(inputs, (address, uint256, uint256, bytes, bool));
             address payer = payerIsUser ? msg.sender : address(this);
-            v3SwapExactInput(recipient, amountIn, amountOutMin, path, payer);
+            v3SwapExactInput(recipient.map(), amountIn, amountOutMin, path, payer);
         } else if (command == Commands.V3_SWAP_EXACT_OUT) {
             (address recipient, uint256 amountOut, uint256 amountInMax, bytes memory path, bool payerIsUser) =
                 abi.decode(inputs, (address, uint256, uint256, bytes, bool));
             address payer = payerIsUser ? msg.sender : address(this);
-            v3SwapExactOutput(recipient, amountOut, amountInMax, path, payer);
+            v3SwapExactOutput(recipient.map(), amountOut, amountInMax, path, payer);
         } else if (command == Commands.SEAPORT) {
             (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
             (success, output) = Constants.SEAPORT.call{value: value}(data);
@@ -93,27 +96,27 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (success, output) = Constants.CRYPTOPUNKS.call{value: value}(
                 abi.encodeWithSelector(ICryptoPunksMarket.buyPunk.selector, punkId)
             );
-            if (success) ICryptoPunksMarket(Constants.CRYPTOPUNKS).transferPunk(recipient, punkId);
+            if (success) ICryptoPunksMarket(Constants.CRYPTOPUNKS).transferPunk(recipient.map(), punkId);
             else output = 'CryptoPunk Trade Failed';
         } else if (command == Commands.SWEEP) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
-            Payments.sweep(token, recipient, amountMin);
+            Payments.sweep(token, recipient.map(), amountMin);
         } else if (command == Commands.SWEEP_ERC721) {
             (address token, address recipient, uint256 id) = abi.decode(inputs, (address, address, uint256));
-            Payments.sweepERC721(token, recipient, id);
+            Payments.sweepERC721(token, recipient.map(), id);
         } else if (command == Commands.SWEEP_ERC1155) {
             (address token, address recipient, uint256 id, uint256 amount) =
                 abi.decode(inputs, (address, address, uint256, uint256));
-            Payments.sweepERC1155(token, recipient, id, amount);
+            Payments.sweepERC1155(token, recipient.map(), id, amount);
         } else if (command == Commands.WRAP_ETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
-            Payments.wrapETH(recipient, amountMin);
+            Payments.wrapETH(recipient.map(), amountMin);
         } else if (command == Commands.UNWRAP_WETH) {
             (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
-            Payments.unwrapWETH9(recipient, amountMin);
+            Payments.unwrapWETH9(recipient.map(), amountMin);
         } else if (command == Commands.PAY_PORTION) {
             (address token, address recipient, uint256 bips) = abi.decode(inputs, (address, address, uint256));
-            Payments.payPortion(token, recipient, bips);
+            Payments.payPortion(token, recipient.map(), bips);
         } else if (command == Commands.OWNERSHIP_CHECK_721) {
             (address owner, address token, uint256 id) = abi.decode(inputs, (address, address, uint256));
             success = (ERC721(token).ownerOf(id) == owner);
@@ -135,7 +138,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
             abi.decode(inputs, (uint256, bytes, address, address, uint256));
         (success, output) = protocol.call{value: value}(data);
-        if (success) ERC721(token).safeTransferFrom(address(this), recipient, id);
+        if (success) ERC721(token).safeTransferFrom(address(this), recipient.map(), id);
     }
 
     function callAndTransfer1155(bytes memory inputs, address protocol)
@@ -145,6 +148,6 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         (uint256 value, bytes memory data, address recipient, address token, uint256 id, uint256 amount) =
             abi.decode(inputs, (uint256, bytes, address, address, uint256, uint256));
         (success, output) = protocol.call{value: value}(data);
-        if (success) ERC1155(token).safeTransferFrom(address(this), recipient, id, amount, new bytes(0));
+        if (success) ERC1155(token).safeTransferFrom(address(this), recipient.map(), id, amount, new bytes(0));
     }
 }
