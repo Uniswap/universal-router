@@ -25,7 +25,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployRouter, { deployPermit2 } from './shared/deployRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
-import { signPermitAndConstructCalldata, PermitSingle } from './shared/protocolHelpers/permit2'
+import { getPermitSignature, getPermitBatchSignature, PermitSingle } from './shared/protocolHelpers/permit2'
 const { ethers } = hre
 
 describe('Uniswap V2 and V3 Tests:', () => {
@@ -81,10 +81,10 @@ describe('Uniswap V2 and V3 Tests:', () => {
           spender: router.address,
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
+        const sig = await getPermitSignature(permit, bob, permit2)
 
         // 1) permit the router to access funds, 2) withdraw the funds into the pair, 3) trade
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
           amountInDAI,
           minAmountOutWETH,
@@ -112,10 +112,10 @@ describe('Uniswap V2 and V3 Tests:', () => {
           spender: router.address,
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
+        const sig = await getPermitSignature(permit, bob, permit2)
 
         // 1) permit the router to access funds, 2) trade - the transfer happens within the trade for exactOut
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           amountOutWETH,
           maxAmountInDAI,
@@ -143,10 +143,10 @@ describe('Uniswap V2 and V3 Tests:', () => {
           spender: router.address,
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
+        const sig = await getPermitSignature(permit, bob, permit2)
 
         // 1) permit the router to access funds, 2) withdraw the funds into the pair, 3) trade
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
           BigNumber.from(MAX_UINT160).add(1),
           minAmountOutWETH,
@@ -176,12 +176,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
           spender: router.address,
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
+        const sig = await getPermitSignature(permit, bob, permit2)
 
         const path = encodePathExactInput([DAI.address, WETH.address])
 
         // 1) permit the router to access funds, 2) trade, which takes the funds directly from permit2
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
         planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
           bob.address,
           amountInDAI,
@@ -212,12 +212,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
           spender: router.address,
           sigDeadline: DEADLINE,
         }
-        const calldata = await signPermitAndConstructCalldata(permit, bob, permit2)
+        const sig = await getPermitSignature(permit, bob, permit2)
 
         const path = encodePathExactOutput([DAI.address, WETH.address])
 
         // 1) permit the router to access funds, 2) trade, which takes the funds directly from permit2
-        planner.addCommand(CommandType.PERMIT2_PERMIT, [calldata])
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
         planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
           bob.address,
           amountOutWETH,
@@ -604,6 +604,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
         await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
       })
+
       describe('Interleaving routes', () => {
         it('V3, then V2', async () => {
           const v3Tokens = [DAI.address, USDC.address]
@@ -662,7 +663,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       describe('Split routes', () => {
-        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop, with explicit permit', async () => {
+        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop, with explicit permit transfer from', async () => {
           const route1 = [DAI.address, USDC.address, WETH.address]
           const route2 = [DAI.address, USDT.address, WETH.address]
           const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
@@ -672,7 +673,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
           // 1) transfer funds into DAI-USDC and DAI-USDT pairs to trade
           planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [DAI.address, Pair.getAddress(DAI, USDC), v2AmountIn1])
-
           planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [DAI.address, Pair.getAddress(DAI, USDT), v2AmountIn2])
 
           // 2) trade route1 and return tokens to bob
@@ -711,6 +711,59 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
           const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
           expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
+        })
+
+        it('ERC20 --> ERC20 split V2 and V2 different routes, different input tokens, each two hop, with batch permit', async () => {
+          const route1 = [DAI.address, WETH.address, USDC.address]
+          const route2 = [WETH.address, DAI.address, USDC.address]
+          const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
+          const v2AmountIn2: BigNumber = expandTo18DecimalsBN(5)
+          const minAmountOut1 = BigNumber.from(0.005 * 10 ** 6)
+          const minAmountOut2 = BigNumber.from(0.0075 * 10 ** 6)
+
+          const BATCH_PERMIT = {
+            details: [
+              {
+                token: DAI.address,
+                amount: v2AmountIn1,
+                expiration: 0, // expiration of 0 is block.timestamp
+                nonce: 0, // this is his first trade
+              },
+              {
+                token: WETH.address,
+                amount: v2AmountIn2,
+                expiration: 0, // expiration of 0 is block.timestamp
+                nonce: 0, // this is his first trade
+              },
+            ],
+            spender: router.address,
+            sigDeadline: DEADLINE,
+          }
+
+          const sig = await getPermitBatchSignature(BATCH_PERMIT, bob, permit2)
+
+          // 1) transfer funds into DAI-USDC and DAI-USDT pairs to trade
+          planner.addCommand(CommandType.PERMIT2_PERMIT_BATCH, [BATCH_PERMIT, sig])
+
+          // 2) trade route1 and return tokens to bob
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            v2AmountIn1,
+            minAmountOut1,
+            route1,
+            bob.address,
+            SOURCE_MSG_SENDER,
+          ])
+          // 3) trade route2 and return tokens to bob
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            v2AmountIn2,
+            minAmountOut2,
+            route2,
+            bob.address,
+            SOURCE_MSG_SENDER,
+          ])
+
+          const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(planner)
+          expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
         })
 
         it('ERC20 --> ERC20 split V2 and V3, one hop', async () => {

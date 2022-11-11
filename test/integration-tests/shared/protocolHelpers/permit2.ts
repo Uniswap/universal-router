@@ -8,9 +8,6 @@ const { ethers } = hre
 
 const chainId: number = hre.network.config.chainId ? hre.network.config.chainId : 1
 
-const PERMIT_SIGNATURE = 'permit(address,((address,uint160,uint48,uint48),address,uint256),bytes)'
-// const PERMIT_BATCH_SIGNATURE = "permit(address,((address,uint160,uint64,uint32)[],address,uint256),bytes)"
-
 export type PermitDetails = {
   token: string
   amount: number | BigNumber
@@ -20,6 +17,12 @@ export type PermitDetails = {
 
 export type PermitSingle = {
   details: PermitDetails
+  spender: string
+  sigDeadline: number | BigNumber
+}
+
+export type PermitBatch = {
+  details: PermitDetails[]
   spender: string
   sigDeadline: number | BigNumber
 }
@@ -40,6 +43,20 @@ export const PERMIT2_PERMIT_TYPE = {
   ],
   PermitSingle: [
     { name: 'details', type: 'PermitDetails' },
+    { name: 'spender', type: 'address' },
+    { name: 'sigDeadline', type: 'uint256' },
+  ],
+}
+
+export const PERMIT2_PERMIT_BATCH_TYPE = {
+  PermitDetails: [
+    { name: 'token', type: 'address' },
+    { name: 'amount', type: 'uint160' },
+    { name: 'expiration', type: 'uint48' },
+    { name: 'nonce', type: 'uint48' },
+  ],
+  PermitBatch: [
+    { name: 'details', type: 'PermitDetails[]' },
     { name: 'spender', type: 'address' },
     { name: 'sigDeadline', type: 'uint256' },
   ],
@@ -66,7 +83,7 @@ export async function signPermit(
   return signature
 }
 
-export async function signPermitAndConstructCalldata(
+export async function getPermitSignature(
   permit: PermitSingle,
   signer: SignerWithAddress,
   permit2: Permit2
@@ -74,14 +91,29 @@ export async function signPermitAndConstructCalldata(
   // look up the correct nonce for this permit
   const nextNonce = (await permit2.allowance(signer.address, permit.details.token, permit.spender)).nonce
   permit.details.nonce = nextNonce
+  return await signPermit(permit, signer, permit2.address)
+}
 
-  const signature = await signPermit(permit, signer, permit2.address)
-  const calldata = PERMIT2_INTERFACE.encodeFunctionData(PERMIT_SIGNATURE, [
-    ethers.constants.AddressZero,
-    permit,
-    signature,
-  ])
+export async function getPermitBatchSignature(
+  permit: PermitBatch,
+  signer: SignerWithAddress,
+  permit2: Permit2
+): Promise<string> {
+  for (const i in permit.details) {
+    const nextNonce = (await permit2.allowance(signer.address, permit.details[i].token, permit.spender)).nonce
+    permit.details[i].nonce = nextNonce
+  }
 
-  // Remove function signature and first parameter (the router fills these in itself)
-  return '0x' + calldata.slice(74)
+  return await signPermitBatch(permit, signer, permit2.address)
+}
+
+export async function signPermitBatch(
+  permit: PermitBatch,
+  signer: SignerWithAddress,
+  verifyingContract: string
+): Promise<string> {
+  const eip712Domain = getEip712Domain(chainId, verifyingContract)
+  const signature = await signer._signTypedData(eip712Domain, PERMIT2_PERMIT_BATCH_TYPE, permit)
+
+  return signature
 }
