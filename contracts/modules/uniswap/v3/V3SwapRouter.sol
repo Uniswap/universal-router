@@ -98,7 +98,7 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
             // decide whether to continue or terminate
             if (hasMultiplePools) {
                 payer = address(this);
-                path = path.skipToken();
+                path.skipToken();
             } else {
                 amountOut = amountIn;
                 break;

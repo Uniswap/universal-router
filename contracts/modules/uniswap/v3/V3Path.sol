@@ -60,10 +60,9 @@ library V3Path {
         tokenA = path.toAddress(0, path.length);
     }
 
-    /// @notice Skips a token + fee element from the buffer and returns the remainder
+    /// @notice Skips a token + fee element from the buffer in place
     /// @param path The swap path
-    /// @return The remaining token + fee elements in the path
-    function skipToken(bytes memory path) internal pure returns (bytes memory) {
-        return path.slice(NEXT_OFFSET, path.length - NEXT_OFFSET);
+    function skipToken(bytes memory path) internal pure {
+        path.inPlaceSlice(NEXT_OFFSET, path.length - NEXT_OFFSET);
     }
 }

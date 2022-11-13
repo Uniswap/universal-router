@@ -17,7 +17,55 @@ library BytesLib {
     error ToUint24OutOfBounds();
     error NoSlice();
 
-    function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
+   function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
+        unchecked {
+            if (_length + 31 < _length) revert SliceOverflow();
+            if (_start + _length < _start) revert SliceOverflow();
+            if (_bytes.length < _start + _length) revert SliceOutOfBounds();
+            if (_length == 0) revert NoSlice();
+        }
+
+        bytes memory tempBytes;
+
+        assembly {
+            // Get a location of some free memory and store it in tempBytes as
+            // Solidity does for memory variables.
+            tempBytes := mload(0x40)
+
+            // The first word of the slice result is potentially a partial
+            // word read from the original array. To read it, we calculate
+            // the length of that partial word and start copying that many
+            // bytes into the array. The first word we copy will start with
+            // data we don't care about, but the last `lengthmod` bytes will
+            // land at the beginning of the contents of the new array. When
+            // we're done copying, we overwrite the full first word with
+            // the actual length of the slice.
+            let lengthmod := and(_length, 31)
+
+            // The multiplication in the next line is necessary
+            // because when slicing multiples of 32 bytes (lengthmod == 0)
+            // the following copy loop was copying the origin's length
+            // and then ending prematurely not copying everything it should.
+            let offset := add(lengthmod, mul(0x20, iszero(lengthmod)))
+            let copyDestination := add(tempBytes, offset)
+            let endNewBytes := add(copyDestination, _length)
+
+            for { let copyFrom := add(add(_bytes, offset), _start) } lt(copyDestination, endNewBytes) {
+                copyDestination := add(copyDestination, 0x20)
+                copyFrom := add(copyFrom, 0x20)
+            } { mstore(copyDestination, mload(copyFrom)) }
+
+            mstore(tempBytes, _length)
+
+            //update free-memory pointer
+            //allocating the array padded to 32 bytes like the compiler does now
+            mstore(0x40, and(add(copyDestination, 31), not(31)))
+        }
+
+        return tempBytes;
+    }
+
+    function inPlaceSlice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
         unchecked {
             if (_length + 31 < _length) revert SliceOverflow();
             if (_start + _length < _start) revert SliceOverflow();
@@ -34,20 +82,30 @@ library BytesLib {
             // land at the beginning of the contents of the new array. When
             // we're done copying, we overwrite the full first word with
             // the actual length of the slice.
+
+            // 31==0b11111 to extract the final 5 bits of the length of the slice - the amount that
+            // the length in bytes goes over a round number of bytes32
             let lengthmod := and(_length, 31)
 
             // The multiplication in the next line is necessary
             // because when slicing multiples of 32 bytes (lengthmod == 0)
             // the following copy loop was copying the origin's length
             // and then ending prematurely not copying everything it should.
-            let x := add(lengthmod, mul(0x20, iszero(lengthmod)))
-            let mc := add(_bytes, x)
-            let end := add(mc, _length)
 
-            for { let cc := add(add(_bytes, x), _start) } lt(mc, end) {
-                mc := add(mc, 0x20)
-                cc := add(cc, 0x20)
-            } { mstore(mc, mload(cc)) }
+            // if the _length is not a multiple of 32, x is lengthmod
+            // otherwise its 32 (as lengthmod is 0)
+            let offset := add(lengthmod, mul(0x20, iszero(lengthmod)))
+
+            // this does calculates where to start copying bytes into
+            // bytes is the location where the bytes array is
+            // byte+offset is the location where copying should start from
+            let copyDestination := add(_bytes, offset)
+            let endNewBytes := add(copyDestination, _length)
+
+            for { let copyFrom := add(copyDestination, _start) } lt(copyDestination, endNewBytes) {
+                copyDestination := add(copyDestination, 0x20)
+                copyFrom := add(copyFrom, 0x20)
+            } { mstore(copyDestination, mload(copyFrom)) }
 
             mstore(_bytes, _length)
         }
