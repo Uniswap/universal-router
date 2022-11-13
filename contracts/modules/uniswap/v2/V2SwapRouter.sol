@@ -24,7 +24,7 @@ contract V2SwapRouter is Permit2Payments {
     function _v2Swap(address[] memory path, address recipient, address pair) private {
         unchecked {
             if (path.length < 2) revert V2InvalidPath();
-            
+
             // cached to save on duplicate operations
             (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
             uint256 finalPairIndex = path.length - 1;
