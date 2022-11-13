@@ -53,7 +53,7 @@ library V3Path {
     /// @param path The bytes encoded swap path
     /// @return The segment containing all data necessary to target the first pool in the path
     function getFirstPool(bytes memory path) internal pure returns (bytes memory) {
-        return path.slice(0, POP_OFFSET);
+        return path.slicePool();
     }
 
     function decodeFirstToken(bytes memory path) internal pure returns (address tokenA) {
@@ -63,6 +63,6 @@ library V3Path {
     /// @notice Skips a token + fee element from the buffer in place
     /// @param path The swap path
     function skipToken(bytes memory path) internal pure {
-        path.inPlaceSlice(NEXT_OFFSET, path.length - NEXT_OFFSET);
+        path.inPlaceSliceToken(path.length - NEXT_OFFSET);
     }
 }

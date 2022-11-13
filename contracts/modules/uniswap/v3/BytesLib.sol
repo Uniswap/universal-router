@@ -17,13 +17,13 @@ library BytesLib {
     error ToUint24OutOfBounds();
     error NoSlice();
 
-   function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
-        unchecked {
-            if (_length + 31 < _length) revert SliceOverflow();
-            if (_start + _length < _start) revert SliceOverflow();
-            if (_bytes.length < _start + _length) revert SliceOutOfBounds();
-            if (_length == 0) revert NoSlice();
-        }
+    uint256 internal constant POOL_LENGTH = 43;
+    uint256 internal constant OFFSET = 11; // 43-32=11
+    uint256 internal constant ADDR_AND_FEE_LENGTH = 23;
+
+    // Slices 43 bytes and returns them in a new array
+    function slicePool(bytes memory _bytes) internal pure returns (bytes memory) {
+        if (_bytes.length < POOL_LENGTH) revert SliceOutOfBounds();
 
         bytes memory tempBytes;
 
@@ -32,30 +32,16 @@ library BytesLib {
             // Solidity does for memory variables.
             tempBytes := mload(0x40)
 
-            // The first word of the slice result is potentially a partial
-            // word read from the original array. To read it, we calculate
-            // the length of that partial word and start copying that many
-            // bytes into the array. The first word we copy will start with
-            // data we don't care about, but the last `lengthmod` bytes will
-            // land at the beginning of the contents of the new array. When
-            // we're done copying, we overwrite the full first word with
-            // the actual length of the slice.
-            let lengthmod := and(_length, 31)
+            // The new bytes length (43) is 11 bytes more than a word (32)
+            let copyDestination := add(tempBytes, OFFSET)
+            let endNewBytes := add(copyDestination, POOL_LENGTH)
 
-            // The multiplication in the next line is necessary
-            // because when slicing multiples of 32 bytes (lengthmod == 0)
-            // the following copy loop was copying the origin's length
-            // and then ending prematurely not copying everything it should.
-            let offset := add(lengthmod, mul(0x20, iszero(lengthmod)))
-            let copyDestination := add(tempBytes, offset)
-            let endNewBytes := add(copyDestination, _length)
-
-            for { let copyFrom := add(add(_bytes, offset), _start) } lt(copyDestination, endNewBytes) {
+            for { let copyFrom := add(_bytes, OFFSET) } lt(copyDestination, endNewBytes) {
                 copyDestination := add(copyDestination, 0x20)
                 copyFrom := add(copyFrom, 0x20)
             } { mstore(copyDestination, mload(copyFrom)) }
 
-            mstore(tempBytes, _length)
+            mstore(tempBytes, POOL_LENGTH)
 
             //update free-memory pointer
             //allocating the array padded to 32 bytes like the compiler does now
@@ -65,11 +51,11 @@ library BytesLib {
         return tempBytes;
     }
 
-    function inPlaceSlice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
+    function inPlaceSliceToken(bytes memory _bytes, uint256 _length) internal pure returns (bytes memory) {
         unchecked {
             if (_length + 31 < _length) revert SliceOverflow();
-            if (_start + _length < _start) revert SliceOverflow();
-            if (_bytes.length < _start + _length) revert SliceOutOfBounds();
+            if (ADDR_AND_FEE_LENGTH + _length < ADDR_AND_FEE_LENGTH) revert SliceOverflow();
+            if (_bytes.length < ADDR_AND_FEE_LENGTH + _length) revert SliceOutOfBounds();
             if (_length == 0) revert NoSlice();
         }
 
@@ -92,7 +78,7 @@ library BytesLib {
             // the following copy loop was copying the origin's length
             // and then ending prematurely not copying everything it should.
 
-            // if the _length is not a multiple of 32, x is lengthmod
+            // if the _length is not a multiple of 32, offset is lengthmod
             // otherwise its 32 (as lengthmod is 0)
             let offset := add(lengthmod, mul(0x20, iszero(lengthmod)))
 
@@ -102,7 +88,7 @@ library BytesLib {
             let copyDestination := add(_bytes, offset)
             let endNewBytes := add(copyDestination, _length)
 
-            for { let copyFrom := add(copyDestination, _start) } lt(copyDestination, endNewBytes) {
+            for { let copyFrom := add(copyDestination, ADDR_AND_FEE_LENGTH) } lt(copyDestination, endNewBytes) {
                 copyDestination := add(copyDestination, 0x20)
                 copyFrom := add(copyFrom, 0x20)
             } { mstore(copyDestination, mload(copyFrom)) }
