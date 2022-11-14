@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Router Gas Tests gas: bytecode size 1`] = `16758`;
+exports[`Router Gas Tests gas: bytecode size 1`] = `16671`;
 
 exports[`Router Gas Tests trading for NFTs gas: ERC20 --> ETH --> Seaport NFT 1`] = `
 Object {
