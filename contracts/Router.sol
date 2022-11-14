@@ -14,7 +14,7 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
     }
 
     constructor(
-        address permit2,
+        IAllowanceTransfer permit2,
         address routerRewardsDistributor,
         address looksRareRewardsDistributor,
         ERC20 looksRareToken,

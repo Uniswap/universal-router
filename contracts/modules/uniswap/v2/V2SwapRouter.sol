@@ -14,7 +14,7 @@ contract V2SwapRouter is Permit2Payments {
     error V2TooLittleReceived();
     error V2TooMuchRequested();
 
-    constructor(address v2Factory, bytes32 pairInitCodeHash, address permit2) Permit2Payments(permit2) {
+    constructor(address v2Factory, bytes32 pairInitCodeHash, IAllowanceTransfer permit2) Permit2Payments(permit2) {
         V2_FACTORY = v2Factory;
         PAIR_INIT_CODE_HASH = pairInitCodeHash;
     }
