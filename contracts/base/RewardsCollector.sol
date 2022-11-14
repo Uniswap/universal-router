@@ -16,10 +16,10 @@ contract RewardsCollector is IRewardsCollector {
     address public immutable looksRareRewardsDistributor;
     ERC20 public immutable looksRareToken;
 
-    constructor(address _routerRewardsDistributor, address _looksRareRewardsDistributor, address _looksRareToken) {
+    constructor(address _routerRewardsDistributor, address _looksRareRewardsDistributor, ERC20 _looksRareToken) {
         routerRewardsDistributor = _routerRewardsDistributor;
         looksRareRewardsDistributor = _looksRareRewardsDistributor;
-        looksRareToken = ERC20(_looksRareToken);
+        looksRareToken = _looksRareToken;
     }
 
     function collectRewards(bytes calldata looksRareClaim) external {

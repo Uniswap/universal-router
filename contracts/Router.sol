@@ -17,7 +17,7 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
         address permit2,
         address routerRewardsDistributor,
         address looksRareRewardsDistributor,
-        address looksRareToken,
+        ERC20 looksRareToken,
         address v2Factory,
         address v3Factory,
         bytes32 pairInitCodeHash,
