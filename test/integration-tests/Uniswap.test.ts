@@ -684,6 +684,41 @@ describe('Uniswap V2 and V3 Tests:', () => {
           expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
         })
 
+        it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop, with explicit permit transfer from batch', async () => {
+          const route1 = [DAI.address, USDC.address, WETH.address]
+          const route2 = [DAI.address, USDT.address, WETH.address]
+          const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
+          const v2AmountIn2: BigNumber = expandTo18DecimalsBN(30)
+          const minAmountOut1 = expandTo18DecimalsBN(0.005)
+          const minAmountOut2 = expandTo18DecimalsBN(0.0075)
+
+          const BATCH_TRANSFER = [
+            {
+              from: bob.address,
+              to: Pair.getAddress(DAI, USDC),
+              amount: v2AmountIn1,
+              token: DAI.address,
+            },
+            {
+              from: bob.address,
+              to: Pair.getAddress(DAI, USDT),
+              amount: v2AmountIn2,
+              token: DAI.address,
+            },
+          ]
+
+          // 1) transfer funds into DAI-USDC and DAI-USDT pairs to trade
+          planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM_BATCH, [BATCH_TRANSFER])
+
+          // 2) trade route1 and return tokens to bob
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, minAmountOut1, route1, bob.address, SOURCE_MSG_SENDER])
+          // 3) trade route2 and return tokens to bob
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, minAmountOut2, route2, bob.address, SOURCE_MSG_SENDER])
+
+          const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+          expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
+        })
+
         it('ERC20 --> ERC20 split V2 and V2 different routes, each two hop, without explicit permit', async () => {
           const route1 = [DAI.address, USDC.address, WETH.address]
           const route2 = [DAI.address, USDT.address, WETH.address]
