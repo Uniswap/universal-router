@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * @title Solidity Bytes Arrays Utils
- * @author Gonçalo Sá <goncalo.sa@consensys.net>
- *
- * @dev Bytes tightly packed arrays utility library for ethereum contracts written in Solidity.
- *      The library lets you concatenate, slice and type cast bytes arrays both in memory and storage.
+ * Based on Gonçalo Sá's BytesLib - but updated and heavily editted
  */
 pragma solidity ^0.8.0;
 
@@ -37,7 +33,14 @@ library BytesLib {
             // Solidity does for memory variables.
             tempBytes := mload(0x40)
 
-            // The new bytes length (43) is 11 bytes more than a word (32)
+            // The first word of the slice result is a partia lword read from the
+            //  original array - given that 43 is not a multiple of 32. To read it,
+            // we use the length of that partial word (43-32=11) and start copying
+            // that many bytes into the array. The first word we copy will start
+            // with data we don't care about, but the last 11 bytes will
+            // land at the beginning of the contents of the new array. When
+            // we're done copying, we overwrite the full first word with
+            // the actual length of the slice.
             let copyDestination := add(tempBytes, OFFSET)
             let endNewBytes := add(copyDestination, POOL_LENGTH)
 
