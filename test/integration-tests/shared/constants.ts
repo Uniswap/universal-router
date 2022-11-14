@@ -10,6 +10,8 @@ export const ALREADY_PAID = 0
 export const ALICE_ADDRESS = '0xf977814e90da44bfa03b6295a0616a897441acec'
 export const ETH_ADDRESS = ethers.constants.AddressZero
 export const ONE_PERCENT_BIPS = 100
+export const MSG_SENDER: string = '0x0000000000000000000000000000000000000001'
+export const ADDRESS_THIS: string = '0x0000000000000000000000000000000000000002'
 export const SOURCE_MSG_SENDER: boolean = true
 export const SOURCE_ROUTER: boolean = false
 
