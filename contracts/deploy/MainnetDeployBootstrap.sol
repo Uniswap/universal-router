@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.17;
 
-import {IDeployBootstrap} from '../interfaces/IDeployBootstrap.sol';
+import {BaseDeployBootstrap} from './BaseDeployBootstrap.sol';
 
 /// @notice deployment bootstrap for mainnet
-contract MainnetDeployBootstrap is IDeployBootstrap {
+contract MainnetDeployBootstrap is BaseDeployBootstrap {
     /// @dev WETH9 address on mainnet
     address public constant override WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
@@ -44,21 +44,8 @@ contract MainnetDeployBootstrap is IDeployBootstrap {
     /// @dev The address of the UniswapV2Factory on mainnet
     address public constant override UNISWAP_V2_FACTORY = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
 
-    /// @dev The initcodehash of the UniswapV2Pair
-    bytes32 public constant override UNISWAP_V2_PAIR_INIT_CODE_HASH =
-        0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
-
     /// @dev The address of the UniswapV3Factory on mainnet
     address public constant override UNISWAP_V3_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
-    /// @dev The initcodehash of the UniswapV3Pool
-    bytes32 public constant override UNISWAP_V3_POOL_INIT_CODE_HASH =
-        0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-
-    /// @dev The address of Permit2 on mainnet
-    address public immutable override PERMIT2;
-
-    constructor(address permit2) {
-        PERMIT2 = permit2;
-    }
+    constructor(address permit2) BaseDeployBootstrap(permit2) {}
 }
