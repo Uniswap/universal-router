@@ -766,6 +766,82 @@ describe('Uniswap V2 and V3 Tests:', () => {
           expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
         })
 
+        it.only('ERC20 --> ERC20 V3 trades with different input tokens with batch permit and batch transfer', async () => {
+          const route1 = [DAI.address, WETH.address]
+          const route2 = [WETH.address, USDC.address]
+          const v3AmountIn1: BigNumber = expandTo18DecimalsBN(20)
+          const v3AmountIn2: BigNumber = expandTo18DecimalsBN(5)
+          const minAmountOut1WETH = BigNumber.from(0)
+          const minAmountOut1USDC = BigNumber.from(0.005 * 10 ** 6)
+          const minAmountOut2USDC = BigNumber.from(0.0075 * 10 ** 6)
+
+          const BATCH_PERMIT = {
+            details: [
+              {
+                token: DAI.address,
+                amount: v3AmountIn1,
+                expiration: 0, // expiration of 0 is block.timestamp
+                nonce: 0, // this is his first trade
+              },
+              {
+                token: WETH.address,
+                amount: v3AmountIn2,
+                expiration: 0, // expiration of 0 is block.timestamp
+                nonce: 0, // this is his first trade
+              },
+            ],
+            spender: router.address,
+            sigDeadline: DEADLINE,
+          }
+
+          const BATCH_TRANSFER = {
+            transferDetails: [
+              {
+                from: bob.address,
+                to: router.address,
+                amount: v3AmountIn1,
+                token: DAI.address,
+              },
+              {
+                from: bob.address,
+                to: router.address,
+                amount: v3AmountIn2,
+                token: WETH.address,
+              },
+            ],
+          }
+
+          const sig = await getPermitBatchSignature(BATCH_PERMIT, bob, permit2)
+
+          // 1) permit dai and weth to be spent by router
+          planner.addCommand(CommandType.PERMIT2_PERMIT_BATCH, [BATCH_PERMIT, sig])
+
+          // 2) transfer dai and weth into router to use contract balance
+          planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM_BATCH, [BATCH_TRANSFER])
+
+          // v3SwapExactInput(recipient, amountIn, amountOutMin, path, payer);
+
+          // 2) trade route1 and return tokens to router for the second trade
+          planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            router.address,
+            CONTRACT_BALANCE,
+            minAmountOut1WETH,
+            route1,
+            router.address,
+          ])
+          // 3) trade route2 and return tokens to bob
+          planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            bob.address,
+            CONTRACT_BALANCE,
+            minAmountOut1USDC.add(minAmountOut2USDC),
+            route2,
+            router.address,
+          ])
+
+          const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(planner)
+          expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOut1USDC.add(minAmountOut2USDC))
+        })
+
         it('ERC20 --> ERC20 split V2 and V3, one hop', async () => {
           const tokens = [DAI.address, WETH.address]
           const v2AmountIn: BigNumber = expandTo18DecimalsBN(2)

@@ -30,6 +30,7 @@ export enum CommandType {
   OWNER_CHECK_1155 = 0x15,
   CRYPTOPUNKS = 0x16,
   PERMIT2_TRANSFER_FROM = 0x17,
+  PERMIT2_TRANSFER_FROM_BATCH = 0x18,
   PERMIT2_PERMIT_BATCH = 0x19,
   SWEEP_ERC1155 = 0x1a,
 }
@@ -54,10 +55,13 @@ const PERMIT_STRUCT =
 const PERMIT_BATCH_STRUCT =
   '((address token,uint160 amount,uint48 expiration,uint48 nonce)[] details, address spender, uint256 sigDeadline)'
 
+const PERMIT2_TRANSFER_FROM_BATCH_STRUCT = '((address from,address to,uint160 amount,address token)[] transferDetails)'
+
 const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.PERMIT2_PERMIT]: [PERMIT_STRUCT, 'bytes'],
   [CommandType.PERMIT2_PERMIT_BATCH]: [PERMIT_BATCH_STRUCT, 'bytes'],
   [CommandType.PERMIT2_TRANSFER_FROM]: ['address', 'address', 'uint160'],
+  [CommandType.PERMIT2_TRANSFER_FROM_BATCH]: [PERMIT2_TRANSFER_FROM_BATCH_STRUCT, 'bytes'],
   [CommandType.TRANSFER]: ['address', 'address', 'uint256'],
   [CommandType.V3_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
   [CommandType.V3_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
