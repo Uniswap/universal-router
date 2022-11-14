@@ -56,7 +56,7 @@ library BytesLib {
 
             // update free-memory pointer
             // allocating the array padded to 32 bytes like the compiler does now
-            mstore(0x40, and(add(copyDestination, 63), not(31)))
+            mstore(0x40, add(tempBytes, 0x60))
         }
 
         return tempBytes;
