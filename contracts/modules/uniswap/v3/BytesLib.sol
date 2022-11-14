@@ -33,7 +33,7 @@ library BytesLib {
             // Solidity does for memory variables.
             tempBytes := mload(0x40)
 
-            // The first word of the slice result is a partia lword read from the
+            // The first word of the slice result is a partial word read from the
             //  original array - given that 43 is not a multiple of 32. To read it,
             // we use the length of that partial word (43-32=11) and start copying
             // that many bytes into the array. The first word we copy will start
