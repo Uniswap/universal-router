@@ -14,10 +14,10 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
     }
 
     constructor(
-        address permit2,
+        IAllowanceTransfer permit2,
         address routerRewardsDistributor,
         address looksRareRewardsDistributor,
-        address looksRareToken,
+        ERC20 looksRareToken,
         address v2Factory,
         address v3Factory,
         bytes32 pairInitCodeHash,
