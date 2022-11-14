@@ -1,10 +1,10 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
-import { Router, Permit2 } from '../../typechain'
+import { Router } from '../../typechain'
 import { resetFork, ENS_721, CAMEO_1155 } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, CAMEO_ADDRESS, DEADLINE, ENS_NFT_ADDRESS } from './shared/constants'
 import { parseEvents } from './shared/parseEvents'
-import deployRouter, { deployPermit2 } from './shared/deployRouter'
+import { deployRouterAndPermit2 } from './shared/deployRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { expect } from 'chai'
@@ -16,7 +16,6 @@ const ERC721_INTERFACE = new ethers.utils.Interface(ERC721_ABI)
 describe('X2Y2', () => {
   let alice: SignerWithAddress
   let router: Router
-  let permit2: Permit2
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -35,8 +34,8 @@ describe('X2Y2', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployRouter(permit2)).connect(alice) as Router
+      const [routerContract] = await deployRouterAndPermit2()
+      router = routerContract.connect(alice) as Router
 
       erc721Order = x2y2Orders[0]
       const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
@@ -76,8 +75,8 @@ describe('X2Y2', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployRouter(permit2)).connect(alice) as Router
+      const [routerContract] = await deployRouterAndPermit2()
+      router = routerContract.connect(alice) as Router
 
       erc1155Order = x2y2Orders[1]
       const functionSelector = X2Y2_INTERFACE.getSighash(X2Y2_INTERFACE.getFunction('run'))
