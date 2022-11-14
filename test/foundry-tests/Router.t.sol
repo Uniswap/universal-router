@@ -4,6 +4,8 @@ pragma solidity ^0.8.15;
 import 'forge-std/Test.sol';
 import {Router} from '../../contracts/Router.sol';
 import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
+import {ERC20} from 'solmate/tokens/ERC20.sol';
+import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 
 contract RouterTest is Test {
     Router router;
@@ -11,7 +13,7 @@ contract RouterTest is Test {
 
     function setUp() public {
         router =
-            new Router(address(0), address(0),address(0), address(0), address(0), address(0), bytes32(0), bytes32(0));
+            new Router(IAllowanceTransfer(address(0)), address(0),address(0), ERC20(address(0)), address(0), address(0), bytes32(0), bytes32(0));
         testModule = new ExampleModule();
     }
 
