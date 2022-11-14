@@ -30,11 +30,11 @@ abstract contract Dispatcher is RouterImmutables, Payments, V2SwapRouter, V3Swap
         if (command == Commands.PERMIT2_PERMIT) {
             (IAllowanceTransfer.PermitSingle memory permitSingle, bytes memory data) =
                 abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes));
-            permit2.permit(msg.sender, permitSingle, data);
+            PERMIT2.permit(msg.sender, permitSingle, data);
         } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
             (IAllowanceTransfer.PermitBatch memory permitBatch, bytes memory data) =
                 abi.decode(inputs, (IAllowanceTransfer.PermitBatch, bytes));
-            permit2.permit(msg.sender, permitBatch, data);
+            PERMIT2.permit(msg.sender, permitBatch, data);
         } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
             (address token, address recipient, uint160 amount) = abi.decode(inputs, (address, address, uint160));
             permit2TransferFrom(token, msg.sender, recipient, amount);

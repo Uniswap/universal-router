@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
+import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 import {ERC20} from 'solmate/tokens/ERC20.sol';
 import {IWETH9} from '../interfaces/external/IWETH9.sol';
 import {IDeployBootstrap} from '../interfaces/IDeployBootstrap.sol';
@@ -10,7 +11,7 @@ contract RouterImmutables {
     IWETH9 internal immutable WETH9;
 
     /// @dev Permit2 address
-    address internal immutable PERMIT2;
+    IAllowanceTransfer internal immutable PERMIT2;
 
     /// @dev Seaport address
     address internal immutable SEAPORT;
@@ -58,7 +59,7 @@ contract RouterImmutables {
     bytes32 internal immutable UNISWAP_V3_POOL_INIT_CODE_HASH;
 
     constructor(IDeployBootstrap deployBootstrap) {
-        PERMIT2 = deployBootstrap.PERMIT2();
+        PERMIT2 = IAllowanceTransfer(deployBootstrap.PERMIT2());
         WETH9 = IWETH9(deployBootstrap.WETH9());
         SEAPORT = deployBootstrap.SEAPORT();
         NFTX_ZAP = deployBootstrap.NFTX_ZAP();
