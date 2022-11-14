@@ -48,9 +48,15 @@ const REVERTABLE_COMMANDS = new Set<CommandType>([
   CommandType.NFT20,
 ])
 
-const ABI_DEFINITION: { [key in CommandType]: string[] } = {
-  [CommandType.PERMIT2_PERMIT]: ['bytes'],
-  [CommandType.PERMIT2_PERMIT_BATCH]: ['bytes'],
+const PERMIT_STRUCT =
+  '((address token,uint160 amount,uint48 expiration,uint48 nonce) details, address spender, uint256 sigDeadline)'
+
+const PERMIT_BATCH_STRUCT =
+  '((address token,uint160 amount,uint48 expiration,uint48 nonce)[] details, address spender, uint256 sigDeadline)'
+
+const ABI_DEFINITION: { [key in CommandType]: any } = {
+  [CommandType.PERMIT2_PERMIT]: [PERMIT_STRUCT, 'bytes'],
+  [CommandType.PERMIT2_PERMIT_BATCH]: [PERMIT_BATCH_STRUCT, 'bytes'],
   [CommandType.PERMIT2_TRANSFER_FROM]: ['address', 'address', 'uint160'],
   [CommandType.TRANSFER]: ['address', 'address', 'uint256'],
   [CommandType.V3_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
