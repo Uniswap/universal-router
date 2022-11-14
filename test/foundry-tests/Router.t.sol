@@ -9,8 +9,6 @@ import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
 import 'openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol';
 import 'openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol';
 
-import 'forge-std/console2.sol';
-
 contract RouterTest is Test {
     Router router;
     ExampleModule testModule;
