@@ -57,23 +57,40 @@ contract RouterImmutables {
     /// @dev The address of UniswapV3Pool initcodehash
     bytes32 internal immutable UNISWAP_V3_POOL_INIT_CODE_HASH;
 
-    constructor(IDeployBootstrap deployBootstrap) {
-        PERMIT2 = deployBootstrap.PERMIT2();
-        WETH9 = IWETH9(deployBootstrap.WETH9());
-        SEAPORT = deployBootstrap.SEAPORT();
-        NFTX_ZAP = deployBootstrap.NFTX_ZAP();
-        X2Y2 = deployBootstrap.X2Y2();
-        FOUNDATION = deployBootstrap.FOUNDATION();
-        SUDOSWAP = deployBootstrap.SUDOSWAP();
-        NFT20_ZAP = deployBootstrap.NFT20_ZAP();
-        CRYPTOPUNKS = deployBootstrap.CRYPTOPUNKS();
-        LOOKS_RARE = deployBootstrap.LOOKS_RARE();
-        LOOKS_RARE_TOKEN = ERC20(deployBootstrap.LOOKS_RARE_TOKEN());
-        LOOKS_RARE_REWARDS_DISTRIBUTOR = deployBootstrap.LOOKS_RARE_REWARDS_DISTRIBUTOR();
-        ROUTER_REWARDS_DISTRIBUTOR = deployBootstrap.ROUTER_REWARDS_DISTRIBUTOR();
-        UNISWAP_V2_FACTORY = deployBootstrap.UNISWAP_V2_FACTORY();
-        UNISWAP_V2_PAIR_INIT_CODE_HASH = deployBootstrap.UNISWAP_V2_PAIR_INIT_CODE_HASH();
-        UNISWAP_V3_FACTORY = deployBootstrap.UNISWAP_V3_FACTORY();
-        UNISWAP_V3_POOL_INIT_CODE_HASH = deployBootstrap.UNISWAP_V3_POOL_INIT_CODE_HASH();
+    constructor(
+        address permit2,
+        address weth9,
+        address seaport,
+        address nftxZap,
+        address x2y2,
+        address foundation,
+        address sudoswap,
+        address nft20Zap,
+        address cryptopunks,
+        address looksRare,
+        address routerRewardsDistributor,
+        address looksRareRewardsDistributor,
+        address looksRareToken,
+        address v2Factory,
+        address v3Factory,
+        bytes32 pairInitCodeHash,
+        bytes32 poolInitCodeHash) {
+        PERMIT2 = permit2;
+        WETH9 = IWETH9(weth9);
+        SEAPORT = seaport;
+        NFTX_ZAP = nftxZap;
+        X2Y2 = x2y2;
+        FOUNDATION = foundation;
+        SUDOSWAP = sudoswap;
+        NFT20_ZAP = nft20Zap;
+        CRYPTOPUNKS = cryptopunks;
+        LOOKS_RARE = looksRare;
+        LOOKS_RARE_TOKEN = ERC20(looksRareToken);
+        LOOKS_RARE_REWARDS_DISTRIBUTOR = looksRareRewardsDistributor;
+        ROUTER_REWARDS_DISTRIBUTOR = routerRewardsDistributor;
+        UNISWAP_V2_FACTORY = v2Factory;
+        UNISWAP_V2_PAIR_INIT_CODE_HASH = pairInitCodeHash;
+        UNISWAP_V3_FACTORY = v3Factory;
+        UNISWAP_V3_POOL_INIT_CODE_HASH = poolInitCodeHash;
     }
 }
