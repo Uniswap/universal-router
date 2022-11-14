@@ -17,11 +17,16 @@ library BytesLib {
     error ToUint24OutOfBounds();
     error NoSlice();
 
+    // constants used in slicePool
+    // 43 bytes: token + feeTier + token
     uint256 internal constant POOL_LENGTH = 43;
+    // offset from beginning of _bytes to start copying from given that 43 isnt a multiple of 32
     uint256 internal constant OFFSET = 11; // 43-32=11
+
+    // constants used in inPlaceSliceToken
     uint256 internal constant ADDR_AND_FEE_LENGTH = 23;
 
-    // Slices 43 bytes and returns them in a new array
+    // Slices first 43 bytes and returns them in a new array
     function slicePool(bytes memory _bytes) internal pure returns (bytes memory) {
         if (_bytes.length < POOL_LENGTH) revert SliceOutOfBounds();
 
@@ -51,7 +56,9 @@ library BytesLib {
         return tempBytes;
     }
 
-    function inPlaceSliceToken(bytes memory _bytes, uint256 _length) internal pure returns (bytes memory) {
+    // removes the first 23 bytes of _bytes in-place.
+    // 23 bytes: token + feeTier
+    function inPlaceSliceToken(bytes memory _bytes, uint256 _length) internal pure {
         unchecked {
             if (_length + 31 < _length) revert SliceOverflow();
             if (ADDR_AND_FEE_LENGTH + _length < ADDR_AND_FEE_LENGTH) revert SliceOverflow();
@@ -80,6 +87,7 @@ library BytesLib {
 
             // if the _length is not a multiple of 32, offset is lengthmod
             // otherwise its 32 (as lengthmod is 0)
+            // offset from beginning of _bytes to start copying from
             let offset := add(lengthmod, mul(0x20, iszero(lengthmod)))
 
             // this does calculates where to start copying bytes into
@@ -95,8 +103,6 @@ library BytesLib {
 
             mstore(_bytes, _length)
         }
-
-        return _bytes;
     }
 
     // requires that bytesLength IS bytes.length to work securely
