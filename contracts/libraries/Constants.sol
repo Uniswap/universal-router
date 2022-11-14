@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.17;
 
+import '../interfaces/external/IWETH9.sol';
+import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
+
 /// @title Constant state
 /// @notice Constant state used by the swap router
 library Constants {
@@ -24,7 +27,7 @@ library Constants {
     /// however deployers must be careful to update them to the correct address on each chain.
 
     /// @dev WETH9 address on mainnet
-    address internal constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    IWETH9 internal constant WETH9 = IWETH9(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     /// @dev The address of Seaport on mainnet
     address internal constant SEAPORT = 0x00000000006c3852cbEf3e08E8dF289169EdE581;
@@ -48,5 +51,5 @@ library Constants {
     address internal constant NFT20_ZAP = 0xA42f6cADa809Bcf417DeefbdD69C5C5A909249C0;
 
     // @dev the address of Larva Lab's cryptopunks marketplace on mainnet
-    address internal constant CRYPTOPUNKS = 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB;
+    ICryptoPunksMarket internal constant CRYPTOPUNKS = ICryptoPunksMarket(0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB);
 }

@@ -3,14 +3,14 @@
 exports[`Payments Gas Tests Individual Command Tests gas: SWEEP with ERC20 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 37435,
+  "gasUsed": 37417,
 }
 `;
 
 exports[`Payments Gas Tests Individual Command Tests gas: SWEEP_WITH_FEE 1`] = `
 Object {
   "calldataByteLength": 516,
-  "gasUsed": 66995,
+  "gasUsed": 66959,
 }
 `;
 
@@ -31,20 +31,20 @@ Object {
 exports[`Payments Gas Tests Individual Command Tests gas: UNWRAP_WETH 1`] = `
 Object {
   "calldataByteLength": 324,
-  "gasUsed": 44970,
+  "gasUsed": 44952,
 }
 `;
 
 exports[`Payments Gas Tests Individual Command Tests gas: UNWRAP_WETH_WITH_FEE 1`] = `
 Object {
   "calldataByteLength": 644,
-  "gasUsed": 52893,
+  "gasUsed": 52839,
 }
 `;
 
 exports[`Payments Gas Tests Individual Command Tests gas: WRAP_ETH 1`] = `
 Object {
   "calldataByteLength": 324,
-  "gasUsed": 53749,
+  "gasUsed": 53735,
 }
 `;
