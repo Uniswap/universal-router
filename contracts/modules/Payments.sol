@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.17;
 
-import '../interfaces/external/IWETH9.sol';
 import '../libraries/Constants.sol';
 import '../base/RouterImmutables.sol';
 import {SafeTransferLib} from 'solmate/utils/SafeTransferLib.sol';

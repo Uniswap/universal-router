@@ -10,7 +10,7 @@ abstract contract Permit2Payments is RouterImmutables, Payments {
     using SafeCast160 for uint256;
 
     function permit2TransferFrom(address token, address from, address to, uint160 amount) internal {
-        IAllowanceTransfer(PERMIT2).transferFrom(from, to, amount, token);
+        permit2.transferFrom(from, to, amount, token);
     }
 
     function payOrPermit2Transfer(address token, address payer, address recipient, uint256 amount) internal {
