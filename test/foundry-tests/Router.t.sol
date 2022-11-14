@@ -3,12 +3,19 @@ pragma solidity ^0.8.15;
 
 import 'forge-std/Test.sol';
 import {Router} from '../../contracts/Router.sol';
+<<<<<<< HEAD
 import {Payments} from '../../contracts/modules/Payments.sol';
 import {Constants} from '../../contracts/libraries/Constants.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {MockERC20} from './mock/MockERC20.sol';
 import {MockERC1155} from './mock/MockERC1155.sol';
+=======
+import {RouterCallbacks} from '../../contracts/base/RouterCallbacks.sol';
+>>>>>>> origin/main
 import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
+
+import 'openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol';
+import 'openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol';
 
 contract RouterTest is Test {
     address constant RECIPIENT = address(1);
@@ -16,15 +23,23 @@ contract RouterTest is Test {
 
     Router router;
     ExampleModule testModule;
+<<<<<<< HEAD
     MockERC20 erc20;
     MockERC1155 erc1155;
+=======
+    RouterCallbacks routerCallbacks;
+>>>>>>> origin/main
 
     function setUp() public {
         router =
             new Router(address(0), address(0),address(0), address(0), address(0), address(0), bytes32(0), bytes32(0));
         testModule = new ExampleModule();
+<<<<<<< HEAD
         erc20 = new MockERC20();
         erc1155 = new MockERC1155();
+=======
+        routerCallbacks = new RouterCallbacks();
+>>>>>>> origin/main
     }
 
     event ExampleModuleEvent(string message);
@@ -38,6 +53,7 @@ contract RouterTest is Test {
         emit log_uint(bytecodeSize);
     }
 
+<<<<<<< HEAD
     function testSweepToken() public {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.SWEEP)));
         bytes[] memory inputs = new bytes[](1);
@@ -124,5 +140,15 @@ contract RouterTest is Test {
 
         vm.expectRevert(Payments.InsufficientToken.selector);
         router.execute(commands, inputs);
+=======
+    function testSupportsInterface() public {
+        bool supportsERC1155 = routerCallbacks.supportsInterface(type(IERC1155Receiver).interfaceId);
+        bool supportsERC721 = routerCallbacks.supportsInterface(type(IERC721Receiver).interfaceId);
+        bool supportsERC165 = routerCallbacks.supportsInterface(type(IERC165).interfaceId);
+
+        assertEq(supportsERC1155, true);
+        assertEq(supportsERC721, true);
+        assertEq(supportsERC165, true);
+>>>>>>> origin/main
     }
 }
