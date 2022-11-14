@@ -69,7 +69,7 @@ library BytesLib {
             if (_length == 0) revert NoSlice();
         }
 
-        assembly {
+        assembly ("memory-safe") {
             // The first word of the slice result is potentially a partial
             // word read from the original array. To read it, we calculate
             // the length of that partial word and start copying that many
