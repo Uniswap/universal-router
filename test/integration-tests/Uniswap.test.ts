@@ -766,7 +766,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
         })
 
-        it.only('ERC20 --> ERC20 V3 trades with different input tokens with batch permit and batch transfer', async () => {
+        it('ERC20 --> ERC20 V3 trades with different input tokens with batch permit and batch transfer', async () => {
           const route1 = [DAI.address, WETH.address]
           const route2 = [WETH.address, USDC.address]
           const v3AmountIn1: BigNumber = expandTo18DecimalsBN(20)
@@ -794,22 +794,20 @@ describe('Uniswap V2 and V3 Tests:', () => {
             sigDeadline: DEADLINE,
           }
 
-          const BATCH_TRANSFER = {
-            transferDetails: [
-              {
-                from: bob.address,
-                to: router.address,
-                amount: v3AmountIn1,
-                token: DAI.address,
-              },
-              {
-                from: bob.address,
-                to: router.address,
-                amount: v3AmountIn2,
-                token: WETH.address,
-              },
-            ],
-          }
+          const BATCH_TRANSFER = [
+            {
+              from: bob.address,
+              to: router.address,
+              amount: v3AmountIn1,
+              token: DAI.address,
+            },
+            {
+              from: bob.address,
+              to: router.address,
+              amount: v3AmountIn2,
+              token: WETH.address,
+            },
+          ]
 
           const sig = await getPermitBatchSignature(BATCH_PERMIT, bob, permit2)
 
@@ -826,16 +824,16 @@ describe('Uniswap V2 and V3 Tests:', () => {
             router.address,
             CONTRACT_BALANCE,
             minAmountOut1WETH,
-            route1,
-            router.address,
+            encodePathExactInput(route1),
+            SOURCE_ROUTER,
           ])
           // 3) trade route2 and return tokens to bob
           planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
             bob.address,
             CONTRACT_BALANCE,
             minAmountOut1USDC.add(minAmountOut2USDC),
-            route2,
-            router.address,
+            encodePathExactInput(route2),
+            SOURCE_ROUTER,
           ])
 
           const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(planner)

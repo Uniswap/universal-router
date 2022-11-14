@@ -22,7 +22,8 @@ contract Permit2Payments {
 
     function permit2TransferFrom(IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) internal {
         address owner = msg.sender;
-        for (uint256 i = 0; i < batchDetails.length; ++i) {
+        uint256 batchLength = batchDetails.length;
+        for (uint256 i = 0; i < batchLength; ++i) {
             if (batchDetails[i].from != owner) revert FromAddressIsNotOwner();
         }
         IAllowanceTransfer(PERMIT2).transferFrom(batchDetails);
