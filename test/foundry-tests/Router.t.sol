@@ -15,7 +15,7 @@ import 'openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol';
 import 'openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol';
 
 contract RouterTest is Test {
-    address constant RECIPIENT = address(1);
+    address constant RECIPIENT = address(10);
     uint256 constant AMOUNT = 10 ** 18;
 
     Router router;
