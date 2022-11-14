@@ -32,7 +32,7 @@ library BytesLib {
 
         bytes memory tempBytes;
 
-        assembly {
+        assembly ("memory-safe") {
             // Get a location of some free memory and store it in tempBytes as
             // Solidity does for memory variables.
             tempBytes := mload(0x40)
@@ -41,16 +41,19 @@ library BytesLib {
             let copyDestination := add(tempBytes, OFFSET)
             let endNewBytes := add(copyDestination, POOL_LENGTH)
 
-            for { let copyFrom := add(_bytes, OFFSET) } lt(copyDestination, endNewBytes) {
-                copyDestination := add(copyDestination, 0x20)
-                copyFrom := add(copyFrom, 0x20)
-            } { mstore(copyDestination, mload(copyFrom)) }
+            let copyFrom := add(_bytes, OFFSET)
+
+            mstore(copyDestination, mload(copyFrom))
+
+            copyDestination := add(copyDestination, 0x20)
+            copyFrom := add(copyFrom, 0x20)
+            mstore(copyDestination, mload(copyFrom))
 
             mstore(tempBytes, POOL_LENGTH)
 
-            //update free-memory pointer
-            //allocating the array padded to 32 bytes like the compiler does now
-            mstore(0x40, and(add(copyDestination, 31), not(31)))
+            // update free-memory pointer
+            // allocating the array padded to 32 bytes like the compiler does now
+            mstore(0x40, and(add(copyDestination, 63), not(31)))
         }
 
         return tempBytes;
