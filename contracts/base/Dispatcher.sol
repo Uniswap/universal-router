@@ -9,6 +9,7 @@ import '../libraries/Commands.sol';
 import {ERC721} from 'solmate/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/tokens/ERC1155.sol';
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
+import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
 contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     error InvalidCommandType(uint256 commandType);
@@ -88,8 +89,11 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
             (success, output) = Constants.NFT20_ZAP.call{value: value}(data);
         } else if (command == Commands.CRYPTOPUNKS) {
             (uint256 punkId, address recipient, uint256 value) = abi.decode(inputs, (uint256, address, uint256));
-            Constants.CRYPTOPUNKS.buyPunk{value: value}(punkId);
-            Constants.CRYPTOPUNKS.transferPunk(recipient, punkId);
+            (success, output) = Constants.CRYPTOPUNKS.call{value: value}(
+                abi.encodeWithSelector(ICryptoPunksMarket.buyPunk.selector, punkId)
+            );
+            if (success) ICryptoPunksMarket(Constants.CRYPTOPUNKS).transferPunk(recipient, punkId);
+            else output = 'CryptoPunk Trade Failed';
         } else if (command == Commands.SWEEP) {
             (address token, address recipient, uint256 amountMin) = abi.decode(inputs, (address, address, uint256));
             Payments.sweep(token, recipient, amountMin);

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.17;
 
 import '../interfaces/external/IWETH9.sol';
-import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
 /// @title Constant state
 /// @notice Constant state used by the swap router
@@ -51,5 +50,5 @@ library Constants {
     address internal constant NFT20_ZAP = 0xA42f6cADa809Bcf417DeefbdD69C5C5A909249C0;
 
     // @dev the address of Larva Lab's cryptopunks marketplace on mainnet
-    ICryptoPunksMarket internal constant CRYPTOPUNKS = ICryptoPunksMarket(0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB);
+    address internal constant CRYPTOPUNKS = 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB;
 }

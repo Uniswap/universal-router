@@ -3,27 +3,27 @@
 exports[`Check Ownership Gas gas: checks ownership after a seaport trade, one NFT 1`] = `
 Object {
   "calldataByteLength": 2212,
-  "gasUsed": 204232,
+  "gasUsed": 204259,
 }
 `;
 
 exports[`Check Ownership Gas gas: checks ownership after a seaport trade, two NFTs 1`] = `
 Object {
   "calldataByteLength": 5028,
-  "gasUsed": 340120,
+  "gasUsed": 340165,
 }
 `;
 
 exports[`Check Ownership Gas gas: does not check ownership after a seaport trade, one NFT 1`] = `
 Object {
   "calldataByteLength": 2052,
-  "gasUsed": 200297,
+  "gasUsed": 200306,
 }
 `;
 
 exports[`Check Ownership Gas gas: just ownership check 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 31007,
+  "gasUsed": 31025,
 }
 `;
