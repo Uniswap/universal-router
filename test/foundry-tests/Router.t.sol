@@ -13,7 +13,7 @@ contract RouterTest is Test {
 
     function setUp() public {
         router =
-            new Router(IAllowanceTransfer(address(0)), address(0),address(0), ERC20(address(0)), address(0), address(0), bytes32(0), bytes32(0));
+        new Router(IAllowanceTransfer(address(0)), address(0),address(0), ERC20(address(0)), address(0), address(0), bytes32(0), bytes32(0));
         testModule = new ExampleModule();
     }
 
