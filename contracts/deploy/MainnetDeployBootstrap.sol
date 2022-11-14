@@ -39,7 +39,7 @@ contract MainnetDeployBootstrap is BaseDeployBootstrap {
     address public constant override LOOKS_RARE_REWARDS_DISTRIBUTOR = 0x0554f068365eD43dcC98dcd7Fd7A8208a5638C72;
 
     /// @dev The address of Router rewards distributor on mainnet
-    address public constant override ROUTER_REWARDS_DISTRIBUTOR = 0x0000000000000000000000000000000000000000;
+    address public constant override ROUTER_REWARDS_DISTRIBUTOR = 0xea37093ce161f090e443f304e1bF3a8f14D7bb40;
 
     /// @dev The address of the UniswapV2Factory on mainnet
     address public constant override UNISWAP_V2_FACTORY = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
