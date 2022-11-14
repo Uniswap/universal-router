@@ -8,6 +8,7 @@ import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.so
 import '../../../libraries/Constants.sol';
 import '../../../base/RouterImmutables.sol';
 import '../../Permit2Payments.sol';
+import '../../../libraries/Constants.sol';
 
 abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3SwapCallback {
     using V3Path for bytes;
