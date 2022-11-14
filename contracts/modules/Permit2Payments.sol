@@ -8,6 +8,8 @@ import '../libraries/Constants.sol';
 contract Permit2Payments {
     using SafeCast160 for uint256;
 
+    error FromAddressIsNotOwner();
+
     address immutable PERMIT2;
 
     constructor(address permit2) {
@@ -16,6 +18,14 @@ contract Permit2Payments {
 
     function permit2TransferFrom(address token, address from, address to, uint160 amount) internal {
         IAllowanceTransfer(PERMIT2).transferFrom(from, to, amount, token);
+    }
+
+    function permit2TransferFrom(IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) internal {
+        address owner = msg.sender;
+        for (uint256 i = 0; i < batchDetails.length; ++i) {
+            if (batchDetails[i].from != owner) revert FromAddressIsNotOwner();
+        }
+        IAllowanceTransfer(PERMIT2).transferFrom(batchDetails);
     }
 
     function payOrPermit2Transfer(address token, address payer, address recipient, uint256 amount) internal {
