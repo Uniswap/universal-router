@@ -25,32 +25,26 @@ contract DeployRouter is Script {
 
     function setUp() public {}
 
-    function run(string memory pathToJSON) public returns (Router router) {
+    function run(string memory pathToBootstrap, address permit2) public returns (Router router) {
         vm.startBroadcast();
 
-        DeployParameters memory params = fetchParameters(pathToJSON);
-
-        address permit2 = params.permit2;
-        if (permit2 == address(0)) {
-          // if no permit contract is given then deploy
-          permit2 = address(new Permit2{salt: SALT}());
-          console2.log("Permit2 Deployed:", address(permit2));
-        }
+        address bootstrap = deployCode(pathToBootstrap, abi.encode(permit2));
 
         router = new Router{salt: SALT}(
-          permit2,
-          params.routerRewardsDistributor,
-          params.looksRareRewardsDistributor,
-          params.looksRareToken,
-          params.v2Factory,
-          params.v3Factory,
-          params.v2PairInitCodehash,
-          params.v3PoolInitCodehash
+          bootstrap
         );
         console2.log("Router Deployed:", address(router));
         vm.stopBroadcast();
 
         return router;
+    }
+
+    function run(string memory pathToBootstrap) public returns (Router router) {
+        vm.startBroadcast();
+
+        address permit2 = address(new Permit2{salt: SALT}());
+        console2.log("Permit2 Deployed:", address(permit2));
+        return run(pathToBootstrap, permit2);
     }
 
     function fetchParameters(string memory pathToJSON) internal returns (DeployParameters memory params) {

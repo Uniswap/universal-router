@@ -4,21 +4,14 @@ pragma solidity ^0.8.17;
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import './UniswapV2Library.sol';
+import '../../../base/RouterImmutables.sol';
 import '../../Payments.sol';
 import '../../Permit2Payments.sol';
 import '../../../libraries/Constants.sol';
 
-contract V2SwapRouter is Permit2Payments {
-    address internal immutable V2_FACTORY;
-    bytes32 internal immutable PAIR_INIT_CODE_HASH;
-
+abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
     error V2TooLittleReceived();
     error V2TooMuchRequested();
-
-    constructor(address v2Factory, bytes32 pairInitCodeHash, address permit2) Permit2Payments(permit2) {
-        V2_FACTORY = v2Factory;
-        PAIR_INIT_CODE_HASH = pairInitCodeHash;
-    }
 
     function _v2Swap(address[] memory path, address recipient, address pair) private {
         unchecked {
@@ -37,7 +30,9 @@ contract V2SwapRouter is Permit2Payments {
                     input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
                 address nextPair;
                 (nextPair, token0) = i < penultimatePairIndex
-                    ? UniswapV2Library.pairAndToken0For(V2_FACTORY, PAIR_INIT_CODE_HASH, output, path[i + 2])
+                    ? UniswapV2Library.pairAndToken0For(
+                        UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, output, path[i + 2]
+                    )
                     : (recipient, address(0));
                 IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
                 pair = nextPair;
@@ -52,7 +47,8 @@ contract V2SwapRouter is Permit2Payments {
         address recipient,
         address payer
     ) internal {
-        address firstPair = UniswapV2Library.pairFor(V2_FACTORY, PAIR_INIT_CODE_HASH, path[0], path[1]);
+        address firstPair =
+            UniswapV2Library.pairFor(UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, path[0], path[1]);
         if (
             amountIn != Constants.ALREADY_PAID // amountIn of 0 to signal that the pair already has the tokens
         ) {
@@ -75,7 +71,7 @@ contract V2SwapRouter is Permit2Payments {
         address payer
     ) internal {
         (uint256 amountIn, address firstPair) =
-            UniswapV2Library.getAmountInMultihop(V2_FACTORY, PAIR_INIT_CODE_HASH, amountOut, path);
+            UniswapV2Library.getAmountInMultihop(UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, amountOut, path);
         if (amountIn > amountInMax) revert V2TooMuchRequested();
 
         payOrPermit2Transfer(path[0], payer, firstPair, amountIn);

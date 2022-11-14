@@ -3,29 +3,18 @@ pragma solidity ^0.8.17;
 
 import './base/Dispatcher.sol';
 import './base/RewardsCollector.sol';
-import './libraries/Constants.sol';
+import './base/RouterImmutables.sol';
 import './libraries/Commands.sol';
 import './interfaces/IRouter.sol';
+import './interfaces/IDeployBootstrap.sol';
 
-contract Router is IRouter, Dispatcher, RewardsCollector {
+contract Router is RouterImmutables, RewardsCollector, Dispatcher, IRouter {
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
     }
 
-    constructor(
-        address permit2,
-        address routerRewardsDistributor,
-        address looksRareRewardsDistributor,
-        address looksRareToken,
-        address v2Factory,
-        address v3Factory,
-        bytes32 pairInitCodeHash,
-        bytes32 poolInitCodeHash
-    )
-        Dispatcher(permit2, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash)
-        RewardsCollector(routerRewardsDistributor, looksRareRewardsDistributor, looksRareToken)
-    {}
+    constructor(address deployBootstrap) RouterImmutables(IDeployBootstrap(deployBootstrap)) {}
 
     /// @inheritdoc IRouter
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
