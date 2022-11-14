@@ -9,8 +9,8 @@ import '../libraries/Commands.sol';
 import '../libraries/Recipient.sol';
 import {ERC721} from 'solmate/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/tokens/ERC1155.sol';
-import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
+import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
 contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     using Recipient for address;
@@ -20,7 +20,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     error InvalidOwnerERC1155();
 
     constructor(
-        address permit2,
+        IAllowanceTransfer permit2,
         address v2Factory,
         address v3Factory,
         bytes32 pairInitCodeHash,
@@ -37,11 +37,11 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         if (command == Commands.PERMIT2_PERMIT) {
             (IAllowanceTransfer.PermitSingle memory permitSingle, bytes memory data) =
                 abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes));
-            IAllowanceTransfer(PERMIT2).permit(msg.sender, permitSingle, data);
+            permit2.permit(msg.sender, permitSingle, data);
         } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
             (IAllowanceTransfer.PermitBatch memory permitBatch, bytes memory data) =
                 abi.decode(inputs, (IAllowanceTransfer.PermitBatch, bytes));
-            IAllowanceTransfer(PERMIT2).permit(msg.sender, permitBatch, data);
+            permit2.permit(msg.sender, permitBatch, data);
         } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
             (address token, address recipient, uint160 amount) = abi.decode(inputs, (address, address, uint160));
             permit2TransferFrom(token, msg.sender, recipient, amount);
