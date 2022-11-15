@@ -5,9 +5,9 @@ import './base/Dispatcher.sol';
 import './base/RewardsCollector.sol';
 import './libraries/Constants.sol';
 import './libraries/Commands.sol';
-import './interfaces/IRouter.sol';
+import './interfaces/IUniversalRouter.sol';
 
-contract Router is IRouter, Dispatcher, RewardsCollector {
+contract UniversalRouter is IUniversalRouter, Dispatcher, RewardsCollector {
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
@@ -27,7 +27,7 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
         RewardsCollector(routerRewardsDistributor, looksRareRewardsDistributor, looksRareToken)
     {}
 
-    /// @inheritdoc IRouter
+    /// @inheritdoc IUniversalRouter
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
         external
         payable
@@ -36,7 +36,7 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
         execute(commands, inputs);
     }
 
-    /// @inheritdoc IRouter
+    /// @inheritdoc IUniversalRouter
     function execute(bytes calldata commands, bytes[] calldata inputs) public payable {
         bool success;
         bytes memory output;
@@ -65,5 +65,6 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
         return command & Commands.FLAG_ALLOW_REVERT == 0;
     }
 
+    // To receive ETH from WETH and NFT protocols
     receive() external payable {}
 }

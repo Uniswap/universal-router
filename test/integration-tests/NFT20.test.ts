@@ -1,20 +1,20 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import NFT20_ABI from './shared/abis/NFT20.json'
-import { Router, Permit2, ERC721 } from '../../typechain'
+import { UniversalRouter, Permit2, ERC721 } from '../../typechain'
 import { ALPHABETTIES_721, resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, ALPHABETTIES_ADDRESS, DEADLINE } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
 import { expect } from 'chai'
-import deployRouter, { deployPermit2 } from './shared/deployRouter'
+import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 const { ethers } = hre
 
 const NFT20_INTERFACE = new ethers.utils.Interface(NFT20_ABI)
 
 describe('NFT20', () => {
   let alice: SignerWithAddress
-  let router: Router
+  let router: UniversalRouter
   let permit2: Permit2
   let planner: RoutePlanner
   let alphabetties: ERC721
@@ -29,7 +29,7 @@ describe('NFT20', () => {
       params: [ALICE_ADDRESS],
     })
     permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployRouter(permit2)).connect(alice) as Router
+    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     alphabetties = ALPHABETTIES_721.connect(alice) as ERC721
   })
 

@@ -1,12 +1,12 @@
 import type { Contract } from '@ethersproject/contracts'
-import { Router, Permit2 } from '../../../typechain'
+import { UniversalRouter, Permit2 } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import { resetFork, DAI, WETH } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, ONE_PERCENT_BIPS } from '../shared/constants'
 import { expandTo18DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import deployRouter, { deployPermit2 } from '../shared/deployRouter'
+import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from '../shared/planner'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 const { ethers } = hre
@@ -16,7 +16,7 @@ import { BigNumber } from 'ethers'
 describe('Payments Gas Tests', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
-  let router: Router
+  let router: UniversalRouter
   let permit2: Permit2
   let daiContract: Contract
   let wethContract: Contract
@@ -33,7 +33,7 @@ describe('Payments Gas Tests', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, new ethers.utils.Interface(WETH_ABI.abi), alice)
     permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployRouter(permit2)).connect(alice) as Router
+    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
   })
 

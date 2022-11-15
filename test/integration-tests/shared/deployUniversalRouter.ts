@@ -1,6 +1,6 @@
 import hre from 'hardhat'
 const { ethers } = hre
-import { Router, Permit2 } from '../../../typechain'
+import { UniversalRouter, Permit2 } from '../../../typechain'
 import {
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
@@ -15,8 +15,8 @@ export default async (
   permit2: Permit2,
   mockLooksRareRewardsDistributor?: string,
   mockLooksRareToken?: string
-): Promise<Router> => {
-  const routerFactory = await ethers.getContractFactory('Router')
+): Promise<UniversalRouter> => {
+  const routerFactory = await ethers.getContractFactory('UniversalRouter')
   const router = (await routerFactory.deploy(
     permit2.address,
     ROUTER_REWARDS_DISTRIBUTOR,
@@ -26,7 +26,7 @@ export default async (
     V3_FACTORY_MAINNET,
     V2_INIT_CODE_HASH_MAINNET,
     V3_INIT_CODE_HASH_MAINNET
-  )) as unknown as Router
+  )) as unknown as UniversalRouter
   return router
 }
 

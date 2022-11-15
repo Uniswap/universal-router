@@ -1,4 +1,4 @@
-import { Router, Permit2 } from '../../../typechain'
+import { UniversalRouter, Permit2 } from '../../../typechain'
 import { expect } from '../shared/expect'
 import type { Contract } from '@ethersproject/contracts'
 import {
@@ -21,16 +21,16 @@ import {
   getAdvancedOrderParams,
   AdvancedOrder,
 } from '../shared/protocolHelpers/seaport'
-import deployRouter, { deployPermit2 } from '../shared/deployRouter'
+import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from '../shared/planner'
 import { BigNumber } from 'ethers'
 
 const { ethers } = hre
 
-describe('Router Gas Tests', () => {
+describe('UniversalRouter Gas Tests', () => {
   let alice: SignerWithAddress
   let planner: RoutePlanner
-  let router: Router
+  let router: UniversalRouter
   let permit2: Permit2
   let daiContract: Contract
 
@@ -43,7 +43,7 @@ describe('Router Gas Tests', () => {
     })
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployRouter(permit2)).connect(alice) as Router
+    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
   })
 

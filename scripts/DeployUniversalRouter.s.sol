@@ -4,7 +4,7 @@ pragma solidity ^0.8.15;
 import "forge-std/console2.sol";
 import "forge-std/StdJson.sol";
 import "forge-std/Script.sol";
-import {Router} from "contracts/Router.sol";
+import {UniversalRouter} from "contracts/UniversalRouter.sol";
 import {Permit2} from 'permit2/src/Permit2.sol';
 
 struct DeployParameters {
@@ -20,12 +20,12 @@ struct DeployParameters {
 
 bytes32 constant SALT = bytes32(uint256(0x1234));
 
-contract DeployRouter is Script {
+contract DeployUniversalRouter is Script {
   using stdJson for string;
 
     function setUp() public {}
 
-    function run(string memory pathToJSON) public returns (Router router) {
+    function run(string memory pathToJSON) public returns (UniversalRouter router) {
         vm.startBroadcast();
 
         DeployParameters memory params = fetchParameters(pathToJSON);
@@ -37,7 +37,7 @@ contract DeployRouter is Script {
           console2.log("Permit2 Deployed:", address(permit2));
         }
 
-        router = new Router{salt: SALT}(
+        router = new UniversalRouter{salt: SALT}(
           permit2,
           params.routerRewardsDistributor,
           params.looksRareRewardsDistributor,
@@ -47,7 +47,7 @@ contract DeployRouter is Script {
           params.v2PairInitCodehash,
           params.v3PoolInitCodehash
         );
-        console2.log("Router Deployed:", address(router));
+        console2.log("UniversalRouter Deployed:", address(router));
         vm.stopBroadcast();
 
         return router;

@@ -2,13 +2,13 @@
 pragma solidity ^0.8.15;
 
 import 'forge-std/Test.sol';
-import {Router} from '../../contracts/Router.sol';
+import {UniversalRouter} from '../../contracts/UniversalRouter.sol';
 import {Payments} from '../../contracts/modules/Payments.sol';
 import {Constants} from '../../contracts/libraries/Constants.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {MockERC20} from './mock/MockERC20.sol';
 import {MockERC1155} from './mock/MockERC1155.sol';
-import {RouterCallbacks} from '../../contracts/base/RouterCallbacks.sol';
+import {Callbacks} from '../../contracts/base/Callbacks.sol';
 import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
@@ -16,23 +16,23 @@ import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import 'openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol';
 import 'openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol';
 
-contract RouterTest is Test {
+contract UniversalRouterTest is Test {
     address constant RECIPIENT = address(10);
     uint256 constant AMOUNT = 10 ** 18;
 
-    Router router;
+    UniversalRouter router;
     ExampleModule testModule;
     MockERC20 erc20;
     MockERC1155 erc1155;
-    RouterCallbacks routerCallbacks;
+    Callbacks callbacks;
 
     function setUp() public {
         router =
-        new Router(IAllowanceTransfer(address(0)), address(0),address(0), ERC20(address(0)), address(0), address(0), bytes32(0), bytes32(0));
+        new UniversalRouter(IAllowanceTransfer(address(0)), address(0),address(0), ERC20(address(0)), address(0), address(0), bytes32(0), bytes32(0));
         testModule = new ExampleModule();
         erc20 = new MockERC20();
         erc1155 = new MockERC1155();
-        routerCallbacks = new RouterCallbacks();
+        callbacks = new Callbacks();
     }
 
     event ExampleModuleEvent(string message);
@@ -135,9 +135,9 @@ contract RouterTest is Test {
     }
 
     function testSupportsInterface() public {
-        bool supportsERC1155 = routerCallbacks.supportsInterface(type(IERC1155Receiver).interfaceId);
-        bool supportsERC721 = routerCallbacks.supportsInterface(type(IERC721Receiver).interfaceId);
-        bool supportsERC165 = routerCallbacks.supportsInterface(type(IERC165).interfaceId);
+        bool supportsERC1155 = callbacks.supportsInterface(type(IERC1155Receiver).interfaceId);
+        bool supportsERC721 = callbacks.supportsInterface(type(IERC721Receiver).interfaceId);
+        bool supportsERC165 = callbacks.supportsInterface(type(IERC165).interfaceId);
 
         assertEq(supportsERC1155, true);
         assertEq(supportsERC721, true);
