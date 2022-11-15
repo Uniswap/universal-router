@@ -1,13 +1,16 @@
 {
   "name": "@uniswap/narwhal",
-  "description": "Smart contracts for Narwhal",
+  "description": "Smart contracts for Universal Router",
   "license": "GPL-2.0-or-later",
   "publishConfig": {
     "access": "private"
   },
   "version": "1.0.0-beta.5",
   "keywords": [
-    "narwhal"
+    "uniswap",
+    "router",
+    "universal router",
+    "swap router"
   ],
   "repository": {
     "type": "git",

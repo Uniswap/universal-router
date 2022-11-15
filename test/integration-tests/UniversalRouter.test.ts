@@ -1,10 +1,10 @@
-import { Router, Permit2, ERC20, MockLooksRareRewardsDistributor, ERC721 } from '../../typechain'
+import { UniversalRouter, Permit2, ERC20, MockLooksRareRewardsDistributor, ERC721 } from '../../typechain'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
-import deployRouter, { deployPermit2 } from './shared/deployRouter'
+import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import {
   ALICE_ADDRESS,
   DEADLINE,
@@ -34,9 +34,9 @@ import hre from 'hardhat'
 const { ethers } = hre
 const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
 
-describe('Router', () => {
+describe('UniversalRouter', () => {
   let alice: SignerWithAddress
-  let router: Router
+  let router: UniversalRouter
   let permit2: Permit2
   let daiContract: ERC20
   let mockLooksRareToken: ERC20
@@ -63,9 +63,9 @@ describe('Router', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
     permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployRouter(permit2, mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)).connect(
+    router = (await deployUniversalRouter(permit2, mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)).connect(
       alice
-    ) as Router
+    ) as UniversalRouter
     cryptoCovens = COVEN_721.connect(alice) as ERC721
   })
 

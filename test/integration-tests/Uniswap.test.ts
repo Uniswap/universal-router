@@ -6,7 +6,7 @@ import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
 import { encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
-import { Permit2, Router } from '../../typechain'
+import { Permit2, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
 import {
@@ -22,7 +22,7 @@ import {
 } from './shared/constants'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import deployRouter, { deployPermit2 } from './shared/deployRouter'
+import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 import { getPermitSignature, getPermitBatchSignature, PermitSingle } from './shared/protocolHelpers/permit2'
@@ -31,7 +31,7 @@ const { ethers } = hre
 describe('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
-  let router: Router
+  let router: UniversalRouter
   let permit2: Permit2
   let daiContract: Contract
   let wethContract: Contract
@@ -50,7 +50,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = (await deployPermit2()).connect(bob) as Permit2
-    router = (await deployRouter(permit2)).connect(bob) as Router
+    router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
     planner = new RoutePlanner()
 
     // alice gives bob some tokens
@@ -598,7 +598,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
   })
 
   describe('Mixing V2 and V3', () => {
-    describe('with Narwhal Router.', () => {
+    describe('with Universal Router.', () => {
       beforeEach(async () => {
         // for these tests Bob gives the router max approval on permit2
         await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)

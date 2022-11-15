@@ -16,10 +16,10 @@ import {
 import { ALICE_ADDRESS, DEADLINE, MAX_UINT, MAX_UINT160, SOURCE_MSG_SENDER } from '../shared/constants'
 import { expandTo6DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import deployRouter, { deployPermit2 } from '../shared/deployRouter'
+import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from '../shared/planner'
 import hre from 'hardhat'
-import { Router, Permit2, ERC20__factory, ERC20 } from '../../../typechain'
+import { UniversalRouter, Permit2, ERC20__factory, ERC20 } from '../../../typechain'
 import { getPermitSignature, PermitSingle } from '../shared/protocolHelpers/permit2'
 import { CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
@@ -29,7 +29,7 @@ const { ethers } = hre
 describe('Uniswap UX Tests gas:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
-  let router: Router
+  let router: UniversalRouter
 
   let permit2: Permit2
   let usdcContract: ERC20
@@ -53,7 +53,7 @@ describe('Uniswap UX Tests gas:', () => {
     usdcContract = ERC20__factory.connect(USDC.address, alice)
 
     permit2 = (await deployPermit2()).connect(bob) as Permit2
-    router = (await deployRouter(permit2)).connect(bob) as Router
+    router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
 
     planner = new RoutePlanner()
 
@@ -160,10 +160,10 @@ describe('Uniswap UX Tests gas:', () => {
     }
   })
 
-  async function executeTradeNarwhal(
+  async function executeTradeUniversalRouter(
     planner: RoutePlanner,
     trade: Trade<Token, Token, TradeType.EXACT_INPUT>,
-    overrideRouter?: Router
+    overrideRouter?: UniversalRouter 
   ): Promise<BigNumber> {
     for (let i = 0; i < trade.swaps.length; i++) {
       let swap = trade.swaps[i]
@@ -188,12 +188,10 @@ describe('Uniswap UX Tests gas:', () => {
     return gasUsed
   }
 
-  describe('Narwhal Estimates', async () => {
-    describe('Approvals', async () => {
-      it('Cost for infinite approval of permit2/swaprouter02 contract', async () => {
-        // Bob max-approves the permit2 contract to access his DAI and WETH
-        await snapshotGasCost(await usdcContract.approve(permit2.address, MAX_UINT))
-      })
+  describe('Approvals', async () => {
+    it('Cost for infinite approval of permit2/swaprouter02 contract', async () => {
+      // Bob max-approves the permit2 contract to access his DAI and WETH
+      await snapshotGasCost(await usdcContract.approve(permit2.address, MAX_UINT))
     })
   })
 
@@ -228,7 +226,7 @@ describe('Uniswap UX Tests gas:', () => {
         const sig = await getPermitSignature(SIMPLE_SWAP_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [SIMPLE_SWAP_PERMIT, sig])
 
-        const gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
+        const gasUsed = await executeTradeUniversalRouter(planner, SIMPLE_SWAP)
 
         await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
@@ -237,7 +235,7 @@ describe('Uniswap UX Tests gas:', () => {
         const sig = await getPermitSignature(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, sig])
 
-        const gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
+        const gasUsed = await executeTradeUniversalRouter(planner, SIMPLE_SWAP)
 
         await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
@@ -262,7 +260,7 @@ describe('Uniswap UX Tests gas:', () => {
         const sig = await getPermitSignature(COMPLEX_SWAP_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [COMPLEX_SWAP_PERMIT, sig])
 
-        const gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+        const gasUsed = await executeTradeUniversalRouter(planner, COMPLEX_SWAP)
 
         await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
@@ -273,7 +271,7 @@ describe('Uniswap UX Tests gas:', () => {
 
         planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, sig])
 
-        const gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+        const gasUsed = await executeTradeUniversalRouter(planner, COMPLEX_SWAP)
 
         await snapshotGasCost(approvePermit2Gas.add(gasUsed))
       })
@@ -316,7 +314,7 @@ describe('Uniswap UX Tests gas:', () => {
         // Swap 1: complex
         let sig = await getPermitSignature(COMPLEX_SWAP_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [COMPLEX_SWAP_PERMIT, sig])
-        let gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+        let gasUsed = await executeTradeUniversalRouter(planner, COMPLEX_SWAP)
 
         totalGas = totalGas.add(gasUsed)
         planner = new RoutePlanner()
@@ -324,7 +322,7 @@ describe('Uniswap UX Tests gas:', () => {
         // Swap 2: complex
         sig = await getPermitSignature(COMPLEX_SWAP_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [COMPLEX_SWAP_PERMIT, sig])
-        gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+        gasUsed = await executeTradeUniversalRouter(planner, COMPLEX_SWAP)
 
         totalGas = totalGas.add(gasUsed)
         planner = new RoutePlanner()
@@ -332,7 +330,7 @@ describe('Uniswap UX Tests gas:', () => {
         // Swap 3: simple
         sig = await getPermitSignature(SIMPLE_SWAP_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [SIMPLE_SWAP_PERMIT, sig])
-        gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
+        gasUsed = await executeTradeUniversalRouter(planner, SIMPLE_SWAP)
 
         totalGas = totalGas.add(gasUsed)
         await snapshotGasCost(totalGas)
@@ -344,19 +342,19 @@ describe('Uniswap UX Tests gas:', () => {
         // Swap 1: complex, but give max approval no more approvals needed
         let sig = await getPermitSignature(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, sig])
-        let gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+        let gasUsed = await executeTradeUniversalRouter(planner, COMPLEX_SWAP)
 
         totalGas = totalGas.add(gasUsed)
         planner = new RoutePlanner()
 
         // Swap 2: complex
-        gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+        gasUsed = await executeTradeUniversalRouter(planner, COMPLEX_SWAP)
 
         totalGas = totalGas.add(gasUsed)
         planner = new RoutePlanner()
 
         // Swap 3: simple
-        gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
+        gasUsed = await executeTradeUniversalRouter(planner, SIMPLE_SWAP)
 
         totalGas = totalGas.add(gasUsed)
         await snapshotGasCost(totalGas)
@@ -391,7 +389,7 @@ describe('Uniswap UX Tests gas:', () => {
         for (let i = 0; i < 5; i++) {
           sig = await getPermitSignature(COMPLEX_SWAP_PERMIT, bob, permit2)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [COMPLEX_SWAP_PERMIT, sig])
-          gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+          gasUsed = await executeTradeUniversalRouter(planner, COMPLEX_SWAP)
 
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
@@ -401,7 +399,7 @@ describe('Uniswap UX Tests gas:', () => {
         for (let i = 0; i < 5; i++) {
           sig = await getPermitSignature(SIMPLE_SWAP_PERMIT, bob, permit2)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [SIMPLE_SWAP_PERMIT, sig])
-          gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
+          gasUsed = await executeTradeUniversalRouter(planner, SIMPLE_SWAP)
 
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
@@ -420,14 +418,14 @@ describe('Uniswap UX Tests gas:', () => {
 
         // Do 5 complex swaps
         for (let i = 0; i < 5; i++) {
-          gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+          gasUsed = await executeTradeUniversalRouter(planner, COMPLEX_SWAP)
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
         }
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
-          gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP)
+          gasUsed = await executeTradeUniversalRouter(planner, SIMPLE_SWAP)
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
         }
@@ -459,7 +457,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch SwapRouter03
-        const router2 = (await deployRouter(permit2)).connect(bob) as Router
+        const router2 = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
         const router2ApprovalTx = (await approveSwapRouter02(bob, USDC, router2.address))!
         totalGas = totalGas.add(router2ApprovalTx.gasUsed)
 
@@ -470,7 +468,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch SwapRouter04
-        const router3 = (await deployRouter(permit2)).connect(bob) as Router
+        const router3 = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
         const router3ApprovalTx = (await approveSwapRouter02(bob, USDC, router3.address))!
         totalGas = totalGas.add(router3ApprovalTx.gasUsed)
 
@@ -492,35 +490,35 @@ describe('Uniswap UX Tests gas:', () => {
         for (let i = 0; i < 5; i++) {
           sig = await getPermitSignature(COMPLEX_SWAP_PERMIT, bob, permit2)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [COMPLEX_SWAP_PERMIT, sig])
-          gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+          gasUsed = await executeTradeUniversalRouter(planner, COMPLEX_SWAP)
 
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
         }
 
-        // Launch narwhal v2
-        const router2 = (await deployRouter(permit2)).connect(bob) as Router
+        // Launch Universal Router v2
+        const router2 = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
           SIMPLE_SWAP_PERMIT.spender = router2.address
           sig = await getPermitSignature(SIMPLE_SWAP_PERMIT, bob, permit2)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [SIMPLE_SWAP_PERMIT, sig])
-          gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP, router2)
+          gasUsed = await executeTradeUniversalRouter(planner, SIMPLE_SWAP, router2)
 
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
         }
 
-        // Launch narwhal v3
-        const router3 = (await deployRouter(permit2)).connect(bob) as Router
+        // Launch Universal Router v3
+        const router3 = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
           SIMPLE_SWAP_PERMIT.spender = router3.address
           sig = await getPermitSignature(SIMPLE_SWAP_PERMIT, bob, permit2)
           planner.addCommand(CommandType.PERMIT2_PERMIT, [SIMPLE_SWAP_PERMIT, sig])
-          gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP, router3)
+          gasUsed = await executeTradeUniversalRouter(planner, SIMPLE_SWAP, router3)
 
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
@@ -539,33 +537,33 @@ describe('Uniswap UX Tests gas:', () => {
 
         // Do 5 complex swaps
         for (let i = 0; i < 5; i++) {
-          gasUsed = await executeTradeNarwhal(planner, COMPLEX_SWAP)
+          gasUsed = await executeTradeUniversalRouter(planner, COMPLEX_SWAP)
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
         }
 
-        // Launch narwhal v2
-        const router2 = (await deployRouter(permit2)).connect(bob) as Router
+        // Launch Universal Router v2
+        const router2 = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
         MAX_PERMIT.spender = router2.address
         let calldata2 = await getPermitSignature(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata2])
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
-          gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP, router2)
+          gasUsed = await executeTradeUniversalRouter(planner, SIMPLE_SWAP, router2)
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
         }
 
-        // Launch narwhal v3
-        const router3 = (await deployRouter(permit2)).connect(bob) as Router
+        // Launch Universal Router v3
+        const router3 = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
         MAX_PERMIT.spender = router3.address
         let calldata3 = await getPermitSignature(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata3])
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
-          gasUsed = await executeTradeNarwhal(planner, SIMPLE_SWAP, router3)
+          gasUsed = await executeTradeUniversalRouter(planner, SIMPLE_SWAP, router3)
           totalGas = totalGas.add(gasUsed)
           planner = new RoutePlanner()
         }

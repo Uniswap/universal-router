@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import '../modules/uniswap/v2/V2SwapRouter.sol';
 import '../modules/uniswap/v3/V3SwapRouter.sol';
 import '../modules/Payments.sol';
-import '../base/RouterCallbacks.sol';
+import '../base/Callbacks.sol';
 import '../libraries/Commands.sol';
 import '../libraries/Recipient.sol';
 import {ERC721} from 'solmate/tokens/ERC721.sol';
@@ -12,7 +12,7 @@ import {ERC1155} from 'solmate/tokens/ERC1155.sol';
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
-contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
+contract Dispatcher is V2SwapRouter, V3SwapRouter, Callbacks {
     using Recipient for address;
 
     error InvalidCommandType(uint256 commandType);

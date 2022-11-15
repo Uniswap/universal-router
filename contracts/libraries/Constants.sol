@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import '../interfaces/external/IWETH9.sol';
 
 /// @title Constant state
-/// @notice Constant state used by the swap router
+/// @notice Constant state used by the universal router
 library Constants {
     /// @dev Used for identifying cases when this contract's balance of a token is to be used
     /// This is equivalent to 1<<255, a.k.a a singular 1 in the most significant bit.
