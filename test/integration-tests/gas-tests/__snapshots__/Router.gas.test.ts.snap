@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Just Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Router Gas Tests gas: bytecode size 1`] = `17011`;
 

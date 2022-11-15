@@ -1,6 +1,6 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
-import { ERC721, Permit2, Router } from '../../typechain'
+import { ERC721, Permit2, UniversalRouter } from '../../typechain'
 import {
   seaportOrders,
   seaportInterface,
@@ -12,12 +12,12 @@ import { resetFork, COVEN_721 } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import deployRouter, { deployPermit2 } from './shared/deployRouter'
+import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 const { ethers } = hre
 
 describe('Check Ownership', () => {
   let alice: SignerWithAddress
-  let router: Router
+  let router: UniversalRouter
   let permit2: Permit2
   let planner: RoutePlanner
   let cryptoCovens: ERC721
@@ -30,7 +30,7 @@ describe('Check Ownership', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployRouter(permit2)).connect(alice) as Router
+    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
     cryptoCovens = COVEN_721.connect(alice)
   })

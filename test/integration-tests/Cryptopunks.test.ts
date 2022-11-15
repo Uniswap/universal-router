@@ -1,18 +1,18 @@
 import { CommandType, RoutePlanner } from './shared/planner'
-import { Router, Permit2 } from '../../typechain'
+import { UniversalRouter, Permit2 } from '../../typechain'
 import { resetFork, CRYPTOPUNKS_MARKET } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber, Contract } from 'ethers'
 import { expect } from 'chai'
-import deployRouter, { deployPermit2 } from './shared/deployRouter'
+import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 
 const { ethers } = hre
 
 describe('Cryptopunks', () => {
   let alice: SignerWithAddress
-  let router: Router
+  let router: UniversalRouter
   let permit2: Permit2
   let planner: RoutePlanner
   let cryptopunks: Contract
@@ -27,7 +27,7 @@ describe('Cryptopunks', () => {
       params: [ALICE_ADDRESS],
     })
     permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployRouter(permit2)).connect(alice) as Router
+    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     cryptopunks = CRYPTOPUNKS_MARKET.connect(alice)
   })
 

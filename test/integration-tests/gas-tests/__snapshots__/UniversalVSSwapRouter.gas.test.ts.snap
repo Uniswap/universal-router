@@ -1,6 +1,17 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+<<<<<<< HEAD:test/integration-tests/gas-tests/__snapshots__/NarwhalVSSwapRouter.gas.test.ts.snap
 exports[`Uniswap UX Tests gas: Comparisons Casual Swapper - 3 swaps Permit2 Max Approval Swap 1`] = `1172443`;
+=======
+exports[`Uniswap UX Tests gas: Approvals Cost for infinite approval of permit2/swaprouter02 contract 1`] = `
+Object {
+  "calldataByteLength": 68,
+  "gasUsed": 60311,
+}
+`;
+
+exports[`Uniswap UX Tests gas: Comparisons Casual Swapper - 3 swaps Permit2 Max Approval Swap 1`] = `1172999`;
+>>>>>>> origin/main:test/integration-tests/gas-tests/__snapshots__/UniversalVSSwapRouter.gas.test.ts.snap
 
 exports[`Uniswap UX Tests gas: Comparisons Casual Swapper - 3 swaps Permit2 Sign Per Swap 1`] = `1210725`;
 
@@ -29,10 +40,3 @@ exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Simple Swap Permit
 exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Simple Swap Permit2 Sign Per Swap 1`] = `312424`;
 
 exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Simple Swap SwapRouter02 1`] = `278117`;
-
-exports[`Uniswap UX Tests gas: Narwhal Estimates Approvals Cost for infinite approval of permit2/swaprouter02 contract 1`] = `
-Object {
-  "calldataByteLength": 68,
-  "gasUsed": 60311,
-}
-`;

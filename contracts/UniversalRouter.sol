@@ -7,9 +7,9 @@ import './base/RouterImmutables.sol';
 import './deploy/RouterParameters.sol';
 import './libraries/Constants.sol';
 import './libraries/Commands.sol';
-import './interfaces/IRouter.sol';
+import './interfaces/IUniversalRouter.sol';
 
-contract Router is RouterImmutables, IRouter, Dispatcher, RewardsCollector {
+contract UniversalRouterRouter is RouterImmutables, IUniversalRouter, Dispatcher, RewardsCollector {
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
@@ -17,7 +17,7 @@ contract Router is RouterImmutables, IRouter, Dispatcher, RewardsCollector {
 
     constructor(RouterParameters memory params) RouterImmutables(params) {}
 
-    /// @inheritdoc IRouter
+    /// @inheritdoc IUniversalRouter
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
         external
         payable
@@ -26,7 +26,7 @@ contract Router is RouterImmutables, IRouter, Dispatcher, RewardsCollector {
         execute(commands, inputs);
     }
 
-    /// @inheritdoc IRouter
+    /// @inheritdoc IUniversalRouter
     function execute(bytes calldata commands, bytes[] calldata inputs) public payable {
         bool success;
         bytes memory output;
@@ -55,5 +55,6 @@ contract Router is RouterImmutables, IRouter, Dispatcher, RewardsCollector {
         return command & Commands.FLAG_ALLOW_REVERT == 0;
     }
 
+    // To receive ETH from WETH and NFT protocols
     receive() external payable {}
 }

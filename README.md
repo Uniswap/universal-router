@@ -1,4 +1,4 @@
-# narwhal
+# Universal Router
 
 ## Usage
 
@@ -34,13 +34,13 @@ forge script --broadcast \
 --rpc-url <RPC-URL> \
 --private-key <PRIVATE_KEY> \
 --sig 'run(string)' \
-scripts/DeployRouter.s.sol:DeployRouter \
+scripts/DeployUniversalRouter.s.sol:DeployUniversalRouter \
 <pathToJSON>
 ```
 
 ## Calldata Overview
 
-### Router.execute parameters
+### UniversalRouter.execute parameters
 
 #### `bytes calldata commands`
 

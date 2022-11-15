@@ -6,12 +6,12 @@ import "forge-std/StdJson.sol";
 import "forge-std/Script.sol";
 import {RouterParameters} from "contracts/deploy/RouterParameters.sol";
 import {UnsupportedProtocol} from "contracts/deploy/UnsupportedProtocol.sol";
-import {Router} from "contracts/Router.sol";
+import {UniversalRouter} from "contracts/UniversalRouter.sol";
 import {Permit2} from 'permit2/src/Permit2.sol';
 
 bytes32 constant SALT = bytes32(uint256(0x1234));
 
-contract DeployRouter is Script {
+contract DeployUniversalRouter is Script {
   using stdJson for string;
 
     function setUp() public {}
@@ -41,8 +41,8 @@ contract DeployRouter is Script {
             poolInitCodeHash: params.poolInitCodeHash
         });
 
-        router = new Router{salt: SALT}(params);
-        console2.log("Router Deployed:", address(router));
+        router = new UniversalRouter{salt: SALT}(params);
+        console2.log("Universal Router Deployed:", address(router));
         vm.stopBroadcast();
 
         return router;
