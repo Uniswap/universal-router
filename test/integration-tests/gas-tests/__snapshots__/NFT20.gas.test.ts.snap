@@ -3,6 +3,10 @@
 exports[`NFT20 Buy 3 alphabetties from NFT20 gas: purchases token ids 129, 193, 278 of Alphabetties 1`] = `
 Object {
   "calldataByteLength": 836,
+<<<<<<< HEAD
   "gasUsed": 391638,
+=======
+  "gasUsed": 391352,
+>>>>>>> origin/main
 }
 `;

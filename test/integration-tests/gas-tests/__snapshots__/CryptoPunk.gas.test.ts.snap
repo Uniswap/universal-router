@@ -3,6 +3,10 @@
 exports[`Cryptopunks purchases 1 cryptopunk gas 1`] = `
 Object {
   "calldataByteLength": 356,
+<<<<<<< HEAD
   "gasUsed": 106032,
+=======
+  "gasUsed": 105752,
+>>>>>>> origin/main
 }
 `;

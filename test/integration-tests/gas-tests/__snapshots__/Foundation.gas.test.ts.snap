@@ -3,6 +3,10 @@
 exports[`Foundation Gas Tests Buy a mental worlds NFT from Foundation gas: token id 32 of mental worlds 1`] = `
 Object {
   "calldataByteLength": 612,
+<<<<<<< HEAD
   "gasUsed": 179809,
+=======
+  "gasUsed": 179634,
+>>>>>>> origin/main
 }
 `;

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.17;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
-import 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import './UniswapV2Library.sol';
 import '../../../base/RouterImmutables.sol';
 import '../../Payments.sol';
@@ -27,7 +26,7 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
                 (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
                 (uint256 reserveInput, uint256 reserveOutput) =
                     input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
-                uint256 amountInput = IERC20(input).balanceOf(pair) - reserveInput;
+                uint256 amountInput = ERC20(input).balanceOf(pair) - reserveInput;
                 uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
                 (uint256 amount0Out, uint256 amount1Out) =
                     input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
@@ -58,11 +57,12 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
             payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
         }
 
-        uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(recipient);
+        ERC20 tokenOut = ERC20(path[path.length - 1]);
+        uint256 balanceBefore = tokenOut.balanceOf(recipient);
 
         _v2Swap(path, recipient, firstPair);
 
-        uint256 amountOut = IERC20(path[path.length - 1]).balanceOf(recipient) - balanceBefore;
+        uint256 amountOut = tokenOut.balanceOf(recipient) - balanceBefore;
         if (amountOut < amountOutMin) revert V2TooLittleReceived();
     }
 

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.17;
 
-import '../interfaces/external/IWETH9.sol';
 import '../libraries/Constants.sol';
 import '../base/RouterImmutables.sol';
 import {SafeTransferLib} from 'solmate/utils/SafeTransferLib.sol';
@@ -69,8 +68,10 @@ abstract contract Payments is RouterImmutables {
         ERC721(token).safeTransferFrom(address(this), recipient, id);
     }
 
-    function sweepERC1155(address token, address recipient, uint256 id, uint256 amount) internal {
-        ERC1155(token).safeTransferFrom(address(this), recipient, id, amount, bytes(''));
+    function sweepERC1155(address token, address recipient, uint256 id, uint256 amountMinimum) internal {
+        uint256 balance = ERC1155(token).balanceOf(address(this), id);
+        if (balance < amountMinimum) revert InsufficientToken();
+        ERC1155(token).safeTransferFrom(address(this), recipient, id, balance, bytes(''));
     }
 
     function wrapETH(address recipient, uint256 amount) internal {

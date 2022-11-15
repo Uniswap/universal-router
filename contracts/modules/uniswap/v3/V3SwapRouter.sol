@@ -52,7 +52,8 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
                 // this is an intermediate step so the payer is actually this contract
-                _swap(-amountToPay.toInt256(), msg.sender, path.skipToken(), payer, false);
+                path.skipToken();
+                _swap(-amountToPay.toInt256(), msg.sender, path, payer, false);
             } else {
                 if (amountToPay > maxAmountInCached) revert V3TooMuchRequested();
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
@@ -92,7 +93,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
             // decide whether to continue or terminate
             if (hasMultiplePools) {
                 payer = address(this);
-                path = path.skipToken();
+                path.skipToken();
             } else {
                 amountOut = amountIn;
                 break;
