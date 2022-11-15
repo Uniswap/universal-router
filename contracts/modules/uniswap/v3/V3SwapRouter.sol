@@ -5,10 +5,12 @@ import './V3Path.sol';
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
+import '../../../libraries/Constants.sol';
+import '../../../base/RouterImmutables.sol';
 import '../../Permit2Payments.sol';
 import '../../../libraries/Constants.sol';
 
-abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
+abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3SwapCallback {
     using V3Path for bytes;
     using SafeCast for uint256;
 
@@ -17,9 +19,6 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
     error V3TooMuchRequested();
     error V3InvalidAmountOut();
     error V3InvalidCaller();
-
-    address internal immutable V3_FACTORY;
-    bytes32 internal immutable POOL_INIT_CODE_HASH_V3;
 
     /// @dev Used as the placeholder value for maxAmountIn, because the computed amount in for an exact output swap
     /// can never actually be this value
@@ -33,11 +32,6 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
 
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
-
-    constructor(address v3Factory, bytes32 poolInitCodeHash) {
-        V3_FACTORY = v3Factory;
-        POOL_INIT_CODE_HASH_V3 = poolInitCodeHash;
-    }
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         if (amount0Delta <= 0 && amount1Delta <= 0) revert V3InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
@@ -153,7 +147,10 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
                 uint256(
                     keccak256(
                         abi.encodePacked(
-                            hex'ff', V3_FACTORY, keccak256(abi.encode(tokenA, tokenB, fee)), POOL_INIT_CODE_HASH_V3
+                            hex'ff',
+                            UNISWAP_V3_FACTORY,
+                            keccak256(abi.encode(tokenA, tokenB, fee)),
+                            UNISWAP_V3_POOL_INIT_CODE_HASH
                         )
                     )
                 )

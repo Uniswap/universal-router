@@ -38,6 +38,17 @@ scripts/DeployUniversalRouter.s.sol:DeployUniversalRouter \
 <pathToJSON>
 ```
 
+#### To deploy permit2 alongside UniversalRouter
+Fill out parameters in `scripts/deployParameters/<network>.json`
+```console
+forge script --broadcast \
+--rpc-url <RPC-URL> \
+--private-key <PRIVATE_KEY> \
+--sig 'runAndDeployPermit2(string)' \
+scripts/DeployUniversalRouter.s.sol:DeployUniversalRouter \
+<pathToJSON>
+```
+
 ## Calldata Overview
 
 ### UniversalRouter.execute parameters

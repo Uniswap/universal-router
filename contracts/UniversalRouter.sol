@@ -3,29 +3,18 @@ pragma solidity ^0.8.17;
 
 import './base/Dispatcher.sol';
 import './base/RewardsCollector.sol';
+import './base/RouterImmutables.sol';
 import './libraries/Constants.sol';
 import './libraries/Commands.sol';
 import './interfaces/IUniversalRouter.sol';
 
-contract UniversalRouter is IUniversalRouter, Dispatcher, RewardsCollector {
+contract UniversalRouter is RouterImmutables, IUniversalRouter, Dispatcher, RewardsCollector {
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
     }
 
-    constructor(
-        IAllowanceTransfer permit2,
-        address routerRewardsDistributor,
-        address looksRareRewardsDistributor,
-        ERC20 looksRareToken,
-        address v2Factory,
-        address v3Factory,
-        bytes32 pairInitCodeHash,
-        bytes32 poolInitCodeHash
-    )
-        Dispatcher(permit2, v2Factory, v3Factory, pairInitCodeHash, poolInitCodeHash)
-        RewardsCollector(routerRewardsDistributor, looksRareRewardsDistributor, looksRareToken)
-    {}
+    constructor(RouterParameters memory params) RouterImmutables(params) {}
 
     /// @inheritdoc IUniversalRouter
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)

@@ -10,6 +10,7 @@ import {MockERC20} from './mock/MockERC20.sol';
 import {MockERC1155} from './mock/MockERC1155.sol';
 import {Callbacks} from '../../contracts/base/Callbacks.sol';
 import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
+import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 
@@ -27,8 +28,26 @@ contract UniversalRouterTest is Test {
     Callbacks callbacks;
 
     function setUp() public {
-        router =
-        new UniversalRouter(IAllowanceTransfer(address(0)), address(0),address(0), ERC20(address(0)), address(0), address(0), bytes32(0), bytes32(0));
+        RouterParameters memory params = RouterParameters({
+            permit2: address(0),
+            weth9: address(0),
+            seaport: address(0),
+            nftxZap: address(0),
+            x2y2: address(0),
+            foundation: address(0),
+            sudoswap: address(0),
+            nft20Zap: address(0),
+            cryptopunks: address(0),
+            looksRare: address(0),
+            routerRewardsDistributor: address(0),
+            looksRareRewardsDistributor: address(0),
+            looksRareToken: address(0),
+            v2Factory: address(0),
+            v3Factory: address(0),
+            pairInitCodeHash: bytes32(0),
+            poolInitCodeHash: bytes32(0)
+        });
+        router = new UniversalRouter(params);
         testModule = new ExampleModule();
         erc20 = new MockERC20();
         erc1155 = new MockERC1155();
