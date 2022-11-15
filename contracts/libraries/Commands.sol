@@ -23,6 +23,7 @@ library Commands {
     uint256 constant PERMIT2_PERMIT = 0x0a;
     uint256 constant WRAP_ETH = 0x0b;
     uint256 constant UNWRAP_WETH = 0x0c;
+    uint256 constant PERMIT2_TRANSFER_FROM_BATCH = 0x0d;
 
     // NFT-related command types
     uint256 constant SEAPORT = 0x10;

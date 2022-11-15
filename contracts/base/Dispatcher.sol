@@ -38,6 +38,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
         uint256 command = uint8(commandType & Commands.COMMAND_TYPE_MASK);
 
         success = true;
+
         if (isNotNFTType) {
             if (is0To7) {
                 if (command == Commands.V3_SWAP_EXACT_IN) {
@@ -91,6 +92,10 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 } else if (command == Commands.UNWRAP_WETH) {
                     (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                     Payments.unwrapWETH9(recipient.map(), amountMin);
+                } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
+                    (IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) =
+                        abi.decode(inputs, (IAllowanceTransfer.AllowanceTransferDetails[]));
+                    permit2TransferFrom(batchDetails);
                 } else {
                     revert InvalidCommandType(command);
                 }
