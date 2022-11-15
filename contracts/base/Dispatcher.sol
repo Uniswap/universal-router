@@ -50,7 +50,7 @@ abstract contract Dispatcher is RouterImmutables, Payments, V2SwapRouter, V3Swap
                 } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
                     (IAllowanceTransfer.PermitBatch memory permitBatch, bytes memory data) =
                         abi.decode(inputs, (IAllowanceTransfer.PermitBatch, bytes));
-                    permit2.permit(msg.sender, permitBatch, data);
+                    PERMIT2.permit(msg.sender, permitBatch, data);
                 } else if (command == Commands.SWEEP) {
                     (address token, address recipient, uint256 amountMin) =
                         abi.decode(inputs, (address, address, uint256));
@@ -78,7 +78,7 @@ abstract contract Dispatcher is RouterImmutables, Payments, V2SwapRouter, V3Swap
                 } else if (command == Commands.PERMIT2_PERMIT) {
                     (IAllowanceTransfer.PermitSingle memory permitSingle, bytes memory data) =
                         abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes));
-                    permit2.permit(msg.sender, permitSingle, data);
+                    PERMIT2.permit(msg.sender, permitSingle, data);
                 } else if (command == Commands.WRAP_ETH) {
                     (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
                     Payments.wrapETH(recipient.map(), amountMin);
@@ -97,21 +97,21 @@ abstract contract Dispatcher is RouterImmutables, Payments, V2SwapRouter, V3Swap
             if (is0To7) {
                 if (command == Commands.SEAPORT) {
                     (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
-                    (success, output) = Constants.SEAPORT.call{value: value}(data);
+                    (success, output) = SEAPORT.call{value: value}(data);
                 } else if (command == Commands.LOOKS_RARE_721) {
-                    (success, output) = callAndTransfer721(inputs, Constants.LOOKS_RARE);
+                    (success, output) = callAndTransfer721(inputs, LOOKS_RARE);
                 } else if (command == Commands.NFTX) {
                     (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
-                    (success, output) = Constants.NFTX_ZAP.call{value: value}(data);
+                    (success, output) = NFTX_ZAP.call{value: value}(data);
                 } else if (command == Commands.CRYPTOPUNKS) {
                     (uint256 punkId, address recipient, uint256 value) = abi.decode(inputs, (uint256, address, uint256));
-                    (success, output) = Constants.CRYPTOPUNKS.call{value: value}(
+                    (success, output) = CRYPTOPUNKS.call{value: value}(
                         abi.encodeWithSelector(ICryptoPunksMarket.buyPunk.selector, punkId)
                     );
-                    if (success) ICryptoPunksMarket(Constants.CRYPTOPUNKS).transferPunk(recipient.map(), punkId);
+                    if (success) ICryptoPunksMarket(CRYPTOPUNKS).transferPunk(recipient.map(), punkId);
                     else output = 'CryptoPunk Trade Failed';
                 } else if (command == Commands.LOOKS_RARE_1155) {
-                    (success, output) = callAndTransfer1155(inputs, Constants.LOOKS_RARE);
+                    (success, output) = callAndTransfer1155(inputs, LOOKS_RARE);
                 } else if (command == Commands.OWNER_CHECK_721) {
                     (address owner, address token, uint256 id) = abi.decode(inputs, (address, address, uint256));
                     success = (ERC721(token).ownerOf(id) == owner);
@@ -129,17 +129,17 @@ abstract contract Dispatcher is RouterImmutables, Payments, V2SwapRouter, V3Swap
                 }
             } else {
                 if (command == Commands.X2Y2_721) {
-                    (success, output) = callAndTransfer721(inputs, Constants.X2Y2);
+                    (success, output) = callAndTransfer721(inputs, X2Y2);
                 } else if (command == Commands.SUDOSWAP) {
                     (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
-                    (success, output) = Constants.SUDOSWAP.call{value: value}(data);
+                    (success, output) = SUDOSWAP.call{value: value}(data);
                 } else if (command == Commands.NFT20) {
                     (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
-                    (success, output) = Constants.NFT20_ZAP.call{value: value}(data);
+                    (success, output) = NFT20_ZAP.call{value: value}(data);
                 } else if (command == Commands.X2Y2_1155) {
-                    (success, output) = callAndTransfer1155(inputs, Constants.X2Y2);
+                    (success, output) = callAndTransfer1155(inputs, X2Y2);
                 } else if (command == Commands.FOUNDATION) {
-                    (success, output) = callAndTransfer721(inputs, Constants.FOUNDATION);
+                    (success, output) = callAndTransfer721(inputs, FOUNDATION);
                 } else if (command == Commands.SWEEP_ERC1155) {
                     (address token, address recipient, uint256 id, uint256 amount) =
                         abi.decode(inputs, (address, address, uint256, uint256));

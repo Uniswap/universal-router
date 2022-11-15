@@ -12,7 +12,7 @@ abstract contract Permit2Payments is RouterImmutables, Payments {
     error FromAddressIsNotOwner();
 
     function permit2TransferFrom(address token, address from, address to, uint160 amount) internal {
-        permit2.transferFrom(from, to, amount, token);
+        PERMIT2.transferFrom(from, to, amount, token);
     }
 
     function permit2TransferFrom(IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) internal {
@@ -21,7 +21,7 @@ abstract contract Permit2Payments is RouterImmutables, Payments {
         for (uint256 i = 0; i < batchLength; ++i) {
             if (batchDetails[i].from != owner) revert FromAddressIsNotOwner();
         }
-        IAllowanceTransfer(permit2).transferFrom(batchDetails);
+        PERMIT2.transferFrom(batchDetails);
     }
 
     function payOrPermit2Transfer(address token, address payer, address recipient, uint256 amount) internal {
