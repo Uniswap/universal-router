@@ -16,6 +16,7 @@ import {
   SOURCE_MSG_SENDER,
   MAX_UINT160,
   MAX_UINT,
+  ADDRESS_THIS,
 } from './shared/constants'
 import {
   seaportOrders,
@@ -205,7 +206,7 @@ describe('UniversalRouter', () => {
           value,
           maxAmountIn,
           [DAI.address, WETH.address],
-          router.address,
+          ADDRESS_THIS,
           SOURCE_MSG_SENDER,
         ])
         planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, value])
