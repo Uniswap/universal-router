@@ -16,7 +16,6 @@ import {
   SOURCE_MSG_SENDER,
   MAX_UINT160,
   MAX_UINT,
-  ADDRESS_THIS,
 } from './shared/constants'
 import {
   seaportOrders,
