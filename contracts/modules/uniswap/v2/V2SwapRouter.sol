@@ -61,11 +61,12 @@ contract V2SwapRouter is Permit2Payments {
             payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
         }
 
-        uint256 balanceBefore = ERC20(path[path.length - 1]).balanceOf(recipient);
+        ERC20 tokenOut = ERC20(path[path.length - 1]);
+        uint256 balanceBefore = tokenOut.balanceOf(recipient);
 
         _v2Swap(path, recipient, firstPair);
 
-        uint256 amountOut = ERC20(path[path.length - 1]).balanceOf(recipient) - balanceBefore;
+        uint256 amountOut = tokenOut.balanceOf(recipient) - balanceBefore;
         if (amountOut < amountOutMin) revert V2TooLittleReceived();
     }
 
