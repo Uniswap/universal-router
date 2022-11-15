@@ -26,7 +26,7 @@ import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { IRoute, Trade } from '@uniswap/router-sdk'
 const { ethers } = hre
 
-describe('Uniswap UX Tests gas:', () => {
+describe.only('Uniswap UX Tests gas:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: Router

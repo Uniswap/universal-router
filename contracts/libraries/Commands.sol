@@ -7,7 +7,7 @@ library Commands {
     bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
     bytes1 internal constant COMMAND_TYPE_MASK = 0x1f;
     bytes1 internal constant NFT_TYPE_MASK = 0x10;
-    bytes1 internal constant SUB_IF_BRANCH_MASK = 0x08;
+    bytes1 internal constant SUB_IF_BRANCH_MASK = 0x07;
 
     // Command Types. Maximum supported command at this moment is 0x1F.
     uint256 constant V3_SWAP_EXACT_IN = 0x00;

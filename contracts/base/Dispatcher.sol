@@ -34,13 +34,13 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
     /// @return output The outputs, if any from the command
     function dispatch(bytes1 commandType, bytes memory inputs) internal returns (bool success, bytes memory output) {
         bool isNotNFTType = (commandType & Commands.NFT_TYPE_MASK) == 0;
-        bool is0To7 = (commandType & Commands.SUB_IF_BRANCH_MASK) == 0;
+        bool is0To6 = (commandType & Commands.SUB_IF_BRANCH_MASK) == 0;
         uint256 command = uint8(commandType & Commands.COMMAND_TYPE_MASK);
 
         success = true;
 
         if (isNotNFTType) {
-            if (is0To7) {
+            if (is0To6) {
                 if (command == Commands.V3_SWAP_EXACT_IN) {
                     (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path, bool payerIsUser) =
                         abi.decode(inputs, (address, uint256, uint256, bytes, bool));
@@ -101,7 +101,7 @@ contract Dispatcher is V2SwapRouter, V3SwapRouter, RouterCallbacks {
                 }
             }
         } else {
-            if (is0To7) {
+            if (is0To6) {
                 if (command == Commands.SEAPORT) {
                     (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
                     (success, output) = Constants.SEAPORT.call{value: value}(data);
