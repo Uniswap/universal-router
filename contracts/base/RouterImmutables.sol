@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import {ERC20} from 'solmate/tokens/ERC20.sol';
 import {IWETH9} from '../interfaces/external/IWETH9.sol';
-import {IDeployBootstrap} from '../interfaces/IDeployBootstrap.sol';
+import {RouterParameters} from '../deploy/RouterParameters.sol';
 
 contract RouterImmutables {
     /// @dev WETH9 address
@@ -57,40 +57,23 @@ contract RouterImmutables {
     /// @dev The address of UniswapV3Pool initcodehash
     bytes32 internal immutable UNISWAP_V3_POOL_INIT_CODE_HASH;
 
-    constructor(
-        address permit2,
-        address weth9,
-        address seaport,
-        address nftxZap,
-        address x2y2,
-        address foundation,
-        address sudoswap,
-        address nft20Zap,
-        address cryptopunks,
-        address looksRare,
-        address routerRewardsDistributor,
-        address looksRareRewardsDistributor,
-        address looksRareToken,
-        address v2Factory,
-        address v3Factory,
-        bytes32 pairInitCodeHash,
-        bytes32 poolInitCodeHash) {
-        PERMIT2 = permit2;
-        WETH9 = IWETH9(weth9);
-        SEAPORT = seaport;
-        NFTX_ZAP = nftxZap;
-        X2Y2 = x2y2;
-        FOUNDATION = foundation;
-        SUDOSWAP = sudoswap;
-        NFT20_ZAP = nft20Zap;
-        CRYPTOPUNKS = cryptopunks;
-        LOOKS_RARE = looksRare;
-        LOOKS_RARE_TOKEN = ERC20(looksRareToken);
-        LOOKS_RARE_REWARDS_DISTRIBUTOR = looksRareRewardsDistributor;
-        ROUTER_REWARDS_DISTRIBUTOR = routerRewardsDistributor;
-        UNISWAP_V2_FACTORY = v2Factory;
-        UNISWAP_V2_PAIR_INIT_CODE_HASH = pairInitCodeHash;
-        UNISWAP_V3_FACTORY = v3Factory;
-        UNISWAP_V3_POOL_INIT_CODE_HASH = poolInitCodeHash;
+    constructor(RouterParameters memory params) {
+        PERMIT2 = params.permit2;
+        WETH9 = IWETH9(params.weth9);
+        SEAPORT = params.seaport;
+        NFTX_ZAP = params.nftxZap;
+        X2Y2 = params.x2y2;
+        FOUNDATION = params.foundation;
+        SUDOSWAP = params.sudoswap;
+        NFT20_ZAP = params.nft20Zap;
+        CRYPTOPUNKS = params.cryptopunks;
+        LOOKS_RARE = params.looksRare;
+        LOOKS_RARE_TOKEN = ERC20(params.looksRareToken);
+        LOOKS_RARE_REWARDS_DISTRIBUTOR = params.looksRareRewardsDistributor;
+        ROUTER_REWARDS_DISTRIBUTOR = params.routerRewardsDistributor;
+        UNISWAP_V2_FACTORY = params.v2Factory;
+        UNISWAP_V2_PAIR_INIT_CODE_HASH = params.pairInitCodeHash;
+        UNISWAP_V3_FACTORY = params.v3Factory;
+        UNISWAP_V3_POOL_INIT_CODE_HASH = params.poolInitCodeHash;
     }
 }

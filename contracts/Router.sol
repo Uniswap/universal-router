@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import './base/Dispatcher.sol';
 import './base/RewardsCollector.sol';
 import './base/RouterImmutables.sol';
+import './deploy/RouterParameters.sol';
 import './libraries/Constants.sol';
 import './libraries/Commands.sol';
 import './interfaces/IRouter.sol';
@@ -14,45 +15,7 @@ contract Router is RouterImmutables, IRouter, Dispatcher, RewardsCollector {
         _;
     }
 
-    constructor(
-        address permit2,
-        address weth9,
-        address seaport,
-        address nftxZap,
-        address x2y2,
-        address foundation,
-        address sudoswap,
-        address nft20Zap,
-        address cryptopunks,
-        address looksRare,
-        address routerRewardsDistributor,
-        address looksRareRewardsDistributor,
-        address looksRareToken,
-        address v2Factory,
-        address v3Factory,
-        bytes32 pairInitCodeHash,
-        bytes32 poolInitCodeHash
-    )
-        RouterImmutables(
-            permit2,
-            weth9,
-            seaport,
-            nftxZap,
-            x2y2,
-            foundation,
-            sudoswap,
-            nft20Zap,
-            cryptopunks,
-            looksRare,
-            routerRewardsDistributor,
-            looksRareRewardsDistributor,
-            looksRareToken,
-            v2Factory,
-            v3Factory,
-            pairInitCodeHash,
-            poolInitCodeHash
-        )
-    {}
+    constructor(RouterParameters memory params) RouterImmutables(params) {}
 
     /// @inheritdoc IRouter
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)

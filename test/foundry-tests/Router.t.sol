@@ -5,7 +5,7 @@ import 'forge-std/Test.sol';
 import {Router} from '../../contracts/Router.sol';
 import {RouterCallbacks} from '../../contracts/base/RouterCallbacks.sol';
 import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
-import {MainnetDeployBootstrap} from '../../contracts/deploy/MainnetDeployBootstrap.sol';
+import {RouterParameters} from '../../contracts/deploy/RouterParameters.sol';
 
 import 'openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol';
 import 'openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol';
@@ -16,8 +16,26 @@ contract RouterTest is Test {
     RouterCallbacks routerCallbacks;
 
     function setUp() public {
-        MainnetDeployBootstrap bootstrap = new MainnetDeployBootstrap(address(0));
-        router = new Router(address(bootstrap));
+        RouterParameters memory params = RouterParameters({
+            permit2: address(0),
+            weth9: address(0),
+            seaport: address(0),
+            nftxZap: address(0),
+            x2y2: address(0),
+            foundation: address(0),
+            sudoswap: address(0),
+            nft20Zap: address(0),
+            cryptopunks: address(0),
+            looksRare: address(0),
+            routerRewardsDistributor: address(0),
+            looksRareRewardsDistributor: address(0),
+            looksRareToken: address(0),
+            v2Factory: address(0),
+            v3Factory: address(0),
+            pairInitCodeHash: bytes32(0),
+            poolInitCodeHash: bytes32(0)
+        });
+        router = new Router(params);
         testModule = new ExampleModule();
         routerCallbacks = new RouterCallbacks();
     }
