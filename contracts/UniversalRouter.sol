@@ -65,5 +65,6 @@ contract UniversalRouter is IUniversalRouter, Dispatcher, RewardsCollector {
         return command & Commands.FLAG_ALLOW_REVERT == 0;
     }
 
+    // To receive ETH from WETH and NFT protocols
     receive() external payable {}
 }
