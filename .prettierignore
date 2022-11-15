@@ -1,2 +1,7 @@
 lib
 typechain
+cache
+artifacts
+broadcast
+out
+openzeppelin-contracts

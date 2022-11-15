@@ -57,7 +57,7 @@
     "test:gas": "UPDATE_SNAPSHOT=1 yarn test --grep gas",
     "presymlink": "rm -rf ./solmate && rm -rf ./openzeppelin-contracts && rm -rf ./permitpost",
     "symlink": "ln -s ./lib/solmate/src ./solmate && ln -s ./lib/permit2 ./permit2 && ln -s ./lib/openzeppelin-contracts ./openzeppelin-contracts",
-    "prettier:fix": "prettier --write '**/*.ts' && forge fmt",
+    "prettier:fix": "prettier --write '**/*.ts' && prettier --write '**/*.json' && forge fmt",
     "prettier": "prettier --check '**/*.ts' && forge fmt --check"
   }
 }
