@@ -794,9 +794,9 @@ describe('Uniswap Gas Tests', () => {
           planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM_BATCH, [BATCH_TRANSFER])
 
           // 2) trade route1 and return tokens to bob
-          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, minAmountOut1, route1, bob.address, SOURCE_MSG_SENDER])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, minAmountOut1, route1, MSG_SENDER, SOURCE_MSG_SENDER])
           // 3) trade route2 and return tokens to bob
-          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, minAmountOut2, route2, bob.address, SOURCE_MSG_SENDER])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [0, minAmountOut2, route2, MSG_SENDER, SOURCE_MSG_SENDER])
 
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))

@@ -10,12 +10,14 @@ import { Permit2, Router } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
 import {
+  ADDRESS_THIS,
   ALICE_ADDRESS,
   CONTRACT_BALANCE,
   DEADLINE,
   ETH_ADDRESS,
   MAX_UINT,
   MAX_UINT160,
+  MSG_SENDER,
   ONE_PERCENT_BIPS,
   SOURCE_MSG_SENDER,
   SOURCE_ROUTER,
@@ -856,7 +858,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
           // 2) trade route1 and return tokens to router for the second trade
           planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
-            router.address,
+            ADDRESS_THIS,
             CONTRACT_BALANCE,
             minAmountOut1WETH,
             encodePathExactInput(route1),
@@ -864,7 +866,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           ])
           // 3) trade route2 and return tokens to bob
           planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
-            bob.address,
+            MSG_SENDER,
             CONTRACT_BALANCE,
             minAmountOut1USDC.add(minAmountOut2USDC),
             encodePathExactInput(route2),
