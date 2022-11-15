@@ -10,14 +10,14 @@ contract Permit2Payments {
 
     error FromAddressIsNotOwner();
 
-    address immutable PERMIT2;
+    IAllowanceTransfer immutable permit2;
 
-    constructor(address permit2) {
-        PERMIT2 = permit2;
+    constructor(IAllowanceTransfer _permit2) {
+        permit2 = _permit2;
     }
 
     function permit2TransferFrom(address token, address from, address to, uint160 amount) internal {
-        IAllowanceTransfer(PERMIT2).transferFrom(from, to, amount, token);
+        permit2.transferFrom(from, to, amount, token);
     }
 
     function permit2TransferFrom(IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) internal {
@@ -26,7 +26,7 @@ contract Permit2Payments {
         for (uint256 i = 0; i < batchLength; ++i) {
             if (batchDetails[i].from != owner) revert FromAddressIsNotOwner();
         }
-        IAllowanceTransfer(PERMIT2).transferFrom(batchDetails);
+        IAllowanceTransfer(permit2).transferFrom(batchDetails);
     }
 
     function payOrPermit2Transfer(address token, address payer, address recipient, uint256 amount) internal {

@@ -14,10 +14,10 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
     }
 
     constructor(
-        address permit2,
+        IAllowanceTransfer permit2,
         address routerRewardsDistributor,
         address looksRareRewardsDistributor,
-        address looksRareToken,
+        ERC20 looksRareToken,
         address v2Factory,
         address v3Factory,
         bytes32 pairInitCodeHash,
@@ -46,11 +46,10 @@ contract Router is IRouter, Dispatcher, RewardsCollector {
         // loop through all given commands, execute them and pass along outputs as defined
         for (uint256 commandIndex = 0; commandIndex < numCommands;) {
             bytes1 command = commands[commandIndex];
-            uint256 commandType = uint8(command & Commands.COMMAND_TYPE_MASK);
 
             bytes memory input = inputs[commandIndex];
 
-            (success, output) = dispatch(commandType, input);
+            (success, output) = dispatch(command, input);
 
             if (!success && successRequired(command)) {
                 revert ExecutionFailed({commandIndex: commandIndex, message: output});

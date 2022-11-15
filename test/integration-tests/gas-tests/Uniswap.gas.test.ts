@@ -30,6 +30,8 @@ import {
   ONE_PERCENT_BIPS,
   SOURCE_MSG_SENDER,
   SOURCE_ROUTER,
+  MSG_SENDER,
+  ADDRESS_THIS,
 } from '../shared/constants'
 import { expandTo18DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -210,6 +212,19 @@ describe('Uniswap Gas Tests', () => {
             minAmountOut,
             [DAI.address, USDC.address, WETH.address],
             bob.address,
+            SOURCE_MSG_SENDER,
+          ])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactIn, one trade, two hops, MSG_SENDER flag', async () => {
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            amountIn,
+            minAmountOut,
+            [DAI.address, USDC.address, WETH.address],
+            MSG_SENDER,
             SOURCE_MSG_SENDER,
           ])
           const { commands, inputs } = planner
@@ -877,6 +892,28 @@ describe('Uniswap Gas Tests', () => {
 
           // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountIn, 0, tokens, router.address, SOURCE_MSG_SENDER])
+          // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
+          planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            router.address,
+            v3AmountIn,
+            0,
+            encodePathExactInput(tokens),
+            SOURCE_MSG_SENDER,
+          ])
+          // aggregate slippate check
+          planner.addCommand(CommandType.SWEEP, [WETH.address, bob.address, expandTo18DecimalsBN(0.0005)])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: ERC20 --> ERC20 split V2 and V3, one hop, ADDRESS_THIS flag', async () => {
+          const tokens = [DAI.address, WETH.address]
+          const v2AmountIn: BigNumber = expandTo18DecimalsBN(2)
+          const v3AmountIn: BigNumber = expandTo18DecimalsBN(3)
+
+          // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [v2AmountIn, 0, tokens, ADDRESS_THIS, SOURCE_MSG_SENDER])
           // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
           planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
             router.address,

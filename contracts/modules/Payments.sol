@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.17;
 
-import '../interfaces/external/IWETH9.sol';
 import '../libraries/Constants.sol';
 import {SafeTransferLib} from 'solmate/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';
@@ -68,8 +67,10 @@ library Payments {
         ERC721(token).safeTransferFrom(address(this), recipient, id);
     }
 
-    function sweepERC1155(address token, address recipient, uint256 id, uint256 amount) internal {
-        ERC1155(token).safeTransferFrom(address(this), recipient, id, amount, bytes(''));
+    function sweepERC1155(address token, address recipient, uint256 id, uint256 amountMinimum) internal {
+        uint256 balance = ERC1155(token).balanceOf(address(this), id);
+        if (balance < amountMinimum) revert InsufficientToken();
+        ERC1155(token).safeTransferFrom(address(this), recipient, id, balance, bytes(''));
     }
 
     function wrapETH(address recipient, uint256 amount) internal {
@@ -79,18 +80,18 @@ library Payments {
             revert InsufficientETH();
         }
         if (amount > 0) {
-            IWETH9(Constants.WETH9).deposit{value: amount}();
-            IWETH9(Constants.WETH9).transfer(recipient, amount);
+            Constants.WETH9.deposit{value: amount}();
+            Constants.WETH9.transfer(recipient, amount);
         }
     }
 
     function unwrapWETH9(address recipient, uint256 amountMinimum) internal {
-        uint256 value = ERC20(Constants.WETH9).balanceOf(address(this));
+        uint256 value = Constants.WETH9.balanceOf(address(this));
         if (value < amountMinimum) {
             revert InsufficientETH();
         }
         if (value > 0) {
-            IWETH9(Constants.WETH9).withdraw(value);
+            Constants.WETH9.withdraw(value);
             recipient.safeTransferETH(value);
         }
     }

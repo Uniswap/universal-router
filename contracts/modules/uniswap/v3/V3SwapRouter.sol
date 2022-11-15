@@ -2,11 +2,11 @@
 pragma solidity ^0.8.17;
 
 import './V3Path.sol';
-import '../../../libraries/Constants.sol';
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
 import '../../Permit2Payments.sol';
+import '../../../libraries/Constants.sol';
 
 abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
     using V3Path for bytes;
@@ -58,7 +58,8 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
                 // this is an intermediate step so the payer is actually this contract
-                _swap(-amountToPay.toInt256(), msg.sender, path.skipToken(), payer, false);
+                path.skipToken();
+                _swap(-amountToPay.toInt256(), msg.sender, path, payer, false);
             } else {
                 if (amountToPay > maxAmountInCached) revert V3TooMuchRequested();
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
@@ -98,7 +99,7 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
             // decide whether to continue or terminate
             if (hasMultiplePools) {
                 payer = address(this);
-                path = path.skipToken();
+                path.skipToken();
             } else {
                 amountOut = amountIn;
                 break;
