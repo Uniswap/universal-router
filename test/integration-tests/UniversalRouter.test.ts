@@ -212,7 +212,7 @@ describe('UniversalRouter', () => {
         planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
         const { commands, inputs } = planner
         const covenBalanceBefore = await cryptoCovens.balanceOf(alice.address)
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
         const covenBalanceAfter = await cryptoCovens.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
       })
