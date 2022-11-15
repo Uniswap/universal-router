@@ -136,8 +136,8 @@ describe('Seaport', () => {
     planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldata])
     const { commands, inputs } = planner
 
-    await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: seaportValue })).to.be.revertedWith(
-      'ExecutionFailed(0, "0x8baa579f")'
-    )
+    await expect(
+      router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: seaportValue })
+    ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")')
   })
 })
