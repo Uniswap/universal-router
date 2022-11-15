@@ -24,7 +24,7 @@ contract UniversalRouterTest is Test {
     ExampleModule testModule;
     MockERC20 erc20;
     MockERC1155 erc1155;
-    Callbacks Callbacks;
+    Callbacks callbacks;
 
     function setUp() public {
         router =
@@ -32,7 +32,7 @@ contract UniversalRouterTest is Test {
         testModule = new ExampleModule();
         erc20 = new MockERC20();
         erc1155 = new MockERC1155();
-        Callbacks = new Callbacks();
+        callbacks = new Callbacks();
     }
 
     event ExampleModuleEvent(string message);
@@ -135,9 +135,9 @@ contract UniversalRouterTest is Test {
     }
 
     function testSupportsInterface() public {
-        bool supportsERC1155 = Callbacks.supportsInterface(type(IERC1155Receiver).interfaceId);
-        bool supportsERC721 = Callbacks.supportsInterface(type(IERC721Receiver).interfaceId);
-        bool supportsERC165 = Callbacks.supportsInterface(type(IERC165).interfaceId);
+        bool supportsERC1155 = callbacks.supportsInterface(type(IERC1155Receiver).interfaceId);
+        bool supportsERC721 = callbacks.supportsInterface(type(IERC721Receiver).interfaceId);
+        bool supportsERC165 = callbacks.supportsInterface(type(IERC165).interfaceId);
 
         assertEq(supportsERC1155, true);
         assertEq(supportsERC721, true);
