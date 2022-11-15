@@ -163,7 +163,7 @@ describe('Uniswap UX Tests gas:', () => {
   async function executeTradeUniversalRouter(
     planner: RoutePlanner,
     trade: Trade<Token, Token, TradeType.EXACT_INPUT>,
-    overrideRouter?: UniversalRouter 
+    overrideRouter?: UniversalRouter
   ): Promise<BigNumber> {
     for (let i = 0; i < trade.swaps.length; i++) {
       let swap = trade.swaps[i]

@@ -15,7 +15,7 @@ export default async (
   permit2: Permit2,
   mockLooksRareRewardsDistributor?: string,
   mockLooksRareToken?: string
-): Promise<UniversalRouter > => {
+): Promise<UniversalRouter> => {
   const routerFactory = await ethers.getContractFactory('UniversalRouter')
   const router = (await routerFactory.deploy(
     permit2.address,

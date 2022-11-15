@@ -63,9 +63,9 @@ describe('UniversalRouter', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
     permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployUniversalRouter(permit2, mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)).connect(
-      alice
-    ) as UniversalRouter
+    router = (
+      await deployUniversalRouter(permit2, mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)
+    ).connect(alice) as UniversalRouter
     cryptoCovens = COVEN_721.connect(alice) as ERC721
   })
 

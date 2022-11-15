@@ -27,7 +27,8 @@ contract UniversalRouterTest is Test {
     Callbacks Callbacks;
 
     function setUp() public {
-        router = new UniversalRouter(IAllowanceTransfer(address(0)), address(0),address(0), ERC20(address(0)), address(0), address(0), bytes32(0), bytes32(0));
+        router =
+        new UniversalRouter(IAllowanceTransfer(address(0)), address(0),address(0), ERC20(address(0)), address(0), address(0), bytes32(0), bytes32(0));
         testModule = new ExampleModule();
         erc20 = new MockERC20();
         erc1155 = new MockERC1155();
