@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 import './base/Dispatcher.sol';
 import './base/RewardsCollector.sol';
 import './base/RouterImmutables.sol';
-import './deploy/RouterParameters.sol';
 import './libraries/Constants.sol';
 import './libraries/Commands.sol';
 import './interfaces/IUniversalRouter.sol';

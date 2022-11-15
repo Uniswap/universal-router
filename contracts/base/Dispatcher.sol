@@ -13,7 +13,7 @@ import {ERC1155} from 'solmate/tokens/ERC1155.sol';
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
-abstract contract Dispatcher is RouterImmutables, Payments, V2SwapRouter, V3SwapRouter, Callbacks {
+abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks {
     using Recipient for address;
 
     error InvalidCommandType(uint256 commandType);

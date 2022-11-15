@@ -10,7 +10,7 @@ import {MockERC20} from './mock/MockERC20.sol';
 import {MockERC1155} from './mock/MockERC1155.sol';
 import {Callbacks} from '../../contracts/base/Callbacks.sol';
 import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
-import {RouterParameters} from '../../contracts/deploy/RouterParameters.sol';
+import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 

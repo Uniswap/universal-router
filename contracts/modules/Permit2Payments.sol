@@ -6,7 +6,7 @@ import './Payments.sol';
 import '../libraries/Constants.sol';
 import '../base/RouterImmutables.sol';
 
-abstract contract Permit2Payments is RouterImmutables, Payments {
+abstract contract Permit2Payments is Payments {
     using SafeCast160 for uint256;
 
     error FromAddressIsNotOwner();

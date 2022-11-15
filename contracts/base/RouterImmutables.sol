@@ -4,7 +4,26 @@ pragma solidity ^0.8.17;
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';
 import {IWETH9} from '../interfaces/external/IWETH9.sol';
-import {RouterParameters} from '../deploy/RouterParameters.sol';
+
+struct RouterParameters {
+    address permit2;
+    address weth9;
+    address seaport;
+    address nftxZap;
+    address x2y2;
+    address foundation;
+    address sudoswap;
+    address nft20Zap;
+    address cryptopunks;
+    address looksRare;
+    address routerRewardsDistributor;
+    address looksRareRewardsDistributor;
+    address looksRareToken;
+    address v2Factory;
+    address v3Factory;
+    bytes32 pairInitCodeHash;
+    bytes32 poolInitCodeHash;
+}
 
 contract RouterImmutables {
     /// @dev WETH9 address
