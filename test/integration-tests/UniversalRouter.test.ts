@@ -6,6 +6,7 @@ import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import {
+  ADDRESS_THIS,
   ALICE_ADDRESS,
   DEADLINE,
   OPENSEA_CONDUIT_KEY,
@@ -207,11 +208,11 @@ describe('UniversalRouter', () => {
           router.address,
           SOURCE_MSG_SENDER,
         ])
-        planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
+        planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, value])
         planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
         const { commands, inputs } = planner
         const covenBalanceBefore = await cryptoCovens.balanceOf(alice.address)
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
         const covenBalanceAfter = await cryptoCovens.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
       })

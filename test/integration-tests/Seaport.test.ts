@@ -122,20 +122,22 @@ describe('Seaport', () => {
   })
 
   it('reverts if order does not go through', async () => {
-    const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
-    advancedOrder.parameters.salt = BigNumber.from('6666666666666666')
+    let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
+    invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
+    const { advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder)
+
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
-      advancedOrder,
+      seaportOrder,
       [],
       OPENSEA_CONDUIT_KEY,
       alice.address,
     ])
 
-    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+    planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldata])
     const { commands, inputs } = planner
 
-    await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).to.be.revertedWith(
-      'ExecutionFailed(0, "0x815e1d64")'
+    await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: seaportValue })).to.be.revertedWith(
+      'ExecutionFailed(0, "0x8baa579f")'
     )
   })
 })
