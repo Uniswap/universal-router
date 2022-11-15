@@ -28,7 +28,6 @@ contract UniversalRouterTest is Test {
     Callbacks callbacks;
 
     function setUp() public {
-<<<<<<< HEAD:test/foundry-tests/Router.t.sol
         RouterParameters memory params = RouterParameters({
             permit2: address(0),
             weth9: address(0),
@@ -48,11 +47,7 @@ contract UniversalRouterTest is Test {
             pairInitCodeHash: bytes32(0),
             poolInitCodeHash: bytes32(0)
         });
-        router = new Router(params);
-=======
-        router =
-        new UniversalRouter(IAllowanceTransfer(address(0)), address(0),address(0), ERC20(address(0)), address(0), address(0), bytes32(0), bytes32(0));
->>>>>>> origin/main:test/foundry-tests/UniversalRouter.t.sol
+        router = new UniversalRouter(params);
         testModule = new ExampleModule();
         erc20 = new MockERC20();
         erc1155 = new MockERC1155();
