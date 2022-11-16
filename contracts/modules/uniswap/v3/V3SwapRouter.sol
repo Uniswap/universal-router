@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import './V3Path.sol';
-import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
-import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
-import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
-import '../../../libraries/Constants.sol';
-import '../../../base/RouterImmutables.sol';
-import '../../Permit2Payments.sol';
-import '../../../libraries/Constants.sol';
+import {V3Path} from './V3Path.sol';
+import {SafeCast} from '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
+import {IUniswapV3Pool} from '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
+import {IUniswapV3SwapCallback} from '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
+import {Constants} from '../../../libraries/Constants.sol';
+import {RouterImmutables} from '../../../base/RouterImmutables.sol';
+import {Permit2Payments} from '../../Permit2Payments.sol';
+import {Constants} from '../../../libraries/Constants.sol';
+import {ERC20} from 'solmate/tokens/ERC20.sol';
 
 abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3SwapCallback {
     using V3Path for bytes;
@@ -72,7 +73,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         // use amountIn == Constants.CONTRACT_BALANCE as a flag to swap the entire balance of the contract
         if (amountIn == Constants.CONTRACT_BALANCE) {
             address tokenIn = path.decodeFirstToken();
-            amountIn = IERC20(tokenIn).balanceOf(address(this));
+            amountIn = ERC20(tokenIn).balanceOf(address(this));
         }
 
         uint256 amountOut;
