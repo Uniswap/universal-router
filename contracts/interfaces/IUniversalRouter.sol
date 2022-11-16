@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.17;
 
 import {IERC721Receiver} from 'openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol';
@@ -19,13 +19,13 @@ interface IUniversalRouter is IRewardsCollector, IERC721Receiver, IERC1155Receiv
     error LengthMismatch();
 
     /// @notice Executes encoded commands along with provided inputs. Reverts if deadline has expired.
-    /// @param commands A set of concatenated commands, each 8 bytes in length
-    /// @param inputs The state elements that should be used for the input and output of commands
+    /// @param commands A set of concatenated commands, each 1 byte in length
+    /// @param inputs An array of byte strings containing abi encoded inputs for each command
     /// @param deadline The deadline by which the transaction must be executed
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline) external payable;
 
     /// @notice Executes encoded commands along with provided inputs.
-    /// @param commands A set of concatenated commands, each 8 bytes in length
-    /// @param inputs The state elements that should be used for the input and output of commands
+    /// @param commands A set of concatenated commands, each 1 byte in length
+    /// @param inputs An array of byte strings containing abi encoded inputs for each command
     function execute(bytes calldata commands, bytes[] calldata inputs) external payable;
 }
