@@ -66,15 +66,15 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                 }
             } else {
                 if (command == Commands.V2_SWAP_EXACT_IN) {
-                    (uint256 amountIn, uint256 amountOutMin, address[] memory path, address recipient, bool payerIsUser)
-                    = abi.decode(inputs, (uint256, uint256, address[], address, bool));
+                    (address recipient, uint256 amountIn, uint256 amountOutMin, address[] memory path, bool payerIsUser)
+                    = abi.decode(inputs, (address, uint256, uint256, address[], bool));
                     address payer = payerIsUser ? msg.sender : address(this);
-                    v2SwapExactInput(amountIn, amountOutMin, path, recipient.map(), payer);
+                    v2SwapExactInput(recipient.map(), amountIn, amountOutMin, path, payer);
                 } else if (command == Commands.V2_SWAP_EXACT_OUT) {
-                    (uint256 amountOut, uint256 amountInMax, address[] memory path, address recipient, bool payerIsUser)
-                    = abi.decode(inputs, (uint256, uint256, address[], address, bool));
+                    (address recipient, uint256 amountOut, uint256 amountInMax, address[] memory path, bool payerIsUser)
+                    = abi.decode(inputs, (address, uint256, uint256, address[], bool));
                     address payer = payerIsUser ? msg.sender : address(this);
-                    v2SwapExactOutput(amountOut, amountInMax, path, recipient.map(), payer);
+                    v2SwapExactOutput(recipient.map(), amountOut, amountInMax, path, payer);
                 } else if (command == Commands.PERMIT2_PERMIT) {
                     (IAllowanceTransfer.PermitSingle memory permitSingle, bytes memory data) =
                         abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes));
