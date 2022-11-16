@@ -1,5 +1,5 @@
 import { CommandType, RoutePlanner } from '../shared/planner'
-import { Router, Permit2, ERC721 } from '../../../typechain'
+import { UniversalRouter, Permit2, ERC721 } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import {
   seaportOrders,
@@ -11,7 +11,7 @@ import { COVEN_721, ENS_721, GENIE_SWAP, resetFork } from '../shared/mainnetFork
 import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import deployRouter, { deployPermit2 } from '../shared/deployRouter'
+import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
 import { Contract, BigNumber } from 'ethers'
 import { genieX2Y2MarketInterface, TradeDetails } from '../shared/protocolHelpers/genieSwap'
 import { x2y2Orders, X2Y2_INTERFACE } from '../shared/protocolHelpers/x2y2'
@@ -19,9 +19,9 @@ import { expect } from 'chai'
 const { ethers } = hre
 import fs from 'fs'
 
-describe('NFT UX Tests', () => {
+describe.only('NFT UX Tests gas', () => {
   let alice: SignerWithAddress
-  let router: Router
+  let router: UniversalRouter
   let permit2: Permit2
   let planner: RoutePlanner
   let genieSwap: Contract
@@ -34,7 +34,7 @@ describe('NFT UX Tests', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployRouter(permit2)).connect(alice) as Router
+    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
     genieSwap = GENIE_SWAP.connect(alice)
   })
@@ -62,10 +62,9 @@ describe('NFT UX Tests', () => {
         const { commands, inputs } = planner
 
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+        const ownerAfter = await cryptoCovens.ownerOf(advancedOrder.parameters.offer[0].identifierOrCriteria)
+        expect(ownerAfter.toLowerCase()).to.eq(ALICE_ADDRESS)
       })
-
-      const ownerAfter = await cryptoCovens.ownerOf(advancedOrder.parameters.offer[0].identifierOrCriteria)
-      expect(ownerAfter.toLowerCase()).to.eq(ALICE_ADDRESS)
     })
 
     describe('Genie', async () => {
@@ -90,10 +89,10 @@ describe('NFT UX Tests', () => {
             { value }
           )
         )
-      })
 
-      const ownerAfter = await cryptoCovens.ownerOf(advancedOrder.parameters.offer[0].identifierOrCriteria)
-      expect(ownerAfter.toLowerCase()).to.eq(ALICE_ADDRESS)
+        const ownerAfter = await cryptoCovens.ownerOf(advancedOrder.parameters.offer[0].identifierOrCriteria)
+        expect(ownerAfter.toLowerCase()).to.eq(ALICE_ADDRESS)
+      })
     })
   })
 

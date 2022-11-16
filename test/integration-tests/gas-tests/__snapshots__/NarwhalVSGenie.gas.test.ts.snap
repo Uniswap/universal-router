@@ -1,29 +1,29 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`NFT UX Tests Seaport Genie ETH -> NFT 1`] = `
+exports[`NFT UX Tests gas Seaport Genie ETH -> NFT 1`] = `
 Object {
   "calldataByteLength": 2436,
   "gasUsed": 236602,
 }
 `;
 
-exports[`NFT UX Tests Seaport Narwhal ETH -> NFT 1`] = `
+exports[`NFT UX Tests gas Seaport Narwhal ETH -> NFT 1`] = `
 Object {
   "calldataByteLength": 2052,
-  "gasUsed": 200374,
+  "gasUsed": 200173,
 }
 `;
 
-exports[`NFT UX Tests X2Y2 Genie ETH -> NFT 1`] = `
+exports[`NFT UX Tests gas X2Y2 Genie ETH -> NFT 1`] = `
 Object {
   "calldataByteLength": 2980,
   "gasUsed": 248310,
 }
 `;
 
-exports[`NFT UX Tests X2Y2 Narwhal ETH -> NFT 1`] = `
+exports[`NFT UX Tests gas X2Y2 Narwhal ETH -> NFT 1`] = `
 Object {
   "calldataByteLength": 2212,
-  "gasUsed": 212383,
+  "gasUsed": 212190,
 }
 `;

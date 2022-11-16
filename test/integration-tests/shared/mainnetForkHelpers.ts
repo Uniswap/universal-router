@@ -8,11 +8,11 @@ import {
   CAMEO_ADDRESS,
   COVEN_ADDRESS,
   ENS_NFT_ADDRESS,
+  GENIE_SWAP_ADDRESS,
   MENTAL_WORLDS_ADDRESS,
   TWERKY_ADDRESS,
   CRYPTOPUNKS_MARKET_ADDRESS,
 } from './constants'
-import GENIE_SWAP_ABI from './abis/GenieSwap.json'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
 import { TransactionResponse } from '@ethersproject/abstract-provider'
