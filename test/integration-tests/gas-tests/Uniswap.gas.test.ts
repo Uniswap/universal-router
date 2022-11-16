@@ -705,13 +705,7 @@ describe('Uniswap Gas Tests', () => {
             SOURCE_MSG_SENDER,
           ])
           // the tokens are already int he v2 pair, so amountIn is 0
-          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
-            MSG_SENDER,
-            0,
-            v2AmountOutMin,
-            v2Tokens,
-            SOURCE_MSG_SENDER,
-          ])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, v2AmountOutMin, v2Tokens, SOURCE_MSG_SENDER])
 
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))

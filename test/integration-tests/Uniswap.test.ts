@@ -494,13 +494,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const tokens = [DAI.address, WETH.address]
         const path = encodePathExactOutput(tokens)
 
-        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
-          MSG_SENDER,
-          amountOut,
-          amountInMax,
-          path,
-          SOURCE_MSG_SENDER,
-        ])
+        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [MSG_SENDER, amountOut, amountInMax, path, SOURCE_MSG_SENDER])
 
         const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(planner)
         const { amount0: daiTraded } = v3SwapEventArgs!
@@ -515,13 +509,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // for these tests Bob gives the router max approval on permit2
         // await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
 
-        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
-          MSG_SENDER,
-          amountOut,
-          amountInMax,
-          path,
-          SOURCE_MSG_SENDER,
-        ])
+        planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [MSG_SENDER, amountOut, amountInMax, path, SOURCE_MSG_SENDER])
         const { commands, inputs } = planner
 
         const balanceWethBefore = await wethContract.balanceOf(bob.address)
@@ -623,13 +611,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
             SOURCE_MSG_SENDER,
           ])
           // amountIn of 0 because the USDC is already in the pair
-          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
-            MSG_SENDER,
-            0,
-            v2AmountOutMin,
-            v2Tokens,
-            SOURCE_MSG_SENDER,
-          ])
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, v2AmountOutMin, v2Tokens, SOURCE_MSG_SENDER])
 
           const { wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs } = await executeRouter(planner)
           const { amount1Out: wethTraded } = v2SwapEventArgs!
