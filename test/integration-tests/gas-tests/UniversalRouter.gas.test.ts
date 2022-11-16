@@ -84,10 +84,10 @@ describe('UniversalRouter Gas Tests', () => {
       ])
 
       planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+        router.address,
         value,
         maxAmountIn,
         [DAI.address, WETH.address],
-        router.address,
         SOURCE_MSG_SENDER,
       ])
       planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
