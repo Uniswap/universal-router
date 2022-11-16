@@ -9,6 +9,7 @@ import {Permit2Payments} from '../../Permit2Payments.sol';
 import {Constants} from '../../../libraries/Constants.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';
 
+/// @title Router for Uniswap v2 Trades
 abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
     error V2TooLittleReceived();
     error V2TooMuchRequested();
@@ -43,6 +44,12 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
         }
     }
 
+    /// @notice Performs a Uniswap v2 exact input swap
+    /// @param recipient The recipient of the output tokens
+    /// @param amountIn The amount of input tokens for the trade
+    /// @param amountOutMinimum The minimum desired amount of output tokens
+    /// @param path The path of the trade as an array of token addresses
+    /// @param payer The address that will be paying the input
     function v2SwapExactInput(
         address recipient,
         uint256 amountIn,
@@ -67,6 +74,12 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
         if (amountOut < amountOutMinimum) revert V2TooLittleReceived();
     }
 
+    /// @notice Performs a Uniswap v2 exact output swap
+    /// @param recipient The recipient of the output tokens
+    /// @param amountOut The amount of output tokens to receive for the trade
+    /// @param amountInMaximum The maximum desired amount of input tokens
+    /// @param path The path of the trade as an array of token addresses
+    /// @param payer The address that will be paying the input
     function v2SwapExactOutput(
         address recipient,
         uint256 amountOut,

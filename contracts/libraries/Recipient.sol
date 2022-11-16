@@ -6,7 +6,6 @@ import {Constants} from '../libraries/Constants.sol';
 /// @title Recipient Library
 /// @notice Calculates the recipient address for a command
 library Recipient {
-
     /// @notice Calculates the recipient address for a command
     /// @param recipient The recipient or recipient-flag for the command
     /// @return output The resultant recipient for the command

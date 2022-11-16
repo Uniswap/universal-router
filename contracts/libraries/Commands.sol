@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 /// @title Commands
 /// @notice Command Flags used to decode commands
 library Commands {
-
     // Masks to extract certain bits of commands
     bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
     bytes1 internal constant COMMAND_TYPE_MASK = 0x1f;

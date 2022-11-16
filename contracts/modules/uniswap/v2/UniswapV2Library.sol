@@ -3,6 +3,8 @@ pragma solidity >=0.5.0;
 
 import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 
+/// @title Uniswap v2 Helper Library
+/// @notice Calculates the recipient address for a command
 library UniswapV2Library {
     error InvalidReserves();
     error InvalidPath();
