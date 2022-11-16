@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
-import './UniswapV2Library.sol';
-import '../../../base/RouterImmutables.sol';
-import '../../Payments.sol';
-import '../../Permit2Payments.sol';
-import '../../../libraries/Constants.sol';
+import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
+import {UniswapV2Library} from './UniswapV2Library.sol';
+import {RouterImmutables} from '../../../base/RouterImmutables.sol';
+import {Payments} from '../../Payments.sol';
+import {Permit2Payments} from '../../Permit2Payments.sol';
+import {Constants} from '../../../libraries/Constants.sol';
+import {ERC20} from 'solmate/tokens/ERC20.sol';
 
 abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
     error V2TooLittleReceived();

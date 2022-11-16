@@ -1,10 +1,10 @@
 pragma solidity ^0.8.17;
 
-import 'permit2/src/interfaces/IAllowanceTransfer.sol';
+import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {SafeCast160} from 'permit2/src/libraries/SafeCast160.sol';
-import './Payments.sol';
-import '../libraries/Constants.sol';
-import '../base/RouterImmutables.sol';
+import {Payments} from './Payments.sol';
+import {Constants} from '../libraries/Constants.sol';
+import {RouterImmutables} from '../base/RouterImmutables.sol';
 
 abstract contract Permit2Payments is Payments {
     using SafeCast160 for uint256;

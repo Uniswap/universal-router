@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import '../modules/uniswap/v2/V2SwapRouter.sol';
-import '../modules/uniswap/v3/V3SwapRouter.sol';
-import '../modules/Payments.sol';
-import '../base/RouterImmutables.sol';
-import '../base/Callbacks.sol';
-import '../libraries/Commands.sol';
-import '../libraries/Recipient.sol';
+import {V2SwapRouter} from '../modules/uniswap/v2/V2SwapRouter.sol';
+import {V3SwapRouter} from '../modules/uniswap/v3/V3SwapRouter.sol';
+import {Payments} from '../modules/Payments.sol';
+import {RouterImmutables} from '../base/RouterImmutables.sol';
+import {Callbacks} from '../base/Callbacks.sol';
+import {Commands} from '../libraries/Commands.sol';
+import {Recipient} from '../libraries/Recipient.sol';
 import {ERC721} from 'solmate/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/tokens/ERC1155.sol';
-import 'permit2/src/interfaces/IAllowanceTransfer.sol';
+import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
 abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks {

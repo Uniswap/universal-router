@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.17;
 
-import '../interfaces/external/IWETH9.sol';
+import {IWETH9} from '../interfaces/external/IWETH9.sol';
 
 /// @title Constant state
 /// @notice Constant state used by the universal router

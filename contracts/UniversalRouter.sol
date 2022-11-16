@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import './base/Dispatcher.sol';
-import './base/RewardsCollector.sol';
-import './base/RouterImmutables.sol';
-import './libraries/Constants.sol';
-import './libraries/Commands.sol';
-import './interfaces/IUniversalRouter.sol';
+import {Dispatcher} from './base/Dispatcher.sol';
+import {RewardsCollector} from './base/RewardsCollector.sol';
+import {RouterParameters, RouterImmutables} from './base/RouterImmutables.sol';
+import {Constants} from './libraries/Constants.sol';
+import {Commands} from './libraries/Commands.sol';
+import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
 
 contract UniversalRouter is RouterImmutables, IUniversalRouter, Dispatcher, RewardsCollector {
     modifier checkDeadline(uint256 deadline) {

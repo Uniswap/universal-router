@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import 'openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol';
-import 'openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol';
+import {IERC721Receiver} from 'openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol';
+import {IERC1155Receiver} from 'openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol';
+import {IERC165} from 'openzeppelin-contracts/contracts/utils/introspection/IERC165.sol';
 
 contract Callbacks is IERC721Receiver, IERC1155Receiver {
     function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {

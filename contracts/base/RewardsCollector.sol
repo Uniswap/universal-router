@@ -4,7 +4,7 @@ pragma solidity ^0.8.15;
 import {ERC20} from 'solmate/tokens/ERC20.sol';
 import {SafeTransferLib} from 'solmate/utils/SafeTransferLib.sol';
 import {RouterImmutables} from './RouterImmutables.sol';
-import '../interfaces/IRewardsCollector.sol';
+import {IRewardsCollector} from '../interfaces/IRewardsCollector.sol';
 
 abstract contract RewardsCollector is IRewardsCollector, RouterImmutables {
     using SafeTransferLib for ERC20;
