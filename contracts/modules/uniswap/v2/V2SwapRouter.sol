@@ -43,10 +43,10 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
     }
 
     function v2SwapExactInput(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] memory path,
         address recipient,
+        uint256 amountIn,
+        uint256 amountOutMinimum,
+        address[] memory path,
         address payer
     ) internal {
         address firstPair =
@@ -63,19 +63,19 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
         _v2Swap(path, recipient, firstPair);
 
         uint256 amountOut = tokenOut.balanceOf(recipient) - balanceBefore;
-        if (amountOut < amountOutMin) revert V2TooLittleReceived();
+        if (amountOut < amountOutMinimum) revert V2TooLittleReceived();
     }
 
     function v2SwapExactOutput(
-        uint256 amountOut,
-        uint256 amountInMax,
-        address[] memory path,
         address recipient,
+        uint256 amountOut,
+        uint256 amountInMaximum,
+        address[] memory path,
         address payer
     ) internal {
         (uint256 amountIn, address firstPair) =
             UniswapV2Library.getAmountInMultihop(UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, amountOut, path);
-        if (amountIn > amountInMax) revert V2TooMuchRequested();
+        if (amountIn > amountInMaximum) revert V2TooMuchRequested();
 
         payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
         _v2Swap(path, recipient, firstPair);
