@@ -64,14 +64,14 @@ contract DeployUniversalRouter is Script {
         return run(params);
     }
 
-    function fetchParameters(string memory pathToJSON) internal returns (RouterParameters memory params) {
+    function fetchParameters(string memory pathToJSON) internal view returns (RouterParameters memory params) {
         string memory root = vm.projectRoot();
         string memory json = vm.readFile(string.concat(root, '/', pathToJSON));
         bytes memory rawParams = json.parseRaw('.*');
         params = abi.decode(rawParams, (RouterParameters));
     }
 
-    function mapUnsupported(address protocol, address unsupported) internal returns (address) {
+    function mapUnsupported(address protocol, address unsupported) internal pure returns (address) {
         return protocol == address(0) ? unsupported : protocol;
     }
 }
