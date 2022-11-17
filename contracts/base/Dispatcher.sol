@@ -169,7 +169,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
         if (success) ERC721(token).safeTransferFrom(address(this), recipient.map(), id);
     }
 
-    /// @notice Performs a call to purchase an ERC1155, then transfers the ERCERC1155721 to a specified recipient
+    /// @notice Performs a call to purchase an ERC1155, then transfers the ERC1155 to a specified recipient
     /// @param inputs The inputs for the protocol and ERC1155 transfer, encoded
     /// @param protocol The protocol to pass the calldata to
     /// @return success True on success of the command, false on failure
