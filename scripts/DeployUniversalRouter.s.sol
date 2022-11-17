@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
-import "forge-std/console2.sol";
-import "forge-std/StdJson.sol";
-import "forge-std/Script.sol";
-import {RouterParameters} from "contracts/base/RouterImmutables.sol";
-import {UnsupportedProtocol} from "contracts/deploy/UnsupportedProtocol.sol";
-import {UniversalRouter} from "contracts/UniversalRouter.sol";
+import 'forge-std/console2.sol';
+import 'forge-std/StdJson.sol';
+import 'forge-std/Script.sol';
+import {RouterParameters} from 'contracts/base/RouterImmutables.sol';
+import {UnsupportedProtocol} from 'contracts/deploy/UnsupportedProtocol.sol';
+import {UniversalRouter} from 'contracts/UniversalRouter.sol';
 import {Permit2} from 'permit2/src/Permit2.sol';
 
 bytes32 constant SALT = bytes32(uint256(0x1234));
 
 contract DeployUniversalRouter is Script {
-  using stdJson for string;
+    using stdJson for string;
 
     function setUp() public {}
 
-    function run(RouterParameters memory params) public returns (Router router) {
+    function run(RouterParameters memory params) public returns (UniversalRouter router) {
         vm.startBroadcast();
 
         address unsupported = address(new UnsupportedProtocol{salt: SALT}());
@@ -42,35 +42,35 @@ contract DeployUniversalRouter is Script {
         });
 
         router = new UniversalRouter{salt: SALT}(params);
-        console2.log("Universal Router Deployed:", address(router));
+        console2.log('Universal Router Deployed:', address(router));
         vm.stopBroadcast();
 
         return router;
     }
 
-    function run(string memory pathToJSON) public returns (Router router) {
+    function run(string memory pathToJSON) public returns (UniversalRouter router) {
         return run(fetchParameters(pathToJSON));
     }
 
-    function runAndDeployPermit2(string memory pathToJSON) public returns (Router router) {
+    function runAndDeployPermit2(string memory pathToJSON) public returns (UniversalRouter router) {
         RouterParameters memory params = fetchParameters(pathToJSON);
         return run(params);
         vm.startBroadcast();
         address permit2 = address(new Permit2{salt: SALT}());
         params.permit2 = permit2;
-        console2.log("Permit2 Deployed:", address(permit2));
+        console2.log('Permit2 Deployed:', address(permit2));
 
-        return run(params));
+        return run(params);
     }
 
     function fetchParameters(string memory pathToJSON) internal returns (RouterParameters memory params) {
-      string memory root = vm.projectRoot();
-      string memory json = vm.readFile(string.concat(root, "/", pathToJSON));
-      bytes memory rawParams = json.parseRaw(".*");
-      params = abi.decode(rawParams, (RouterParameters));
+        string memory root = vm.projectRoot();
+        string memory json = vm.readFile(string.concat(root, '/', pathToJSON));
+        bytes memory rawParams = json.parseRaw('.*');
+        params = abi.decode(rawParams, (RouterParameters));
     }
 
     function mapUnsupported(address protocol, address unsupported) internal returns (address) {
-      return protocol == address(0) ? unsupported : protocol;
+        return protocol == address(0) ? unsupported : protocol;
     }
 }
