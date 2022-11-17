@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.15;
 
 import {ERC20} from 'solmate/tokens/ERC20.sol';
@@ -13,6 +13,7 @@ abstract contract RewardsCollector is IRewardsCollector, RouterImmutables {
 
     error UnableToClaim();
 
+    /// @inheritdoc IRewardsCollector
     function collectRewards(bytes calldata looksRareClaim) external {
         (bool success,) = LOOKS_RARE_REWARDS_DISTRIBUTOR.call(looksRareClaim);
         if (!success) revert UnableToClaim();

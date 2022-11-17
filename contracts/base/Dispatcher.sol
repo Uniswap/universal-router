@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.17;
 
 import {V2SwapRouter} from '../modules/uniswap/v2/V2SwapRouter.sol';
@@ -13,6 +13,8 @@ import {ERC1155} from 'solmate/tokens/ERC1155.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
+/// @title Decodes and Executes Commands
+/// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
 abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks {
     using Recipient for address;
 
@@ -20,11 +22,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
     error InvalidOwnerERC721();
     error InvalidOwnerERC1155();
 
-    /// @notice executes the given command with the given inputs
-    /// @param commandType The command to execute
+    /// @notice Decodes and executes the given command with the given inputs
+    /// @param commandType The command type to execute
     /// @param inputs The inputs to execute the command with
-    /// @return success true on success, false on failure
-    /// @return output The outputs, if any from the command
+    /// @dev 2 masks are used to enable use of a nested-if statement in execution for efficiency reasons
+    /// @return success True on success of the command, false on failure
+    /// @return output The outputs or error messages, if any, from the command
     function dispatch(bytes1 commandType, bytes memory inputs) internal returns (bool success, bytes memory output) {
         bool isNotNFTType = (commandType & Commands.NFT_TYPE_MASK) == 0;
         bool is0To7 = (commandType & Commands.SUB_IF_BRANCH_MASK) == 0;
@@ -151,6 +154,11 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
         }
     }
 
+    /// @notice Performs a call to purchase an ERC721, then transfers the ERC721 to a specified recipient
+    /// @param inputs The inputs for the protocol and ERC721 transfer, encoded
+    /// @param protocol The protocol to pass the calldata to
+    /// @return success True on success of the command, false on failure
+    /// @return output The outputs or error messages, if any, from the command
     function callAndTransfer721(bytes memory inputs, address protocol)
         internal
         returns (bool success, bytes memory output)
@@ -161,6 +169,11 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
         if (success) ERC721(token).safeTransferFrom(address(this), recipient.map(), id);
     }
 
+    /// @notice Performs a call to purchase an ERC1155, then transfers the ERC1155 to a specified recipient
+    /// @param inputs The inputs for the protocol and ERC1155 transfer, encoded
+    /// @param protocol The protocol to pass the calldata to
+    /// @return success True on success of the command, false on failure
+    /// @return output The outputs or error messages, if any, from the command
     function callAndTransfer1155(bytes memory inputs, address protocol)
         internal
         returns (bool success, bytes memory output)

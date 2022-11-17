@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-/*
- * Based on Gonçalo Sá's BytesLib - but updated and heavily editted
- */
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+/// @title Library for Bytes Manipulation
+/// Based on Gonçalo Sá's BytesLib - but updated and heavily editted
 pragma solidity ^0.8.0;
 
 library BytesLib {
@@ -13,20 +13,21 @@ library BytesLib {
     error ToUint24OutOfBounds();
     error NoSlice();
 
-    // constants used in slicePool
+    // Constants used in slicePool
     // 43 bytes: token + feeTier + token
     uint256 internal constant POOL_LENGTH = 43;
-    // offset from beginning of _bytes to start copying from given that 43 isnt a multiple of 32
+    // Offset from beginning of _bytes to start copying from given that 43 isnt a multiple of 32
     uint256 internal constant OFFSET = 11; // 43-32=11
 
-    // constants used in inPlaceSliceToken
+    // Constants used in inPlaceSliceToken
     uint256 internal constant ADDR_AND_FEE_LENGTH = 23;
 
-    // Slices first 43 bytes and returns them in a new array
-    function slicePool(bytes memory _bytes) internal pure returns (bytes memory) {
+    /// @notice Slices and returns the first 43 bytes from a bytes string
+    /// @dev 43 bytes = pool (20 bytes) + feeTier (3 bytes) + pool (20 bytes)
+    /// @param _bytes The input bytes string
+    /// @return tempBytes The first 43 bytes of the input bytes string
+    function slicePool(bytes memory _bytes) internal pure returns (bytes memory tempBytes) {
         if (_bytes.length < POOL_LENGTH) revert SliceOutOfBounds();
-
-        bytes memory tempBytes;
 
         assembly ("memory-safe") {
             // Get a location of some free memory and store it in tempBytes as
@@ -58,12 +59,11 @@ library BytesLib {
             // allocating the array padded to 32 bytes like the compiler does now
             mstore(0x40, add(tempBytes, 0x60))
         }
-
-        return tempBytes;
     }
 
-    // removes the first 23 bytes of _bytes in-place.
-    // 23 bytes: token + feeTier
+    /// @notice Removes the first 23 bytes of a bytes string in-place
+    /// @dev 23 bytes = pool (20 bytes) + feeTier (3 bytes)
+    /// @param _bytes The input bytes string to slice
     function inPlaceSliceToken(bytes memory _bytes, uint256 _length) internal pure {
         unchecked {
             if (_length + 31 < _length) revert SliceOverflow();
@@ -111,33 +111,45 @@ library BytesLib {
         }
     }
 
-    // requires that bytesLength IS bytes.length to work securely
-    function toAddress(bytes memory _bytes, uint256 _start, uint256 _bytesLength) internal pure returns (address) {
+    /// @notice Returns the address starting at byte `_start`
+    /// @dev _bytesLength must equal _bytes.length for this to function correctly
+    /// @param _bytes The input bytes string to slice
+    /// @param _start The starting index of the address
+    /// @param _bytesLength The length of _bytes
+    /// @return tempAddress The address starting at _start
+    function toAddress(bytes memory _bytes, uint256 _start, uint256 _bytesLength)
+        internal
+        pure
+        returns (address tempAddress)
+    {
         unchecked {
             if (_start + 20 < _start) revert ToAddressOverflow();
             if (_bytesLength < _start + 20) revert ToAddressOutOfBounds();
         }
-        address tempAddress;
 
         assembly {
             tempAddress := mload(add(add(_bytes, 0x14), _start))
         }
-
-        return tempAddress;
     }
 
-    // requires that bytesLength IS bytes.length to work securely
-    function toUint24(bytes memory _bytes, uint256 _start, uint256 _bytesLength) internal pure returns (uint24) {
+    /// @notice Returns the uint24 starting at byte `_start`
+    /// @dev _bytesLength must equal _bytes.length for this to function correctly
+    /// @param _bytes The input bytes string to slice
+    /// @param _start The starting index of the uint24
+    /// @param _bytesLength The length of _bytes
+    /// @return tempUint24 The uint24 starting at _start
+    function toUint24(bytes memory _bytes, uint256 _start, uint256 _bytesLength)
+        internal
+        pure
+        returns (uint24 tempUint24)
+    {
         unchecked {
             if (_start + 3 < _start) revert ToUint24Overflow();
             if (_bytesLength < _start + 3) revert ToUint24OutOfBounds();
         }
-        uint24 tempUint;
 
         assembly {
-            tempUint := mload(add(add(_bytes, 0x3), _start))
+            tempUint24 := mload(add(add(_bytes, 0x3), _start))
         }
-
-        return tempUint;
     }
 }

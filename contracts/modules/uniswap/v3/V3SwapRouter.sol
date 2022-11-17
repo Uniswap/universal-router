@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.17;
 
 import {V3Path} from './V3Path.sol';
@@ -11,6 +11,7 @@ import {Permit2Payments} from '../../Permit2Payments.sol';
 import {Constants} from '../../../libraries/Constants.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';
 
+/// @title Router for Uniswap v3 Trades
 abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3SwapCallback {
     using V3Path for bytes;
     using SafeCast for uint256;
@@ -63,6 +64,12 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         }
     }
 
+    /// @notice Performs a Uniswap v3 exact input swap
+    /// @param recipient The recipient of the output tokens
+    /// @param amountIn The amount of input tokens for the trade
+    /// @param amountOutMinimum The minimum desired amount of output tokens
+    /// @param path The path of the trade as a bytes string
+    /// @param payer The address that will be paying the input
     function v3SwapExactInput(
         address recipient,
         uint256 amountIn,
@@ -104,6 +111,12 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         if (amountOut < amountOutMinimum) revert V3TooLittleReceived();
     }
 
+    /// @notice Performs a Uniswap v3 exact output swap
+    /// @param recipient The recipient of the output tokens
+    /// @param amountOut The amount of output tokens to receive for the trade
+    /// @param amountInMaximum The maximum desired amount of input tokens
+    /// @param path The path of the trade as a bytes string
+    /// @param payer The address that will be paying the input
     function v3SwapExactOutput(
         address recipient,
         uint256 amountOut,
