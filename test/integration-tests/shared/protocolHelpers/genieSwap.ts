@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers'
+import { BigNumber, BigNumberish } from 'ethers'
 import GENIE_SWAP_ABI from '../abis/genie/GenieSwap.json'
 import GENIE_X2Y2_MARKET_ABI from '../abis/genie/GenieX2Y2Market.json'
 import hre from 'hardhat'
@@ -19,6 +19,6 @@ export type GenieSwapInput = {
 
 export type TradeDetails = {
   marketId: number
-  value: number | BigNumber
+  value: BigNumberish
   tradeData: string
 }

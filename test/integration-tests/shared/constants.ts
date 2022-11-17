@@ -44,3 +44,4 @@ export const LOOKSRARE_TOKEN = '0xf4d2888d29D722226FafA5d9B24F9164c092421E'
 
 // GenieSwap contracts
 export const GENIE_SWAP_ADDRESS = '0x0a267cF51EF038fC00E71801F5a524aec06e4f07'
+export const GEM_SWAP_ADDRESS = '0x83c8f28c26bf6aaca652df1dbbe0e1b56f8baba2'
