@@ -1,75 +1,22 @@
 # Universal Router
 
-## Usage
+## High-Level Overview
 
-### To Compile and Run Tests
+The Universal Router is a ERC20 and NFT swap router that allows users greater flexibility when performing trades across multiple token types.
 
-1. Create `.env` file with api key
-
-```
-INFURA_API_KEY='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-```
-
-2. Run yarn commands to compile and test
-
-### To Run Hardhat Tests
-
-```console
-yarn install
-yarn symlink
-yarn compile
-yarn test
-```
-
-#### To Update Hardhat Gas Snapshots
-
-```console
-yarn test:gas
-```
-
-### To Run Forge Tests
-
-```console
-forge install
-forge build
-forge test
-```
-
-### To Deploy
-Fill out parameters in `scripts/deployParameters/<network>.json`
-```console
-forge script --broadcast \
---rpc-url <RPC-URL> \
---private-key <PRIVATE_KEY> \
---sig 'run(string)' \
-scripts/DeployUniversalRouter.s.sol:DeployUniversalRouter \
-<pathToJSON>
-```
-
-#### To Deploy Permit2 Alongside UniversalRouter
-Fill out parameters in `scripts/deployParameters/<network>.json`
-```console
-forge script --broadcast \
---rpc-url <RPC-URL> \
---private-key <PRIVATE_KEY> \
---sig 'runAndDeployPermit2(string)' \
-scripts/DeployUniversalRouter.s.sol:DeployUniversalRouter \
-<pathToJSON>
-```
-
-## Contract Overview
-
-The Universal Router codebase consists of the `UniversalRouter` contract, and all of its dependencies. The purpose of the `UniversalRouter` is to allow users to unify Uniswap ERC20 swaps (on V2 and V3) with NFT purchases across 8 marketplaces, in a single transaction.
-
-Transactions are encoded using a string of commands, allowing users to have maximum flexibility over what they want to perform. Our flexible command style allows us to provide users with:
+Our flexible command style allows us to provide users with:
 
 - Splitting and interleaving of Uniswap trades
 - Purchases of NFTs across 8 marketplaces
 - Partial fills of trades
 - Wrapping and Unwrapping of ETH
-- Time-bound, signature controlled token approvals
+- Time-bound, signature controlled token approvals using [Permit2](https://github.com/Uniswap/permit2)
 
-With all of these features available in a single transaction, the possibilities available to users are endless
+Transactions are encoded using a string of commands, allowing users to have maximum flexibility over what they want to perform. With all of these features available in a single transaction, the possibilities available to users are endless
+
+## Contract Overview
+
+The Universal Router codebase consists of the `UniversalRouter` contract, and all of its dependencies. The purpose of the `UniversalRouter` is to allow users to unify Uniswap ERC20 swaps (on V2 and V3) with NFT purchases across 8 marketplaces, in a single transaction.
 
 `UniversalRouter` integrates with [Permit2](https://github.com/Uniswap/permit2), to enable users to have more safety, flexibility, and control over their ERC20 token approvals.
 
@@ -196,3 +143,60 @@ Encoding parameters in a bytes string in this way gives us maximum flexiblity to
 For a more detailed breakdown of which parameters you should provide for each command take a look at the `Dispatcher.dispatch` function, or alternatively at the `ABI_DEFINITION` mapping in `planner.ts`.
 
 Developer documentation to give a detailed explanation of the inputs for every command will be coming soon!
+
+## Usage
+
+### To Compile and Run Tests
+
+1. Create `.env` file with api key
+
+```
+INFURA_API_KEY='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+```
+
+2. Run yarn commands to compile and test
+
+### To Run Hardhat Tests
+
+```console
+yarn install
+yarn symlink
+yarn compile
+yarn test
+```
+
+#### To Update Hardhat Gas Snapshots
+
+```console
+yarn test:gas
+```
+
+### To Run Forge Tests
+
+```console
+forge install
+forge build
+forge test
+```
+
+### To Deploy
+Fill out parameters in `scripts/deployParameters/<network>.json`
+```console
+forge script --broadcast \
+--rpc-url <RPC-URL> \
+--private-key <PRIVATE_KEY> \
+--sig 'run(string)' \
+scripts/DeployUniversalRouter.s.sol:DeployUniversalRouter \
+<pathToJSON>
+```
+
+#### To Deploy Permit2 Alongside UniversalRouter
+Fill out parameters in `scripts/deployParameters/<network>.json`
+```console
+forge script --broadcast \
+--rpc-url <RPC-URL> \
+--private-key <PRIVATE_KEY> \
+--sig 'runAndDeployPermit2(string)' \
+scripts/DeployUniversalRouter.s.sol:DeployUniversalRouter \
+<pathToJSON>
+```
