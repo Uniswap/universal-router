@@ -180,23 +180,41 @@ forge test
 ```
 
 ### To Deploy
-Fill out parameters in `scripts/deployParameters/<network>.json`
+
+Fill out parameters in `script/deployParameters/<network>.json`
+
 ```console
 forge script --broadcast \
 --rpc-url <RPC-URL> \
 --private-key <PRIVATE_KEY> \
 --sig 'run(string)' \
-scripts/DeployUniversalRouter.s.sol:DeployUniversalRouter \
+script/DeployUniversalRouter.s.sol:DeployUniversalRouter \
 <pathToJSON>
 ```
 
+### To Deploy and Verify
+
+```console
+forge script --broadcast \
+--rpc-url <RPC-URL> \
+--private-key <PRIVATE-KEY> \
+--sig 'run(string)' \
+script/DeployUniversalRouter.s.sol:DeployUniversalRouter \
+<pathToJSON> \
+--chain-id <CHAIN-ID>
+--etherscan-api-key <ETHERSCAN-API-KEY> \
+--verify
+```
+
 #### To Deploy Permit2 Alongside UniversalRouter
+
 Fill out parameters in `scripts/deployParameters/<network>.json`
+
 ```console
 forge script --broadcast \
 --rpc-url <RPC-URL> \
 --private-key <PRIVATE_KEY> \
 --sig 'runAndDeployPermit2(string)' \
-scripts/DeployUniversalRouter.s.sol:DeployUniversalRouter \
+script/DeployUniversalRouter.s.sol:DeployUniversalRouter \
 <pathToJSON>
 ```
