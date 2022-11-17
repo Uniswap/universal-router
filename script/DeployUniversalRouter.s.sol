@@ -9,7 +9,6 @@ import {UnsupportedProtocol} from 'contracts/deploy/UnsupportedProtocol.sol';
 import {UniversalRouter} from 'contracts/UniversalRouter.sol';
 import {Permit2} from 'permit2/src/Permit2.sol';
 
-
 /// @notice The SALT used to deploy Universal Router on Mainnet is 0x000000000000000000000000000000000000000068f501dc113220003862815d
 bytes32 constant SALT = bytes32(uint256(0x00000000000000000000000000000000000000005eb67581652632000a6cbedf));
 
