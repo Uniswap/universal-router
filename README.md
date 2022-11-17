@@ -2,7 +2,7 @@
 
 ## Usage
 
-### To Run Integration Tests with Hardhat
+### To Compile and Run Tests
 
 1. Create `.env` file with api key
 
@@ -12,11 +12,19 @@ INFURA_API_KEY='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 
 2. Run yarn commands to compile and test
 
+### To Run Hardhat Tests
+
 ```console
 yarn install
 yarn symlink
 yarn compile
 yarn test
+```
+
+#### To Update Hardhat Gas Snapshots
+
+```console
+yarn test:gas
 ```
 
 ### To Run Forge Tests
@@ -38,7 +46,7 @@ scripts/DeployUniversalRouter.s.sol:DeployUniversalRouter \
 <pathToJSON>
 ```
 
-#### To deploy permit2 alongside UniversalRouter
+#### To Deploy Permit2 Alongside UniversalRouter
 Fill out parameters in `scripts/deployParameters/<network>.json`
 ```console
 forge script --broadcast \
@@ -49,13 +57,36 @@ scripts/DeployUniversalRouter.s.sol:DeployUniversalRouter \
 <pathToJSON>
 ```
 
-## Calldata Overview
+## Contract Overview
 
-### UniversalRouter.execute parameters
+The Universal Router codebase consists of the `UniversalRouter` contract, and all of its dependencies. The purpose of the `UniversalRouter` is to allow users to unify Uniswap ERC20 swaps (on V2 and V3) with NFT purchases across 8 marketplaces, in a single transaction.
 
-#### `bytes calldata commands`
+Transactions are encoded using a string of commands, allowing users to have maximum flexibility over what they want to perform. Our flexible command style allows us to provide users with:
 
-This bytes string contains 1 byte per command to be executed.
+- Splitting and interleaving of Uniswap trades
+- Purchases of NFTs across 8 marketplaces
+- Partial fills of trades
+- Wrapping and Unwrapping of ETH
+- Time-bound, signature controlled token approvals
+
+With all of these features available in a single transaction, the possibilities available to users are endless
+
+`UniversalRouter` integrates with [Permit2](https://github.com/Uniswap/permit2), to enable users to have more safety, flexibility, and control over their ERC20 token approvals.
+
+### UniversalRouter command encoding
+
+Calls to `UniversalRouter.execute`, the entrypoint to the contracts, provide 2 main parameters:
+
+- `bytes commands`: A bytes string. Each individual byte represents 1 command that the transaction will execute.
+- `bytes[] inputs`: An array of bytes strings. Each element in the array is the encoded parameters for a command.
+
+`commands[i]` is the command that will use `inputs[i]` as its encoded input parameters.
+
+Through function overloading there is also an optional third parameter for the `execute` function:
+
+- `uint256 deadline`: The timestamp deadline by which this transaction must be executed. Transactions executed after this specified deadline will revert.
+
+#### How the command byte is structured
 
 Each command is a `bytes1` containing the following 8 bits:
 
@@ -66,56 +97,102 @@ Each command is a `bytes1` containing the following 8 bits:
 └─┴───┴─────────┘
 ```
 
-- `f` is a single bit flag, that signals whether or not the command should be allowed to revert. If `f` is `false`, and the command reverts, then the entire transaction will revert.
+- `f` is a single bit flag, that signals whether or not the command should be allowed to revert. If `f` is `false`, and the command reverts, then the entire transaction will revert. If `f` is `true` and the command reverts then the transaction will continue, allowing us to achieve partial fills. If using this flag, be careful to include further commands that will remove any funds that could be left unused in the `UniversalRouter` contract.
 
 - `r` is two bits of reserved space. This will easily allow us to increase the space used for commands, or add new flags in future.
 
-- `command` is a 5 bit unique identifier for the command that should be carried out. The value that selects the corresponding call type is described in the table below:'
+- `command` is a 5 bit unique identifier for the command that should be carried out. The values of these commands can be found within Commands.sol, or can be viewed in the table below.
 
 ```
-   ┌──────┬────────────────────┐
-   │ 0x00 │  Permit            │
-   ├──────┼────────────────────┤
-   │ 0x01 │  Transfer          │
-   ├──────┼────────────────────┤
-   │ 0x02 │  V3ExactIn         │
-   ├──────┼────────────────────┤
-   │ 0x03 │  V3ExactOut        │
-   ├──────┼────────────────────┤
-   │ 0x04 │  V2ExactIn         │
-   ├──────┼────────────────────┤
-   │ 0x05 │  V2ExactOut        │
-   ├──────┼────────────────────┤
-   │ 0x06 │  Seaport           │
-   ├──────┼────────────────────┤
-   │ 0x07 │  WrapETH           │
-   ├──────┼────────────────────┤
-   │ 0x08 │  UnwrapWETH        │
-   ├──────┼────────────────────┤
-   │ 0x09 │  Sweep             │
-   ├──────┼────────────────────┤
-   │ 0x0a │  NFTX              │
-   ├──────┼────────────────────┤
-   │ 0x0b │  LooksRare721      │
-   ├──────┼────────────────────┤
-   │ 0x0c │  X2Y2721           │
-   ├──────┼────────────────────┤
-   │ 0x0d │  LooksRare1155     │
-   ├──────┼────────────────────┤
-   │ 0x0e │  X2Y21155          │
-   ├──────┼────────────────────┤
-   │ 0x0f │  Foundation        │
-   ├──────┼────────────────────┤
-   │ 0x10 │  SweepWithFee      │
-   ├──────┼────────────────────┤
-   │ 0x11 │  UnwrapWETHWithFee │
-   ├──────┼────────────────────┤
-   │ 0x12 │  Sudoswap          │
-   └──────┴────────────────────┘
+   ┌──────┬───────────────────────────────┐
+   │ 0x00 │  V3_SWAP_EXACT_IN             │
+   ├──────┼───────────────────────────────┤
+   │ 0x01 │  V3_SWAP_EXACT_OUT            │
+   ├──────┼───────────────────────────────┤
+   │ 0x02 │  PERMIT2_TRANSFER_FROM        │
+   ├──────┼───────────────────────────────┤
+   │ 0x03 │  PERMIT2_PERMIT_BATCH         │
+   ├──────┼───────────────────────────────┤
+   │ 0x04 │  SWEEP                        │
+   ├──────┼───────────────────────────────┤
+   │ 0x05 │  TRANSFER                     │
+   ├──────┼───────────────────────────────┤
+   │ 0x06 │  PAY_PORTION                  │
+   ├──────┼───────────────────────────────┤
+   │ 0x07 │  -------                      │
+   ├──────┼───────────────────────────────┤
+   │ 0x08 │  V2_SWAP_EXACT_IN             │
+   ├──────┼───────────────────────────────┤
+   │ 0x09 │  V2_SWAP_EXACT_OUT            │
+   ├──────┼───────────────────────────────┤
+   │ 0x0a │  PERMIT2_PERMIT               │
+   ├──────┼───────────────────────────────┤
+   │ 0x0b │  WRAP_ETH                     │
+   ├──────┼───────────────────────────────┤
+   │ 0x0c │  UNWRAP_WETH                  │
+   ├──────┼───────────────────────────────┤
+   │ 0x0d │  PERMIT2_TRANSFER_FROM_BATCH  │
+   ├──────┼───────────────────────────────┤
+   │ 0x0e │  -------                      │
+   ├──────┼───────────────────────────────┤
+   │ 0x0f │  -------                      │
+   ├──────┼───────────────────────────────┤
+   │ 0x10 │  SEAPORT                      │
+   ├──────┼───────────────────────────────┤
+   │ 0x11 │  LOOKS_RARE_721               │
+   ├──────┼───────────────────────────────┤
+   │ 0x12 │  NFTX                         │
+   ├──────┼───────────────────────────────┤
+   │ 0x13 │  CRYPTOPUNKS                  │
+   ├──────┼───────────────────────────────┤
+   │ 0x14 │  LOOKS_RARE_1155              │
+   ├──────┼───────────────────────────────┤
+   │ 0x15 │  OWNER_CHECK_721              │
+   ├──────┼───────────────────────────────┤
+   │ 0x16 │  OWNER_CHECK_1155             │
+   ├──────┼───────────────────────────────┤
+   │ 0x17 │  SWEEP_ERC721                 │
+   ├──────┼───────────────────────────────┤
+   │ 0x18 │  X2Y2_721                     │
+   ├──────┼───────────────────────────────┤
+   │ 0x19 │  SUDOSWAP                     │
+   ├──────┼───────────────────────────────┤
+   │ 0x1a │  NFT20                        │
+   ├──────┼───────────────────────────────┤
+   │ 0x1b │  X2Y2_1155                    │
+   ├──────┼───────────────────────────────┤
+   │ 0x1c │  FOUNDATION                   │
+   ├──────┼───────────────────────────────┤
+   │ 0x1d │  SWEEP_ERC1155                │
+   ├──────┼───────────────────────────────┤
+   │ 0x1e │  -------                      │
+   ├──────┼─────────────────-─────────────┤
+   │ 0x1f │  -------                      │
+   └──────┴───────────────────────────────┘
 ```
 
-#### `bytes[] calldata inputs`
+Note that some of the commands in the middle of the series are unused. These gaps allowed us to create gas-efficiencies when selecting which command to execute.
 
-This array contains the abi encoded parameters to provide for each command.
+#### How the input bytes are structures
 
-The command located at `commands[i]` has its corresponding input parameters located at `inputs[i]`.
+Each input bytes string is merely the abi encoding of a set of parameters. Depending on the command chosen, the input bytes string will be different. For example:
+
+The inputs for `V3_SWAP_EXACT_IN` is the encoding of 5 parameters:
+
+- `address` The recipient of the output of the trade
+- `uint256` The amount of input tokens for the trade
+- `uint256` The minimum amount of output tokens the user wants
+- `bytes` The UniswapV3 path you want to trade along
+- `bool` A flag for whether the input funds should come from the caller (through Permit2) or whether the funds are already in the UniversalRouter
+
+Whereas in contrast `CRYPTOPUNKS` has just 3 parameters encoded:
+
+- `uint256` The ID of the punk you wish to purchase
+- `address` The recipient of the punk
+- `uint256` The amount of ETH to pay for the punk
+
+Encoding parameters in a bytes string in this way gives us maximum flexiblity to be able to support many commands which require different datatypes in a gas-efficient way.
+
+For a more detailed breakdown of which parameters you should provide for each command take a look at the `Dispatcher.dispatch` function, or alternatively at the `ABI_DEFINITION` mapping in `planner.ts`.
+
+Developer documentation to give a detailed explanation of the inputs for every command will be coming soon!
