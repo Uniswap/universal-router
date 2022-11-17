@@ -19,7 +19,7 @@ contract DeployUniversalRouter is Script {
     function run(RouterParameters memory params) public returns (UniversalRouter router) {
         vm.startBroadcast();
 
-        address unsupported = address(new UnsupportedProtocol{salt: SALT}());
+        address unsupported = address(new UnsupportedProtocol());
         console2.log('UnsupportedProtocol deployed:', unsupported);
 
         params = RouterParameters({
