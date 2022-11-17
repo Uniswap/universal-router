@@ -20,6 +20,7 @@ contract DeployUniversalRouter is Script {
         vm.startBroadcast();
 
         address unsupported = address(new UnsupportedProtocol{salt: SALT}());
+        console2.log('UnsupportedProtocol deployed:', unsupported);
 
         params = RouterParameters({
             permit2: mapUnsupported(params.permit2, unsupported),
