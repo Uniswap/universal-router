@@ -319,6 +319,183 @@ describe.only('NFT UX Tests gas', () => {
     })
   })
 
+  describe('Mixed LooksRare + Seaport', () => {
+    describe('UniversalRouter', () => {
+      it('ETH -> 3 Seaport, 1 LooksRare', async () => {
+        const numSeaport = 3
+        const numLRTokens = 1
+
+        const { calldata: seaportdata, value: seaportValue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), seaportdata])
+
+        let looksrareValue = BigNumber.from(0)
+        for (let i = 0; i < numLRTokens; i++) {
+          console.log('here!!!')
+          const { makerOrder, takerOrder, value, calldata } = createLooksRareCalldata(massLooksRareOrders[i])
+          planner.addCommand(CommandType.LOOKS_RARE_721, [
+            value,
+            calldata,
+            ALICE_ADDRESS,
+            makerOrder.collection,
+            makerOrder.tokenId,
+          ])
+          looksrareValue = looksrareValue.add(value)
+        }
+        const { commands, inputs } = planner
+        const value = BigNumber.from(seaportValue).add(looksrareValue)
+
+        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+
+        for (let i = 0; i < numLRTokens; i++) {
+          const makerOrder = massLooksRareOrders[i]
+          const nft = new ethers.Contract(makerOrder.collectionAddress, ERC721_ABI).connect(alice) as ERC721
+          console.log(await nft.ownerOf(makerOrder.tokenId))
+          expect(await nft.ownerOf(makerOrder.tokenId)).to.eq(alice.address)
+        }
+        for (let i = 0; i < numSeaport; i++) {
+          expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[i]))).to.eq(alice.address)
+        }
+      })
+
+      it('ETH -> 3 Seaport, 3 LooksRare', async () => {
+        const numSeaport = 3
+        const numLRTokens = 3
+        const { calldata: seaportdata, value: seaportValue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), seaportdata])
+
+        let looksrareValue = BigNumber.from(0)
+        for (let i = 0; i < numLRTokens; i++) {
+          const { makerOrder, takerOrder, value, calldata } = createLooksRareCalldata(massLooksRareOrders[i])
+          planner.addCommand(CommandType.LOOKS_RARE_721, [
+            value,
+            calldata,
+            ALICE_ADDRESS,
+            makerOrder.collection,
+            makerOrder.tokenId,
+          ])
+          looksrareValue = looksrareValue.add(value)
+        }
+
+        const { commands, inputs } = planner
+        const value = BigNumber.from(seaportValue).add(looksrareValue)
+        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
+        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[1]))).to.eq(alice.address)
+        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[2]))).to.eq(alice.address)
+        for (let i = 0; i < numLRTokens; i++) {
+          const makerOrder = massLooksRareOrders[i]
+          const nft = new ethers.Contract(makerOrder.collectionAddress, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(makerOrder.tokenId)).to.eq(alice.address)
+        }
+        for (let i = 0; i < numSeaport; i++) {
+          expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[i]))).to.eq(alice.address)
+        }
+      })
+
+      it('ETH -> 3 Seaport, 5 LooksRare', async () => {
+        const numSeaport = 3
+        const numLRTokens = 5
+
+        const { calldata: seaportdata, value: seaportValue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), seaportdata])
+
+        let looksrareValue = BigNumber.from(0)
+        for (let i = 0; i < numLRTokens; i++) {
+          const { makerOrder, takerOrder, value, calldata } = createLooksRareCalldata(massLooksRareOrders[i])
+          planner.addCommand(CommandType.LOOKS_RARE_721, [
+            value,
+            calldata,
+            ALICE_ADDRESS,
+            makerOrder.collection,
+            makerOrder.tokenId,
+          ])
+          looksrareValue = looksrareValue.add(value)
+        }
+
+        const { commands, inputs } = planner
+        const value = BigNumber.from(seaportValue).add(looksrareValue)
+        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+
+        for (let i = 0; i < numLRTokens; i++) {
+          const makerOrder = massLooksRareOrders[i]
+          const nft = new ethers.Contract(makerOrder.collectionAddress, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(makerOrder.tokenId)).to.eq(alice.address)
+        }
+        for (let i = 0; i < numSeaport; i++) {
+          expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
+        }
+      })
+    })
+
+    describe('Genie', () => {
+      it('ETH -> 3 Seaport, 1 LooksRare', async () => {
+        const numSeaport = 3
+        let tradeDetails: TradeDetails[] = []
+
+        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        tradeDetails.push({ marketId: 21, tradeData: scalldata, value: svalue })
+
+        const { makerOrders, takerOrders, value: lrvalue, calldata: lrcalldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 1))
+        tradeDetails.push({ marketId: 18, value: lrvalue, tradeData: lrcalldata })
+
+        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+        }
+        for (let i = 0; i < numSeaport; i++) {
+          expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
+        }
+      })
+
+      it('ETH -> 3 Seaport, 3 LooksRare', async () => {
+        const numSeaport = 3
+        let tradeDetails: TradeDetails[] = []
+
+        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        tradeDetails.push({ marketId: 21, tradeData: scalldata, value: svalue })
+
+        const { makerOrders, takerOrders, value: lrvalue, calldata: lrcalldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 3))
+        tradeDetails.push({ marketId: 18, value: lrvalue, tradeData: lrcalldata })
+
+        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+        }
+        for (let i = 0; i < numSeaport; i++) {
+          expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
+        }
+      })
+
+      it('ETH -> 3 Seaport, 5 LooksRare', async () => {
+        const numSeaport = 3
+        let tradeDetails: TradeDetails[] = []
+
+        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        tradeDetails.push({ marketId: 21, tradeData: scalldata, value: svalue })
+
+        const { makerOrders, takerOrders, value: lrvalue, calldata: lrcalldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 5))
+        tradeDetails.push({ marketId: 18, value: lrvalue, tradeData: lrcalldata })
+
+        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+        }
+        for (let i = 0; i < numSeaport; i++) {
+          expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
+        }
+      })
+    })
+  })
+
   describe.skip('X2Y2', () => {
     let x2y2Calldata: string
     let value: BigNumber

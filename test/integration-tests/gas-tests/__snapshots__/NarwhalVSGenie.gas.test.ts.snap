@@ -42,6 +42,48 @@ Object {
 }
 `;
 
+exports[`NFT UX Tests gas Mixed LooksRare + Seaport Genie ETH -> 3 Seaport, 1 LooksRare 1`] = `
+Object {
+  "calldataByteLength": 8196,
+  "gasUsed": 784926,
+}
+`;
+
+exports[`NFT UX Tests gas Mixed LooksRare + Seaport Genie ETH -> 3 Seaport, 3 LooksRare 1`] = `
+Object {
+  "calldataByteLength": 9860,
+  "gasUsed": 1159802,
+}
+`;
+
+exports[`NFT UX Tests gas Mixed LooksRare + Seaport Genie ETH -> 3 Seaport, 5 LooksRare 1`] = `
+Object {
+  "calldataByteLength": 11524,
+  "gasUsed": 1441223,
+}
+`;
+
+exports[`NFT UX Tests gas Mixed LooksRare + Seaport UniversalRouter ETH -> 3 Seaport, 1 LooksRare 1`] = `
+Object {
+  "calldataByteLength": 7748,
+  "gasUsed": 691697,
+}
+`;
+
+exports[`NFT UX Tests gas Mixed LooksRare + Seaport UniversalRouter ETH -> 3 Seaport, 3 LooksRare 1`] = `
+Object {
+  "calldataByteLength": 9988,
+  "gasUsed": 1065314,
+}
+`;
+
+exports[`NFT UX Tests gas Mixed LooksRare + Seaport UniversalRouter ETH -> 3 Seaport, 5 LooksRare 1`] = `
+Object {
+  "calldataByteLength": 12228,
+  "gasUsed": 1345437,
+}
+`;
+
 exports[`NFT UX Tests gas Seaport Genie ETH -> 1 NFT 1`] = `
 Object {
   "calldataByteLength": 2436,
