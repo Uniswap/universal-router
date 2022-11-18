@@ -71,8 +71,8 @@ describe.only('NFT UX Tests gas', () => {
   })
 
   describe('Seaport', () => {
-    describe('Universal Router', async () => {
-      it('ETH -> 1 NFT', async () => {
+    describe('ETH -> 1 NFT', async () => {
+      it('Universal Router', async () => {
         const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
         const seaportCalldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
           advancedOrder,
@@ -88,27 +88,7 @@ describe.only('NFT UX Tests gas', () => {
         expect(ownerAfter.toLowerCase()).to.eq(ALICE_ADDRESS)
       })
 
-      it('ETH -> 4 NFTs', async () => {
-        const { calldata, value } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, 4), alice.address)
-
-        planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
-        const { commands, inputs } = planner
-
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
-        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
-        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[1]))).to.eq(alice.address)
-        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[2]))).to.eq(alice.address)
-        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[3]))).to.eq(alice.address)
-        // expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[4]))).to.eq(alice.address)
-      })
-
-      it('ETH -> 10 NFTs')
-      it('ETH -> 20 NFTs')
-      it('ETH -> 30 NFTs')
-    })
-
-    describe('Genie', async () => {
-      it('ETH -> 1 NFT', async () => {
+      it('Genie', async () => {
         const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
         const seaportCalldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
           advancedOrder,
@@ -124,20 +104,7 @@ describe.only('NFT UX Tests gas', () => {
         expect(ownerAfter.toLowerCase()).to.eq(ALICE_ADDRESS)
       })
 
-      it('ETH -> 4 NFTs', async () => {
-        const { calldata, value } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, 4), alice.address)
-        let tradeDetails: TradeDetails[] = [{ marketId: 21, tradeData: calldata, value }]
-
-        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
-        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
-        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[1]))).to.eq(alice.address)
-        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[2]))).to.eq(alice.address)
-        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[3]))).to.eq(alice.address)
-      })
-    })
-
-    describe.skip('Gem', async () => {
-      it('ETH -> 1 NFT', async () => {
+      it.skip('Gem', async () => {
         const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
         const seaportCalldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
           advancedOrder,
@@ -152,8 +119,35 @@ describe.only('NFT UX Tests gas', () => {
         const ownerAfter = await cryptoCovens.ownerOf(advancedOrder.parameters.offer[0].identifierOrCriteria.toString())
         expect(ownerAfter.toLowerCase()).to.eq(ALICE_ADDRESS)
       })
+    })
 
-      it('ETH -> 4 NFTs', async () => {
+    describe('ETH -> 4 NFTs', () => {
+      it('Universal Router', async () => {
+        const { calldata, value } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, 4), alice.address)
+
+        planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+        const { commands, inputs } = planner
+
+        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
+        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[1]))).to.eq(alice.address)
+        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[2]))).to.eq(alice.address)
+        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[3]))).to.eq(alice.address)
+        // expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[4]))).to.eq(alice.address)
+      })
+
+      it('Genie', async () => {
+        const { calldata, value } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, 4), alice.address)
+        let tradeDetails: TradeDetails[] = [{ marketId: 21, tradeData: calldata, value }]
+
+        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
+        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
+        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[1]))).to.eq(alice.address)
+        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[2]))).to.eq(alice.address)
+        expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[3]))).to.eq(alice.address)
+      })
+
+      it.skip('Gem', async () => {
         const { calldata, value } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, 4), alice.address)
         let tradeDetails: TradeDetails[] = [{ marketId: 18, tradeData: calldata, value }]
         await snapshotGasCost(gemMultiAssetSwap(tradeDetails))
@@ -167,8 +161,8 @@ describe.only('NFT UX Tests gas', () => {
   })
 
   describe('LooksRare', () => {
-    describe('Universal Router', async () => {
-      it('ETH -> 1 NFT', async () => {
+    describe('ETH -> 1 NFT', async () => {
+      it('Universal Router', async () => {
         const { makerOrder, takerOrder, value, calldata } = createLooksRareCalldata(massLooksRareOrders[1])
         planner.addCommand(CommandType.LOOKS_RARE_721, [
           value,
@@ -181,7 +175,37 @@ describe.only('NFT UX Tests gas', () => {
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
       })
 
-      it('ETH -> 2 NFTs', async () => {
+      it('Genie', async () => {
+        const makerOrder = massLooksRareOrders[0]
+        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGenie([massLooksRareOrders[0]])
+        let tradeDetails: TradeDetails[] = [{ marketId: 18, value: value, tradeData: calldata }]
+
+        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+        }
+      })
+
+      it.skip('Gem', async () => {
+        const makerOrder = massLooksRareOrders[0]
+        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGem([massLooksRareOrders[0]])
+        let tradeDetails: TradeDetails[] = [{ marketId: 16, value: value, tradeData: calldata }]
+
+        await snapshotGasCost(gemMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+        }
+      })
+    })
+
+    describe('ETH -> 2 NFTs', async () => {
+      it('Universal Router', async () => {
         const numTokens = 2
         let totalValue: BigNumber = BigNumber.from(0)
         for (let i = 0; i < numTokens; i++) {
@@ -207,7 +231,35 @@ describe.only('NFT UX Tests gas', () => {
         }
       })
 
-      it('ETH -> 4 NFTs', async () => {
+      it('Genie', async () => {
+        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 2))
+        let tradeDetails: TradeDetails[] = [{ marketId: 18, value: value, tradeData: calldata }]
+
+        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+        }
+      })
+
+      it.skip('Gem', async () => {
+        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGem(massLooksRareOrders.slice(0, 2))
+        let tradeDetails: TradeDetails[] = [{ marketId: 16, value: value, tradeData: calldata }]
+
+        await snapshotGasCost(gemMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+        }
+      })
+    })
+
+    describe('ETH -> 4 NFTs', () => {
+      it('Universal Router', async () => {
         const numTokens = 4
         let totalValue: BigNumber = BigNumber.from(0)
         for (let i = 0; i < numTokens; i++) {
@@ -232,37 +284,8 @@ describe.only('NFT UX Tests gas', () => {
           expect(await nft.ownerOf(makerOrder.tokenId)).to.eq(alice.address)
         }
       })
-    })
 
-    describe('Genie', async () => {
-      it('ETH -> 1 NFT', async () => {
-        const makerOrder = massLooksRareOrders[0]
-        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGenie([massLooksRareOrders[0]])
-        let tradeDetails: TradeDetails[] = [{ marketId: 18, value: value, tradeData: calldata }]
-
-        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
-
-        for (const i in makerOrders) {
-          const mymakerOrder = makerOrders[i]
-          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
-          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
-        }
-      })
-
-      it('ETH -> 2 NFTs', async () => {
-        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 2))
-        let tradeDetails: TradeDetails[] = [{ marketId: 18, value: value, tradeData: calldata }]
-
-        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
-
-        for (const i in makerOrders) {
-          const mymakerOrder = makerOrders[i]
-          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
-          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
-        }
-      })
-
-      it('ETH -> 4 NFTs', async () => {
+      it('Genie', async () => {
         const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 4))
         let tradeDetails: TradeDetails[] = [{ marketId: 18, value: value, tradeData: calldata }]
 
@@ -274,37 +297,8 @@ describe.only('NFT UX Tests gas', () => {
           expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
         }
       })
-    })
 
-    describe.skip('Gem', async () => {
-      it('ETH -> 1 NFT', async () => {
-        const makerOrder = massLooksRareOrders[0]
-        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGem([massLooksRareOrders[0]])
-        let tradeDetails: TradeDetails[] = [{ marketId: 16, value: value, tradeData: calldata }]
-
-        await snapshotGasCost(gemMultiAssetSwap(tradeDetails))
-
-        for (const i in makerOrders) {
-          const mymakerOrder = makerOrders[i]
-          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
-          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
-        }
-      })
-
-      it('ETH -> 2 NFTs', async () => {
-        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGem(massLooksRareOrders.slice(0, 2))
-        let tradeDetails: TradeDetails[] = [{ marketId: 16, value: value, tradeData: calldata }]
-
-        await snapshotGasCost(gemMultiAssetSwap(tradeDetails))
-
-        for (const i in makerOrders) {
-          const mymakerOrder = makerOrders[i]
-          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
-          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
-        }
-      })
-
-      it('ETH -> 4 NFTs', async () => {
+      it.skip('Gem', async () => {
         const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGem(massLooksRareOrders.slice(0, 4))
         let tradeDetails: TradeDetails[] = [{ marketId: 16, value: value, tradeData: calldata }]
 
@@ -317,11 +311,12 @@ describe.only('NFT UX Tests gas', () => {
         }
       })
     })
+
   })
 
   describe('Mixed LooksRare + Seaport', () => {
-    describe('UniversalRouter', () => {
-      it('ETH -> 3 Seaport, 1 LooksRare', async () => {
+    describe('ETH -> 3 Seaport, 1 LooksRare', () => {
+      it('Universal Router', async () => {
         const numSeaport = 3
         const numLRTokens = 1
 
@@ -348,7 +343,6 @@ describe.only('NFT UX Tests gas', () => {
         for (let i = 0; i < numLRTokens; i++) {
           const makerOrder = massLooksRareOrders[i]
           const nft = new ethers.Contract(makerOrder.collectionAddress, ERC721_ABI).connect(alice) as ERC721
-          console.log(await nft.ownerOf(makerOrder.tokenId))
           expect(await nft.ownerOf(makerOrder.tokenId)).to.eq(alice.address)
         }
         for (let i = 0; i < numSeaport; i++) {
@@ -356,7 +350,33 @@ describe.only('NFT UX Tests gas', () => {
         }
       })
 
-      it('ETH -> 3 Seaport, 3 LooksRare', async () => {
+      it('Genie', async () => {
+        const numSeaport = 3
+        let tradeDetails: TradeDetails[] = []
+
+        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        tradeDetails.push({ marketId: 21, tradeData: scalldata, value: svalue })
+
+        const { makerOrders, takerOrders, value: lrvalue, calldata: lrcalldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 1))
+        tradeDetails.push({ marketId: 18, value: lrvalue, tradeData: lrcalldata })
+
+        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+        }
+        for (let i = 0; i < numSeaport; i++) {
+          expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
+        }
+      })
+
+
+    })
+
+    describe('ETH -> 3 Seaport, 3 LooksRare', () => {
+      it('Universal Router', async () => {
         const numSeaport = 3
         const numLRTokens = 3
         const { calldata: seaportdata, value: seaportValue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
@@ -391,7 +411,31 @@ describe.only('NFT UX Tests gas', () => {
         }
       })
 
-      it('ETH -> 3 Seaport, 5 LooksRare', async () => {
+      it('Genie', async () => {
+        const numSeaport = 3
+        let tradeDetails: TradeDetails[] = []
+
+        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        tradeDetails.push({ marketId: 21, tradeData: scalldata, value: svalue })
+
+        const { makerOrders, takerOrders, value: lrvalue, calldata: lrcalldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 3))
+        tradeDetails.push({ marketId: 18, value: lrvalue, tradeData: lrcalldata })
+
+        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+        }
+        for (let i = 0; i < numSeaport; i++) {
+          expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
+        }
+      })
+    })
+
+    describe('ETH -> 3 Seaport, 5 LooksRare', () => {
+      it('Universal Router', async () => {
         const numSeaport = 3
         const numLRTokens = 5
 
@@ -419,52 +463,6 @@ describe.only('NFT UX Tests gas', () => {
           const makerOrder = massLooksRareOrders[i]
           const nft = new ethers.Contract(makerOrder.collectionAddress, ERC721_ABI).connect(alice) as ERC721
           expect(await nft.ownerOf(makerOrder.tokenId)).to.eq(alice.address)
-        }
-        for (let i = 0; i < numSeaport; i++) {
-          expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
-        }
-      })
-    })
-
-    describe('Genie', () => {
-      it('ETH -> 3 Seaport, 1 LooksRare', async () => {
-        const numSeaport = 3
-        let tradeDetails: TradeDetails[] = []
-
-        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
-        tradeDetails.push({ marketId: 21, tradeData: scalldata, value: svalue })
-
-        const { makerOrders, takerOrders, value: lrvalue, calldata: lrcalldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 1))
-        tradeDetails.push({ marketId: 18, value: lrvalue, tradeData: lrcalldata })
-
-        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
-
-        for (const i in makerOrders) {
-          const mymakerOrder = makerOrders[i]
-          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
-          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
-        }
-        for (let i = 0; i < numSeaport; i++) {
-          expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
-        }
-      })
-
-      it('ETH -> 3 Seaport, 3 LooksRare', async () => {
-        const numSeaport = 3
-        let tradeDetails: TradeDetails[] = []
-
-        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
-        tradeDetails.push({ marketId: 21, tradeData: scalldata, value: svalue })
-
-        const { makerOrders, takerOrders, value: lrvalue, calldata: lrcalldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 3))
-        tradeDetails.push({ marketId: 18, value: lrvalue, tradeData: lrcalldata })
-
-        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
-
-        for (const i in makerOrders) {
-          const mymakerOrder = makerOrders[i]
-          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
-          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
         }
         for (let i = 0; i < numSeaport; i++) {
           expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
