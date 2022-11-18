@@ -70,7 +70,7 @@ Object {
 }
 `;
 
-exports[`NFT UX Tests gas Mixed LooksRare + Seaport ETH -> 3 Seaport, 5 LooksRare ETH -> 3 Seaport, 5 LooksRare 1`] = `
+exports[`NFT UX Tests gas Mixed LooksRare + Seaport ETH -> 3 Seaport, 5 LooksRare Genie 1`] = `
 Object {
   "calldataByteLength": 11524,
   "gasUsed": 1441223,

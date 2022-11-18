@@ -499,7 +499,7 @@ describe.only('NFT UX Tests gas', () => {
         }
       })
 
-      it('ETH -> 3 Seaport, 5 LooksRare', async () => {
+      it('Genie', async () => {
         const numSeaport = 3
         let tradeDetails: TradeDetails[] = []
 
