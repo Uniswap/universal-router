@@ -184,7 +184,7 @@ describe.only('NFT UX Tests gas', () => {
       it('ETH -> 2 NFTs', async () => {
         const numTokens = 2
         let totalValue: BigNumber = BigNumber.from(0)
-        for (let i = 0; i <= numTokens; i++) {
+        for (let i = 0; i < numTokens; i++) {
           const { makerOrder, takerOrder, value, calldata } = createLooksRareCalldata(massLooksRareOrders[i])
           planner.addCommand(CommandType.LOOKS_RARE_721, [
             value,
@@ -200,7 +200,7 @@ describe.only('NFT UX Tests gas', () => {
         await snapshotGasCost(
           router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: totalValue })
         )
-        for (let i = 0; i <= numTokens; i++) {
+        for (let i = 0; i < numTokens; i++) {
           const makerOrder = massLooksRareOrders[i]
           const nft = new ethers.Contract(makerOrder.collectionAddress, ERC721_ABI).connect(alice) as ERC721
           expect(await nft.ownerOf(makerOrder.tokenId)).to.eq(alice.address)
@@ -210,7 +210,7 @@ describe.only('NFT UX Tests gas', () => {
       it('ETH -> 4 NFTs', async () => {
         const numTokens = 4
         let totalValue: BigNumber = BigNumber.from(0)
-        for (let i = 0; i <= numTokens; i++) {
+        for (let i = 0; i < numTokens; i++) {
           const { makerOrder, takerOrder, value, calldata } = createLooksRareCalldata(massLooksRareOrders[i])
           planner.addCommand(CommandType.LOOKS_RARE_721, [
             value,
@@ -226,7 +226,7 @@ describe.only('NFT UX Tests gas', () => {
         await snapshotGasCost(
           router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: totalValue })
         )
-        for (let i = 0; i <= numTokens; i++) {
+        for (let i = 0; i < numTokens; i++) {
           const makerOrder = massLooksRareOrders[i]
           const nft = new ethers.Contract(makerOrder.collectionAddress, ERC721_ABI).connect(alice) as ERC721
           expect(await nft.ownerOf(makerOrder.tokenId)).to.eq(alice.address)
@@ -330,7 +330,6 @@ describe.only('NFT UX Tests gas', () => {
 
         let looksrareValue = BigNumber.from(0)
         for (let i = 0; i < numLRTokens; i++) {
-          console.log('here!!!')
           const { makerOrder, takerOrder, value, calldata } = createLooksRareCalldata(massLooksRareOrders[i])
           planner.addCommand(CommandType.LOOKS_RARE_721, [
             value,
