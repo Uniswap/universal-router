@@ -232,7 +232,9 @@ describe.only('NFT UX Tests gas', () => {
       })
 
       it('Genie', async () => {
-        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 2))
+        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGenie(
+          massLooksRareOrders.slice(0, 2)
+        )
         let tradeDetails: TradeDetails[] = [{ marketId: 18, value: value, tradeData: calldata }]
 
         await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
@@ -245,7 +247,9 @@ describe.only('NFT UX Tests gas', () => {
       })
 
       it.skip('Gem', async () => {
-        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGem(massLooksRareOrders.slice(0, 2))
+        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGem(
+          massLooksRareOrders.slice(0, 2)
+        )
         let tradeDetails: TradeDetails[] = [{ marketId: 16, value: value, tradeData: calldata }]
 
         await snapshotGasCost(gemMultiAssetSwap(tradeDetails))
@@ -286,7 +290,9 @@ describe.only('NFT UX Tests gas', () => {
       })
 
       it('Genie', async () => {
-        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 4))
+        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGenie(
+          massLooksRareOrders.slice(0, 4)
+        )
         let tradeDetails: TradeDetails[] = [{ marketId: 18, value: value, tradeData: calldata }]
 
         await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
@@ -299,7 +305,9 @@ describe.only('NFT UX Tests gas', () => {
       })
 
       it.skip('Gem', async () => {
-        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGem(massLooksRareOrders.slice(0, 4))
+        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGem(
+          massLooksRareOrders.slice(0, 4)
+        )
         let tradeDetails: TradeDetails[] = [{ marketId: 16, value: value, tradeData: calldata }]
 
         await snapshotGasCost(gemMultiAssetSwap(tradeDetails))
@@ -311,7 +319,6 @@ describe.only('NFT UX Tests gas', () => {
         }
       })
     })
-
   })
 
   describe('Mixed LooksRare + Seaport', () => {
@@ -320,7 +327,10 @@ describe.only('NFT UX Tests gas', () => {
         const numSeaport = 3
         const numLRTokens = 1
 
-        const { calldata: seaportdata, value: seaportValue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        const { calldata: seaportdata, value: seaportValue } = purchaseNFTsWithSeaport(
+          massSeaportOrders.slice(0, numSeaport),
+          alice.address
+        )
         planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), seaportdata])
 
         let looksrareValue = BigNumber.from(0)
@@ -354,10 +364,18 @@ describe.only('NFT UX Tests gas', () => {
         const numSeaport = 3
         let tradeDetails: TradeDetails[] = []
 
-        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(
+          massSeaportOrders.slice(0, numSeaport),
+          alice.address
+        )
         tradeDetails.push({ marketId: 21, tradeData: scalldata, value: svalue })
 
-        const { makerOrders, takerOrders, value: lrvalue, calldata: lrcalldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 1))
+        const {
+          makerOrders,
+          takerOrders,
+          value: lrvalue,
+          calldata: lrcalldata,
+        } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 1))
         tradeDetails.push({ marketId: 18, value: lrvalue, tradeData: lrcalldata })
 
         await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
@@ -371,15 +389,16 @@ describe.only('NFT UX Tests gas', () => {
           expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
         }
       })
-
-
     })
 
     describe('ETH -> 3 Seaport, 3 LooksRare', () => {
       it('Universal Router', async () => {
         const numSeaport = 3
         const numLRTokens = 3
-        const { calldata: seaportdata, value: seaportValue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        const { calldata: seaportdata, value: seaportValue } = purchaseNFTsWithSeaport(
+          massSeaportOrders.slice(0, numSeaport),
+          alice.address
+        )
         planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), seaportdata])
 
         let looksrareValue = BigNumber.from(0)
@@ -415,10 +434,18 @@ describe.only('NFT UX Tests gas', () => {
         const numSeaport = 3
         let tradeDetails: TradeDetails[] = []
 
-        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(
+          massSeaportOrders.slice(0, numSeaport),
+          alice.address
+        )
         tradeDetails.push({ marketId: 21, tradeData: scalldata, value: svalue })
 
-        const { makerOrders, takerOrders, value: lrvalue, calldata: lrcalldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 3))
+        const {
+          makerOrders,
+          takerOrders,
+          value: lrvalue,
+          calldata: lrcalldata,
+        } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 3))
         tradeDetails.push({ marketId: 18, value: lrvalue, tradeData: lrcalldata })
 
         await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
@@ -439,7 +466,10 @@ describe.only('NFT UX Tests gas', () => {
         const numSeaport = 3
         const numLRTokens = 5
 
-        const { calldata: seaportdata, value: seaportValue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        const { calldata: seaportdata, value: seaportValue } = purchaseNFTsWithSeaport(
+          massSeaportOrders.slice(0, numSeaport),
+          alice.address
+        )
         planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), seaportdata])
 
         let looksrareValue = BigNumber.from(0)
@@ -473,10 +503,18 @@ describe.only('NFT UX Tests gas', () => {
         const numSeaport = 3
         let tradeDetails: TradeDetails[] = []
 
-        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(massSeaportOrders.slice(0, numSeaport), alice.address)
+        const { calldata: scalldata, value: svalue } = purchaseNFTsWithSeaport(
+          massSeaportOrders.slice(0, numSeaport),
+          alice.address
+        )
         tradeDetails.push({ marketId: 21, tradeData: scalldata, value: svalue })
 
-        const { makerOrders, takerOrders, value: lrvalue, calldata: lrcalldata } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 5))
+        const {
+          makerOrders,
+          takerOrders,
+          value: lrvalue,
+          calldata: lrcalldata,
+        } = createLooksRareCalldataGenie(massLooksRareOrders.slice(0, 5))
         tradeDetails.push({ marketId: 18, value: lrvalue, tradeData: lrcalldata })
 
         await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
@@ -613,12 +651,19 @@ describe.only('NFT UX Tests gas', () => {
     let totalValue = BigNumber.from(0)
 
     for (let order of orders) {
-      const { makerOrder, takerOrder, value } = createLooksRareOrders(order, '0x31837aaF36961274a04B915697FdfCA1Af31a0C7')
+      const { makerOrder, takerOrder, value } = createLooksRareOrders(
+        order,
+        '0x31837aaF36961274a04B915697FdfCA1Af31a0C7'
+      )
       makerOrders.push(makerOrder)
       takerOrders.push(takerOrder)
       totalValue = totalValue.add(value)
     }
-    const calldata = new Interface(GenieLooksRareMarket).encodeFunctionData('buyAssetsForEth', [takerOrders, makerOrders, alice.address])
+    const calldata = new Interface(GenieLooksRareMarket).encodeFunctionData('buyAssetsForEth', [
+      takerOrders,
+      makerOrders,
+      alice.address,
+    ])
     return { makerOrders, takerOrders, value: totalValue, calldata }
   }
 
@@ -628,13 +673,19 @@ describe.only('NFT UX Tests gas', () => {
     let totalValue = BigNumber.from(0)
 
     for (let order of orders) {
-      const { makerOrder, takerOrder, value } = createLooksRareOrders(order, '0x90ee132f7a487085d6a582d3db0b731631dcd920')
+      const { makerOrder, takerOrder, value } = createLooksRareOrders(
+        order,
+        '0x90ee132f7a487085d6a582d3db0b731631dcd920'
+      )
       makerOrders.push(makerOrder)
       takerOrders.push(takerOrder)
       totalValue = totalValue.add(value)
     }
 
-    const calldata = looksRareInterface.encodeFunctionData('matchAskWithTakerBidUsingETHAndWETH', [takerOrders, makerOrders])
+    const calldata = looksRareInterface.encodeFunctionData('matchAskWithTakerBidUsingETHAndWETH', [
+      takerOrders,
+      makerOrders,
+    ])
     return { makerOrders, takerOrders, value: totalValue, calldata }
   }
 
