@@ -69,10 +69,3 @@ Object {
   "gasUsed": 542686,
 }
 `;
-
-exports[`NFT UX Tests gas X2Y2 Genie ETH -> NFT 1`] = `
-Object {
-  "calldataByteLength": 2980,
-  "gasUsed": 123034,
-}
-`;
