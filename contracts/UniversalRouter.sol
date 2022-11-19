@@ -28,15 +28,17 @@ contract UniversalRouter is RouterImmutables, IUniversalRouter, Dispatcher, Rewa
     /// @inheritdoc IUniversalRouter
     function execute(bytes calldata commands, bytes[] calldata inputs) public payable {
         bool success;
+        bytes1 command;
+        bytes memory input;
         bytes memory output;
         uint256 numCommands = commands.length;
         if (inputs.length != numCommands) revert LengthMismatch();
 
         // loop through all given commands, execute them and pass along outputs as defined
         for (uint256 commandIndex = 0; commandIndex < numCommands;) {
-            bytes1 command = commands[commandIndex];
+            command = commands[commandIndex];
 
-            bytes memory input = inputs[commandIndex];
+            input = inputs[commandIndex];
 
             (success, output) = dispatch(command, input);
 
@@ -45,7 +47,7 @@ contract UniversalRouter is RouterImmutables, IUniversalRouter, Dispatcher, Rewa
             }
 
             unchecked {
-                commandIndex++;
+                ++commandIndex;
             }
         }
     }
