@@ -1,5 +1,7 @@
 # Universal Router
 
+Please read the [Contributions](https://github.com/Uniswap/universal-router/edit/main/README.md#contributions) section before submitting a Pull Request.
+
 ## High-Level Overview
 
 The Universal Router is a ERC20 and NFT swap router that allows users greater flexibility when performing trades across multiple token types.
@@ -177,6 +179,19 @@ yarn test:gas
 forge install
 forge build
 forge test
+```
+
+## Contributions
+Before you submit your PR, run all of the following and commit the changes:
+```bash
+# update gas snapshots
+yarn test:gas
+
+# make sure all tests pass
+yarn test
+
+# lint code
+yarn prettier:fix
 ```
 
 ### To Deploy
