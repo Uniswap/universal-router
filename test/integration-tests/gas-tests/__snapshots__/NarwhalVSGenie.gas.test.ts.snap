@@ -42,6 +42,36 @@ Object {
 }
 `;
 
+exports[`NFT UX Tests gas LooksRare ETH -> 10 NFTs Genie 1`] = `
+Object {
+  "calldataByteLength": 9252,
+  "gasUsed": 1766985,
+}
+`;
+
+exports[`NFT UX Tests gas LooksRare ETH -> 10 NFTs Universal Router 1`] = `
+Object {
+  "calldataByteLength": 11396,
+  "gasUsed": 1724330,
+}
+`;
+
+exports[`NFT UX Tests gas LooksRare ETH -> 20 NFTs Genie 1`] = `
+Object {
+  "calldataByteLength": 17572,
+  "gasUsed": 3342715,
+}
+`;
+
+exports[`NFT UX Tests gas LooksRare ETH -> 20 NFTs Universal Router 1`] = `
+Object {
+  "calldataByteLength": 22596,
+  "gasUsed": 3281370,
+}
+`;
+
+exports[`NFT UX Tests gas Mixed LooksRare + Seaport ETH -> 3 Seaport, 1 LooksRare Gem 1`] = `725500`;
+
 exports[`NFT UX Tests gas Mixed LooksRare + Seaport ETH -> 3 Seaport, 1 LooksRare Genie 1`] = `
 Object {
   "calldataByteLength": 8196,
@@ -55,6 +85,8 @@ Object {
   "gasUsed": 691697,
 }
 `;
+
+exports[`NFT UX Tests gas Mixed LooksRare + Seaport ETH -> 3 Seaport, 3 LooksRare Gem 1`] = `1245165`;
 
 exports[`NFT UX Tests gas Mixed LooksRare + Seaport ETH -> 3 Seaport, 3 LooksRare Genie 1`] = `
 Object {
@@ -76,6 +108,8 @@ Object {
   "gasUsed": 1441223,
 }
 `;
+
+exports[`NFT UX Tests gas Mixed LooksRare + Seaport ETH -> 3 Seaport, 5 LooksRare LooksRare 1`] = `1245165`;
 
 exports[`NFT UX Tests gas Mixed LooksRare + Seaport ETH -> 3 Seaport, 5 LooksRare Universal Router 1`] = `
 Object {

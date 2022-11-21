@@ -319,6 +319,129 @@ describe.only('NFT UX Tests gas', () => {
         }
       })
     })
+
+    describe('ETH -> 10 NFTs', () => {
+      it('Universal Router', async () => {
+        const numTokens = 10
+        let totalValue: BigNumber = BigNumber.from(0)
+        for (let i = 0; i < numTokens; i++) {
+          const { makerOrder, takerOrder, value, calldata } = createLooksRareCalldata(massLooksRareOrders[i])
+          planner.addCommand(CommandType.LOOKS_RARE_721, [
+            value,
+            calldata,
+            ALICE_ADDRESS,
+            makerOrder.collection,
+            makerOrder.tokenId,
+          ])
+          totalValue = totalValue.add(value)
+        }
+        const { commands, inputs } = planner
+
+        await snapshotGasCost(
+          router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: totalValue })
+        )
+        for (let i = 0; i < numTokens; i++) {
+          const makerOrder = massLooksRareOrders[i]
+          const nft = new ethers.Contract(makerOrder.collectionAddress, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(makerOrder.tokenId)).to.eq(alice.address)
+        }
+      })
+
+      it('Genie', async () => {
+        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGenie(
+          massLooksRareOrders.slice(0, 10)
+        )
+        let tradeDetails: TradeDetails[] = [{ marketId: 18, value: value, tradeData: calldata }]
+
+        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+        }
+      })
+
+      it.skip('Gem', async () => {
+        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGem(
+          massLooksRareOrders.slice(0, 4)
+        )
+        let tradeDetails: TradeDetails[] = [{ marketId: 16, value: value, tradeData: calldata }]
+
+        await snapshotGasCost(gemMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+        }
+      })
+    })
+
+    describe('ETH -> 20 NFTs', () => {
+      const revertedNFTIndex = 18
+
+      it('Universal Router', async () => {
+        const numTokens = 20
+        let totalValue: BigNumber = BigNumber.from(0)
+        for (let i = 0; i < numTokens; i++) {
+          const { makerOrder, takerOrder, value, calldata } = createLooksRareCalldata(massLooksRareOrders[i])
+          const allowRevert = true
+          planner.addCommand(CommandType.LOOKS_RARE_721, [
+            value,
+            calldata,
+            ALICE_ADDRESS,
+            makerOrder.collection,
+            makerOrder.tokenId,
+          ], allowRevert)
+          totalValue = totalValue.add(value)
+        }
+        const { commands, inputs } = planner
+
+        await snapshotGasCost(
+          router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: totalValue })
+        )
+        for (let i = 0; i < numTokens; i++) {
+          const makerOrder = massLooksRareOrders[i]
+          const nft = new ethers.Contract(makerOrder.collectionAddress, ERC721_ABI).connect(alice) as ERC721
+          if (i != revertedNFTIndex) {
+            expect(await nft.ownerOf(makerOrder.tokenId)).to.eq(alice.address)
+          }
+        }
+      })
+
+      it('Genie', async () => {
+        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGenie(
+          massLooksRareOrders.slice(0, 20)
+        )
+        let tradeDetails: TradeDetails[] = [{ marketId: 18, value: value, tradeData: calldata }]
+
+        await snapshotGasCost(genieMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          if ( parseInt(i) != revertedNFTIndex) {
+            expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+          }
+        }
+      })
+
+      it.skip('Gem', async () => {
+        const { makerOrders, takerOrders, value, calldata } = createLooksRareCalldataGem(
+          massLooksRareOrders.slice(0, 20)
+        )
+        let tradeDetails: TradeDetails[] = [{ marketId: 16, value: value, tradeData: calldata }]
+
+        await snapshotGasCost(gemMultiAssetSwap(tradeDetails))
+
+        for (const i in makerOrders) {
+          const mymakerOrder = makerOrders[i]
+          const nft = new ethers.Contract(mymakerOrder.collection, ERC721_ABI).connect(alice) as ERC721
+          expect(await nft.ownerOf(mymakerOrder.tokenId)).to.eq(alice.address)
+        }
+      })
+    })
   })
 
   describe('Mixed LooksRare + Seaport', () => {
@@ -388,6 +511,11 @@ describe.only('NFT UX Tests gas', () => {
         for (let i = 0; i < numSeaport; i++) {
           expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
         }
+      })
+
+      it('Gem', async () => {
+        // taken from manual simulation
+        await snapshotGasCost(725500)
       })
     })
 
@@ -459,6 +587,11 @@ describe.only('NFT UX Tests gas', () => {
           expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
         }
       })
+
+      it('Gem', async () => {
+        // taken from manual simulation
+        await snapshotGasCost(1245165)
+      })
     })
 
     describe('ETH -> 3 Seaport, 5 LooksRare', () => {
@@ -527,6 +660,11 @@ describe.only('NFT UX Tests gas', () => {
         for (let i = 0; i < numSeaport; i++) {
           expect(await cryptoCovens.ownerOf(gettokenIdFromSeaport(massSeaportOrders[0]))).to.eq(alice.address)
         }
+      })
+
+      it('LooksRare', async () => {
+        // taken from manual simulation
+        await snapshotGasCost(1245165)
       })
     })
   })
