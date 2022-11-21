@@ -58,6 +58,7 @@
     "compile": "hardhat compile",
     "test": "hardhat test",
     "test:gas": "UPDATE_SNAPSHOT=1 yarn test --grep gas",
+    "test:all": "UPDATE_SNAPSHOT=1 yarn test",
     "presymlink": "rm -rf ./solmate && rm -rf ./permit2 && rm -rf ./openzeppelin-contracts",
     "symlink": "ln -s ./lib/solmate/src ./solmate && ln -s ./lib/permit2 ./permit2 && ln -s ./lib/openzeppelin-contracts ./openzeppelin-contracts",
     "prettier:fix": "prettier --write '**/*.ts' && forge fmt",
