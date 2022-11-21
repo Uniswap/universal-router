@@ -11,4 +11,7 @@ fs_permissions = [{ access = "read", path = "./script/deployParameters/"}]
 line_length = 120
 quote_style = 'single'
 
+[profile.lite.optimizer_details.yulDetails]
+optimizerSteps = ''
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
