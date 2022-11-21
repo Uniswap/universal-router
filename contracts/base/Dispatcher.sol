@@ -67,7 +67,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                     // placeholder for a future command
                     revert InvalidCommandType(command);
                 }
-            // 0x08 <= command < 0x10
+                // 0x08 <= command < 0x10
             } else {
                 if (command == Commands.V2_SWAP_EXACT_IN) {
                     (address recipient, uint256 amountIn, uint256 amountOutMin, address[] memory path, bool payerIsUser)
@@ -101,7 +101,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                     revert InvalidCommandType(command);
                 }
             }
-        // 0x10 <= command
+            // 0x10 <= command
         } else {
             // 0x10 <= command < 0x18
             if (command < 0x18) {
@@ -135,7 +135,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                     (address token, address recipient, uint256 id) = abi.decode(inputs, (address, address, uint256));
                     Payments.sweepERC721(token, recipient.map(), id);
                 }
-            // 0x18 <= command < 0x1f
+                // 0x18 <= command < 0x1f
             } else {
                 if (command == Commands.X2Y2_721) {
                     (success, output) = callAndTransfer721(inputs, X2Y2);
