@@ -29,10 +29,10 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
     /// @return success True on success of the command, false on failure
     /// @return output The outputs or error messages, if any, from the command
     function dispatch(bytes1 commandType, bytes memory inputs) internal returns (bool success, bytes memory output) {
-        bool isNotNFTType = commandType < 0x0d;
-        bool is0To6 = commandType < 0x07;
-        bool is0dTo0x15 = commandType < 0x15;
         uint256 command = uint8(commandType & Commands.COMMAND_TYPE_MASK);
+        bool isNotNFTType = command < 0x0d;
+        bool is0To6 = command < 0x07;
+        bool is0dTo0x15 = command < 0x15;
 
         success = true;
 

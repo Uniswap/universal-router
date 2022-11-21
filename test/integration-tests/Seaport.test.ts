@@ -15,7 +15,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 const { ethers } = hre
 
-describe('Seaport', () => {
+describe.only('Seaport', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
