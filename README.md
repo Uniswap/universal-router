@@ -184,14 +184,16 @@ forge test
 ## Contributions
 Before you submit your PR, run all of the following and commit the changes:
 ```bash
-# update gas snapshots
-yarn test:gas
-
-# make sure all tests pass
-yarn test
+# make sure all tests pass this will also update gas snapshots
+yarn test:all
 
 # lint code
 yarn prettier:fix
+```
+
+If you are only concerned with investigating gas diffs, you can run this command to only run gas tests
+```bash
+yarn test:gas
 ```
 
 ### To Deploy
