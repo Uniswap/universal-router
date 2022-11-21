@@ -30,14 +30,11 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
     /// @return output The outputs or error messages, if any, from the command
     function dispatch(bytes1 commandType, bytes memory inputs) internal returns (bool success, bytes memory output) {
         uint256 command = uint8(commandType & Commands.COMMAND_TYPE_MASK);
-        bool isNotNFTType = command < 0x0d;
-        bool is0To6 = command < 0x07;
-        bool is0dTo0x15 = command < 0x15;
 
         success = true;
 
-        if (isNotNFTType) {
-            if (is0To6) {
+        if (command < 0x0d) {
+            if (command < 0x07) {
                 if (command == Commands.V3_SWAP_EXACT_IN) {
                     (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path, bool payerIsUser) =
                         abi.decode(inputs, (address, uint256, uint256, bytes, bool));
@@ -94,7 +91,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                 }
             }
         } else {
-            if (is0dTo0x15) {
+            if (command < 0x15) {
                 if (command == Commands.SEAPORT) {
                     (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
                     (success, output) = SEAPORT.call{value: value}(data);
