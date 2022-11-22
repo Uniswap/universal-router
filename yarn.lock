@@ -3649,6 +3649,10 @@ dotignore@~0.1.2:
   dependencies:
     minimatch "^3.0.4"
 
+"ds-test@https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b":
+  version "1.0.0"
+  resolved "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b"
+
 duplexer3@^0.1.4:
   version "0.1.5"
   resolved "https://registry.yarnpkg.com/duplexer3/-/duplexer3-0.1.5.tgz#0b5e4d7bad5de8901ea4440624c8e1d20099217e"
@@ -4634,6 +4638,10 @@ forever-agent@~0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/forever-agent/-/forever-agent-0.6.1.tgz#fbc71f0c41adeb37f96c577ad1ed42d8fdacca91"
   integrity sha512-j0KLYPhm6zeac4lz3oJ3o65qvgQCcPubiyotZrXqEaG4hNagNYO8qdlUrX5vwqv9ohqeT/Z3j6+yW067yWWdUw==
+
+"forge-std@https://github.com/foundry-rs/forge-std#33d4895fb629aabf12e0f60740367bd03e702bd1":
+  version "1.0.0"
+  resolved "https://github.com/foundry-rs/forge-std#33d4895fb629aabf12e0f60740367bd03e702bd1"
 
 form-data@^3.0.0:
   version "3.0.1"

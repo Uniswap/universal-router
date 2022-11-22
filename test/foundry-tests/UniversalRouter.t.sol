@@ -12,7 +12,7 @@ import {Callbacks} from '../../contracts/base/Callbacks.sol';
 import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
 import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';
-import '../../node_modules/permit2/src/interfaces/IAllowanceTransfer.sol';
+import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 
 import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
 import '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';

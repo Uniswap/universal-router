@@ -35,7 +35,9 @@
     "@uniswap/v3-core": "1.0.0",
     "@openzeppelin/contracts": "4.7.1",
     "permit2": "https://github.com/Uniswap/permit2#2e6cad4a8e648b0e3ac7d45db4103d139ba2ee64",
-    "solmate": "https://github.com/transmissions11/solmate#8d910d876f51c3b2585c9109409d601f600e68e1"
+    "solmate": "https://github.com/transmissions11/solmate#8d910d876f51c3b2585c9109409d601f600e68e1",
+    "forge-std": "https://github.com/foundry-rs/forge-std#33d4895fb629aabf12e0f60740367bd03e702bd1",
+    "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
