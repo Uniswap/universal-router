@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.17;
 
-import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
+import {IAllowanceTransfer} from '../../node_modules/permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';
 import {IWETH9} from '../interfaces/external/IWETH9.sol';
 

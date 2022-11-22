@@ -33,7 +33,7 @@
   "dependencies": {
     "@uniswap/v2-core": "1.0.1",
     "@uniswap/v3-core": "1.0.0",
-    "openzeppelin-solidity": "4.7.0",
+    "@openzeppelin/contracts": "4.7.1",
     "permit2": "https://github.com/Uniswap/permit2#2e6cad4a8e648b0e3ac7d45db4103d139ba2ee64",
     "solmate": "https://github.com/transmissions11/solmate#8d910d876f51c3b2585c9109409d601f600e68e1"
   },
@@ -66,8 +66,6 @@
     "test": "hardhat test",
     "test:gas": "UPDATE_SNAPSHOT=1 yarn test --grep gas",
     "test:all": "UPDATE_SNAPSHOT=1 yarn test",
-    "presymlink": "rm -rf ./solmate && rm -rf ./permit2 && rm -rf ./openzeppelin-contracts",
-    "symlink": "ln -s ./lib/solmate/src ./solmate && ln -s ./lib/permit2 ./permit2 && ln -s ./lib/openzeppelin-contracts ./openzeppelin-contracts",
     "prettier:fix": "prettier --write '**/*.ts' && forge fmt",
     "prettier": "prettier --check '**/*.ts' && forge fmt --check"
   }

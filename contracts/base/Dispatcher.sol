@@ -10,7 +10,7 @@ import {Commands} from '../libraries/Commands.sol';
 import {Recipient} from '../libraries/Recipient.sol';
 import {ERC721} from 'solmate/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/tokens/ERC1155.sol';
-import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
+import {IAllowanceTransfer} from '../../node_modules/permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
 /// @title Decodes and Executes Commands
