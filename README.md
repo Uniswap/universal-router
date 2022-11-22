@@ -1,6 +1,6 @@
 # Universal Router
 
-Please read the [Contributions](https://github.com/Uniswap/universal-router/edit/main/README.md#contributions) section before submitting a Pull Request.
+Please read the [Contributions](https://github.com/Uniswap/universal-router#contributions) section before submitting a Pull Request.
 
 ## High-Level Overview
 
