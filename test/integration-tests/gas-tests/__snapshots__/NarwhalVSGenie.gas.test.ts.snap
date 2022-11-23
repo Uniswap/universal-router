@@ -10,7 +10,7 @@ Object {
 exports[`NFT UX Tests gas LooksRare ETH -> 1 NFT Universal Router 1`] = `
 Object {
   "calldataByteLength": 1316,
-  "gasUsed": 260418,
+  "gasUsed": 286947,
 }
 `;
 
