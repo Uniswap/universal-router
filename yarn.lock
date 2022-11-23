@@ -1290,6 +1290,11 @@
   resolved "https://registry.npmjs.org/@openzeppelin/contracts/-/contracts-3.4.2-solc-0.7.tgz"
   integrity sha512-W6QmqgkADuFcTLzHL8vVoNBtkwjvQRpYIAom7KiUNoLKghyx3FgH0GBjt8NRvigV1ZmMOBllvE1By1C+bi8WpA==
 
+"@openzeppelin/contracts@4.7.0":
+  version "4.7.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.7.0.tgz#3092d70ea60e3d1835466266b1d68ad47035a2d5"
+  integrity sha512-52Qb+A1DdOss8QvJrijYYPSf32GUg2pGaG/yCxtaA3cu4jduouTdg4XZSMLW9op54m1jH7J8hoajhHKOPsoJFw==
+
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
   resolved "https://registry.yarnpkg.com/@resolver-engine/core/-/core-0.3.3.tgz#590f77d85d45bc7ecc4e06c654f41345db6ca967"
@@ -6916,11 +6921,6 @@ open@^7.4.2:
     is-docker "^2.0.0"
     is-wsl "^2.1.1"
 
-openzeppelin-solidity@4.7.0:
-  version "4.6.0"
-  resolved "https://registry.yarnpkg.com/openzeppelin-solidity/-/openzeppelin-solidity-4.6.0.tgz#a65a4e11dc72f46a9e2eb691fc9aeff2d70fe189"
-  integrity sha512-Os4FUzc5V+4U2lpFyJA0kWh5fy3AZhYgS8CmB3Db4c4NGd3SsjFzuvWjBybn7NA4KZG7Gf6Lb7BdS8Cxb8Adtw==
-
 os-homedir@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/os-homedir/-/os-homedir-1.0.2.tgz#ffbc4988336e0e833de0c168c7ef152121aa7fb3"
@@ -7160,10 +7160,6 @@ performance-now@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/performance-now/-/performance-now-2.1.0.tgz#6309f4e0e5fa913ec1c69307ae364b4b377c9e7b"
   integrity sha512-7EAHlyLHI56VEIdK57uwHdHKIaAGbnXPiw0yWbarQZOKaKpvUIgW0jWRVLiatnM+XXlSwsanIBH/hzGMJulMow==
-
-"permit2@https://github.com/Uniswap/permit2#2e6cad4a8e648b0e3ac7d45db4103d139ba2ee64":
-  version "0.0.0"
-  resolved "https://github.com/Uniswap/permit2#2e6cad4a8e648b0e3ac7d45db4103d139ba2ee64"
 
 picocolors@^1.0.0:
   version "1.0.0"
@@ -8005,10 +8001,6 @@ solidity-comments-extractor@^0.0.7:
   version "0.0.7"
   resolved "https://registry.yarnpkg.com/solidity-comments-extractor/-/solidity-comments-extractor-0.0.7.tgz#99d8f1361438f84019795d928b931f4e5c39ca19"
   integrity sha512-wciNMLg/Irp8OKGrh3S2tfvZiZ0NEyILfcRCXCD4mp7SgK/i9gzLfhY2hY7VMCQJ3kH9UB9BzNdibIVMchzyYw==
-
-"solmate@https://github.com/transmissions11/solmate#8d910d876f51c3b2585c9109409d601f600e68e1":
-  version "6.6.2"
-  resolved "https://github.com/transmissions11/solmate#8d910d876f51c3b2585c9109409d601f600e68e1"
 
 source-map-resolve@^0.5.0:
   version "0.5.3"

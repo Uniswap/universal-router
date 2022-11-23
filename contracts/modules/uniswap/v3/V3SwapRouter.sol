@@ -9,7 +9,7 @@ import {Constants} from '../../../libraries/Constants.sol';
 import {RouterImmutables} from '../../../base/RouterImmutables.sol';
 import {Permit2Payments} from '../../Permit2Payments.sol';
 import {Constants} from '../../../libraries/Constants.sol';
-import {ERC20} from 'solmate/tokens/ERC20.sol';
+import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
 /// @title Router for Uniswap v3 Trades
 abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3SwapCallback {

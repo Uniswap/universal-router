@@ -1,6 +1,6 @@
 import { ERC721, ERC1155, ERC20, ERC20__factory } from '../../../typechain'
-import { abi as ERC721_ABI } from '../../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
-import { abi as ERC1155_ABI } from '../../../artifacts/solmate/tokens/ERC1155.sol/ERC1155.json'
+import { abi as ERC721_ABI } from '../../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import { abi as ERC1155_ABI } from '../../../artifacts/solmate/src/tokens/ERC1155.sol/ERC1155.json'
 import CRYPTOPUNKS_ABI from './abis/Cryptopunks.json'
 import {
   ALPHABETTIES_ADDRESS,
