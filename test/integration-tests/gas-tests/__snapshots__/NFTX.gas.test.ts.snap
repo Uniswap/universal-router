@@ -3,6 +3,6 @@
 exports[`NFTX Gas Tests gas: buyAndRedeem w/ specific selection 1`] = `
 Object {
   "calldataByteLength": 740,
-  "gasUsed": 490835,
+  "gasUsed": 494924,
 }
 `;

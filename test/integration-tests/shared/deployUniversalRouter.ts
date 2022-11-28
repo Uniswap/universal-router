@@ -14,13 +14,14 @@ import {
 export async function deployRouter(
   permit2: Permit2,
   mockLooksRareRewardsDistributor?: string,
-  mockLooksRareToken?: string
+  mockLooksRareToken?: string,
+  mockReentrantProtocol?: string
 ): Promise<UniversalRouter> {
   const routerParameters = {
     permit2: permit2.address,
     weth9: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     seaport: '0x00000000006c3852cbEf3e08E8dF289169EdE581',
-    nftxZap: '0x0fc584529a2AEfA997697FAfAcbA5831faC0c22d',
+    nftxZap: mockReentrantProtocol ?? '0x0fc584529a2AEfA997697FAfAcbA5831faC0c22d',
     x2y2: '0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3',
     foundation: '0xcDA72070E455bb31C7690a170224Ce43623d0B6f',
     sudoswap: '0x2B2e8cDA09bBA9660dCA5cB6233787738Ad68329',
