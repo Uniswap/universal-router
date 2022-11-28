@@ -8,7 +8,7 @@ import { encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Permit2, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
-import { resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
+import { resetFork, APE, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,
   ALICE_ADDRESS,
@@ -38,6 +38,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
   let daiContract: Contract
   let wethContract: Contract
   let usdcContract: Contract
+  let apeContract: Contract
   let planner: RoutePlanner
 
   beforeEach(async () => {
@@ -47,10 +48,18 @@ describe('Uniswap V2 and V3 Tests:', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
+
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: ['0x91951fa186a77788197975ed58980221872a3352'],
+    })
+    const apeWhale = await ethers.getSigner('0x91951fa186a77788197975ed58980221872a3352')
     bob = (await ethers.getSigners())[1]
+    await alice.sendTransaction({ to: apeWhale.address, value: expandTo18DecimalsBN(1) })
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
+    apeContract = new ethers.Contract(APE.address, TOKEN_ABI, bob)
     permit2 = (await deployPermit2()).connect(bob) as Permit2
     router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
     planner = new RoutePlanner()
@@ -58,17 +67,19 @@ describe('Uniswap V2 and V3 Tests:', () => {
     // alice gives bob some tokens
     await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100000))
     await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100))
+    await apeContract.connect(apeWhale).transfer(bob.address, expandTo18DecimalsBN(100))
 
     // Bob max-approves the permit2 contract to access his DAI and WETH
     await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
     await wethContract.connect(bob).approve(permit2.address, MAX_UINT)
+    await apeContract.connect(bob).approve(permit2.address, MAX_UINT)
   })
 
   describe('Trade on Uniswap with Permit2, giving approval every time', () => {
     describe('ERC20 --> ERC20', () => {
       let permit: PermitSingle
 
-      it('V2 exactIn, permiting the exact amount', async () => {
+      it.only('V2 exactIn, permiting the exact amount', async () => {
         const amountInDAI = expandTo18DecimalsBN(100)
         const minAmountOutWETH = expandTo18DecimalsBN(0.03)
 
@@ -97,6 +108,37 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(planner)
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
+      })
+
+      it.only('V2 0.8+ inputToken', async () => {
+        const amountInAPE = expandTo18DecimalsBN(100)
+        const minAmountOutWETH = expandTo18DecimalsBN(0.03)
+
+        // second bob signs a permit to allow the router to access his DAI
+        permit = {
+          details: {
+            token: APE.address,
+            amount: amountInAPE,
+            expiration: 0, // expiration of 0 is block.timestamp
+            nonce: 0, // this is his first trade
+          },
+          spender: router.address,
+          sigDeadline: DEADLINE,
+        }
+        const sig = await getPermitSignature(permit, bob, permit2)
+
+        // 1) permit the router to access funds, 2) withdraw the funds into the pair, 3) trade
+        planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
+        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+          MSG_SENDER,
+          amountInAPE,
+          minAmountOutWETH,
+          [APE.address, WETH.address],
+          SOURCE_MSG_SENDER,
+        ])
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+        expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
+        // expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInAPE)
       })
 
       it('V2 exactOut, permiting the maxAmountIn', async () => {
