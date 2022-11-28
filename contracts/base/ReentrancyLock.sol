@@ -2,12 +2,12 @@
 pragma solidity ^0.8.17;
 
 contract ReentrancyLock {
-    uint256 private isLocked = 0;
+    uint256 private isLocked = 1;
 
     modifier isNotLocked() {
-        require(isLocked == 0);
-        isLocked = 1;
+        require(isLocked == 1);
+        isLocked = 2;
         _;
-        isLocked = 0;
+        isLocked = 1;
     }
 }
