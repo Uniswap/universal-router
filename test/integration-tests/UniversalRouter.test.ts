@@ -2,6 +2,7 @@ import { UniversalRouter, Permit2, ERC20, MockLooksRareRewardsDistributor, ERC72
 import { BigNumber, BigNumberish } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
+import { abi as ROUTER_ABI } from '../../artifacts/contracts/UniversalRouter.sol/UniversalRouter.json'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
@@ -16,6 +17,7 @@ import {
   SOURCE_MSG_SENDER,
   MAX_UINT160,
   MAX_UINT,
+  ETH_ADDRESS,
 } from './shared/constants'
 import {
   seaportOrders,
@@ -34,6 +36,7 @@ import hre from 'hardhat'
 
 const { ethers } = hre
 const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
+const routerInterface = new ethers.utils.Interface(ROUTER_ABI)
 
 describe('UniversalRouter', () => {
   let alice: SignerWithAddress
@@ -129,6 +132,37 @@ describe('UniversalRouter', () => {
       planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, 1])
       const { commands, inputs } = planner
       await expect(router['execute(bytes,bytes[])'](commands, inputs)).to.be.revertedWith('InvalidBips()')
+    })
+
+    it('reverts if a malicious contract tries to reenter', async () => {
+      const reentrantProtocol = await (await ethers.getContractFactory('ReenteringProtocol')).deploy()
+
+      router = (
+        await deployUniversalRouter(
+          permit2,
+          mockLooksRareRewardsDistributor.address,
+          mockLooksRareToken.address,
+          reentrantProtocol.address
+        )
+      ).connect(alice) as UniversalRouter
+
+      planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
+      let { commands, inputs } = planner
+
+      const sweepCalldata = routerInterface.encodeFunctionData('execute(bytes,bytes[])', [commands, inputs])
+      const reentrantCalldata = reentrantProtocol.interface.encodeFunctionData('callAndReenter', [
+        router.address,
+        sweepCalldata,
+      ])
+
+      planner = new RoutePlanner()
+      planner.addCommand(CommandType.NFTX, [0, reentrantCalldata])
+      ;({ commands, inputs } = planner)
+
+      const notAllowedReenterSelector = '0xb418cb98'
+      await expect(router['execute(bytes,bytes[])'](commands, inputs)).to.be.revertedWith(
+        `ExecutionFailed(0, "` + notAllowedReenterSelector + `")`
+      )
     })
 
     describe('partial fills', async () => {
