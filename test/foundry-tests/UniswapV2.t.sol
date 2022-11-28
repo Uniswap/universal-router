@@ -95,6 +95,32 @@ abstract contract UniswapV2Test is Test {
         assertGt(ERC20(token0()).balanceOf(FROM), BALANCE);
     }
 
+    function testExactInput0For1FromRouter() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_IN)));
+        deal(token0(), address(router), AMOUNT);
+        address[] memory path = new address[](2);
+        path[0] = token0();
+        path[1] = token1();
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(Constants.MSG_SENDER, AMOUNT, 0, path, false);
+
+        router.execute(commands, inputs);
+        assertGt(ERC20(token1()).balanceOf(FROM), BALANCE);
+    }
+
+    function testExactInput1For0FromRouter() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_IN)));
+        deal(token1(), address(router), AMOUNT);
+        address[] memory path = new address[](2);
+        path[0] = token1();
+        path[1] = token0();
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(Constants.MSG_SENDER, AMOUNT, 0, path, false);
+
+        router.execute(commands, inputs);
+        assertGt(ERC20(token0()).balanceOf(FROM), BALANCE);
+    }
+
     function testExactOutput0For1() public {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_OUT)));
         address[] memory path = new address[](2);
@@ -118,6 +144,32 @@ abstract contract UniswapV2Test is Test {
 
         router.execute(commands, inputs);
         assertLt(ERC20(token1()).balanceOf(FROM), BALANCE);
+        assertGe(ERC20(token0()).balanceOf(FROM), BALANCE + AMOUNT);
+    }
+
+    function testExactOutput0For1FromRouter() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_OUT)));
+        deal(token0(), address(router), BALANCE);
+        address[] memory path = new address[](2);
+        path[0] = token0();
+        path[1] = token1();
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(Constants.MSG_SENDER, AMOUNT, type(uint256).max, path, false);
+
+        router.execute(commands, inputs);
+        assertGe(ERC20(token1()).balanceOf(FROM), BALANCE + AMOUNT);
+    }
+
+    function testExactOutput1For0FromRouter() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_OUT)));
+        deal(token1(), address(router), BALANCE);
+        address[] memory path = new address[](2);
+        path[0] = token1();
+        path[1] = token0();
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(Constants.MSG_SENDER, AMOUNT, type(uint256).max, path, false);
+
+        router.execute(commands, inputs);
         assertGe(ERC20(token0()).balanceOf(FROM), BALANCE + AMOUNT);
     }
 
