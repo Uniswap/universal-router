@@ -20,7 +20,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-          token: '${{ secrets.PERMIT_POST_KEY }}'
 
     # Must Insall node modules for forge to reference in remappings
       - uses: actions/setup-node@v1
@@ -39,9 +38,7 @@ jobs:
             yarn-
 
       - name: Install dependencies
-        run: |
-          npm config set '//registry.npmjs.org/:_authToken' "${{ secrets.NPM_AUTH_TOKEN }}" \
-          && yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile
     # End of node module support
 
       - name: Install Foundry
