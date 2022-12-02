@@ -28,7 +28,7 @@
     "!artifacts/contracts/base/**/*"
   ],
   "engines": {
-    "node": "^16"
+    "node": ">=14"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
