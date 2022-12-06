@@ -11,6 +11,11 @@ export const seaportOrders = JSON.parse(
 )
 export const seaportInterface = new ethers.utils.Interface(SEAPORT_ABI)
 
+export type FulfillmentComponent = {
+  orderIndex: BigNumberish
+  itemIndex: BigNumberish
+}
+
 export type OfferItem = {
   itemType: BigNumber // enum
   token: string // address
@@ -82,6 +87,71 @@ type BuyCovensReturnData = {
   advancedOrder0: AdvancedOrder
   advancedOrder1: AdvancedOrder
   value: BigNumberish
+}
+
+type MethodParameters = {
+  calldata: string
+  value: BigNumberish
+}
+
+export function purchaseNFTsWithSeaport(apiData: any[], recipient: string): MethodParameters {
+  let advancedOrders: AdvancedOrder[] = []
+  let totalValue: BigNumber = BigNumber.from(0)
+  for (const order of apiData) {
+    const { advancedOrder, value } = getAdvancedOrderParams(order)
+    advancedOrders.push(advancedOrder)
+    totalValue = totalValue.add(value)
+  }
+
+  let orderFulfillments: FulfillmentComponent[][] = advancedOrders.map((_, index) => [
+    { orderIndex: index, itemIndex: 0 },
+  ])
+  let considerationFulFillments: FulfillmentComponent[][] = getConsiderationFulfillments(advancedOrders)
+
+  const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
+    advancedOrders,
+    [],
+    orderFulfillments,
+    considerationFulFillments,
+    OPENSEA_CONDUIT_KEY,
+    recipient,
+    100, // TODO: look into making this a better number
+  ])
+  return { calldata, value: totalValue }
+}
+
+function getConsiderationFulfillments(orders: AdvancedOrder[]): FulfillmentComponent[][] {
+  let considerationFulfillments: FulfillmentComponent[][] = []
+  const considerationRecipients: string[] = []
+
+  for (const i in orders) {
+    const protocolData = orders[i]
+
+    for (const j in protocolData.parameters.consideration) {
+      const item = protocolData.parameters.consideration[j]
+
+      if (considerationRecipients.findIndex((x) => x === item.recipient) === -1) {
+        considerationRecipients.push(item.recipient)
+      }
+
+      const recipientIndex = considerationRecipients.findIndex((x) => x === item.recipient)
+
+      if (!considerationFulfillments[recipientIndex]) {
+        considerationFulfillments.push([
+          {
+            orderIndex: i,
+            itemIndex: j,
+          },
+        ])
+      } else {
+        considerationFulfillments[recipientIndex].push({
+          orderIndex: i,
+          itemIndex: j,
+        })
+      }
+    }
+  }
+  return considerationFulfillments
 }
 
 export function purchaseDataForTwoCovensSeaport(receipient: string): BuyCovensReturnData {

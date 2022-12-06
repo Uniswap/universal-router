@@ -2,11 +2,14 @@ import { ERC721, ERC1155, ERC20, ERC20__factory } from '../../../typechain'
 import { abi as ERC721_ABI } from '../../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC1155_ABI } from '../../../artifacts/solmate/tokens/ERC1155.sol/ERC1155.json'
 import CRYPTOPUNKS_ABI from './abis/Cryptopunks.json'
+import GENIE_SWAP_ABI from './abis/genie/GenieSwap.json'
 import {
   ALPHABETTIES_ADDRESS,
   CAMEO_ADDRESS,
   COVEN_ADDRESS,
   ENS_NFT_ADDRESS,
+  GEM_SWAP_ADDRESS,
+  GENIE_SWAP_ADDRESS,
   MENTAL_WORLDS_ADDRESS,
   TWERKY_ADDRESS,
   CRYPTOPUNKS_MARKET_ADDRESS,
@@ -119,3 +122,6 @@ export const ALPHABETTIES_721 = new ethers.Contract(ALPHABETTIES_ADDRESS, ERC721
 export const TWERKY_1155 = new ethers.Contract(TWERKY_ADDRESS, ERC1155_ABI) as ERC1155
 export const CAMEO_1155 = new ethers.Contract(CAMEO_ADDRESS, ERC1155_ABI) as ERC1155
 export const CRYPTOPUNKS_MARKET = new ethers.Contract(CRYPTOPUNKS_MARKET_ADDRESS, CRYPTOPUNKS_ABI)
+
+export const GENIE_SWAP = new ethers.Contract(GENIE_SWAP_ADDRESS, GENIE_SWAP_ABI)
+export const GEM_SWAP = new ethers.Contract(GEM_SWAP_ADDRESS, GENIE_SWAP_ABI)
