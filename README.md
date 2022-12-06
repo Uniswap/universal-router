@@ -227,7 +227,7 @@ forge script --broadcast \
 --sig 'run(string)' \
 script/DeployUniversalRouter.s.sol:DeployUniversalRouter \
 <pathToJSON> \
---chain-id <CHAIN-ID>
+--chain-id <CHAIN-ID> \
 --etherscan-api-key <ETHERSCAN-API-KEY> \
 --verify
 ```
