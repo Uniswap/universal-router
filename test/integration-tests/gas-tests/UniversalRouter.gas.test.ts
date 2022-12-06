@@ -9,7 +9,7 @@ import {
   OPENSEA_CONDUIT_KEY,
   SOURCE_MSG_SENDER,
 } from '../shared/constants'
-import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
+import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { resetFork, WETH, DAI } from '../shared/mainnetForkHelpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
