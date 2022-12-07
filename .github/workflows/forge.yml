@@ -21,6 +21,25 @@ jobs:
         with:
           submodules: recursive
 
+    # Must Insall node modules for forge to reference in remappings
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16.x
+          registry-url: https://registry.npmjs.org
+
+      - id: yarn-cache
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - uses: actions/cache@v1
+        with:
+          path: ${{ steps.yarn-cache.outputs.dir }}
+          key: yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+    # End of node module support
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
