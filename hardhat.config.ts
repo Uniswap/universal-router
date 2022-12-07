@@ -66,4 +66,7 @@ export default {
   solidity: {
     compilers: [DEFAULT_COMPILER_SETTINGS],
   },
+  mocha: {
+    timeout: 60000,
+  },
 }
