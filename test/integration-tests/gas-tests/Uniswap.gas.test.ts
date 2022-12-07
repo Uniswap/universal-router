@@ -18,7 +18,7 @@ import {
 } from '../shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
 import { UniversalRouter, Permit2 } from '../../../typechain'
-import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
+import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { approveAndExecuteSwapRouter02, resetFork, WETH, DAI, USDC, USDT } from '../shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,

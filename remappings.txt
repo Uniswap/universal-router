@@ -1,6 +1,5 @@
-solmate/=lib/solmate/src/
+solmate/=lib/solmate/
 permit2/=lib/permit2/
 forge-std/=lib/forge-std/src/
-@openzeppelin/=lib/openzeppelin-contracts/
-@uniswap/v2-core=lib/v2-core
-@uniswap/v3-core=lib/v3-core
+@openzeppelin/=node_modules/@openzeppelin
+@uniswap=node_modules/@uniswap

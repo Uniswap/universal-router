@@ -7,7 +7,7 @@ import { expect } from './shared/expect'
 import { encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Permit2, UniversalRouter } from '../../typechain'
-import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
+import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,

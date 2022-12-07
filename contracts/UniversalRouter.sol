@@ -7,8 +7,9 @@ import {RouterParameters, RouterImmutables} from './base/RouterImmutables.sol';
 import {Constants} from './libraries/Constants.sol';
 import {Commands} from './libraries/Commands.sol';
 import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
+import {ReentrancyLock} from './base/ReentrancyLock.sol';
 
-contract UniversalRouter is RouterImmutables, IUniversalRouter, Dispatcher, RewardsCollector {
+contract UniversalRouter is RouterImmutables, IUniversalRouter, Dispatcher, RewardsCollector, ReentrancyLock {
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
@@ -26,7 +27,7 @@ contract UniversalRouter is RouterImmutables, IUniversalRouter, Dispatcher, Rewa
     }
 
     /// @inheritdoc IUniversalRouter
-    function execute(bytes calldata commands, bytes[] calldata inputs) public payable {
+    function execute(bytes calldata commands, bytes[] calldata inputs) public payable isNotLocked {
         bool success;
         bytes memory output;
         uint256 numCommands = commands.length;

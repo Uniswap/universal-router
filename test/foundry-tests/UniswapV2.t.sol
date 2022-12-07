@@ -3,7 +3,7 @@ pragma solidity ^0.8.15;
 
 import 'forge-std/Test.sol';
 import {Permit2} from 'permit2/src/Permit2.sol';
-import {ERC20} from 'solmate/tokens/ERC20.sol';
+import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IUniswapV2Factory} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import {UniversalRouter} from '../../contracts/UniversalRouter.sol';
@@ -12,8 +12,8 @@ import {Constants} from '../../contracts/libraries/Constants.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
 
-import 'openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol';
-import 'openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol';
+import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
+import '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';
 
 abstract contract UniswapV2Test is Test {
     address constant RECIPIENT = address(10);

@@ -180,6 +180,15 @@ forge install
 forge build
 forge test
 ```
+## Integrating
+
+1. Install the latest version of `@uniswap/universal-router` package.
+2. Add git submodules for contracts that aren't a node package. Make sure there's an empty `.gitmodules` file. Then run:
+    ```bash
+      git submodule add https://github.com/transmissions11/solmate
+      git submodule add https://github.com/Uniswap/permit2
+    ```
+3. You should now be able to import contracts from universal-router and compile.
 
 ## Contributions
 Before you submit your PR, run all of the following and commit the changes:
@@ -218,7 +227,7 @@ forge script --broadcast \
 --sig 'run(string)' \
 script/DeployUniversalRouter.s.sol:DeployUniversalRouter \
 <pathToJSON> \
---chain-id <CHAIN-ID>
+--chain-id <CHAIN-ID> \
 --etherscan-api-key <ETHERSCAN-API-KEY> \
 --verify
 ```

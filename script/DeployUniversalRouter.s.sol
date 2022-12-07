@@ -9,7 +9,6 @@ import {UnsupportedProtocol} from 'contracts/deploy/UnsupportedProtocol.sol';
 import {UniversalRouter} from 'contracts/UniversalRouter.sol';
 import {Permit2} from 'permit2/src/Permit2.sol';
 
-/// @dev The SALT used to deploy Universal Router on Mainnet is 0x000000000000000000000000000000000000000068f501dc113220003862815d
 bytes32 constant SALT = bytes32(uint256(0x00000000000000000000000000000000000000005eb67581652632000a6cbedf));
 
 contract DeployUniversalRouter is Script {
@@ -43,7 +42,7 @@ contract DeployUniversalRouter is Script {
             poolInitCodeHash: params.poolInitCodeHash
         });
 
-        router = new UniversalRouter{salt: SALT}(params);
+        router = new UniversalRouter(params);
         console2.log('Universal Router Deployed:', address(router));
         vm.stopBroadcast();
 
@@ -56,7 +55,6 @@ contract DeployUniversalRouter is Script {
 
     function runAndDeployPermit2(string memory pathToJSON) public returns (UniversalRouter router) {
         RouterParameters memory params = fetchParameters(pathToJSON);
-        return run(params);
         vm.startBroadcast();
         address permit2 = address(new Permit2{salt: SALT}());
         params.permit2 = permit2;

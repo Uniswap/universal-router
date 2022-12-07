@@ -8,8 +8,8 @@ import {RouterImmutables} from '../base/RouterImmutables.sol';
 import {Callbacks} from '../base/Callbacks.sol';
 import {Commands} from '../libraries/Commands.sol';
 import {Recipient} from '../libraries/Recipient.sol';
-import {ERC721} from 'solmate/tokens/ERC721.sol';
-import {ERC1155} from 'solmate/tokens/ERC1155.sol';
+import {ERC721} from 'solmate/src/tokens/ERC721.sol';
+import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
@@ -29,14 +29,13 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
     /// @return success True on success of the command, false on failure
     /// @return output The outputs or error messages, if any, from the command
     function dispatch(bytes1 commandType, bytes memory inputs) internal returns (bool success, bytes memory output) {
-        bool isNotNFTType = (commandType & Commands.NFT_TYPE_MASK) == 0;
-        bool is0To7 = (commandType & Commands.SUB_IF_BRANCH_MASK) == 0;
         uint256 command = uint8(commandType & Commands.COMMAND_TYPE_MASK);
 
         success = true;
 
-        if (isNotNFTType) {
-            if (is0To7) {
+        if (command < 0x10) {
+            // 0x00 <= command < 0x08
+            if (command < 0x08) {
                 if (command == Commands.V3_SWAP_EXACT_IN) {
                     (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path, bool payerIsUser) =
                         abi.decode(inputs, (address, uint256, uint256, bytes, bool));
@@ -64,9 +63,11 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                 } else if (command == Commands.PAY_PORTION) {
                     (address token, address recipient, uint256 bips) = abi.decode(inputs, (address, address, uint256));
                     Payments.payPortion(token, recipient.map(), bips);
-                } else {
+                } else if (command == Commands.COMMAND_PLACEHOLDER_0x07) {
+                    // placeholder for a future command
                     revert InvalidCommandType(command);
                 }
+                // 0x08 <= command < 0x10
             } else {
                 if (command == Commands.V2_SWAP_EXACT_IN) {
                     (address recipient, uint256 amountIn, uint256 amountOutMin, address[] memory path, bool payerIsUser)
@@ -92,12 +93,18 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                     (IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) =
                         abi.decode(inputs, (IAllowanceTransfer.AllowanceTransferDetails[]));
                     permit2TransferFrom(batchDetails);
-                } else {
+                } else if (command == Commands.COMMAND_PLACEHOLDER_0x0e) {
+                    // placeholder for a future command
+                    revert InvalidCommandType(command);
+                } else if (command == Commands.COMMAND_PLACEHOLDER_0x0f) {
+                    // placeholder for a future command
                     revert InvalidCommandType(command);
                 }
             }
+            // 0x10 <= command
         } else {
-            if (is0To7) {
+            // 0x10 <= command < 0x18
+            if (command < 0x18) {
                 if (command == Commands.SEAPORT) {
                     (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
                     (success, output) = SEAPORT.call{value: value}(data);
@@ -127,9 +134,8 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                 } else if (command == Commands.SWEEP_ERC721) {
                     (address token, address recipient, uint256 id) = abi.decode(inputs, (address, address, uint256));
                     Payments.sweepERC721(token, recipient.map(), id);
-                } else {
-                    revert InvalidCommandType(command);
                 }
+                // 0x18 <= command < 0x1f
             } else {
                 if (command == Commands.X2Y2_721) {
                     (success, output) = callAndTransfer721(inputs, X2Y2);
@@ -147,7 +153,11 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                     (address token, address recipient, uint256 id, uint256 amount) =
                         abi.decode(inputs, (address, address, uint256, uint256));
                     Payments.sweepERC1155(token, recipient.map(), id, amount);
-                } else {
+                } else if (command == Commands.COMMAND_PLACEHOLDER_0x1e) {
+                    // placeholder for a future command
+                    revert InvalidCommandType(command);
+                } else if (command == Commands.COMMAND_PLACEHOLDER_0x1f) {
+                    // placeholder for a future command
                     revert InvalidCommandType(command);
                 }
             }
