@@ -5,11 +5,13 @@ libs = ['lib']
 via_ir = true
 solc_version = '0.8.17'
 optimizer_runs = 1_000_000
-fs_permissions = [{ access = "read", path = "./scripts/deployParameters/"}]
-
+fs_permissions = [{ access = "read", path = "./script/deployParameters/"}]
 
 [fmt]
 line_length = 120
 quote_style = 'single'
+
+[profile.lite.optimizer_details.yulDetails]
+optimizerSteps = ''
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

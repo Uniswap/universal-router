@@ -1,14 +1,14 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
-import { Router, Permit2, ERC721 } from '../../typechain'
+import { UniversalRouter, Permit2, ERC721 } from '../../typechain'
 import {
   seaportOrders,
   seaportInterface,
   getAdvancedOrderParams,
   purchaseDataForTwoCovensSeaport,
 } from './shared/protocolHelpers/seaport'
-import deployRouter, { deployPermit2 } from './shared/deployRouter'
+import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { COVEN_721, resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -17,7 +17,7 @@ const { ethers } = hre
 
 describe('Seaport', () => {
   let alice: SignerWithAddress
-  let router: Router
+  let router: UniversalRouter
   let permit2: Permit2
   let planner: RoutePlanner
   let cryptoCovens: ERC721
@@ -30,7 +30,7 @@ describe('Seaport', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployRouter(permit2)).connect(alice) as Router
+    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
     cryptoCovens = COVEN_721.connect(alice) as ERC721
   })
@@ -122,20 +122,22 @@ describe('Seaport', () => {
   })
 
   it('reverts if order does not go through', async () => {
-    const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
-    advancedOrder.parameters.salt = BigNumber.from('6666666666666666')
+    let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
+    invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
+    const { advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder)
+
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
-      advancedOrder,
+      seaportOrder,
       [],
       OPENSEA_CONDUIT_KEY,
       alice.address,
     ])
 
-    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+    planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldata])
     const { commands, inputs } = planner
 
-    await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).to.be.revertedWith(
-      'ExecutionFailed(0, "0x815e1d64")'
-    )
+    await expect(
+      router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: seaportValue })
+    ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")')
   })
 })

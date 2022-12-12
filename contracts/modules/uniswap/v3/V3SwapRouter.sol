@@ -1,14 +1,18 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.17;
 
-import './V3Path.sol';
-import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
-import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
-import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
-import '../../Permit2Payments.sol';
-import '../../../libraries/Constants.sol';
+import {V3Path} from './V3Path.sol';
+import {SafeCast} from '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
+import {IUniswapV3Pool} from '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
+import {IUniswapV3SwapCallback} from '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
+import {Constants} from '../../../libraries/Constants.sol';
+import {RouterImmutables} from '../../../base/RouterImmutables.sol';
+import {Permit2Payments} from '../../Permit2Payments.sol';
+import {Constants} from '../../../libraries/Constants.sol';
+import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
-abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
+/// @title Router for Uniswap v3 Trades
+abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3SwapCallback {
     using V3Path for bytes;
     using SafeCast for uint256;
 
@@ -17,9 +21,6 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
     error V3TooMuchRequested();
     error V3InvalidAmountOut();
     error V3InvalidCaller();
-
-    address internal immutable V3_FACTORY;
-    bytes32 internal immutable POOL_INIT_CODE_HASH_V3;
 
     /// @dev Used as the placeholder value for maxAmountIn, because the computed amount in for an exact output swap
     /// can never actually be this value
@@ -33,11 +34,6 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
 
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
-
-    constructor(address v3Factory, bytes32 poolInitCodeHash) {
-        V3_FACTORY = v3Factory;
-        POOL_INIT_CODE_HASH_V3 = poolInitCodeHash;
-    }
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         if (amount0Delta <= 0 && amount1Delta <= 0) revert V3InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
@@ -68,6 +64,12 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
         }
     }
 
+    /// @notice Performs a Uniswap v3 exact input swap
+    /// @param recipient The recipient of the output tokens
+    /// @param amountIn The amount of input tokens for the trade
+    /// @param amountOutMinimum The minimum desired amount of output tokens
+    /// @param path The path of the trade as a bytes string
+    /// @param payer The address that will be paying the input
     function v3SwapExactInput(
         address recipient,
         uint256 amountIn,
@@ -78,7 +80,7 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
         // use amountIn == Constants.CONTRACT_BALANCE as a flag to swap the entire balance of the contract
         if (amountIn == Constants.CONTRACT_BALANCE) {
             address tokenIn = path.decodeFirstToken();
-            amountIn = IERC20(tokenIn).balanceOf(address(this));
+            amountIn = ERC20(tokenIn).balanceOf(address(this));
         }
 
         uint256 amountOut;
@@ -109,6 +111,12 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
         if (amountOut < amountOutMinimum) revert V3TooLittleReceived();
     }
 
+    /// @notice Performs a Uniswap v3 exact output swap
+    /// @param recipient The recipient of the output tokens
+    /// @param amountOut The amount of output tokens to receive for the trade
+    /// @param amountInMaximum The maximum desired amount of input tokens
+    /// @param path The path of the trade as a bytes string
+    /// @param payer The address that will be paying the input
     function v3SwapExactOutput(
         address recipient,
         uint256 amountOut,
@@ -153,7 +161,10 @@ abstract contract V3SwapRouter is Permit2Payments, IUniswapV3SwapCallback {
                 uint256(
                     keccak256(
                         abi.encodePacked(
-                            hex'ff', V3_FACTORY, keccak256(abi.encode(tokenA, tokenB, fee)), POOL_INIT_CODE_HASH_V3
+                            hex'ff',
+                            UNISWAP_V3_FACTORY,
+                            keccak256(abi.encode(tokenA, tokenB, fee)),
+                            UNISWAP_V3_POOL_INIT_CODE_HASH
                         )
                     )
                 )

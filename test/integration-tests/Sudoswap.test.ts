@@ -1,13 +1,13 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import SUDOSWAP_ABI from './shared/abis/Sudoswap.json'
-import { ERC721, Router, Permit2 } from '../../typechain'
+import { ERC721, UniversalRouter, Permit2 } from '../../typechain'
 import { resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
-import deployRouter, { deployPermit2 } from './shared/deployRouter'
+import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/tokens/ERC721.sol/ERC721.json'
+import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { expect } from 'chai'
 
 const { ethers } = hre
@@ -17,7 +17,7 @@ const SUDOLETS_ADDRESS = '0xfa9937555dc20a020a161232de4d2b109c62aa9c'
 
 describe('Sudoswap', () => {
   let alice: SignerWithAddress
-  let router: Router
+  let router: UniversalRouter
   let permit2: Permit2
   let planner: RoutePlanner
 
@@ -38,7 +38,7 @@ describe('Sudoswap', () => {
         params: [ALICE_ADDRESS],
       })
       permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployRouter(permit2)).connect(alice) as Router
+      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
 
       sudolets = new ethers.Contract(SUDOLETS_ADDRESS, ERC721_ABI).connect(alice) as ERC721
     })

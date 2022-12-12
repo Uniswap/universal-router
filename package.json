@@ -1,17 +1,20 @@
 {
-  "name": "@uniswap/narwhal",
-  "description": "Smart contracts for Narwhal",
+  "name": "@uniswap/universal-router",
+  "description": "Smart contracts for Universal Router",
   "license": "GPL-2.0-or-later",
   "publishConfig": {
-    "access": "private"
+    "access": "public"
   },
-  "version": "1.0.0-beta.5",
+  "version": "1.2.2",
   "keywords": [
-    "narwhal"
+    "uniswap",
+    "router",
+    "universal router",
+    "swap router"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Uniswap/narwhal"
+    "url": "https://github.com/Uniswap/universal-router"
   },
   "files": [
     "contracts/base",
@@ -25,7 +28,12 @@
     "!artifacts/contracts/base/**/*"
   ],
   "engines": {
-    "node": ">=16"
+    "node": ">=14"
+  },
+  "dependencies": {
+    "@uniswap/v2-core": "1.0.1",
+    "@uniswap/v3-core": "1.0.0",
+    "@openzeppelin/contracts": "4.7.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
@@ -55,8 +63,9 @@
     "compile": "hardhat compile",
     "test": "hardhat test",
     "test:gas": "UPDATE_SNAPSHOT=1 yarn test --grep gas",
-    "presymlink": "rm -rf ./solmate && rm -rf ./openzeppelin-contracts && rm -rf ./permitpost",
-    "symlink": "ln -s ./lib/solmate/src ./solmate && ln -s ./lib/permit2 ./permit2 && ln -s ./lib/openzeppelin-contracts ./openzeppelin-contracts",
+    "test:all": "UPDATE_SNAPSHOT=1 yarn test",
+    "presymlink": "rm -rf ./solmate && rm -rf ./permit2",
+    "symlink": "ln -s ./lib/solmate ./solmate && ln -s ./lib/permit2 ./permit2",
     "prettier:fix": "prettier --write '**/*.ts' && prettier --write '**/*.json' && forge fmt",
     "prettier": "prettier --check '**/*.ts' && forge fmt --check"
   }

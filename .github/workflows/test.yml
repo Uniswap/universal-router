@@ -15,7 +15,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-          token: '${{ secrets.PERMIT_POST_KEY }}'
 
       - uses: actions/setup-node@v1
         with:
@@ -33,9 +32,7 @@ jobs:
             yarn-
 
       - name: Install dependencies
-        run: |
-          npm config set '//registry.npmjs.org/:_authToken' "${{ secrets.NPM_AUTH_TOKEN }}" \
-          && yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile
 
       # This is required separately from yarn test because it generates the typechain definitions
       - name: Compile
