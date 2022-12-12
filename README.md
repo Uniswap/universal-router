@@ -2,6 +2,8 @@
 
 Please read the [Contributions](https://github.com/Uniswap/universal-router#contributions) section before submitting a Pull Request.
 
+To see the commit of the smart contracts that was used in the latest deployment, see branch `deployed-commit`. To see the addresses of this latest deployment on each network, see folder `deploy-addresses`.
+
 ## High-Level Overview
 
 The Universal Router is a ERC20 and NFT swap router that allows users greater flexibility when performing trades across multiple token types.
