@@ -36,7 +36,6 @@ jobs:
           key: yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             yarn-
-
       - name: Install dependencies
         run: yarn install --frozen-lockfile
     # End of node module support
@@ -56,3 +55,5 @@ jobs:
         run: |
           forge test -vvv
         id: test
+        env:
+          FORK_URL: https://mainnet.infura.io/v3/${{ secrets.INFURA_API_KEY }}
