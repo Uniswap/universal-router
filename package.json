@@ -65,8 +65,8 @@
     "test": "hardhat test",
     "test:gas": "UPDATE_SNAPSHOT=1 yarn test --grep gas",
     "test:all": "UPDATE_SNAPSHOT=1 yarn test",
-    "presymlink": "rm -rf ./permit2",
-    "symlink": "ln -s ./lib/permit2 ./permit2",
+    "presymlink": "rm -rf ./permit2 && rm -rf ./solmate",
+    "symlink": "ln -s ./lib/permit2 ./permit2 && ln -s ./node_modules/solmate ./solmate",
     "prettier:fix": "prettier --write '**/*.ts' && prettier --write '**/*.json' && forge fmt",
     "prettier": "prettier --check '**/*.ts' && forge fmt --check"
   }
