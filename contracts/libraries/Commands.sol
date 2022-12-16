@@ -49,6 +49,6 @@ library Commands {
     uint256 constant X2Y2_1155 = 0x1b;
     uint256 constant FOUNDATION = 0x1c;
     uint256 constant SWEEP_ERC1155 = 0x1d;
-    uint256 constant COMMAND_PLACEHOLDER_0x1e = 0x1e;
+    uint256 constant SUDOSWAP_SELL = 0x1e;
     uint256 constant COMMAND_PLACEHOLDER_0x1f = 0x1f;
 }
