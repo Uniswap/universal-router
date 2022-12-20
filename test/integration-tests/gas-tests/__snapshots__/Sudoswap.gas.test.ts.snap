@@ -6,3 +6,10 @@ Object {
   "gasUsed": 192626,
 }
 `;
+
+exports[`Sudoswap Gas Tests Sell a sudolet on sudoswap gas: sell token ids 80 1`] = `
+Object {
+  "calldataByteLength": 804,
+  "gasUsed": 172864,
+}
+`;

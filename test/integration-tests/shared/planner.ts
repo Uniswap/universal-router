@@ -37,7 +37,7 @@ export enum CommandType {
   X2Y2_1155 = 0x1b,
   FOUNDATION = 0x1c,
   SWEEP_ERC1155 = 0x1d,
-  SUDOSWAP_SELL = 0x1e
+  SUDOSWAP_SELL = 0x1e,
 }
 
 const ALLOW_REVERT_FLAG = 0x80

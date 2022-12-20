@@ -154,7 +154,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                         abi.decode(inputs, (address, address, uint256, uint256));
                     Payments.sweepERC1155(token, recipient.map(), id, amount);
                 } else if (command == Commands.SUDOSWAP_SELL) {
-                    approveAndSell721(inputs, SUDOSWAP);
+                    (success, output) = approveAndSell721(inputs, SUDOSWAP);
                 } else if (command == Commands.COMMAND_PLACEHOLDER_0x1f) {
                     // placeholder for a future command
                     revert InvalidCommandType(command);
@@ -172,9 +172,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
 
         // this approval is auto-wiped when the token is transferred
         ERC721(token).approve(spender, id);
+
         (success, output) = protocol.call(data);
 
-        // if !success what should we do with the NFT and approval?
+        // if !success manually revoke the approval
+        // what to do with the NFT??
+        if (!success) ERC721(token).approve(address(0), id);
     }
 
     /// @notice Performs a call to purchase an ERC721, then transfers the ERC721 to a specified recipient
