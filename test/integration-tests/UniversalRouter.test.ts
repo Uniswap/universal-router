@@ -265,10 +265,7 @@ describe('UniversalRouter', () => {
           alice.address,
         ])
 
-        planner.addCommand(
-          CommandType.PERMIT2_TRANSFER_FROM,
-          [WETH.address, ADDRESS_THIS, value]
-        )
+        planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [WETH.address, ADDRESS_THIS, value])
         planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, value])
         planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
 
