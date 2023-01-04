@@ -1,9 +1,11 @@
-import { UniversalRouter, Permit2, ERC20, MockLooksRareRewardsDistributor, ERC721 } from '../../typechain'
+import { UniversalRouter, Permit2, ERC20, IWETH9, MockLooksRareRewardsDistributor, ERC721 } from '../../typechain'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { abi as ROUTER_ABI } from '../../artifacts/contracts/UniversalRouter.sol/UniversalRouter.json'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
+import { abi as WETH_ABI } from '../../artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
+
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import {
@@ -43,6 +45,7 @@ describe('UniversalRouter', () => {
   let router: UniversalRouter
   let permit2: Permit2
   let daiContract: ERC20
+  let wethContract: IWETH9
   let mockLooksRareToken: ERC20
   let mockLooksRareRewardsDistributor: MockLooksRareRewardsDistributor
   let pair_DAI_WETH: Pair
@@ -65,6 +68,7 @@ describe('UniversalRouter', () => {
       mockLooksRareToken.address
     )) as MockLooksRareRewardsDistributor
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
+    wethContract = new ethers.Contract(WETH.address, WETH_ABI, alice) as IWETH9
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
     permit2 = (await deployPermit2()).connect(alice) as Permit2
     router = (
@@ -79,7 +83,9 @@ describe('UniversalRouter', () => {
     beforeEach(async () => {
       planner = new RoutePlanner()
       await daiContract.approve(permit2.address, MAX_UINT)
+      await wethContract.approve(permit2.address, MAX_UINT)
       await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
+      await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
     })
 
     it('reverts if block.timestamp exceeds the deadline', async () => {
@@ -249,6 +255,35 @@ describe('UniversalRouter', () => {
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
         const covenBalanceAfter = await cryptoCovens.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
+      })
+
+      it('completes a trade for WETH --> ETH --> Seaport NFT', async () => {
+        const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+          advancedOrder,
+          [],
+          OPENSEA_CONDUIT_KEY,
+          alice.address,
+        ])
+
+        planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [WETH.address, ADDRESS_THIS, value])
+        planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, value])
+        planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+
+        const { commands, inputs } = planner
+        const covenBalanceBefore = await cryptoCovens.balanceOf(alice.address)
+        const wethBalanceBefore = await wethContract.balanceOf(alice.address)
+        const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
+
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+
+        const covenBalanceAfter = await cryptoCovens.balanceOf(alice.address)
+        const wethBalanceAfter = await wethContract.balanceOf(alice.address)
+        const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
+
+        expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
+        expect(wethBalanceBefore.sub(wethBalanceAfter)).to.eq(value)
+        expect(ethBalanceBefore.sub(ethBalanceAfter)).to.eq(gasSpent)
       })
     })
   })
