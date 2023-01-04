@@ -1,8 +1,9 @@
-import { UniversalRouter, Permit2 } from '../../../typechain'
+import { UniversalRouter, Permit2, IWETH9 } from '../../../typechain'
 import { expect } from '../shared/expect'
 import type { Contract } from '@ethersproject/contracts'
 import {
   ALICE_ADDRESS,
+  ADDRESS_THIS,
   DEADLINE,
   MAX_UINT,
   MAX_UINT160,
@@ -10,6 +11,7 @@ import {
   SOURCE_MSG_SENDER,
 } from '../shared/constants'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
+import { abi as WETH_ABI } from '../../../artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { resetFork, WETH, DAI } from '../shared/mainnetForkHelpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -27,12 +29,13 @@ import { BigNumber } from 'ethers'
 
 const { ethers } = hre
 
-describe('UniversalRouter Gas Tests', () => {
+describe.only('UniversalRouter Gas Tests', () => {
   let alice: SignerWithAddress
   let planner: RoutePlanner
   let router: UniversalRouter
   let permit2: Permit2
   let daiContract: Contract
+  let wethContract: IWETH9
 
   beforeEach(async () => {
     await resetFork()
@@ -42,6 +45,7 @@ describe('UniversalRouter Gas Tests', () => {
       params: [ALICE_ADDRESS],
     })
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
+    wethContract = new ethers.Contract(WETH.address, WETH_ABI, alice) as IWETH9
     permit2 = (await deployPermit2()).connect(alice) as Permit2
     router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
@@ -58,7 +62,9 @@ describe('UniversalRouter Gas Tests', () => {
     beforeEach(async () => {
       ;({ advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0]))
       await daiContract.approve(permit2.address, MAX_UINT)
+      await wethContract.approve(permit2.address, MAX_UINT)
       await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
+      await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
     })
 
     it('gas: ETH --> Seaport NFT', async () => {
@@ -92,6 +98,25 @@ describe('UniversalRouter Gas Tests', () => {
       ])
       planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
       planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+      const { commands, inputs } = planner
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+    })
+
+    it('gas: WETH --> ETH --> Seaport NFT', async () => {
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+        advancedOrder,
+        [],
+        OPENSEA_CONDUIT_KEY,
+        alice.address,
+      ])
+
+      planner.addCommand(
+        CommandType.PERMIT2_TRANSFER_FROM,
+        [WETH.address, ADDRESS_THIS, value]
+      )
+      planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, value])
+      planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+
       const { commands, inputs } = planner
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
     })

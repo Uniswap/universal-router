@@ -48,7 +48,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                     v3SwapExactOutput(recipient.map(), amountOut, amountInMax, path, payer);
                 } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
                     (address token, address recipient, uint160 amount) = abi.decode(inputs, (address, address, uint160));
-                    permit2TransferFrom(token, msg.sender, recipient, amount);
+                    permit2TransferFrom(token, msg.sender, recipient.map(), amount);
                 } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
                     (IAllowanceTransfer.PermitBatch memory permitBatch, bytes memory data) =
                         abi.decode(inputs, (IAllowanceTransfer.PermitBatch, bytes));
