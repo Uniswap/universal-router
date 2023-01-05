@@ -184,17 +184,17 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
         internal
         returns (bool success, bytes memory output)
     {
-        (bytes memory data, address token, address spender, uint256 id) =
-            abi.decode(inputs, (bytes, address, address, uint256));
+        (bytes memory data, address token, address spender, uint256 id, address returnAddress) =
+            abi.decode(inputs, (bytes, address, address, uint256, address));
 
         // this approval is auto-wiped when the token is transferred
         ERC721(token).approve(spender, id);
 
         (success, output) = protocol.call(data);
 
-        // if !success manually revoke the approval
-        // what to do with the NFT??
-        if (!success) ERC721(token).approve(address(0), id);
+        // if the sale was not successful, return the NFT to the requested address
+        // TODO could separate this out into a sweep?
+        if (!success) ERC721(token).transferFrom(address(this), returnAddress, id);
     }
 
     /// @notice Performs a call to purchase an ERC721, then transfers the ERC721 to a specified recipient

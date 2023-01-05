@@ -87,7 +87,7 @@ describe('Sudoswap Gas Tests', () => {
         DEADLINE,
       ])
 
-      planner.addCommand(CommandType.SUDOSWAP_SELL, [calldata, SUDOLETS_721, SUDOLETS_ROUTER, 80])
+      planner.addCommand(CommandType.SUDOSWAP_SELL, [calldata, SUDOLETS_721, SUDOLETS_ROUTER, 80, ALICE_ADDRESS])
       const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))

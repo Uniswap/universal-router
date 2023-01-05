@@ -52,6 +52,7 @@ const REVERTABLE_COMMANDS = new Set<CommandType>([
   CommandType.FOUNDATION,
   CommandType.SUDOSWAP,
   CommandType.NFT20,
+  CommandType.SUDOSWAP_SELL,
 ])
 
 const PERMIT_STRUCT =
@@ -91,7 +92,7 @@ const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.OWNER_CHECK_1155]: ['address', 'address', 'uint256', 'uint256'],
   [CommandType.NFT20]: ['uint256', 'bytes'],
   [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
-  [CommandType.SUDOSWAP_SELL]: ['bytes', 'address', 'address', 'uint256'],
+  [CommandType.SUDOSWAP_SELL]: ['bytes', 'address', 'address', 'uint256', 'address'],
 }
 
 export class RoutePlanner {

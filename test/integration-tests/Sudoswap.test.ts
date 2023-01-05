@@ -102,7 +102,7 @@ describe('Sudoswap', () => {
       ])
       const ethReceived = BigNumber.from('18046875000000002')
 
-      planner.addCommand(CommandType.SUDOSWAP_SELL, [calldata, SUDOLETS_721, SUDOLETS_ROUTER, 80])
+      planner.addCommand(CommandType.SUDOSWAP_SELL, [calldata, SUDOLETS_721, SUDOLETS_ROUTER, 80, ALICE_ADDRESS])
       const { commands, inputs } = planner
 
       const aliceBalance = await ethers.provider.getBalance(alice.address)
@@ -111,6 +111,29 @@ describe('Sudoswap', () => {
       await expect((await sudolets.ownerOf(80)).toLowerCase()).to.eq(SUDOLETS_PAIR)
       await expect((await ethers.provider.getBalance(alice.address)).sub(aliceBalance)).to.eq(
         ethReceived.sub(receipt.gasUsed.mul(receipt.effectiveGasPrice))
+      )
+    })
+
+    it('fails to sell token and returns NFT when revert is permitted', async () => {
+      // put NFT in the router TODO replace with Permit2 721
+      await sudolets.transferFrom(alice.address, router.address, 80)
+      await expect((await sudolets.ownerOf(80)).toLowerCase()).to.eq(router.address.toLowerCase())
+
+      const calldata = SUDOSWAP_INTERFACE.encodeFunctionData('robustSwapNFTsForToken', [
+        [[[SUDOLETS_PAIR, ['80']], '0']],
+        ALICE_ADDRESS,
+        1, // deadline in the past
+      ])
+
+      planner.addCommand(CommandType.SUDOSWAP_SELL, [calldata, SUDOLETS_721, SUDOLETS_ROUTER, 80, ALICE_ADDRESS], true)
+      const { commands, inputs } = planner
+
+      const aliceBalance = await ethers.provider.getBalance(alice.address)
+      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
+
+      await expect((await sudolets.ownerOf(80)).toLowerCase()).to.eq(ALICE_ADDRESS)
+      await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
+        receipt.gasUsed.mul(receipt.effectiveGasPrice)
       )
     })
   })
