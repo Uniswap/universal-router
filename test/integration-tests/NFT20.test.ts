@@ -8,6 +8,7 @@ import hre from 'hardhat'
 import { BigNumber } from 'ethers'
 import { expect } from 'chai'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
+import { getTxGasSpent } from './shared/helpers'
 const { ethers } = hre
 
 const NFT20_INTERFACE = new ethers.utils.Interface(NFT20_ABI)
@@ -60,7 +61,7 @@ describe('NFT20', () => {
       await expect((await alphabetties.ownerOf(278)).toLowerCase()).to.eq(ALICE_ADDRESS)
       // Expect that alice's account has 0.021 (plus gas, minus refund) less ETH in it
       await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
-        value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice)).sub(BigNumber.from('1086067487962785'))
+        value.add(getTxGasSpent(receipt)).sub(BigNumber.from('1086067487962785'))
       )
     })
   })

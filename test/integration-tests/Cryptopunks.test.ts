@@ -7,6 +7,7 @@ import hre from 'hardhat'
 import { BigNumber, Contract } from 'ethers'
 import { expect } from 'chai'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
+import { getTxGasSpent } from './shared/helpers'
 
 const { ethers } = hre
 
@@ -46,7 +47,7 @@ describe('Cryptopunks', () => {
       // Expect that alice has the NFT
       await expect((await cryptopunks.punkIndexToAddress(2976)).toLowerCase()).to.eq(ALICE_ADDRESS)
       await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
-        value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice))
+        value.add(getTxGasSpent(receipt))
       )
     })
   })

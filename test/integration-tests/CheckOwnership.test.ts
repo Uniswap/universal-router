@@ -13,6 +13,7 @@ import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './s
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
+import { getTxGasSpent } from './shared/helpers'
 const { ethers } = hre
 
 describe('Check Ownership', () => {
@@ -90,7 +91,7 @@ describe('Check Ownership', () => {
       ).wait()
       const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
       const ethAfter = await ethers.provider.getBalance(alice.address)
-      const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+      const gasSpent = getTxGasSpent(receipt)
       const ethDelta = ethBefore.sub(ethAfter)
 
       expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
@@ -128,7 +129,7 @@ describe('Check Ownership', () => {
       const owner0After = await cryptoCovens.ownerOf(params0.offer[0].identifierOrCriteria)
       const owner1After = await cryptoCovens.ownerOf(params1.offer[0].identifierOrCriteria)
       const ethAfter = await ethers.provider.getBalance(alice.address)
-      const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+      const gasSpent = getTxGasSpent(receipt)
       const ethDelta = ethBefore.sub(ethAfter)
 
       expect(owner0Before.toLowerCase()).to.eq(params0.offerer)

@@ -11,6 +11,7 @@ import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol
 import { expect } from 'chai'
 import { parseEther } from 'ethers/lib/utils'
 import { MSG_SENDER } from '@uniswap/router-sdk'
+import { getTxGasSpent } from './shared/helpers'
 
 const { ethers } = hre
 
@@ -53,7 +54,7 @@ describe('Sudoswap', () => {
       planner.addCommand(CommandType.SUDOSWAP, [price, calldata])
       const { commands, inputs } = planner
 
-      const aliceBalance = await ethers.provider.getBalance(alice.address)
+      const aliceBalanceBefore = await ethers.provider.getBalance(alice.address)
       const receipt = await (
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: price })
       ).wait()
@@ -63,9 +64,10 @@ describe('Sudoswap', () => {
       await expect((await sudolets.ownerOf(35)).toLowerCase()).to.eq(ALICE_ADDRESS)
       await expect((await sudolets.ownerOf(93)).toLowerCase()).to.eq(ALICE_ADDRESS)
       // Expect that alice's account has 0.073 (plus gas) less ETH in it
-      await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
-        price.add(receipt.gasUsed.mul(receipt.effectiveGasPrice))
-      )
+
+      const aliceBalanceAfter = await ethers.provider.getBalance(alice.address)
+
+      await expect(aliceBalanceBefore.sub(aliceBalanceAfter)).to.eq(price.add(getTxGasSpent(receipt)))
     })
   })
 
@@ -105,13 +107,14 @@ describe('Sudoswap', () => {
       planner.addCommand(CommandType.SUDOSWAP_SELL, [calldata, SUDOLETS_721, SUDOLETS_ROUTER, 80, ALICE_ADDRESS])
       const { commands, inputs } = planner
 
-      const aliceBalance = await ethers.provider.getBalance(alice.address)
+      const aliceBalanceBefore = await ethers.provider.getBalance(alice.address)
       const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
 
       await expect((await sudolets.ownerOf(80)).toLowerCase()).to.eq(SUDOLETS_PAIR)
-      await expect((await ethers.provider.getBalance(alice.address)).sub(aliceBalance)).to.eq(
-        ethReceived.sub(receipt.gasUsed.mul(receipt.effectiveGasPrice))
-      )
+
+      const aliceBalanceAfter = await ethers.provider.getBalance(alice.address)
+
+      await expect(aliceBalanceAfter.sub(aliceBalanceBefore)).to.eq(ethReceived.sub(getTxGasSpent(receipt)))
     })
 
     it('fails to sell token and returns NFT when revert is permitted', async () => {
@@ -128,13 +131,14 @@ describe('Sudoswap', () => {
       planner.addCommand(CommandType.SUDOSWAP_SELL, [calldata, SUDOLETS_721, SUDOLETS_ROUTER, 80, ALICE_ADDRESS], true)
       const { commands, inputs } = planner
 
-      const aliceBalance = await ethers.provider.getBalance(alice.address)
+      const aliceBalanceBefore = await ethers.provider.getBalance(alice.address)
       const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
 
       await expect((await sudolets.ownerOf(80)).toLowerCase()).to.eq(ALICE_ADDRESS)
-      await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
-        receipt.gasUsed.mul(receipt.effectiveGasPrice)
-      )
+
+      const aliceBalanceAfter = await ethers.provider.getBalance(alice.address)
+
+      await expect(aliceBalanceBefore.sub(aliceBalanceAfter)).to.eq(getTxGasSpent(receipt))
     })
   })
 })

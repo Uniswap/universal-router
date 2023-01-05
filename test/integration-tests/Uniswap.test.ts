@@ -22,7 +22,7 @@ import {
   SOURCE_MSG_SENDER,
   SOURCE_ROUTER,
 } from './shared/constants'
-import { expandTo18DecimalsBN } from './shared/helpers'
+import { expandTo18DecimalsBN, getTxGasSpent } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
@@ -368,7 +368,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         const ethBalanceAfterAlice = await ethers.provider.getBalance(alice.address)
         const ethBalanceAfterBob = await ethers.provider.getBalance(bob.address)
-        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+        const gasSpent = getTxGasSpent(receipt)
 
         const aliceFee = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice)
         const bobEarnings = ethBalanceAfterBob.sub(ethBalanceBeforeBob).add(gasSpent)
@@ -1010,7 +1010,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     const { commands, inputs } = planner
 
     const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
-    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+    const gasSpent = getTxGasSpent(receipt)
     const v2SwapEventArgs = parseEvents(V2_EVENTS, receipt)[0]?.args as unknown as V2SwapEventArgs
     const v3SwapEventArgs = parseEvents(V3_EVENTS, receipt)[0]?.args as unknown as V3SwapEventArgs
 
