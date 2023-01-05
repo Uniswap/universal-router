@@ -43,16 +43,16 @@ Each command is a `bytes1` containing the following 8 bits:
 
 ```
  0 1 2 3 4 5 6 7
-┌─┬───┬─────────┐
-│f│ r | command │
-└─┴───┴─────────┘
+┌─┬─┬───────────┐
+│f│r|  command  │
+└─┴─┴───────────┘
 ```
 
 - `f` is a single bit flag, that signals whether or not the command should be allowed to revert. If `f` is `false`, and the command reverts, then the entire transaction will revert. If `f` is `true` and the command reverts then the transaction will continue, allowing us to achieve partial fills. If using this flag, be careful to include further commands that will remove any funds that could be left unused in the `UniversalRouter` contract.
 
-- `r` is two bits of reserved space. This will easily allow us to increase the space used for commands, or add new flags in future.
+- `r` is one bit of reserved space. This will allow us to increase the space used for commands, or add new flags in future.
 
-- `command` is a 5 bit unique identifier for the command that should be carried out. The values of these commands can be found within Commands.sol, or can be viewed in the table below.
+- `command` is a 6 bit unique identifier for the command that should be carried out. The values of these commands can be found within Commands.sol, or can be viewed in the table below.
 
 ```
    ┌──────┬───────────────────────────────┐
@@ -116,9 +116,8 @@ Each command is a `bytes1` containing the following 8 bits:
    ├──────┼───────────────────────────────┤
    │ 0x1d │  SWEEP_ERC1155                │
    ├──────┼───────────────────────────────┤
-   │ 0x1e │  -------                      │
-   ├──────┼─────────────────-─────────────┤
-   │ 0x1f │  -------                      │
+   │ 0x1e-│  -------                      │
+   │ 0x3f │                               │
    └──────┴───────────────────────────────┘
 ```
 
