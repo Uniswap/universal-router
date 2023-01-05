@@ -2,7 +2,15 @@ import { CommandType, RoutePlanner } from './shared/planner'
 import SUDOSWAP_ABI from './shared/abis/Sudoswap.json'
 import { ERC721, UniversalRouter, Permit2 } from '../../typechain'
 import { resetFork } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, SUDOLETS_721, SUDOLETS_PAIR, SUDOLETS_ROUTER } from './shared/constants'
+import {
+  ALICE_ADDRESS,
+  DEADLINE,
+  ETH_ADDRESS,
+  SUDOLETS_721,
+  SUDOLETS_PAIR,
+  SUDOLETS_ROUTER,
+  MSG_SENDER,
+} from './shared/constants'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -10,7 +18,6 @@ import { BigNumber } from 'ethers'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { expect } from 'chai'
 import { parseEther } from 'ethers/lib/utils'
-import { MSG_SENDER } from '@uniswap/router-sdk'
 import { getTxGasSpent } from './shared/helpers'
 
 const { ethers } = hre
