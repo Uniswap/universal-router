@@ -8,6 +8,7 @@ import hre from 'hardhat'
 import { BigNumber } from 'ethers'
 import { expect } from 'chai'
 import { CommandType, RoutePlanner } from './shared/planner'
+import { getTxGasSpent } from './shared/helpers'
 const { ethers } = hre
 
 const FOUNDATION_INTERFACE = new ethers.utils.Interface(FOUNDATION_ABI)
@@ -53,7 +54,7 @@ describe('Foundation', () => {
       await expect((await MENTAL_WORLDS_721.connect(alice).ownerOf(32)).toLowerCase()).to.eq(ALICE_ADDRESS)
       // Expect that alice's account has 0.01 (plus gas) less ETH in it
       await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
-        value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice))
+        value.add(getTxGasSpent(receipt))
       )
       // Expect that referrer's account has 0.0001 more ETH in it (referrers receive 1% of NFT value)
       await expect((await ethers.provider.getBalance(REFERRER)).sub(referrerBalance)).to.eq(value.div(100))

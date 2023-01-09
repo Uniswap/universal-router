@@ -13,6 +13,7 @@ import { COVEN_721, resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
+import { getTxGasSpent } from './shared/helpers'
 const { ethers } = hre
 
 describe('Seaport', () => {
@@ -53,7 +54,7 @@ describe('Seaport', () => {
     const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
     const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
-    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+    const gasSpent = getTxGasSpent(receipt)
     const ethDelta = ethBefore.sub(ethAfter)
 
     expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
@@ -87,7 +88,7 @@ describe('Seaport', () => {
 
     const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
-    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+    const gasSpent = getTxGasSpent(receipt)
     const ethDelta = ethBefore.sub(ethAfter)
 
     // The owner was unchanged, the user got the eth back
@@ -111,7 +112,7 @@ describe('Seaport', () => {
     const owner0After = await cryptoCovens.ownerOf(params0.offer[0].identifierOrCriteria)
     const owner1After = await cryptoCovens.ownerOf(params1.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
-    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+    const gasSpent = getTxGasSpent(receipt)
     const ethDelta = ethBefore.sub(ethAfter)
 
     expect(owner0Before.toLowerCase()).to.eq(params0.offerer)

@@ -14,7 +14,7 @@ import {
   NFTX_ERC_1155_VAULT_ID,
 } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { expandTo18DecimalsBN } from './shared/helpers'
+import { expandTo18DecimalsBN, getTxGasSpent } from './shared/helpers'
 import hre from 'hardhat'
 const { ethers } = hre
 
@@ -152,7 +152,7 @@ describe('NFTX', () => {
     const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
     const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
     const ethDelta = ethBalanceBefore.sub(await ethers.provider.getBalance(alice.address))
-    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+    const gasSpent = getTxGasSpent(receipt)
 
     expect(ethDelta.sub(gasSpent)).to.eq(saleCost)
   })
