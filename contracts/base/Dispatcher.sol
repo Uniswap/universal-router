@@ -175,8 +175,19 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
             }
             // 0x20 <= command
         } else {
-            // placeholder area for commands 0x20-0x3f
-            revert InvalidCommandType(command);
+            if (command == Commands.SEAPORT_SELL_721) {
+                // For seaport ERC721 -> ERC20 / ETH,
+                // offer is ERC20 / ETH
+                // consideration includes ERC721 (+ optional fees but taken from offer)
+
+                // set recipient as 0x0 for router custody, or user's EOA
+                (success, output) = approveAndSell721(inputs, SEAPORT);
+            } else if (command == Commands.SEAPORT_SELL_1155) {
+                // TODO:
+            } else {
+                // placeholder area for commands 0x22-0x3f
+                revert InvalidCommandType(command);
+            }
         }
     }
 
@@ -188,6 +199,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
             abi.decode(inputs, (bytes, address, address, uint256, address));
 
         // this approval is auto-wiped when the token is transferred
+        // TODO: can we save gas here by not approving if router already owns the NFT? i.e. ERC20 -> NFT -> ETH
         ERC721(token).approve(spender, id);
 
         (success, output) = protocol.call(data);
@@ -195,6 +207,27 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
         // if the sale was not successful, return the NFT to the requested address
         // TODO could separate this out into a sweep?
         if (!success) ERC721(token).transferFrom(address(this), returnAddress, id);
+    }
+
+    function approveAndSell1155(bytes memory inputs, address protocol)
+        internal
+        returns (bool success, bytes memory output)
+    {
+        (bytes memory data, address token, address spender, uint256 id, uint256 amount, address returnAddress) =
+            abi.decode(inputs, (bytes, address, address, uint256, uint256, address));
+
+        ERC1155(token).setApprovalForAll(spender, true);
+
+        (success, output) = protocol.call(data);
+
+        // Revoke approval
+        // TODO: is this correct?
+        ERC1155(token).setApprovalForAll(spender, false);
+
+        // if the sale was not successful, return the NFT to the requested address
+        // TODO could separate this out into a sweep?
+        if (!success) Payments.sweepERC1155(token, returnAddress.map(), id, amount);
+        // if (!success) ERC1155(token).safeTransferFrom(address(this), returnAddress, id, amount, new bytes(0));
     }
 
     /// @notice Performs a call to purchase an ERC721, then transfers the ERC721 to a specified recipient
