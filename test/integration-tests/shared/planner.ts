@@ -38,6 +38,8 @@ export enum CommandType {
   FOUNDATION = 0x1c,
   SWEEP_ERC1155 = 0x1d,
   SUDOSWAP_SELL = 0x1e,
+
+  SEAPORT_SELL_721 = 0x20
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -93,6 +95,7 @@ const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.NFT20]: ['uint256', 'bytes'],
   [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
   [CommandType.SUDOSWAP_SELL]: ['bytes', 'address', 'address', 'uint256', 'address'],
+  [CommandType.SEAPORT_SELL_721]: ['uint256', 'bytes']
 }
 
 export class RoutePlanner {
