@@ -95,7 +95,7 @@ const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.NFT20]: ['uint256', 'bytes'],
   [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
   [CommandType.SUDOSWAP_SELL]: ['bytes', 'address', 'address', 'uint256', 'address'],
-  [CommandType.SEAPORT_SELL_721]: ['uint256', 'bytes']
+  [CommandType.SEAPORT_SELL_721]: ['bytes', 'address', 'address', 'uint256', 'address'],
 }
 
 export class RoutePlanner {
