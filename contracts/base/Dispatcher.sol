@@ -184,6 +184,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                 (success, output) = approveAndSell721(inputs, SEAPORT);
             } else if (command == Commands.SEAPORT_SELL_1155) {
                 // TODO:
+                revert InvalidCommandType(command);
             } else {
                 // placeholder area for commands 0x22-0x3f
                 revert InvalidCommandType(command);

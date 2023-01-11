@@ -9,14 +9,15 @@ import {
   purchaseDataForTwoCovensSeaport,
 } from './shared/protocolHelpers/seaport'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
-import { COVEN_721, resetFork, TUBBY_721 } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, OPENSEA_CONDUIT_KEY } from './shared/constants'
+import { COVEN_721, resetFork } from './shared/mainnetForkHelpers'
+import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
+import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, OPENSEA_CONDUIT_KEY, TUBBY_ADDRESS } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { getTxGasSpent } from './shared/helpers'
 const { ethers } = hre
 
-describe('Seaport', () => {
+describe.only('Seaport', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
@@ -142,23 +143,20 @@ describe('Seaport', () => {
     ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")')
   })
 
-  it('Seaport SELL 721', async () => {
+  describe.only('Seaport SELL 721', async () => {
     let tubbyCats: ERC721
-    let tubbyCatOwner: SignerWithAddress
-    const tubbyCatOwnerAddress = "0x5FE038640E440006e1002EbE69b22E12C5c055aD"
-
+    
     beforeEach(async () => {
       await resetFork(16385143) // txn is block 16385144
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
-        params: [ALICE_ADDRESS, tubbyCatOwner],
+        params: [ALICE_ADDRESS],
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
-      tubbyCatOwner = await ethers.getSigner(tubbyCatOwnerAddress)
       permit2 = (await deployPermit2()).connect(alice) as Permit2
       router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
-      tubbyCats = TUBBY_721.connect(alice) as ERC721
+      tubbyCats = new ethers.Contract(TUBBY_ADDRESS, ERC721_ABI) as ERC721
     })
 
     it('accepts an outstanding bid offer in WETH', async () => {
@@ -167,11 +165,17 @@ describe('Seaport', () => {
       const params = advancedOrder.parameters
 
       // transfer nft to alice as tubbyCatOwner
-      const prevTubbyCatOwner = await tubbyCats.ownerOf(19503)
-      await tubbyCats.connect(tubbyCatOwner).transferFrom(prevTubbyCatOwner, alice.address, 19503)
+      const prevTubbyCatOwner = await tubbyCats.connect(alice).ownerOf(19503)
+      await tubbyCats.connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner)).transferFrom(prevTubbyCatOwner, alice.address, 19503)
+      console.log("1st transfer to alice done")
+
+      tubbyCats = tubbyCats.connect(alice)
+
+      expect(await tubbyCats.ownerOf(19503)).to.eq(alice.address)
       
       // put NFT in the router TODO replace with Permit2 721
       await tubbyCats.transferFrom(alice.address, router.address, 19503)
+      console.log("2nd transfer to router done")
 
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
@@ -179,9 +183,14 @@ describe('Seaport', () => {
         OPENSEA_CONDUIT_KEY,
         alice.address,
       ])
+      
+      // console.log(calldata)
 
-      planner.addCommand(CommandType.SEAPORT_SELL_721, [value.toString(), calldata])
+      // need to exand to allow for value.toString() ?
+      planner.addCommand(CommandType.SEAPORT_SELL_721, [calldata, tubbyCats.address, "0x004C00500000aD104D7DBd00e3ae0A5C00560C00", 19503, alice.address])
       const { commands, inputs } = planner
+
+      console.log("inputs", inputs)
 
       const ownerBefore = await tubbyCats.ownerOf(19503) // unable to use identifierOrCriteria here bc there is criteria
       const ethBefore = await ethers.provider.getBalance(alice.address)
@@ -194,7 +203,6 @@ describe('Seaport', () => {
       expect(ownerBefore).to.eq(alice.address)
       expect(ownerAfter.toLowerCase()).to.eq(params.offerer)
       expect(ethDelta.sub(gasSpent)).to.eq(value)
-
     })
   })
 })
