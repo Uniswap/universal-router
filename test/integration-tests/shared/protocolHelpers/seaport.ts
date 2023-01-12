@@ -56,6 +56,19 @@ export type AdvancedOrder = Order & {
   extraData: string // bytes
 }
 
+export enum Side {
+  OFFER,
+  CONSIDERATION
+}
+
+export type CriteriaResovler = {
+  rderIndex: BigNumber
+  side: Side // enum
+  index: BigNumber
+  identifier: BigNumber
+  criteriaProof: string[] // bytes32[]
+}
+
 export function getOrderParams(apiOrder: any): { order: Order; value: BigNumber } {
   delete apiOrder.protocol_data.parameters.counter
   const order = {
@@ -67,7 +80,7 @@ export function getOrderParams(apiOrder: any): { order: Order; value: BigNumber 
 }
 
 // TODO: type criteriaResolvers
-export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: AdvancedOrder; criteriaResolvers: any } {
+export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: AdvancedOrder; criteriaResolvers: CriteriaResovler[] } {
   delete apiOrder.protocol_data.parameters.counter
   const advancedOrder = {
     parameters: apiOrder.protocol_data.parameters,
