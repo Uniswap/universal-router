@@ -29,7 +29,7 @@ import { getTxGasSpent } from './shared/helpers'
 import { ADDRESS_ZERO } from '@uniswap/v3-sdk'
 const { ethers } = hre
 
-describe.only('Seaport', () => {
+describe('Seaport', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
@@ -158,7 +158,7 @@ describe.only('Seaport', () => {
     ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")')
   })
 
-  describe.only('Seaport SELL 721', async () => {
+  describe('Seaport SELL 721', async () => {
     let tubbyCats: ERC721
     let weth: ERC20
 
