@@ -167,6 +167,8 @@ describe.only('Seaport', () => {
       let { advancedOrder, value, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[2])
       const params = advancedOrder.parameters
 
+      const wethReceived = BigNumber.from(advancedOrder.parameters.offer[0].startAmount).sub(value)
+
       // TODO: add helper function to get identifier from criteriaResolvers if exists
 
       // transfer nft to alice as tubbyCatOwner
@@ -175,10 +177,6 @@ describe.only('Seaport', () => {
 
       tubbyCats = tubbyCats.connect(alice)
       expect(await tubbyCats.ownerOf(19503)).to.eq(alice.address)
-      
-      // put NFT in the router TODO replace with Permit2 721
-      await tubbyCats.transferFrom(alice.address, router.address, 19503)
-      expect(await tubbyCats.ownerOf(19503)).to.eq(router.address)
 
       /*
         If the fulfiller does elect to utilize a conduit, 
@@ -192,15 +190,14 @@ describe.only('Seaport', () => {
       // TODO: Hacky, remove later
 
       // send 1 eth from alice to router.address
-      console.log(await ethers.provider.getBalance(alice.address))
       await alice.sendTransaction({ to: router.address, value: ethers.utils.parseEther("1.0") })
-      console.log("sent 1 eth to router")
-      console.log(await ethers.provider.getBalance(router.address))
+      expect(await ethers.provider.getBalance(router.address)).to.eq(ethers.utils.parseEther("1.0"))
+      expect(await weth.connect(alice).balanceOf(alice.address)).to.eq(0)
       // max approve conduit for weth
-      await weth.connect(await ethers.getImpersonatedSigner(router.address)).approve(OPENSEA_CONDUIT, ethers.constants.MaxUint256)
-      console.log("weth approved")
-      const approveAmt = await weth.connect(await ethers.getImpersonatedSigner(router.address)).allowance(router.address, OPENSEA_CONDUIT)
-      console.log("weth allowance", approveAmt.toString())
+      const routerSigner = await ethers.getImpersonatedSigner(router.address)
+      await weth.connect(routerSigner).approve(OPENSEA_CONDUIT, ethers.constants.MaxUint256)
+      await weth.connect(routerSigner).allowance(router.address, OPENSEA_CONDUIT)
+      expect(await weth.connect(routerSigner).balanceOf(router.address)).to.eq(0)
 
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
@@ -209,25 +206,35 @@ describe.only('Seaport', () => {
         ETH_ADDRESS // 0 addr
       ])
 
-      console.log(prevTubbyCatOwner, alice.address, router.address)
-      
       // need to exand to allow for value.toString() ?
                                                                                      // operator is opensea conduit addr
       planner.addCommand(CommandType.SEAPORT_SELL_721, [calldata, tubbyCats.address, OPENSEA_CONDUIT, 19503, alice.address])
       planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
       const { commands, inputs } = planner
 
-      const ownerBefore = await tubbyCats.ownerOf(19503) // unable to use identifierOrCriteria here bc there is criteria
+      const ownerBefore = await tubbyCats.ownerOf(19503)
+      const wethBefore = await weth.connect(alice).balanceOf(alice.address)
+
+      // put NFT in the router TODO replace with Permit2 721
+      await tubbyCats.transferFrom(alice.address, router.address, 19503)
+      expect(await tubbyCats.ownerOf(19503)).to.eq(router.address)
+
       const ethBefore = await ethers.provider.getBalance(alice.address)
       const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
+
       const ownerAfter = await tubbyCats.ownerOf(19503)
+      const wethAfter = await weth.connect(alice).balanceOf(alice.address)
       const ethAfter = await ethers.provider.getBalance(alice.address)
       const gasSpent = getTxGasSpent(receipt)
-      const ethDelta = ethAfter.sub(ethBefore)
+      const ethDelta = ethBefore.sub(ethAfter)
+
+      console.log(gasSpent.toString(), value.toString())
 
       expect(ownerBefore).to.eq(alice.address)
-      expect(ownerAfter.toLowerCase()).to.eq(params.offerer)
-      expect(ethDelta.sub(gasSpent)).to.eq(value)
+      expect(ownerAfter.toLowerCase()).to.eq(params.offerer.toLowerCase())
+      expect(wethAfter.sub(wethBefore)).to.eq(wethReceived)
+      // this is failing, fix after figure out what to do about router weth approval
+      expect(ethDelta).to.eq(gasSpent)
     })
   })
 })

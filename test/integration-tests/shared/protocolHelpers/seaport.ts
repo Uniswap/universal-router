@@ -72,6 +72,7 @@ export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: Advanced
   return { advancedOrder, value, criteriaResolvers }
 }
 
+// TODO: add another helper to calculate when we are receiving the offer and the consideration is subtracted from offer
 export function calculateValue(considerations: ConsiderationItem[]): BigNumber {
   return considerations.reduce(
     (amt: BigNumber, consideration: ConsiderationItem) => amt.add(consideration.startAmount),
