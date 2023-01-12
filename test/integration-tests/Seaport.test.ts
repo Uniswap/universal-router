@@ -173,6 +173,8 @@ describe.only('Seaport', () => {
       const value = calculateValue(advancedOrder.parameters.consideration, [ItemType.ERC20])
       const params = advancedOrder.parameters
 
+      console.log(value.toString())
+
       const wethReceived = BigNumber.from(advancedOrder.parameters.offer[0].startAmount).sub(value)
 
       // TODO: add helper function to get identifier from criteriaResolvers if exists

@@ -85,8 +85,8 @@ export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: Advanced
 export function calculateValue(considerations: ConsiderationItem[], itemTypes?: ItemType[]): BigNumber {
   if (itemTypes) {
     // filter out all consideration items not in itemTypes
-    considerations = considerations.filter((consideration: ConsiderationItem) =>
-      itemTypes.includes(consideration.itemType.toNumber())
+    considerations = considerations.filter((consideration: ConsiderationItem) => 
+      itemTypes.includes(BigNumber.from(consideration.itemType).toNumber())
     )
   }
   return considerations.reduce(
@@ -108,7 +108,7 @@ export function purchaseDataForTwoCovensSeaport(receipient: string): BuyCovensRe
   const { advancedOrder: advancedOrder1 } = getAdvancedOrderParams(seaportOrders[1])
   const value2 = calculateValue(advancedOrder0.parameters.consideration)
   const value = value1.add(value2)
-  
+
   const considerationFulfillment = [
     [[0, 0]],
     [
