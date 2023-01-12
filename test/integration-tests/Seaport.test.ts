@@ -41,12 +41,12 @@ describe.only('Seaport', () => {
   })
 
   it('completes a fulfillAdvancedOrder type', async () => {
-    const { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
+    const { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[0])
     const value = calculateValue(advancedOrder.parameters.consideration)
     const params = advancedOrder.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
-      [],
+      criteriaResolvers,
       OPENSEA_CONDUIT_KEY,
       alice.address,
     ])
@@ -68,12 +68,12 @@ describe.only('Seaport', () => {
   })
 
   it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
-    let { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
+    let { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[0])
     let value = calculateValue(advancedOrder.parameters.consideration)
     const params = advancedOrder.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
-      [],
+      criteriaResolvers,
       OPENSEA_CONDUIT_KEY,
       alice.address,
     ])
@@ -149,7 +149,7 @@ describe.only('Seaport', () => {
     ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")')
   })
 
-  describe.only('Seaport SELL 721', async () => {
+  describe('Seaport SELL 721', async () => {
     let tubbyCats: ERC721
     let weth: ERC20
     
@@ -172,19 +172,18 @@ describe.only('Seaport', () => {
       let { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[2])
       const value = calculateValue(advancedOrder.parameters.consideration, [ItemType.ERC20])
       const params = advancedOrder.parameters
-
-      console.log(value.toString())
+      const id = criteriaResolvers[0].identifier
 
       const wethReceived = BigNumber.from(advancedOrder.parameters.offer[0].startAmount).sub(value)
 
       // TODO: add helper function to get identifier from criteriaResolvers if exists
 
       // transfer nft to alice as tubbyCatOwner
-      const prevTubbyCatOwner = await tubbyCats.connect(alice).ownerOf(19503)
-      await tubbyCats.connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner)).transferFrom(prevTubbyCatOwner, alice.address, 19503)
+      const prevTubbyCatOwner = await tubbyCats.connect(alice).ownerOf(id)
+      await tubbyCats.connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner)).transferFrom(prevTubbyCatOwner, alice.address, id)
 
       tubbyCats = tubbyCats.connect(alice)
-      expect(await tubbyCats.ownerOf(19503)).to.eq(alice.address)
+      expect(await tubbyCats.ownerOf(id)).to.eq(alice.address)
 
       /*
         If the fulfiller does elect to utilize a conduit, 
@@ -215,22 +214,22 @@ describe.only('Seaport', () => {
 
       // need to exand to allow for value.toString() ?
                                                                                      // operator is opensea conduit addr
-      planner.addCommand(CommandType.SEAPORT_SELL_721, [calldata, tubbyCats.address, OPENSEA_CONDUIT, 19503, alice.address])
+      planner.addCommand(CommandType.SEAPORT_SELL_721, [calldata, tubbyCats.address, OPENSEA_CONDUIT, id, alice.address])
       planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
       const { commands, inputs } = planner
 
-      const ownerBefore = await tubbyCats.ownerOf(19503)
+      const ownerBefore = await tubbyCats.ownerOf(id)
       const wethBefore = await weth.connect(alice).balanceOf(alice.address)
       expect(wethBefore).to.eq(0)
 
       // put NFT in the router TODO replace with Permit2 721
-      await tubbyCats.transferFrom(alice.address, router.address, 19503)
-      expect(await tubbyCats.ownerOf(19503)).to.eq(router.address)
+      await tubbyCats.transferFrom(alice.address, router.address, id)
+      expect(await tubbyCats.ownerOf(id)).to.eq(router.address)
 
       const ethBefore = await ethers.provider.getBalance(alice.address)
       const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
 
-      const ownerAfter = await tubbyCats.ownerOf(19503)
+      const ownerAfter = await tubbyCats.ownerOf(id)
       const wethAfter = await weth.connect(alice).balanceOf(alice.address)
       const ethAfter = await ethers.provider.getBalance(alice.address)
       const gasSpent = getTxGasSpent(receipt)
