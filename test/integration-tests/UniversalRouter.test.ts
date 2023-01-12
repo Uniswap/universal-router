@@ -26,6 +26,7 @@ import {
   getAdvancedOrderParams,
   AdvancedOrder,
   Order,
+  calculateValue,
 } from './shared/protocolHelpers/seaport'
 import { resetFork, WETH, DAI, COVEN_721 } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
@@ -223,7 +224,8 @@ describe('UniversalRouter', () => {
       let value: BigNumber
 
       beforeEach(async () => {
-        ;({ advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0]))
+        ;({ advancedOrder } = getAdvancedOrderParams(seaportOrders[0]))
+        value = calculateValue(advancedOrder.parameters.consideration)
       })
 
       it('completes a trade for ERC20 --> ETH --> Seaport NFT', async () => {

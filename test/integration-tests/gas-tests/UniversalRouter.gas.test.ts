@@ -20,6 +20,7 @@ import {
   seaportInterface,
   getAdvancedOrderParams,
   AdvancedOrder,
+  calculateValue,
 } from '../shared/protocolHelpers/seaport'
 import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from '../shared/planner'
@@ -56,7 +57,8 @@ describe('UniversalRouter Gas Tests', () => {
     let value: BigNumber
 
     beforeEach(async () => {
-      ;({ advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0]))
+      ;({ advancedOrder } = getAdvancedOrderParams(seaportOrders[0]))
+      value = calculateValue(advancedOrder.parameters.consideration)
       await daiContract.approve(permit2.address, MAX_UINT)
       await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
     })

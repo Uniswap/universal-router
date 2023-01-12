@@ -1,7 +1,7 @@
 import { CommandType, RoutePlanner } from '../shared/planner'
 import { UniversalRouter, Permit2 } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import { seaportOrders, seaportInterface, getAdvancedOrderParams } from '../shared/protocolHelpers/seaport'
+import { seaportOrders, seaportInterface, getAdvancedOrderParams, calculateValue } from '../shared/protocolHelpers/seaport'
 import { resetFork } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -28,7 +28,8 @@ describe('Seaport Gas Tests', () => {
   })
 
   it('gas: fulfillAdvancedOrder', async () => {
-    const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
+    const { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
+    const value = calculateValue(advancedOrder.parameters.consideration)
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
       [],
@@ -43,9 +44,12 @@ describe('Seaport Gas Tests', () => {
   })
 
   it('gas: fulfillAvailableAdvancedOrders 1 orders', async () => {
-    const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
-    const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
+    const { advancedOrder: advancedOrder0 } = getAdvancedOrderParams(seaportOrders[0])
+    const value1 = calculateValue(advancedOrder0.parameters.consideration)
+    const { advancedOrder: advancedOrder1 } = getAdvancedOrderParams(seaportOrders[1])
+    const value2 = calculateValue(advancedOrder0.parameters.consideration)
     const value = value1.add(value2)
+    
     const considerationFulfillment = [
       [[0, 0]],
       [

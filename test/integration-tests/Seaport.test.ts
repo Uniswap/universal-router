@@ -8,6 +8,7 @@ import {
   getAdvancedOrderParams,
   purchaseDataForTwoCovensSeaport,
   calculateValue,
+  ItemType,
 } from './shared/protocolHelpers/seaport'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { COVEN_721, resetFork, WETH } from './shared/mainnetForkHelpers'
@@ -169,7 +170,7 @@ describe.only('Seaport', () => {
     it('accepts an outstanding bid offer in WETH', async () => {
       // https://etherscan.io/tx/0x74551f604adea1c456395a8e801bb063bbec385bdebbc025a75e0605910f493c
       let { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[2])
-      const value = calculateValue(advancedOrder.parameters.consideration)
+      const value = calculateValue(advancedOrder.parameters.consideration, [ItemType.ERC20])
       const params = advancedOrder.parameters
 
       const wethReceived = BigNumber.from(advancedOrder.parameters.offer[0].startAmount).sub(value)

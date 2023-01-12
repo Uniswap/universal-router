@@ -6,6 +6,7 @@ import {
   seaportInterface,
   getAdvancedOrderParams,
   purchaseDataForTwoCovensSeaport,
+  calculateValue,
 } from './../shared/protocolHelpers/seaport'
 import { resetFork } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './../shared/constants'
@@ -33,7 +34,8 @@ describe('Check Ownership Gas', () => {
   })
 
   it('gas: does not check ownership after a seaport trade, one NFT', async () => {
-    const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
+    const { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
+    const value = calculateValue(advancedOrder.parameters.consideration)
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
       [],
@@ -48,7 +50,8 @@ describe('Check Ownership Gas', () => {
   })
 
   it('gas: checks ownership after a seaport trade, one NFT', async () => {
-    const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
+    const { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
+    const value = calculateValue(advancedOrder.parameters.consideration)
     const params = advancedOrder.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
