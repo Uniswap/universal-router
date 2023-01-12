@@ -7,6 +7,7 @@ import {
   seaportInterface,
   getAdvancedOrderParams,
   purchaseDataForTwoCovensSeaport,
+  calculateValue,
 } from './shared/protocolHelpers/seaport'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { COVEN_721, resetFork, WETH } from './shared/mainnetForkHelpers'
@@ -39,7 +40,8 @@ describe.only('Seaport', () => {
   })
 
   it('completes a fulfillAdvancedOrder type', async () => {
-    const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
+    const { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
+    const value = calculateValue(advancedOrder.parameters.consideration)
     const params = advancedOrder.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
@@ -65,7 +67,8 @@ describe.only('Seaport', () => {
   })
 
   it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
-    let { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
+    let { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
+    let value = calculateValue(advancedOrder.parameters.consideration)
     const params = advancedOrder.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
@@ -127,7 +130,8 @@ describe.only('Seaport', () => {
   it('reverts if order does not go through', async () => {
     let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
     invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
-    const { advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder)
+    const { advancedOrder: seaportOrder } = getAdvancedOrderParams(invalidSeaportOrder)
+    const seaportValue = calculateValue(seaportOrder.parameters.consideration)
 
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       seaportOrder,
@@ -164,7 +168,8 @@ describe.only('Seaport', () => {
 
     it('accepts an outstanding bid offer in WETH', async () => {
       // https://etherscan.io/tx/0x74551f604adea1c456395a8e801bb063bbec385bdebbc025a75e0605910f493c
-      let { advancedOrder, value, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[2])
+      let { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[2])
+      const value = calculateValue(advancedOrder.parameters.consideration)
       const params = advancedOrder.parameters
 
       const wethReceived = BigNumber.from(advancedOrder.parameters.offer[0].startAmount).sub(value)
@@ -192,7 +197,6 @@ describe.only('Seaport', () => {
       // send 1 eth from alice to router.address
       await alice.sendTransaction({ to: router.address, value: ethers.utils.parseEther("1.0") })
       expect(await ethers.provider.getBalance(router.address)).to.eq(ethers.utils.parseEther("1.0"))
-      expect(await weth.connect(alice).balanceOf(alice.address)).to.eq(0)
       // max approve conduit for weth
       const routerSigner = await ethers.getImpersonatedSigner(router.address)
       await weth.connect(routerSigner).approve(OPENSEA_CONDUIT, ethers.constants.MaxUint256)
@@ -214,6 +218,7 @@ describe.only('Seaport', () => {
 
       const ownerBefore = await tubbyCats.ownerOf(19503)
       const wethBefore = await weth.connect(alice).balanceOf(alice.address)
+      expect(wethBefore).to.eq(0)
 
       // put NFT in the router TODO replace with Permit2 721
       await tubbyCats.transferFrom(alice.address, router.address, 19503)

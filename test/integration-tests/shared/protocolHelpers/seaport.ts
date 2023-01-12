@@ -11,6 +11,15 @@ export const seaportOrders = JSON.parse(
 )
 export const seaportInterface = new ethers.utils.Interface(SEAPORT_ABI)
 
+export enum ItemType {
+  NATIVE = 0,
+  ERC20 = 1,
+  ERC721 = 2,
+  ERC1155 = 3,
+  ERC721_WITH_CRITERIA = 4,
+  ERC1155_WITH_CRITERIA = 5
+}
+
 export type OfferItem = {
   itemType: BigNumber // enum
   token: string // address
@@ -57,7 +66,8 @@ export function getOrderParams(apiOrder: any): { order: Order; value: BigNumber 
   return { order, value }
 }
 
-export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: AdvancedOrder; value: BigNumber, criteriaResolvers: any } {
+// TODO: type criteriaResolvers
+export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: AdvancedOrder; criteriaResolvers: any } {
   delete apiOrder.protocol_data.parameters.counter
   const advancedOrder = {
     parameters: apiOrder.protocol_data.parameters,
@@ -68,12 +78,17 @@ export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: Advanced
   }
   // TODO: this may not fit the actual schema of the OS apiOrder. Verify after get access
   const criteriaResolvers = "criteriaResolvers" in apiOrder.protocol_data ? apiOrder.protocol_data.criteriaResolvers : []
-  const value = calculateValue(apiOrder.protocol_data.parameters.consideration)
-  return { advancedOrder, value, criteriaResolvers }
+  return { advancedOrder, criteriaResolvers }
 }
 
 // TODO: add another helper to calculate when we are receiving the offer and the consideration is subtracted from offer
-export function calculateValue(considerations: ConsiderationItem[]): BigNumber {
+export function calculateValue(considerations: ConsiderationItem[], itemTypes?: ItemType[]): BigNumber {
+  if (itemTypes) {
+    // filter out all consideration items not in itemTypes
+    considerations = considerations.filter((consideration: ConsiderationItem) =>
+      itemTypes.includes(consideration.itemType.toNumber())
+    )
+  }
   return considerations.reduce(
     (amt: BigNumber, consideration: ConsiderationItem) => amt.add(consideration.startAmount),
     expandTo18DecimalsBN(0)
@@ -88,9 +103,12 @@ type BuyCovensReturnData = {
 }
 
 export function purchaseDataForTwoCovensSeaport(receipient: string): BuyCovensReturnData {
-  const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
-  const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
+  const { advancedOrder: advancedOrder0 } = getAdvancedOrderParams(seaportOrders[0])
+  const value1 = calculateValue(advancedOrder0.parameters.consideration)
+  const { advancedOrder: advancedOrder1 } = getAdvancedOrderParams(seaportOrders[1])
+  const value2 = calculateValue(advancedOrder0.parameters.consideration)
   const value = value1.add(value2)
+  
   const considerationFulfillment = [
     [[0, 0]],
     [
