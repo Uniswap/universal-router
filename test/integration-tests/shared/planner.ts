@@ -39,7 +39,7 @@ export enum CommandType {
   SWEEP_ERC1155 = 0x1d,
   SUDOSWAP_SELL = 0x1e,
 
-  SEAPORT_SELL_721 = 0x20
+  SEAPORT_SELL_721 = 0x20,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -55,7 +55,7 @@ const REVERTABLE_COMMANDS = new Set<CommandType>([
   CommandType.SUDOSWAP,
   CommandType.NFT20,
   CommandType.SUDOSWAP_SELL,
-  CommandType.SEAPORT_SELL_721
+  CommandType.SEAPORT_SELL_721,
 ])
 
 const PERMIT_STRUCT =

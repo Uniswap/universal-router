@@ -17,7 +17,7 @@ export enum ItemType {
   ERC721 = 2,
   ERC1155 = 3,
   ERC721_WITH_CRITERIA = 4,
-  ERC1155_WITH_CRITERIA = 5
+  ERC1155_WITH_CRITERIA = 5,
 }
 
 export type OfferItem = {
@@ -58,7 +58,7 @@ export type AdvancedOrder = Order & {
 
 export enum Side {
   OFFER,
-  CONSIDERATION
+  CONSIDERATION,
 }
 
 export type CriteriaResovler = {
@@ -80,7 +80,10 @@ export function getOrderParams(apiOrder: any): { order: Order; value: BigNumber 
 }
 
 // TODO: type criteriaResolvers
-export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: AdvancedOrder; criteriaResolvers: CriteriaResovler[] } {
+export function getAdvancedOrderParams(apiOrder: any): {
+  advancedOrder: AdvancedOrder
+  criteriaResolvers: CriteriaResovler[]
+} {
   delete apiOrder.protocol_data.parameters.counter
   const advancedOrder = {
     parameters: apiOrder.protocol_data.parameters,
@@ -90,7 +93,8 @@ export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: Advanced
     extraData: '0x00',
   }
   // TODO: this may not fit the actual schema of the OS apiOrder. Verify after get access
-  const criteriaResolvers = "criteriaResolvers" in apiOrder.protocol_data ? apiOrder.protocol_data.criteriaResolvers : []
+  const criteriaResolvers =
+    'criteriaResolvers' in apiOrder.protocol_data ? apiOrder.protocol_data.criteriaResolvers : []
   return { advancedOrder, criteriaResolvers }
 }
 
@@ -98,7 +102,7 @@ export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: Advanced
 export function calculateValue(considerations: ConsiderationItem[], itemTypes?: ItemType[]): BigNumber {
   if (itemTypes) {
     // filter out all consideration items not in itemTypes
-    considerations = considerations.filter((consideration: ConsiderationItem) => 
+    considerations = considerations.filter((consideration: ConsiderationItem) =>
       itemTypes.includes(BigNumber.from(consideration.itemType).toNumber())
     )
   }

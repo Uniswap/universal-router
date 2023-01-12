@@ -14,7 +14,15 @@ import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRo
 import { COVEN_721, resetFork, WETH } from './shared/mainnetForkHelpers'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC20_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, MSG_SENDER, OPENSEA_CONDUIT, OPENSEA_CONDUIT_KEY, TUBBY_ADDRESS } from './shared/constants'
+import {
+  ALICE_ADDRESS,
+  DEADLINE,
+  ETH_ADDRESS,
+  MSG_SENDER,
+  OPENSEA_CONDUIT,
+  OPENSEA_CONDUIT_KEY,
+  TUBBY_ADDRESS,
+} from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { getTxGasSpent } from './shared/helpers'
@@ -153,7 +161,7 @@ describe.only('Seaport', () => {
   describe.only('Seaport SELL 721', async () => {
     let tubbyCats: ERC721
     let weth: ERC20
-    
+
     beforeEach(async () => {
       await resetFork(16385143) // txn is block 16385144
       await hre.network.provider.request({
@@ -168,8 +176,8 @@ describe.only('Seaport', () => {
       weth = new ethers.Contract(WETH.address, ERC20_ABI) as ERC20
 
       // send 1 eth from alice to router.address for weth approval
-      await alice.sendTransaction({ to: router.address, value: ethers.utils.parseEther("1.0") })
-      expect(await ethers.provider.getBalance(router.address)).to.eq(ethers.utils.parseEther("1.0"))
+      await alice.sendTransaction({ to: router.address, value: ethers.utils.parseEther('1.0') })
+      expect(await ethers.provider.getBalance(router.address)).to.eq(ethers.utils.parseEther('1.0'))
       // max approve conduit for weth
       const routerSigner = await ethers.getImpersonatedSigner(router.address)
       await weth.connect(routerSigner).approve(OPENSEA_CONDUIT, ethers.constants.MaxUint256)
@@ -187,7 +195,9 @@ describe.only('Seaport', () => {
       const id = criteriaResolvers[0].identifier
       // transfer nft to alice as tubbyCatOwner
       const prevTubbyCatOwner = await tubbyCats.connect(alice).ownerOf(id)
-      await tubbyCats.connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner)).transferFrom(prevTubbyCatOwner, alice.address, id)
+      await tubbyCats
+        .connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner))
+        .transferFrom(prevTubbyCatOwner, alice.address, id)
 
       const wethReceived = BigNumber.from(advancedOrder.parameters.offer[0].startAmount).sub(value)
 
@@ -199,11 +209,17 @@ describe.only('Seaport', () => {
         advancedOrder,
         criteriaResolvers,
         OPENSEA_CONDUIT_KEY,
-        ADDRESS_ZERO // 0 addr so router custody
+        ADDRESS_ZERO, // 0 addr so router custody
       ])
 
       // TODO: need to add arg for msg.value?
-      planner.addCommand(CommandType.SEAPORT_SELL_721, [calldata, tubbyCats.address, OPENSEA_CONDUIT, id, alice.address])
+      planner.addCommand(CommandType.SEAPORT_SELL_721, [
+        calldata,
+        tubbyCats.address,
+        OPENSEA_CONDUIT,
+        id,
+        alice.address,
+      ])
       planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
       const { commands, inputs } = planner
 
@@ -215,7 +231,7 @@ describe.only('Seaport', () => {
 
       const ethBefore = await ethers.provider.getBalance(alice.address)
       // Send no value here bc not sending ETH
-      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { })).wait()
+      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).wait()
 
       const ownerAfter = await tubbyCats.ownerOf(id)
       const wethAfter = await weth.connect(alice).balanceOf(alice.address)
@@ -234,22 +250,28 @@ describe.only('Seaport', () => {
       const id = criteriaResolvers[0].identifier
       // transfer nft to alice as tubbyCatOwner
       const prevTubbyCatOwner = await tubbyCats.connect(alice).ownerOf(id)
-      await tubbyCats.connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner)).transferFrom(prevTubbyCatOwner, alice.address, id)      
+      await tubbyCats
+        .connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner))
+        .transferFrom(prevTubbyCatOwner, alice.address, id)
       tubbyCats = tubbyCats.connect(alice)
       const ownerBefore = await tubbyCats.ownerOf(id)
       expect(ownerBefore).to.eq(alice.address)
 
       // Signature is invalid
-      advancedOrder.signature = "0xdeadbeef"
+      advancedOrder.signature = '0xdeadbeef'
 
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
         criteriaResolvers,
         OPENSEA_CONDUIT_KEY,
-        ADDRESS_ZERO // 0 addr so router custody
+        ADDRESS_ZERO, // 0 addr so router custody
       ])
 
-      planner.addCommand(CommandType.SEAPORT_SELL_721, [calldata, tubbyCats.address, OPENSEA_CONDUIT, id, alice.address], true)
+      planner.addCommand(
+        CommandType.SEAPORT_SELL_721,
+        [calldata, tubbyCats.address, OPENSEA_CONDUIT, id, alice.address],
+        true
+      )
       planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
       const { commands, inputs } = planner
 
@@ -259,7 +281,7 @@ describe.only('Seaport', () => {
       const wethBefore = await weth.connect(alice).balanceOf(alice.address)
       expect(wethBefore).to.eq(0)
       const ethBefore = await ethers.provider.getBalance(alice.address)
-      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { })).wait()
+      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).wait()
 
       const ownerAfter = await tubbyCats.ownerOf(id)
       const wethAfter = await weth.connect(alice).balanceOf(alice.address)
@@ -278,22 +300,30 @@ describe.only('Seaport', () => {
       const id = criteriaResolvers[0].identifier
       // transfer nft to alice as tubbyCatOwner
       const prevTubbyCatOwner = await tubbyCats.connect(alice).ownerOf(id)
-      await tubbyCats.connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner)).transferFrom(prevTubbyCatOwner, alice.address, id)      
+      await tubbyCats
+        .connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner))
+        .transferFrom(prevTubbyCatOwner, alice.address, id)
       tubbyCats = tubbyCats.connect(alice)
       const ownerBefore = await tubbyCats.ownerOf(id)
       expect(ownerBefore).to.eq(alice.address)
 
       // Signature is invalid
-      advancedOrder.signature = "0xdeadbeef"
+      advancedOrder.signature = '0xdeadbeef'
 
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
         criteriaResolvers,
         OPENSEA_CONDUIT_KEY,
-        ADDRESS_ZERO // 0 addr so router custody
+        ADDRESS_ZERO, // 0 addr so router custody
       ])
 
-      planner.addCommand(CommandType.SEAPORT_SELL_721, [calldata, tubbyCats.address, OPENSEA_CONDUIT, id, alice.address])
+      planner.addCommand(CommandType.SEAPORT_SELL_721, [
+        calldata,
+        tubbyCats.address,
+        OPENSEA_CONDUIT,
+        id,
+        alice.address,
+      ])
       planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
       const { commands, inputs } = planner
 
@@ -302,9 +332,9 @@ describe.only('Seaport', () => {
 
       const wethBefore = await weth.connect(alice).balanceOf(alice.address)
       expect(wethBefore).to.eq(0)
-      await expect(
-        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { })
-      ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")')
+      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).to.be.revertedWith(
+        'ExecutionFailed(0, "0x8baa579f")'
+      )
 
       // Note that owner here will be the router because the transfer from alice was not part of the commands
       // TODO: check this again after permit2 transfer to ensure that NFT is returned

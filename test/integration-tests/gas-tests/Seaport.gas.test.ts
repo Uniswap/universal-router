@@ -1,7 +1,12 @@
 import { CommandType, RoutePlanner } from '../shared/planner'
 import { UniversalRouter, Permit2 } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import { seaportOrders, seaportInterface, getAdvancedOrderParams, calculateValue } from '../shared/protocolHelpers/seaport'
+import {
+  seaportOrders,
+  seaportInterface,
+  getAdvancedOrderParams,
+  calculateValue,
+} from '../shared/protocolHelpers/seaport'
 import { resetFork } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -49,7 +54,7 @@ describe('Seaport Gas Tests', () => {
     const { advancedOrder: advancedOrder1 } = getAdvancedOrderParams(seaportOrders[1])
     const value2 = calculateValue(advancedOrder0.parameters.consideration)
     const value = value1.add(value2)
-    
+
     const considerationFulfillment = [
       [[0, 0]],
       [
