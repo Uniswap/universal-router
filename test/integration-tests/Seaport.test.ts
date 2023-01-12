@@ -183,24 +183,23 @@ describe.only('Seaport', () => {
       const value = calculateValue(advancedOrder.parameters.consideration, [ItemType.ERC20])
       const params = advancedOrder.parameters
       // Can add logic to select approval target (conduit or consideration) depending on conduitHash
-      const id = criteriaResolvers[0].identifier
-
-      const wethReceived = BigNumber.from(advancedOrder.parameters.offer[0].startAmount).sub(value)
-
       // TODO: add helper function to get identifier from criteriaResolvers if exists
-
+      const id = criteriaResolvers[0].identifier
       // transfer nft to alice as tubbyCatOwner
       const prevTubbyCatOwner = await tubbyCats.connect(alice).ownerOf(id)
       await tubbyCats.connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner)).transferFrom(prevTubbyCatOwner, alice.address, id)
 
+      const wethReceived = BigNumber.from(advancedOrder.parameters.offer[0].startAmount).sub(value)
+
       tubbyCats = tubbyCats.connect(alice)
-      expect(await tubbyCats.ownerOf(id)).to.eq(alice.address)
+      const ownerBefore = await tubbyCats.ownerOf(id)
+      expect(ownerBefore).to.eq(alice.address)
 
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
         criteriaResolvers,
         OPENSEA_CONDUIT_KEY,
-        ADDRESS_ZERO // 0 addr
+        ADDRESS_ZERO // 0 addr so router custody
       ])
 
       // TODO: need to add arg for msg.value?
@@ -208,7 +207,6 @@ describe.only('Seaport', () => {
       planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
       const { commands, inputs } = planner
 
-      const ownerBefore = await tubbyCats.ownerOf(id)
       const wethBefore = await weth.connect(alice).balanceOf(alice.address)
       expect(wethBefore).to.eq(0)
       // put NFT in the router TODO replace with Permit2 721
@@ -225,13 +223,91 @@ describe.only('Seaport', () => {
       const gasSpent = getTxGasSpent(receipt)
       const ethDelta = ethBefore.sub(ethAfter)
 
-      console.log(gasSpent.toString(), value.toString())
-
       expect(ownerBefore).to.eq(alice.address)
       expect(ownerAfter.toLowerCase()).to.eq(params.offerer.toLowerCase())
       expect(wethAfter.sub(wethBefore)).to.eq(wethReceived)
-      // this is failing, fix after figure out what to do about router weth approval
       expect(ethDelta).to.eq(gasSpent)
+    })
+
+    it('revertable order returns NFT to user if reverts', async () => {
+      let { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[2])
+      const id = criteriaResolvers[0].identifier
+      // transfer nft to alice as tubbyCatOwner
+      const prevTubbyCatOwner = await tubbyCats.connect(alice).ownerOf(id)
+      await tubbyCats.connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner)).transferFrom(prevTubbyCatOwner, alice.address, id)      
+      tubbyCats = tubbyCats.connect(alice)
+      const ownerBefore = await tubbyCats.ownerOf(id)
+      expect(ownerBefore).to.eq(alice.address)
+
+      // Signature is invalid
+      advancedOrder.signature = "0xdeadbeef"
+
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+        advancedOrder,
+        criteriaResolvers,
+        OPENSEA_CONDUIT_KEY,
+        ADDRESS_ZERO // 0 addr so router custody
+      ])
+
+      planner.addCommand(CommandType.SEAPORT_SELL_721, [calldata, tubbyCats.address, OPENSEA_CONDUIT, id, alice.address], true)
+      planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
+      const { commands, inputs } = planner
+
+      // TODO: replace with permit2 transfer
+      await tubbyCats.transferFrom(alice.address, router.address, id)
+
+      const wethBefore = await weth.connect(alice).balanceOf(alice.address)
+      expect(wethBefore).to.eq(0)
+      const ethBefore = await ethers.provider.getBalance(alice.address)
+      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { })).wait()
+
+      const ownerAfter = await tubbyCats.ownerOf(id)
+      const wethAfter = await weth.connect(alice).balanceOf(alice.address)
+      const ethAfter = await ethers.provider.getBalance(alice.address)
+      const gasSpent = getTxGasSpent(receipt)
+      const ethDelta = ethBefore.sub(ethAfter)
+
+      // owner never changed and is alice still
+      expect(ownerBefore).to.eq(ownerAfter)
+      expect(wethAfter.eq(wethBefore)).to.be.true
+      expect(ethDelta).to.eq(gasSpent)
+    })
+
+    it('reverts if order does not go through', async () => {
+      let { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[2])
+      const id = criteriaResolvers[0].identifier
+      // transfer nft to alice as tubbyCatOwner
+      const prevTubbyCatOwner = await tubbyCats.connect(alice).ownerOf(id)
+      await tubbyCats.connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner)).transferFrom(prevTubbyCatOwner, alice.address, id)      
+      tubbyCats = tubbyCats.connect(alice)
+      const ownerBefore = await tubbyCats.ownerOf(id)
+      expect(ownerBefore).to.eq(alice.address)
+
+      // Signature is invalid
+      advancedOrder.signature = "0xdeadbeef"
+
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+        advancedOrder,
+        criteriaResolvers,
+        OPENSEA_CONDUIT_KEY,
+        ADDRESS_ZERO // 0 addr so router custody
+      ])
+
+      planner.addCommand(CommandType.SEAPORT_SELL_721, [calldata, tubbyCats.address, OPENSEA_CONDUIT, id, alice.address])
+      planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
+      const { commands, inputs } = planner
+
+      // TODO: replace with permit2 transfer
+      await tubbyCats.transferFrom(alice.address, router.address, id)
+
+      const wethBefore = await weth.connect(alice).balanceOf(alice.address)
+      expect(wethBefore).to.eq(0)
+      await expect(
+        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { })
+      ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")')
+
+      // Note that owner here will be the router because the transfer from alice was not part of the commands
+      // TODO: check this again after permit2 transfer to ensure that NFT is returned
     })
   })
 })

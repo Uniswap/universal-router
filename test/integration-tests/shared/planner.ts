@@ -55,6 +55,7 @@ const REVERTABLE_COMMANDS = new Set<CommandType>([
   CommandType.SUDOSWAP,
   CommandType.NFT20,
   CommandType.SUDOSWAP_SELL,
+  CommandType.SEAPORT_SELL_721
 ])
 
 const PERMIT_STRUCT =
