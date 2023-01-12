@@ -121,7 +121,6 @@
     "listing_time": 0,
     "expiration_time": 0,
     "order_hash": "",
-    "originalIdentifierOrCriteria": "16588406367537477425218599795464833716033119048584551861598579599278222090202",
     "protocol_data": {
       "parameters": {
         "offerer": "0x082bADAd6c2Ce1faf513839281908832a02DC0b3",
@@ -138,7 +137,7 @@
           {
             "itemType": 4,
             "token": "0xCa7cA7BcC765F77339bE2d648BA53ce9c8a262bD",
-            "identifierOrCriteria": "19503",
+            "identifierOrCriteria": "16588406367537477425218599795464833716033119048584551861598579599278222090202",
             "startAmount": "1",
             "endAmount": "1",
             "recipient": "0x082bADAd6c2Ce1faf513839281908832a02DC0b3"
@@ -170,6 +169,31 @@
         "totalOriginalConsiderationItems": 3,
         "counter": 3
       },
+      "criteriaResolvers": [
+        {
+          "orderIndex": 0, 
+          "side": 1, 
+          "index": 0, 
+          "identifier": 19503, 
+          "criteriaProof": [
+            "0x625bf0c8faf6998d5605212d85a56642d3003be318cae04cf7dd7765a6daa001", 
+            "0x70c08bf91146002d735b07bf48d0b14f27a52a24490b0a94b969900adadccfed", 
+            "0x80b4ab8993d67140a303f9d198f27d77ab666c02c9b1050169face77a909e0e7", 
+            "0xc1bdc79418d5167b31d91c03188dcf5624da9535c7012d67f27fffba4442d4f2", 
+            "0xcf7b0184884f89492d844bebf4352c9f784405937e73e7779d12f0340064d71b", 
+            "0xb51b38b660a88139ca6f5072f144ac9218690774a33e6b026bff8e83f3d44297", 
+            "0x079326c271381b0c428cb78c2c3b780486be325f834d3f12c0a64cf314cb35d4", 
+            "0x0b8b15201cf0f12ee94b0956ee9d4cea20a06ec60f38f4b5dcdeed27ec53e85e", 
+            "0x6acdc81bae9e996ab7b0f30f432be73e5bf0226ee59677d11b489e853cc38bad", 
+            "0x12583c0274b57974086bd498c8e00037cc1abb5bd55ce341023311761cac211f", 
+            "0x6489fe533ef1e64f8e49db6d7e6da307789e8fe1affffeaa0679dd8672abab61", 
+            "0x76b7232bca92fbdac65269c2bb664bf7947bd1796525b8f798cdd2c7930cb430", 
+            "0x8d4ab7bca7baa0957d0e74690ca63532b90e0ed67cf29be67a12e9fc8d0dcb83", 
+            "0xfcb56b33a1951809fa3e8e6346ae6ddcb7dfbe4b1eb6793716672050e61b9e26", 
+            "0xbc94d8d04c495cb65e633581336c547ddc0f338db0cd429a301d5f0d07166648"
+          ]
+        }
+      ],
       "signature": "0x4ed5ef98d1dc94479926ddd37cc7115dd1394906324d4c759399d490d6bf7b4b37d3f8f15b1f3c27d418be90e0245a525ce947328324149e591e7b2f51eb47b51c"
     },
     "protocol_address": "0x00000000006c3852cbef3e08e8df289169ede581"

@@ -57,7 +57,7 @@ export function getOrderParams(apiOrder: any): { order: Order; value: BigNumber 
   return { order, value }
 }
 
-export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: AdvancedOrder; value: BigNumber } {
+export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: AdvancedOrder; value: BigNumber, criteriaResolvers: any } {
   delete apiOrder.protocol_data.parameters.counter
   const advancedOrder = {
     parameters: apiOrder.protocol_data.parameters,
@@ -66,8 +66,10 @@ export function getAdvancedOrderParams(apiOrder: any): { advancedOrder: Advanced
     signature: apiOrder.protocol_data.signature,
     extraData: '0x00',
   }
+  // TODO: this may not fit the actual schema of the OS apiOrder. Verify after get access
+  const criteriaResolvers = "criteriaResolvers" in apiOrder.protocol_data ? apiOrder.protocol_data.criteriaResolvers : []
   const value = calculateValue(apiOrder.protocol_data.parameters.consideration)
-  return { advancedOrder, value }
+  return { advancedOrder, value, criteriaResolvers }
 }
 
 export function calculateValue(considerations: ConsiderationItem[]): BigNumber {
