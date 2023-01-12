@@ -18,6 +18,7 @@ import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, MSG_SENDER, OPENSEA_CONDUIT, OPEN
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { getTxGasSpent } from './shared/helpers'
+import { ADDRESS_ZERO } from '@uniswap/v3-sdk'
 const { ethers } = hre
 
 describe.only('Seaport', () => {
@@ -149,7 +150,7 @@ describe.only('Seaport', () => {
     ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")')
   })
 
-  describe('Seaport SELL 721', async () => {
+  describe.only('Seaport SELL 721', async () => {
     let tubbyCats: ERC721
     let weth: ERC20
     
@@ -165,13 +166,23 @@ describe.only('Seaport', () => {
       planner = new RoutePlanner()
       tubbyCats = new ethers.Contract(TUBBY_ADDRESS, ERC721_ABI) as ERC721
       weth = new ethers.Contract(WETH.address, ERC20_ABI) as ERC20
+
+      // send 1 eth from alice to router.address for weth approval
+      await alice.sendTransaction({ to: router.address, value: ethers.utils.parseEther("1.0") })
+      expect(await ethers.provider.getBalance(router.address)).to.eq(ethers.utils.parseEther("1.0"))
+      // max approve conduit for weth
+      const routerSigner = await ethers.getImpersonatedSigner(router.address)
+      await weth.connect(routerSigner).approve(OPENSEA_CONDUIT, ethers.constants.MaxUint256)
+      await weth.connect(routerSigner).allowance(router.address, OPENSEA_CONDUIT)
+      expect(await weth.connect(routerSigner).balanceOf(router.address)).to.eq(0)
     })
 
-    it('accepts an outstanding bid offer in WETH', async () => {
+    it('accepts an advanced order with criteria offering WETH', async () => {
       // https://etherscan.io/tx/0x74551f604adea1c456395a8e801bb063bbec385bdebbc025a75e0605910f493c
       let { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[2])
       const value = calculateValue(advancedOrder.parameters.consideration, [ItemType.ERC20])
       const params = advancedOrder.parameters
+      // Can add logic to select approval target (conduit or consideration) depending on conduitHash
       const id = criteriaResolvers[0].identifier
 
       const wethReceived = BigNumber.from(advancedOrder.parameters.offer[0].startAmount).sub(value)
@@ -185,35 +196,14 @@ describe.only('Seaport', () => {
       tubbyCats = tubbyCats.connect(alice)
       expect(await tubbyCats.ownerOf(id)).to.eq(alice.address)
 
-      /*
-        If the fulfiller does elect to utilize a conduit, 
-        they need to have sufficient approvals set for their respective conduit for all ERC20, ERC721, and ERC1155 
-        consideration items on the fulfilled order.
-
-        1. either have the recipient (alice) receive offer, and require them to approve the conduit
-        2. or have a max approval on the router for the conduit and sweep the offered item back to recipient on success
-      */
-
-      // TODO: Hacky, remove later
-
-      // send 1 eth from alice to router.address
-      await alice.sendTransaction({ to: router.address, value: ethers.utils.parseEther("1.0") })
-      expect(await ethers.provider.getBalance(router.address)).to.eq(ethers.utils.parseEther("1.0"))
-      // max approve conduit for weth
-      const routerSigner = await ethers.getImpersonatedSigner(router.address)
-      await weth.connect(routerSigner).approve(OPENSEA_CONDUIT, ethers.constants.MaxUint256)
-      await weth.connect(routerSigner).allowance(router.address, OPENSEA_CONDUIT)
-      expect(await weth.connect(routerSigner).balanceOf(router.address)).to.eq(0)
-
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
         criteriaResolvers,
         OPENSEA_CONDUIT_KEY,
-        ETH_ADDRESS // 0 addr
+        ADDRESS_ZERO // 0 addr
       ])
 
-      // need to exand to allow for value.toString() ?
-                                                                                     // operator is opensea conduit addr
+      // TODO: need to add arg for msg.value?
       planner.addCommand(CommandType.SEAPORT_SELL_721, [calldata, tubbyCats.address, OPENSEA_CONDUIT, id, alice.address])
       planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
       const { commands, inputs } = planner
@@ -221,13 +211,13 @@ describe.only('Seaport', () => {
       const ownerBefore = await tubbyCats.ownerOf(id)
       const wethBefore = await weth.connect(alice).balanceOf(alice.address)
       expect(wethBefore).to.eq(0)
-
       // put NFT in the router TODO replace with Permit2 721
       await tubbyCats.transferFrom(alice.address, router.address, id)
       expect(await tubbyCats.ownerOf(id)).to.eq(router.address)
 
       const ethBefore = await ethers.provider.getBalance(alice.address)
-      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
+      // Send no value here bc not sending ETH
+      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { })).wait()
 
       const ownerAfter = await tubbyCats.ownerOf(id)
       const wethAfter = await weth.connect(alice).balanceOf(alice.address)
