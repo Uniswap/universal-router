@@ -27,7 +27,7 @@ import { getTxGasSpent } from './shared/helpers'
 import { ADDRESS_ZERO } from '@uniswap/v3-sdk'
 const { ethers } = hre
 
-describe.only('Seaport', () => {
+describe('Seaport', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
@@ -138,8 +138,7 @@ describe.only('Seaport', () => {
   it('reverts if order does not go through', async () => {
     let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
     invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
-    const { advancedOrder: seaportOrder } = getAdvancedOrderParams(invalidSeaportOrder)
-    const seaportValue = calculateValue(seaportOrder.parameters.consideration)
+    const { advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder)
 
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       seaportOrder,
@@ -195,7 +194,6 @@ describe.only('Seaport', () => {
         OPENSEA_CONDUIT_KEY,
         ADDRESS_ZERO, // 0 addr so router custody
       ])
-      // TODO: need to add arg for msg.value?
       planner.addCommand(CommandType.SEAPORT_SELL_721, [
         calldata,
         cryptoCovens.address,
@@ -342,7 +340,6 @@ describe.only('Seaport', () => {
         OPENSEA_CONDUIT_KEY,
         ADDRESS_ZERO, // 0 addr so router custody
       ])
-      // TODO: need to add arg for msg.value?
       planner.addCommand(CommandType.SEAPORT_SELL_1155, [
         calldata,
         cameoPass.address,
@@ -372,8 +369,8 @@ describe.only('Seaport', () => {
       const ethDelta = ethBefore.sub(ethAfter)
 
       // Ensure that the correct amount of NFTs were transferred to the offerer from the fufiller
-      expect(offererBalanceBefore.add(amount1155).eq(offererBalanceAfter)).to.be.true // offerer gains
       expect(fufillerBalanceBefore.sub(amount1155).eq(fufillerBalanceAfter)).to.be.true // fufiller loses
+      expect(offererBalanceBefore.add(amount1155).eq(offererBalanceAfter)).to.be.true // offerer gains
       expect(wethAfter.sub(wethBefore)).to.eq(wethReceived)
       expect(ethDelta).to.eq(gasSpent)
     })
@@ -389,7 +386,6 @@ describe.only('Seaport', () => {
         OPENSEA_CONDUIT_KEY,
         ADDRESS_ZERO, // 0 addr so router custody
       ])
-      // TODO: need to add arg for msg.value?
       planner.addCommand(
         CommandType.SEAPORT_SELL_1155,
         [calldata, cameoPass.address, OPENSEA_CONDUIT, id, amount1155, alice.address],
@@ -415,9 +411,9 @@ describe.only('Seaport', () => {
       const gasSpent = getTxGasSpent(receipt)
       const ethDelta = ethBefore.sub(ethAfter)
 
-      // Alice's balance of the NFT is the same
+      // Both offerer and fufiller balances are the same
+      expect(fufillerBalanceBefore.eq(fufillerBalanceAfter)).to.be.true 
       expect(offererBalanceBefore.eq(offererBalanceAfter)).to.be.true
-      expect(fufillerBalanceBefore.eq(fufillerBalanceAfter)).to.be.true
       expect(wethAfter).to.eq(wethBefore) // no weth was transferred
       expect(ethDelta).to.eq(gasSpent)
     })
@@ -432,7 +428,6 @@ describe.only('Seaport', () => {
         OPENSEA_CONDUIT_KEY,
         ADDRESS_ZERO, // 0 addr so router custody
       ])
-      // TODO: need to add arg for msg.value?
       planner.addCommand(CommandType.SEAPORT_SELL_1155, [
         calldata,
         cameoPass.address,

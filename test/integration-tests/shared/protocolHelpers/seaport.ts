@@ -79,7 +79,6 @@ export function getOrderParams(apiOrder: any): { order: Order; value: BigNumber 
   return { order, value }
 }
 
-// TODO: type criteriaResolvers
 export function getAdvancedOrderParams(
   apiOrder: any,
   itemTypes?: ItemType[]
@@ -99,7 +98,6 @@ export function getAdvancedOrderParams(
   return { advancedOrder, value }
 }
 
-// TODO: add another helper to calculate when we are receiving the offer and the consideration is subtracted from offer
 export function calculateValue(considerations: ConsiderationItem[], itemTypes?: ItemType[]): BigNumber {
   if (itemTypes) {
     // filter out all consideration items not in itemTypes

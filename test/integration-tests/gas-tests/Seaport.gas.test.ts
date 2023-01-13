@@ -5,7 +5,6 @@ import {
   seaportOrders,
   seaportInterface,
   getAdvancedOrderParams,
-  calculateValue,
 } from '../shared/protocolHelpers/seaport'
 import { resetFork } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
@@ -48,10 +47,8 @@ describe('Seaport Gas Tests', () => {
   })
 
   it('gas: fulfillAvailableAdvancedOrders 1 orders', async () => {
-    const { advancedOrder: advancedOrder0 } = getAdvancedOrderParams(seaportOrders[0])
-    const value1 = calculateValue(advancedOrder0.parameters.consideration)
-    const { advancedOrder: advancedOrder1 } = getAdvancedOrderParams(seaportOrders[1])
-    const value2 = calculateValue(advancedOrder0.parameters.consideration)
+    const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
+    const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
     const value = value1.add(value2)
 
     const considerationFulfillment = [
