@@ -9,7 +9,7 @@ import {
   ENS_NFT_ADDRESS,
   MENTAL_WORLDS_ADDRESS,
   TWERKY_ADDRESS,
-  CRYPTOPUNKS_MARKET_ADDRESS
+  CRYPTOPUNKS_MARKET_ADDRESS,
 } from './constants'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'

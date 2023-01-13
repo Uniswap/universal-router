@@ -80,8 +80,11 @@ export function getOrderParams(apiOrder: any): { order: Order; value: BigNumber 
 }
 
 // TODO: type criteriaResolvers
-export function getAdvancedOrderParams(apiOrder: any, itemTypes?: ItemType[]): {
-  advancedOrder: AdvancedOrder,
+export function getAdvancedOrderParams(
+  apiOrder: any,
+  itemTypes?: ItemType[]
+): {
+  advancedOrder: AdvancedOrder
   value: BigNumber
 } {
   delete apiOrder.protocol_data.parameters.counter
