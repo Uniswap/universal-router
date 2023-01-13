@@ -33,8 +33,7 @@ describe('Seaport Gas Tests', () => {
   })
 
   it('gas: fulfillAdvancedOrder', async () => {
-    const { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
-    const value = calculateValue(advancedOrder.parameters.consideration)
+    const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
       [],

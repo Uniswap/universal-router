@@ -200,7 +200,6 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
             abi.decode(inputs, (bytes, address, address, uint256, address));
 
         // this approval is auto-wiped when the token is transferred
-        // TODO: can we save gas here by not approving if router already owns the NFT? i.e. ERC20 -> NFT -> ETH
         ERC721(token).approve(spender, id);
 
         (success, output) = protocol.call(data);

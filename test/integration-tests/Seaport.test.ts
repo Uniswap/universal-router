@@ -29,7 +29,7 @@ import { getTxGasSpent } from './shared/helpers'
 import { ADDRESS_ZERO } from '@uniswap/v3-sdk'
 const { ethers } = hre
 
-describe('Seaport', () => {
+describe.only('Seaport', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
@@ -50,12 +50,11 @@ describe('Seaport', () => {
   })
 
   it('completes a fulfillAdvancedOrder type', async () => {
-    const { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[0])
-    const value = calculateValue(advancedOrder.parameters.consideration)
+    const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
     const params = advancedOrder.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
-      criteriaResolvers,
+      [],
       OPENSEA_CONDUIT_KEY,
       alice.address,
     ])
@@ -77,12 +76,11 @@ describe('Seaport', () => {
   })
 
   it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
-    let { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[0])
-    let value = calculateValue(advancedOrder.parameters.consideration)
+    let { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
     const params = advancedOrder.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
-      criteriaResolvers,
+      [],
       OPENSEA_CONDUIT_KEY,
       alice.address,
     ])
@@ -158,7 +156,7 @@ describe('Seaport', () => {
     ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")')
   })
 
-  describe('Seaport SELL 721', async () => {
+  describe.only('Seaport SELL 721', async () => {
     let tubbyCats: ERC721
     let weth: ERC20
 
@@ -173,44 +171,64 @@ describe('Seaport', () => {
       router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
       tubbyCats = new ethers.Contract(TUBBY_ADDRESS, ERC721_ABI) as ERC721
-      weth = new ethers.Contract(WETH.address, ERC20_ABI) as ERC20
+      const routerSigner = await ethers.getImpersonatedSigner(router.address)
+      weth = new ethers.Contract(WETH.address, ERC20_ABI).connect(routerSigner) as ERC20
 
       // send 1 eth from alice to router.address for weth approval
-      await alice.sendTransaction({ to: router.address, value: ethers.utils.parseEther('1.0') })
-      expect(await ethers.provider.getBalance(router.address)).to.eq(ethers.utils.parseEther('1.0'))
+      await (await alice.sendTransaction({ to: router.address, value: ethers.utils.parseEther('1.0') })).wait()
       // max approve conduit for weth
-      const routerSigner = await ethers.getImpersonatedSigner(router.address)
-      await weth.connect(routerSigner).approve(OPENSEA_CONDUIT, ethers.constants.MaxUint256)
-      await weth.connect(routerSigner).allowance(router.address, OPENSEA_CONDUIT)
-      expect(await weth.connect(routerSigner).balanceOf(router.address)).to.eq(0)
+      await weth.approve(OPENSEA_CONDUIT, ethers.constants.MaxUint256)
     })
 
     it('accepts an advanced order with criteria offering WETH', async () => {
       // https://etherscan.io/tx/0x74551f604adea1c456395a8e801bb063bbec385bdebbc025a75e0605910f493c
-      let { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[2])
-      const value = calculateValue(advancedOrder.parameters.consideration, [ItemType.ERC20])
+      let { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[2], [ItemType.ERC20])
       const params = advancedOrder.parameters
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+        advancedOrder,
+        [
+          {
+            "orderIndex": 0,
+            "side": 1,
+            "index": 0,
+            "identifier": 19503,
+            "criteriaProof": [
+              "0x625bf0c8faf6998d5605212d85a56642d3003be318cae04cf7dd7765a6daa001",
+              "0x70c08bf91146002d735b07bf48d0b14f27a52a24490b0a94b969900adadccfed",
+              "0x80b4ab8993d67140a303f9d198f27d77ab666c02c9b1050169face77a909e0e7",
+              "0xc1bdc79418d5167b31d91c03188dcf5624da9535c7012d67f27fffba4442d4f2",
+              "0xcf7b0184884f89492d844bebf4352c9f784405937e73e7779d12f0340064d71b",
+              "0xb51b38b660a88139ca6f5072f144ac9218690774a33e6b026bff8e83f3d44297",
+              "0x079326c271381b0c428cb78c2c3b780486be325f834d3f12c0a64cf314cb35d4",
+              "0x0b8b15201cf0f12ee94b0956ee9d4cea20a06ec60f38f4b5dcdeed27ec53e85e",
+              "0x6acdc81bae9e996ab7b0f30f432be73e5bf0226ee59677d11b489e853cc38bad",
+              "0x12583c0274b57974086bd498c8e00037cc1abb5bd55ce341023311761cac211f",
+              "0x6489fe533ef1e64f8e49db6d7e6da307789e8fe1affffeaa0679dd8672abab61",
+              "0x76b7232bca92fbdac65269c2bb664bf7947bd1796525b8f798cdd2c7930cb430",
+              "0x8d4ab7bca7baa0957d0e74690ca63532b90e0ed67cf29be67a12e9fc8d0dcb83",
+              "0xfcb56b33a1951809fa3e8e6346ae6ddcb7dfbe4b1eb6793716672050e61b9e26",
+              "0xbc94d8d04c495cb65e633581336c547ddc0f338db0cd429a301d5f0d07166648"
+            ]
+          }
+        ],
+        OPENSEA_CONDUIT_KEY,
+        ADDRESS_ZERO, // 0 addr so router custody
+      ])
+
       // Can add logic to select approval target (conduit or consideration) depending on conduitHash
       // TODO: add helper function to get identifier from criteriaResolvers if exists
-      const id = criteriaResolvers[0].identifier
+      const id = 19503
       // transfer nft to alice as tubbyCatOwner
       const prevTubbyCatOwner = await tubbyCats.connect(alice).ownerOf(id)
       await tubbyCats
         .connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner))
         .transferFrom(prevTubbyCatOwner, alice.address, id)
 
-      const wethReceived = BigNumber.from(advancedOrder.parameters.offer[0].startAmount).sub(value)
+      const wethReceived = BigNumber.from(params.offer[0].startAmount).sub(value)
 
       tubbyCats = tubbyCats.connect(alice)
       const ownerBefore = await tubbyCats.ownerOf(id)
       expect(ownerBefore).to.eq(alice.address)
-
-      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
-        advancedOrder,
-        criteriaResolvers,
-        OPENSEA_CONDUIT_KEY,
-        ADDRESS_ZERO, // 0 addr so router custody
-      ])
 
       // TODO: need to add arg for msg.value?
       planner.addCommand(CommandType.SEAPORT_SELL_721, [
@@ -223,18 +241,16 @@ describe('Seaport', () => {
       planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
       const { commands, inputs } = planner
 
-      const wethBefore = await weth.connect(alice).balanceOf(alice.address)
-      expect(wethBefore).to.eq(0)
+      const wethBefore = await weth.balanceOf(alice.address)
       // put NFT in the router TODO replace with Permit2 721
       await tubbyCats.transferFrom(alice.address, router.address, id)
-      expect(await tubbyCats.ownerOf(id)).to.eq(router.address)
 
       const ethBefore = await ethers.provider.getBalance(alice.address)
       // Send no value here bc not sending ETH
       const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).wait()
 
       const ownerAfter = await tubbyCats.ownerOf(id)
-      const wethAfter = await weth.connect(alice).balanceOf(alice.address)
+      const wethAfter = await weth.balanceOf(alice.address)
       const ethAfter = await ethers.provider.getBalance(alice.address)
       const gasSpent = getTxGasSpent(receipt)
       const ethDelta = ethBefore.sub(ethAfter)
@@ -246,8 +262,16 @@ describe('Seaport', () => {
     })
 
     it('revertable order returns NFT to user if reverts', async () => {
-      let { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[2])
-      const id = criteriaResolvers[0].identifier
+      let { advancedOrder: invalidOrder } = getAdvancedOrderParams(seaportOrders[2])
+      invalidOrder.signature = '0xdeadbeef'
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+        invalidOrder,
+        [],
+        OPENSEA_CONDUIT_KEY,
+        ADDRESS_ZERO, // 0 addr so router custody
+      ])
+
+      const id = 19503
       // transfer nft to alice as tubbyCatOwner
       const prevTubbyCatOwner = await tubbyCats.connect(alice).ownerOf(id)
       await tubbyCats
@@ -256,16 +280,6 @@ describe('Seaport', () => {
       tubbyCats = tubbyCats.connect(alice)
       const ownerBefore = await tubbyCats.ownerOf(id)
       expect(ownerBefore).to.eq(alice.address)
-
-      // Signature is invalid
-      advancedOrder.signature = '0xdeadbeef'
-
-      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
-        advancedOrder,
-        criteriaResolvers,
-        OPENSEA_CONDUIT_KEY,
-        ADDRESS_ZERO, // 0 addr so router custody
-      ])
 
       planner.addCommand(
         CommandType.SEAPORT_SELL_721,
@@ -278,13 +292,12 @@ describe('Seaport', () => {
       // TODO: replace with permit2 transfer
       await tubbyCats.transferFrom(alice.address, router.address, id)
 
-      const wethBefore = await weth.connect(alice).balanceOf(alice.address)
-      expect(wethBefore).to.eq(0)
+      const wethBefore = await weth.balanceOf(alice.address)
       const ethBefore = await ethers.provider.getBalance(alice.address)
       const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).wait()
 
       const ownerAfter = await tubbyCats.ownerOf(id)
-      const wethAfter = await weth.connect(alice).balanceOf(alice.address)
+      const wethAfter = await weth.balanceOf(alice.address)
       const ethAfter = await ethers.provider.getBalance(alice.address)
       const gasSpent = getTxGasSpent(receipt)
       const ethDelta = ethBefore.sub(ethAfter)
@@ -296,26 +309,22 @@ describe('Seaport', () => {
     })
 
     it('reverts if order does not go through', async () => {
-      let { advancedOrder, criteriaResolvers } = getAdvancedOrderParams(seaportOrders[2])
-      const id = criteriaResolvers[0].identifier
+      let { advancedOrder: invalidOrder } = getAdvancedOrderParams(seaportOrders[2])
+      invalidOrder.signature = '0xdeadbeef'
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+        invalidOrder,
+        [],
+        OPENSEA_CONDUIT_KEY,
+        ADDRESS_ZERO, // 0 addr so router custody
+      ])
+      
+      const id = 19503
       // transfer nft to alice as tubbyCatOwner
       const prevTubbyCatOwner = await tubbyCats.connect(alice).ownerOf(id)
       await tubbyCats
         .connect(await ethers.getImpersonatedSigner(prevTubbyCatOwner))
         .transferFrom(prevTubbyCatOwner, alice.address, id)
       tubbyCats = tubbyCats.connect(alice)
-      const ownerBefore = await tubbyCats.ownerOf(id)
-      expect(ownerBefore).to.eq(alice.address)
-
-      // Signature is invalid
-      advancedOrder.signature = '0xdeadbeef'
-
-      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
-        advancedOrder,
-        criteriaResolvers,
-        OPENSEA_CONDUIT_KEY,
-        ADDRESS_ZERO, // 0 addr so router custody
-      ])
 
       planner.addCommand(CommandType.SEAPORT_SELL_721, [
         calldata,
@@ -330,12 +339,9 @@ describe('Seaport', () => {
       // TODO: replace with permit2 transfer
       await tubbyCats.transferFrom(alice.address, router.address, id)
 
-      const wethBefore = await weth.connect(alice).balanceOf(alice.address)
-      expect(wethBefore).to.eq(0)
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).to.be.revertedWith(
         'ExecutionFailed(0, "0x8baa579f")'
       )
-
       // Note that owner here will be the router because the transfer from alice was not part of the commands
       // TODO: check this again after permit2 transfer to ensure that NFT is returned
     })

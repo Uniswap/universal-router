@@ -6,7 +6,6 @@ import {
   seaportInterface,
   getAdvancedOrderParams,
   purchaseDataForTwoCovensSeaport,
-  calculateValue,
 } from './shared/protocolHelpers/seaport'
 import { createLooksRareOrders, looksRareOrders, LOOKS_RARE_1155_ORDER } from './shared/protocolHelpers/looksRare'
 import { resetFork, COVEN_721 } from './shared/mainnetForkHelpers'
@@ -67,8 +66,7 @@ describe('Check Ownership', () => {
     })
 
     it('checks ownership after a seaport trade for one ERC721', async () => {
-      const { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
-      const value = calculateValue(advancedOrder.parameters.consideration)
+      const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
       const params = advancedOrder.parameters
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,

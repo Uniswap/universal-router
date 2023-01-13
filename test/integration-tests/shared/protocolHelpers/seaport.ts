@@ -80,9 +80,9 @@ export function getOrderParams(apiOrder: any): { order: Order; value: BigNumber 
 }
 
 // TODO: type criteriaResolvers
-export function getAdvancedOrderParams(apiOrder: any): {
-  advancedOrder: AdvancedOrder
-  criteriaResolvers: CriteriaResovler[]
+export function getAdvancedOrderParams(apiOrder: any, itemTypes?: ItemType[]): {
+  advancedOrder: AdvancedOrder,
+  value: BigNumber
 } {
   delete apiOrder.protocol_data.parameters.counter
   const advancedOrder = {
@@ -92,10 +92,8 @@ export function getAdvancedOrderParams(apiOrder: any): {
     signature: apiOrder.protocol_data.signature,
     extraData: '0x00',
   }
-  // TODO: this may not fit the actual schema of the OS apiOrder. Verify after get access
-  const criteriaResolvers =
-    'criteriaResolvers' in apiOrder.protocol_data ? apiOrder.protocol_data.criteriaResolvers : []
-  return { advancedOrder, criteriaResolvers }
+  const value = calculateValue(apiOrder.protocol_data.parameters.consideration, itemTypes)
+  return { advancedOrder, value }
 }
 
 // TODO: add another helper to calculate when we are receiving the offer and the consideration is subtracted from offer
@@ -120,10 +118,8 @@ type BuyCovensReturnData = {
 }
 
 export function purchaseDataForTwoCovensSeaport(receipient: string): BuyCovensReturnData {
-  const { advancedOrder: advancedOrder0 } = getAdvancedOrderParams(seaportOrders[0])
-  const value1 = calculateValue(advancedOrder0.parameters.consideration)
-  const { advancedOrder: advancedOrder1 } = getAdvancedOrderParams(seaportOrders[1])
-  const value2 = calculateValue(advancedOrder0.parameters.consideration)
+  const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
+  const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
   const value = value1.add(value2)
 
   const considerationFulfillment = [
