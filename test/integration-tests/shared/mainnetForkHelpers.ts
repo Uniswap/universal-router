@@ -9,8 +9,7 @@ import {
   ENS_NFT_ADDRESS,
   MENTAL_WORLDS_ADDRESS,
   TWERKY_ADDRESS,
-  CRYPTOPUNKS_MARKET_ADDRESS,
-  TUBBY_ADDRESS,
+  CRYPTOPUNKS_MARKET_ADDRESS
 } from './constants'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
@@ -114,7 +113,6 @@ export const resetFork = async (block: number = 15360000) => {
 }
 
 export const COVEN_721 = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI) as ERC721
-export const TUBBY_721 = new ethers.Contract(TUBBY_ADDRESS, ERC721_ABI) as ERC721
 export const ENS_721 = new ethers.Contract(ENS_NFT_ADDRESS, ERC721_ABI) as ERC721
 export const MENTAL_WORLDS_721 = new ethers.Contract(MENTAL_WORLDS_ADDRESS, ERC721_ABI) as ERC721
 export const ALPHABETTIES_721 = new ethers.Contract(ALPHABETTIES_ADDRESS, ERC721_ABI) as ERC721
