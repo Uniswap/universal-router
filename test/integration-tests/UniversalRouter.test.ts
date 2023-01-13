@@ -1,4 +1,4 @@
-import { UniversalRouter, Permit2, ERC20, MockLooksRareRewardsDistributor, ERC721 } from '../../typechain'
+import { UniversalRouter, Permit2, ERC20, MockLooksRareRewardsDistributor, ERC721, ERC1155 } from '../../typechain'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
@@ -29,8 +29,9 @@ import {
   AdvancedOrder,
   Order,
   ItemType,
+  calculateValue,
 } from './shared/protocolHelpers/seaport'
-import { resetFork, WETH, DAI, COVEN_721 } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, COVEN_721, CAMEO_1155 } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
 import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -42,7 +43,7 @@ const { ethers } = hre
 const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
 const routerInterface = new ethers.utils.Interface(ROUTER_ABI)
 
-describe.only('UniversalRouter', () => {
+describe('UniversalRouter', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
@@ -51,6 +52,7 @@ describe.only('UniversalRouter', () => {
   let mockLooksRareRewardsDistributor: MockLooksRareRewardsDistributor
   let pair_DAI_WETH: Pair
   let cryptoCovens: ERC721
+  let cameoPass: ERC1155
 
   beforeEach(async () => {
     await resetFork()
@@ -75,6 +77,7 @@ describe.only('UniversalRouter', () => {
       await deployUniversalRouter(permit2, mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)
     ).connect(alice) as UniversalRouter
     cryptoCovens = COVEN_721.connect(alice) as ERC721
+    cameoPass = CAMEO_1155.connect(alice) as ERC1155
   })
 
   describe('#execute', () => {
@@ -256,7 +259,7 @@ describe.only('UniversalRouter', () => {
       })
     })
 
-    describe('Seaport ERC721 -> ERC20', () => {
+    describe('Seaport ERC721', () => {
       let weth: ERC20
       const id = 5757
 
@@ -330,6 +333,90 @@ describe.only('UniversalRouter', () => {
         // No change in alice's weth balance
         expect(wethBefore).to.eq(wethAfter)
         // Alice receives the offered amoount in eth minus gas spent for txn
+        expect(ethAfter.sub(ethBefore)).to.eq(wethReceived.sub(gasSpent))
+      })
+    })
+
+    describe('Seaport ERC1155', () => {
+      let weth: ERC20
+      const id = 0
+
+      beforeEach(async () => {
+        await resetFork(16387720) // found using cast find-block w/ listing timestamp of order
+        await hre.network.provider.request({
+          method: 'hardhat_impersonateAccount',
+          params: [ALICE_ADDRESS],
+        })
+        alice = await ethers.getSigner(ALICE_ADDRESS)
+        permit2 = (await deployPermit2()).connect(alice) as Permit2
+        router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+        planner = new RoutePlanner()
+        const routerSigner = await ethers.getImpersonatedSigner(router.address)
+        weth = new ethers.Contract(WETH.address, TOKEN_ABI).connect(routerSigner) as ERC20
+
+        // send 1 eth from alice to router.address to cover gas for weth approval
+        await (await alice.sendTransaction({ to: router.address, value: ethers.utils.parseEther('1.0') })).wait()
+        await weth.approve(OPENSEA_CONDUIT, ethers.constants.MaxUint256)
+        // sweep any leftover ETH from router to alice (we sent ETH to allow router to approve weth)
+        planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, MSG_SENDER, 0])
+        const { commands, inputs } = planner
+        await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).wait()
+        expect(await ethers.provider.getBalance(router.address)).to.eq(0)
+
+        // owner of cameoPass 1155 contract
+        const cameoPassOwner = '0x1d522ae2Dff7f5b3Cb24465630a5951aD60C9233'
+        // Transfer 1 token from cameoPassOwner to alice to prepare for txn
+        await cameoPass
+          .connect(await ethers.getImpersonatedSigner(cameoPassOwner))
+          .safeTransferFrom(cameoPassOwner, alice.address, id, 1, '0x00')
+      })
+
+      it('completes a trade for ERC1155 -> ERC20 -> ETH', async () => {
+        let { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[3], [ItemType.ERC20])
+        // We need the amount of 1155 tokens to sell, so we call calculateValue separately
+        let amount1155 = calculateValue(advancedOrder.parameters.consideration, [ItemType.ERC1155])
+        const params = advancedOrder.parameters
+        const wethReceived = BigNumber.from(params.offer[0].startAmount).sub(value)
+        // Can add logic to select approval target (conduit or consideration) depending on conduitHash
+        const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+          advancedOrder,
+          [],
+          OPENSEA_CONDUIT_KEY,
+          ADDRESS_ZERO, // 0 addr so router custody
+        ])
+        planner.addCommand(CommandType.SEAPORT_SELL_1155, [
+          calldata,
+          cameoPass.address,
+          OPENSEA_CONDUIT,
+          id,
+          amount1155,
+          alice.address,
+        ])
+        planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, wethReceived])
+        planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, MSG_SENDER, 0])
+        const { commands, inputs } = planner
+
+        const wethBefore = await weth.balanceOf(alice.address)
+        const offererBalanceBefore = await cameoPass.balanceOf(params.offerer, id)
+        const fufillerBalanceBefore = await cameoPass.balanceOf(alice.address, id)
+
+        // put NFT in the router TODO replace with Permit2 721
+        await cameoPass.safeTransferFrom(alice.address, router.address, id, amount1155, '0x00')
+
+        const ethBefore = await ethers.provider.getBalance(alice.address)
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).wait()
+
+        const offererBalanceAfter = await cameoPass.balanceOf(params.offerer, id)
+        const fufillerBalanceAfter = await cameoPass.balanceOf(alice.address, id)
+        const wethAfter = await weth.balanceOf(alice.address)
+        const ethAfter = await ethers.provider.getBalance(alice.address)
+        const gasSpent = getTxGasSpent(receipt)
+
+        // Ensure that the correct amount of NFTs were transferred to the offerer from the fufiller
+        expect(fufillerBalanceBefore.sub(amount1155).eq(fufillerBalanceAfter)).to.be.true // fufiller loses
+        expect(offererBalanceBefore.add(amount1155).eq(offererBalanceAfter)).to.be.true // offerer gains
+        // Ensure no change in Alice's weth balance
+        expect(wethAfter).to.eq(wethBefore)
         expect(ethAfter.sub(ethBefore)).to.eq(wethReceived.sub(gasSpent))
       })
     })

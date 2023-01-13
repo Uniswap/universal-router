@@ -315,12 +315,10 @@ describe('Seaport', () => {
 
       // send 1 eth from alice to router.address to cover gas for weth approval
       await (await alice.sendTransaction({ to: router.address, value: ethers.utils.parseEther('1.0') })).wait()
-      // max approve conduit for weth
       await weth.approve(OPENSEA_CONDUIT, ethers.constants.MaxUint256)
 
       // owner of cameoPass 1155 contract
       const cameoPassOwner = '0x1d522ae2Dff7f5b3Cb24465630a5951aD60C9233'
-
       // Transfer 1 token from cameoPassOwner to alice to prepare for txn
       await cameoPass
         .connect(await ethers.getImpersonatedSigner(cameoPassOwner))
