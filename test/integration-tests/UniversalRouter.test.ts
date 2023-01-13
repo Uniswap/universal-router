@@ -18,6 +18,8 @@ import {
   MAX_UINT160,
   MAX_UINT,
   ETH_ADDRESS,
+  OPENSEA_CONDUIT,
+  MSG_SENDER,
 } from './shared/constants'
 import {
   seaportOrders,
@@ -26,19 +28,21 @@ import {
   getAdvancedOrderParams,
   AdvancedOrder,
   Order,
+  ItemType,
 } from './shared/protocolHelpers/seaport'
 import { resetFork, WETH, DAI, COVEN_721 } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
 import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { expandTo18DecimalsBN } from './shared/helpers'
+import { expandTo18DecimalsBN, getTxGasSpent } from './shared/helpers'
 import hre from 'hardhat'
+import { ADDRESS_ZERO } from '@uniswap/v3-sdk'
 
 const { ethers } = hre
 const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
 const routerInterface = new ethers.utils.Interface(ROUTER_ABI)
 
-describe('UniversalRouter', () => {
+describe.only('UniversalRouter', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
@@ -249,6 +253,84 @@ describe('UniversalRouter', () => {
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
         const covenBalanceAfter = await cryptoCovens.balanceOf(alice.address)
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
+      })
+    })
+
+    describe("NFT ->", () => {
+      let weth: ERC20
+      const id = 5757
+
+      beforeEach(async () => {
+        // Have to reset the fork bc the saved offer objects from the api are much more recent 
+        await resetFork(16199548)
+        await hre.network.provider.request({
+          method: 'hardhat_impersonateAccount',
+          params: [ALICE_ADDRESS],
+        })
+        alice = await ethers.getSigner(ALICE_ADDRESS)
+        permit2 = (await deployPermit2()).connect(alice) as Permit2
+        router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+        planner = new RoutePlanner()
+        const routerSigner = await ethers.getImpersonatedSigner(router.address)
+        weth = new ethers.Contract(WETH.address, TOKEN_ABI).connect(routerSigner) as ERC20
+
+        // send 1 eth from alice to router.address for weth approval
+        await (await alice.sendTransaction({ to: router.address, value: ethers.utils.parseEther('1.0') })).wait()
+        // max approve conduit for weth
+        await weth.approve(OPENSEA_CONDUIT, ethers.constants.MaxUint256)
+        // sweep any leftover ETH from router to alice (we sent ETH to allow router to approve weth)
+        planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, MSG_SENDER, 0])
+        const { commands, inputs } = planner
+        await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).wait()
+        expect(await ethers.provider.getBalance(router.address)).to.eq(0)
+
+        const prevCovensOwner = await cryptoCovens.ownerOf(id)
+        await cryptoCovens
+          .connect(await ethers.getImpersonatedSigner(prevCovensOwner))
+          .transferFrom(prevCovensOwner, alice.address, id)
+      })
+      it('completes a trade for NFT -> ERC20 -> ETH', async () => {
+        let { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[2], [ItemType.ERC20])
+        const params = advancedOrder.parameters
+        const wethReceived = BigNumber.from(params.offer[0].startAmount).sub(value)
+        // Can add logic to select approval target (conduit or consideration) depending on conduitHash
+        const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+          advancedOrder,
+          [],
+          OPENSEA_CONDUIT_KEY,
+          ADDRESS_ZERO, // 0 addr so router custody
+        ])
+        planner.addCommand(CommandType.SEAPORT_SELL_721, [
+          calldata,
+          cryptoCovens.address,
+          OPENSEA_CONDUIT,
+          id,
+          alice.address,
+        ])
+        planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, wethReceived])
+        planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, MSG_SENDER, 0])
+        const { commands, inputs } = planner
+
+        const wethBefore = await weth.balanceOf(alice.address)
+        const ownerBefore = await cryptoCovens.ownerOf(id)
+
+        // put NFT in the router TODO replace with Permit2 721
+        await cryptoCovens.transferFrom(alice.address, router.address, id)
+
+        const ethBefore = await ethers.provider.getBalance(alice.address)
+        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).wait()
+
+        const ownerAfter = await cryptoCovens.ownerOf(id)
+        const wethAfter = await weth.balanceOf(alice.address)
+        const gasSpent = getTxGasSpent(receipt)
+        const ethAfter = await ethers.provider.getBalance(alice.address)
+
+        expect(ownerBefore).to.eq(alice.address)
+        expect(ownerAfter.toLowerCase()).to.eq(params.offerer.toLowerCase())
+        // No change in alice's weth balance
+        expect(wethBefore).to.eq(wethAfter)
+        // Alice receives the offered amoount in eth minus gas spent for txn
+        expect(ethAfter.sub(ethBefore)).to.eq(wethReceived.sub(gasSpent))
       })
     })
   })
