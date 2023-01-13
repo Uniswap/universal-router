@@ -154,7 +154,7 @@ describe.only('Seaport', () => {
     ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")')
   })
 
-  describe('Seaport SELL -> ERC20 (WETH)', async () => {
+  describe('Seaport SELL ERC721 -> ERC20 (WETH)', async () => {
     let weth: ERC20
     const id = 5757
 
@@ -182,7 +182,7 @@ describe.only('Seaport', () => {
         .transferFrom(prevCovensOwner, alice.address, id)
     })
 
-    it('completes an advanced order offering WETH for ERC721', async () => {
+    it('completes an advanced order offering WETH', async () => {
       // https://etherscan.io/tx/0x74551f604adea1c456395a8e801bb063bbec385bdebbc025a75e0605910f493c
       let { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[2], [ItemType.ERC20])
       const params = advancedOrder.parameters
@@ -226,7 +226,7 @@ describe.only('Seaport', () => {
       expect(ethDelta).to.eq(gasSpent)
     })
 
-    it('revertable order returns ERC721 to user if reverts', async () => {
+    it('revertable order returns NFT to user if reverts', async () => {
       let { advancedOrder: invalidOrder } = getAdvancedOrderParams(seaportOrders[2])
       invalidOrder.signature = '0xdeadbeef'
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
@@ -267,7 +267,7 @@ describe.only('Seaport', () => {
       expect(ethDelta).to.eq(gasSpent)
     })
 
-    it('reverts if ERC721 order does not go through', async () => {
+    it('reverts if NFT order does not go through', async () => {
       let { advancedOrder: invalidOrder } = getAdvancedOrderParams(seaportOrders[2])
       invalidOrder.signature = '0xdeadbeef'
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
