@@ -412,7 +412,7 @@ describe('Seaport', () => {
       const ethDelta = ethBefore.sub(ethAfter)
 
       // Both offerer and fufiller balances are the same
-      expect(fufillerBalanceBefore.eq(fufillerBalanceAfter)).to.be.true 
+      expect(fufillerBalanceBefore.eq(fufillerBalanceAfter)).to.be.true
       expect(offererBalanceBefore.eq(offererBalanceAfter)).to.be.true
       expect(wethAfter).to.eq(wethBefore) // no weth was transferred
       expect(ethDelta).to.eq(gasSpent)

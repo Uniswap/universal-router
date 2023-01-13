@@ -256,12 +256,12 @@ describe.only('UniversalRouter', () => {
       })
     })
 
-    describe("NFT ->", () => {
+    describe('Seaport ERC721 -> ERC20', () => {
       let weth: ERC20
       const id = 5757
 
       beforeEach(async () => {
-        // Have to reset the fork bc the saved offer objects from the api are much more recent 
+        // Have to reset the fork and re-setup bc the saved offer objects from the api are much more recent
         await resetFork(16199548)
         await hre.network.provider.request({
           method: 'hardhat_impersonateAccount',
