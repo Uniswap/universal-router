@@ -1,7 +1,7 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
-import { UniversalRouter, Permit2, ERC721, ERC20 } from '../../typechain'
+import { UniversalRouter, Permit2, ERC721, ERC20, ERC1155 } from '../../typechain'
 import {
   seaportOrders,
   seaportInterface,
@@ -11,7 +11,7 @@ import {
   ItemType,
 } from './shared/protocolHelpers/seaport'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
-import { COVEN_721, resetFork, WETH } from './shared/mainnetForkHelpers'
+import { CAMEO_1155, COVEN_721, resetFork, WETH } from './shared/mainnetForkHelpers'
 import { abi as ERC20_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import {
   ALICE_ADDRESS,
@@ -33,6 +33,7 @@ describe.only('Seaport', () => {
   let permit2: Permit2
   let planner: RoutePlanner
   let cryptoCovens: ERC721
+  let cameoPass: ERC1155
 
   beforeEach(async () => {
     await resetFork()
@@ -45,6 +46,7 @@ describe.only('Seaport', () => {
     router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
     cryptoCovens = COVEN_721.connect(alice) as ERC721
+    cameoPass = CAMEO_1155.connect(alice) as ERC1155
   })
 
   it('completes a fulfillAdvancedOrder type', async () => {
@@ -183,7 +185,6 @@ describe.only('Seaport', () => {
     })
 
     it('completes an advanced order offering WETH', async () => {
-      // https://etherscan.io/tx/0x74551f604adea1c456395a8e801bb063bbec385bdebbc025a75e0605910f493c
       let { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[2], [ItemType.ERC20])
       const params = advancedOrder.parameters
       const wethReceived = BigNumber.from(params.offer[0].startAmount).sub(value)
@@ -288,6 +289,163 @@ describe.only('Seaport', () => {
 
       // TODO: replace with permit2 transfer
       await cryptoCovens.transferFrom(alice.address, router.address, id)
+
+      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).to.be.revertedWith(
+        'ExecutionFailed(0, "0x8baa579f")'
+      )
+      // Note that owner here will be the router because the transfer from alice was not part of the commands
+      // TODO: check this again after permit2 transfer to ensure that NFT is returned
+    })
+  })
+
+  describe('Seaport SELL ERC1155 -> ERC20 (WETH)', async () => {
+    let weth: ERC20
+    const id = 0 // 'gm' burnt toast art
+
+    beforeEach(async () => {
+      await resetFork(16387720) // found using cast find-block w/ listing timestamp of order
+      await hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [ALICE_ADDRESS],
+      })
+      alice = await ethers.getSigner(ALICE_ADDRESS)
+      permit2 = (await deployPermit2()).connect(alice) as Permit2
+      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      planner = new RoutePlanner()
+      const routerSigner = await ethers.getImpersonatedSigner(router.address)
+      weth = new ethers.Contract(WETH.address, ERC20_ABI).connect(routerSigner) as ERC20
+
+      // send 1 eth from alice to router.address to cover gas for weth approval
+      await (await alice.sendTransaction({ to: router.address, value: ethers.utils.parseEther('1.0') })).wait()
+      // max approve conduit for weth
+      await weth.approve(OPENSEA_CONDUIT, ethers.constants.MaxUint256)
+
+      // owner of cameoPass 1155 contract
+      const cameoPassOwner = '0x1d522ae2Dff7f5b3Cb24465630a5951aD60C9233'
+
+      // Transfer 1 token from cameoPassOwner to alice to prepare for txn
+      await cameoPass
+        .connect(await ethers.getImpersonatedSigner(cameoPassOwner))
+        .safeTransferFrom(cameoPassOwner, alice.address, id, 1, '0x00')
+    })
+
+    it('completes advanced order ERC1155 for WETH', async () => {
+      let { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[3], [ItemType.ERC20])
+      // We need the amount of 1155 tokens to sell, so we call calculateValue separately
+      let amount1155 = calculateValue(advancedOrder.parameters.consideration, [ItemType.ERC1155])
+      const params = advancedOrder.parameters
+      const wethReceived = BigNumber.from(params.offer[0].startAmount).sub(value)
+      // Can add logic to select approval target (conduit or consideration) depending on conduitHash
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+        advancedOrder,
+        [],
+        OPENSEA_CONDUIT_KEY,
+        ADDRESS_ZERO, // 0 addr so router custody
+      ])
+      // TODO: need to add arg for msg.value?
+      planner.addCommand(CommandType.SEAPORT_SELL_1155, [
+        calldata,
+        cameoPass.address,
+        OPENSEA_CONDUIT,
+        id,
+        amount1155,
+        alice.address,
+      ])
+      planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
+      const { commands, inputs } = planner
+
+      const wethBefore = await weth.balanceOf(alice.address)
+      const offererBalanceBefore = await cameoPass.balanceOf(params.offerer, id)
+      const fufillerBalanceBefore = await cameoPass.balanceOf(alice.address, id)
+
+      // put NFT in the router TODO replace with Permit2 721
+      await cameoPass.safeTransferFrom(alice.address, router.address, id, amount1155, '0x00')
+
+      const ethBefore = await ethers.provider.getBalance(alice.address)
+      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).wait()
+
+      const offererBalanceAfter = await cameoPass.balanceOf(params.offerer, id)
+      const fufillerBalanceAfter = await cameoPass.balanceOf(alice.address, id)
+      const wethAfter = await weth.balanceOf(alice.address)
+      const ethAfter = await ethers.provider.getBalance(alice.address)
+      const gasSpent = getTxGasSpent(receipt)
+      const ethDelta = ethBefore.sub(ethAfter)
+
+      // Ensure that the correct amount of NFTs were transferred to the offerer from the fufiller
+      expect(offererBalanceBefore.add(amount1155).eq(offererBalanceAfter)).to.be.true // offerer gains
+      expect(fufillerBalanceBefore.sub(amount1155).eq(fufillerBalanceAfter)).to.be.true // fufiller loses
+      expect(wethAfter.sub(wethBefore)).to.eq(wethReceived)
+      expect(ethDelta).to.eq(gasSpent)
+    })
+
+    it('revertable order returns ERC1155 to user on revert', async () => {
+      let { advancedOrder: invalidOrder } = getAdvancedOrderParams(seaportOrders[3], [ItemType.ERC20])
+      invalidOrder.signature = '0xdeadbeef'
+      let amount1155 = calculateValue(invalidOrder.parameters.consideration, [ItemType.ERC1155])
+      const params = invalidOrder.parameters
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+        invalidOrder,
+        [],
+        OPENSEA_CONDUIT_KEY,
+        ADDRESS_ZERO, // 0 addr so router custody
+      ])
+      // TODO: need to add arg for msg.value?
+      planner.addCommand(
+        CommandType.SEAPORT_SELL_1155,
+        [calldata, cameoPass.address, OPENSEA_CONDUIT, id, amount1155, alice.address],
+        true
+      )
+      planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
+      const { commands, inputs } = planner
+
+      const wethBefore = await weth.balanceOf(alice.address)
+      const offererBalanceBefore = await cameoPass.balanceOf(params.offerer, id)
+      const fufillerBalanceBefore = await cameoPass.balanceOf(alice.address, id)
+
+      // put NFT in the router TODO replace with Permit2 721
+      await cameoPass.safeTransferFrom(alice.address, router.address, id, amount1155, '0x00')
+
+      const ethBefore = await ethers.provider.getBalance(alice.address)
+      const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).wait()
+
+      const offererBalanceAfter = await cameoPass.balanceOf(params.offerer, id)
+      const fufillerBalanceAfter = await cameoPass.balanceOf(alice.address, id)
+      const wethAfter = await weth.balanceOf(alice.address)
+      const ethAfter = await ethers.provider.getBalance(alice.address)
+      const gasSpent = getTxGasSpent(receipt)
+      const ethDelta = ethBefore.sub(ethAfter)
+
+      // Alice's balance of the NFT is the same
+      expect(offererBalanceBefore.eq(offererBalanceAfter)).to.be.true
+      expect(fufillerBalanceBefore.eq(fufillerBalanceAfter)).to.be.true
+      expect(wethAfter).to.eq(wethBefore) // no weth was transferred
+      expect(ethDelta).to.eq(gasSpent)
+    })
+
+    it('reverts if ERC1155 order does not go through', async () => {
+      let { advancedOrder: invalidOrder } = getAdvancedOrderParams(seaportOrders[3], [ItemType.ERC20])
+      invalidOrder.signature = '0xdeadbeef'
+      let amount1155 = calculateValue(invalidOrder.parameters.consideration, [ItemType.ERC1155])
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+        invalidOrder,
+        [],
+        OPENSEA_CONDUIT_KEY,
+        ADDRESS_ZERO, // 0 addr so router custody
+      ])
+      // TODO: need to add arg for msg.value?
+      planner.addCommand(CommandType.SEAPORT_SELL_1155, [
+        calldata,
+        cameoPass.address,
+        OPENSEA_CONDUIT,
+        id,
+        amount1155,
+        alice.address,
+      ])
+      planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
+      const { commands, inputs } = planner
+
+      // put NFT in the router TODO replace with Permit2 721
+      await cameoPass.safeTransferFrom(alice.address, router.address, id, amount1155, '0x00')
 
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {})).to.be.revertedWith(
         'ExecutionFailed(0, "0x8baa579f")'

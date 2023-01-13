@@ -171,5 +171,63 @@
       },
       "signature": "0x49613f41eaa3eea90828bdb98b8c596974ae7d119e61504657e437c16551f89d5209f0dab3f6dffb4898b36ea823abe92a6d185ec2a73cb081017a4719f2fab51c"
     }
+  },
+  {
+    "created_date": "2023-01-12T02:24:58.989484",
+    "closing_date": "2023-02-12T02:24:53",
+    "listing_time": 1673490297,
+    "expiration_time": 1676168693,
+    "order_hash": "0xeec1b35fa105fc0c2be73574c201122969806baeb600e25ab3a1b1a20ed4b52d",
+    "protocol_data": {
+      "parameters": {
+        "offerer": "0x21af4527d97fcdc1437b6f1b85e5522d3378f74b",
+        "offer": [
+          {
+            "itemType": 1,
+            "token": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+            "identifierOrCriteria": "0",
+            "startAmount": "45000000000000000",
+            "endAmount": "45000000000000000"
+          }
+        ],
+        "consideration": [
+          {
+            "itemType": 3,
+            "token": "0x93317E87a3a47821803CAADC54Ae418Af80603DA",
+            "identifierOrCriteria": "0",
+            "startAmount": "1",
+            "endAmount": "1",
+            "recipient": "0x21AF4527d97Fcdc1437b6f1b85E5522d3378f74b"
+          },
+          {
+            "itemType": 1,
+            "token": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+            "identifierOrCriteria": "0",
+            "startAmount": "1125000000000000",
+            "endAmount": "1125000000000000",
+            "recipient": "0x0000a26b00c1F0DF003000390027140000fAa719"
+          },
+          {
+            "itemType": 1,
+            "token": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+            "identifierOrCriteria": "0",
+            "startAmount": "3375000000000000",
+            "endAmount": "3375000000000000",
+            "recipient": "0x54Dcbc1e1348d4fF4d09d391a5f75A6632cD9800"
+          }
+        ],
+        "startTime": "1673490297",
+        "endTime": "1676168693",
+        "orderType": 3,
+        "zone": "0x004C00500000aD104D7DBd00e3ae0A5C00560C00",
+        "zoneHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "salt": "0x360c6ebe0000000000000000000000000000000000000000e0b1c60ebaec909c",
+        "conduitKey": "0x0000007b02230091a7ed01230072f7006a004d60a8d4e71d599b8104250f0000",
+        "totalOriginalConsiderationItems": 3,
+        "counter": 0
+      },
+      "signature": "0x5c481ae483ce19fd0b7033affd384deeb15fbcce2e179af133bba77cdc682da8080578ca8196a596e321b26c3dfe3a47b3f600166e3649fac14ceca08ba969391b"
+    },
+    "protocol_address": "0x00000000006c3852cbef3e08e8df289169ede581"
   }
 ]

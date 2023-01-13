@@ -176,15 +176,9 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
             // 0x20 <= command
         } else {
             if (command == Commands.SEAPORT_SELL_721) {
-                // For seaport ERC721 -> ERC20 / ETH,
-                // offer is ERC20 / ETH
-                // consideration includes ERC721 (+ optional fees but taken from offer)
-
-                // set recipient as 0x0 for router custody, or user's EOA
                 (success, output) = approveAndSell721(inputs, SEAPORT);
             } else if (command == Commands.SEAPORT_SELL_1155) {
-                // TODO:
-                revert InvalidCommandType(command);
+                (success, output) = approveAndSell1155(inputs, SEAPORT);
             } else {
                 // placeholder area for commands 0x22-0x3f
                 revert InvalidCommandType(command);

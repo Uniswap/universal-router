@@ -40,6 +40,7 @@ export enum CommandType {
   SUDOSWAP_SELL = 0x1e,
 
   SEAPORT_SELL_721 = 0x20,
+  SEAPORT_SELL_1155 = 0x21,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -56,6 +57,7 @@ const REVERTABLE_COMMANDS = new Set<CommandType>([
   CommandType.NFT20,
   CommandType.SUDOSWAP_SELL,
   CommandType.SEAPORT_SELL_721,
+  CommandType.SEAPORT_SELL_1155,
 ])
 
 const PERMIT_STRUCT =
@@ -97,6 +99,7 @@ const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
   [CommandType.SUDOSWAP_SELL]: ['bytes', 'address', 'address', 'uint256', 'address'],
   [CommandType.SEAPORT_SELL_721]: ['bytes', 'address', 'address', 'uint256', 'address'],
+  [CommandType.SEAPORT_SELL_1155]: ['bytes', 'address', 'address', 'uint256', 'uint256', 'address'],
 }
 
 export class RoutePlanner {
