@@ -28,7 +28,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
     /// @dev 2 masks are used to enable use of a nested-if statement in execution for efficiency reasons
     /// @return success True on success of the command, false on failure
     /// @return output The outputs or error messages, if any, from the command
-    function dispatch(bytes1 commandType, bytes memory inputs) internal returns (bool success, bytes memory output) {
+    function dispatch(bytes1 commandType, bytes calldata inputs) internal returns (bool success, bytes memory output) {
         uint256 command = uint8(commandType & Commands.COMMAND_TYPE_MASK);
 
         success = true;

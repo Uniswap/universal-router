@@ -37,7 +37,7 @@ contract UniversalRouter is RouterImmutables, IUniversalRouter, Dispatcher, Rewa
         for (uint256 commandIndex = 0; commandIndex < numCommands;) {
             bytes1 command = commands[commandIndex];
 
-            bytes memory input = inputs[commandIndex];
+            bytes calldata input = inputs[commandIndex];
 
             (success, output) = dispatch(command, input);
 
