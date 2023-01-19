@@ -82,7 +82,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                             bool payerIsUser
                         ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
                         address payer = payerIsUser ? msg.sender : address(this);
-                        v2SwapExactInput(recipient.map(), amountIn, amountOutMin, path, payer);
+                        success = v2SwapExactInput(recipient.map(), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
                         (
                             address recipient,
@@ -92,7 +92,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                             bool payerIsUser
                         ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
                         address payer = payerIsUser ? msg.sender : address(this);
-                        v2SwapExactOutput(recipient.map(), amountOut, amountInMax, path, payer);
+                        success = v2SwapExactOutput(recipient.map(), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_PERMIT) {
                         (IAllowanceTransfer.PermitSingle memory permitSingle, bytes memory data) =
                             abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes));
