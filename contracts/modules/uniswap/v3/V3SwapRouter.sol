@@ -19,6 +19,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
     error V3InvalidSwap();
     error V3TooMuchRequested();
     error V3InvalidCaller();
+    error V3SwapFailed();
 
     /// @dev Used as the placeholder value for maxAmountIn, because the computed amount in for an exact output swap
     /// can never actually be this value
@@ -53,7 +54,9 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
             if (path.hasMultiplePools()) {
                 // this is an intermediate step so the payer is actually this contract
                 path.skipToken();
-                _swap(-amountToPay.toInt256(), msg.sender, path, payer, false);
+                (bool success,,) = _swap(-amountToPay.toInt256(), msg.sender, path, payer, false);
+                // we revert here, so that it will return `false` to the outer call success
+                if (!success) revert V3SwapFailed();
             } else {
                 if (amountToPay > maxAmountInCached) revert V3TooMuchRequested();
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
@@ -86,7 +89,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
             bool hasMultiplePools = path.hasMultiplePools();
 
             // the outputs of prior swaps become the inputs to subsequent ones
-            (bool success, int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = _swap(
+            (bool success, bytes memory amountDeltas, bool zeroForOne) = _swap(
                 amountIn.toInt256(),
                 hasMultiplePools ? address(this) : recipient, // for intermediate swaps, this contract custodies
                 path.getFirstPool(), // only the first pool is needed
@@ -96,6 +99,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
 
             if (!success) return false;
 
+            (int256 amount0Delta, int256 amount1Delta) = abi.decode(amountDeltas, (int256, int256));
             amountIn = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
 
             // decide whether to continue or terminate
@@ -126,11 +130,12 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         address payer
     ) internal returns (bool) {
         maxAmountInCached = amountInMaximum;
-        (bool success, int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
+        (bool success, bytes memory amountDeltas, bool zeroForOne) =
             _swap(-amountOut.toInt256(), recipient, path, payer, false);
 
         if (!success) return false;
 
+        (int256 amount0Delta, int256 amount1Delta) = abi.decode(amountDeltas, (int256, int256));
         uint256 amountOutReceived = zeroForOne ? uint256(-amount1Delta) : uint256(-amount0Delta);
 
         if (amountOutReceived != amountOut) return false;
@@ -143,14 +148,13 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
     /// For exactIn, `amount` is `amountIn`. For exactOut, `amount` is `-amountOut`
     function _swap(int256 amount, address recipient, bytes memory path, address payer, bool isExactIn)
         private
-        returns (bool success, int256 amount0Delta, int256 amount1Delta, bool zeroForOne)
+        returns (bool success, bytes memory amountDeltas, bool zeroForOne)
     {
         (address tokenIn, address tokenOut, uint24 fee) = path.decodeFirstPool();
 
         zeroForOne = isExactIn ? tokenIn < tokenOut : tokenOut < tokenIn;
 
-        bytes memory returnData;
-        (success, returnData) = computePoolAddress(tokenIn, tokenOut, fee).call(
+        (success, amountDeltas) = computePoolAddress(tokenIn, tokenOut, fee).call(
             abi.encodeWithSignature(
                 'swap(address,bool,int256,uint160,bytes)',
                 recipient,
@@ -160,10 +164,6 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
                 abi.encode(path, payer)
             )
         );
-
-        if (success) {
-            (amount0Delta, amount1Delta) = abi.decode(returnData, (int256, int256));
-        }
     }
 
     function computePoolAddress(address tokenA, address tokenB, uint24 fee) private view returns (address pool) {
