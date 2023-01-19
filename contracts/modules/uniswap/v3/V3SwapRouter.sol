@@ -76,7 +76,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         uint256 amountOutMinimum,
         bytes memory path,
         address payer
-    ) internal {
+    ) internal returns (bool) {
         // use amountIn == Constants.CONTRACT_BALANCE as a flag to swap the entire balance of the contract
         if (amountIn == Constants.CONTRACT_BALANCE) {
             address tokenIn = path.decodeFirstToken();
@@ -88,13 +88,15 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
             bool hasMultiplePools = path.hasMultiplePools();
 
             // the outputs of prior swaps become the inputs to subsequent ones
-            (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = _swap(
+            (bool success, int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = _swap(
                 amountIn.toInt256(),
                 hasMultiplePools ? address(this) : recipient, // for intermediate swaps, this contract custodies
                 path.getFirstPool(), // only the first pool is needed
                 payer, // for intermediate swaps, this contract custodies
                 true
             );
+
+            if (!success) return false;
 
             amountIn = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
 
@@ -108,7 +110,8 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
             }
         }
 
-        if (amountOut < amountOutMinimum) revert V3TooLittleReceived();
+        if (amountOut < amountOutMinimum) return false;
+        return true;
     }
 
     /// @notice Performs a Uniswap v3 exact output swap
@@ -123,35 +126,46 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         uint256 amountInMaximum,
         bytes memory path,
         address payer
-    ) internal {
+    ) internal returns (bool) {
         maxAmountInCached = amountInMaximum;
-        (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
+        (bool success, int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
             _swap(-amountOut.toInt256(), recipient, path, payer, false);
+
+        if (!success) return false;
 
         uint256 amountOutReceived = zeroForOne ? uint256(-amount1Delta) : uint256(-amount0Delta);
 
-        if (amountOutReceived != amountOut) revert V3InvalidAmountOut();
+        if (amountOutReceived != amountOut) return false;
 
         maxAmountInCached = DEFAULT_MAX_AMOUNT_IN;
+        return true;
     }
 
     /// @dev Performs a single swap for both exactIn and exactOut
     /// For exactIn, `amount` is `amountIn`. For exactOut, `amount` is `-amountOut`
     function _swap(int256 amount, address recipient, bytes memory path, address payer, bool isExactIn)
         private
-        returns (int256 amount0Delta, int256 amount1Delta, bool zeroForOne)
+        returns (bool success, int256 amount0Delta, int256 amount1Delta, bool zeroForOne)
     {
         (address tokenIn, address tokenOut, uint24 fee) = path.decodeFirstPool();
 
         zeroForOne = isExactIn ? tokenIn < tokenOut : tokenOut < tokenIn;
 
-        (amount0Delta, amount1Delta) = IUniswapV3Pool(computePoolAddress(tokenIn, tokenOut, fee)).swap(
-            recipient,
-            zeroForOne,
-            amount,
-            (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1),
-            abi.encode(path, payer)
+        bytes memory returnData;
+        (success, returnData) = computePoolAddress(tokenIn, tokenOut, fee).call(
+            abi.encodeWithSignature(
+                'swap(address,bool,int256,uint160,bytes)',
+                recipient,
+                zeroForOne,
+                amount,
+                (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1),
+                abi.encode(path, payer)
+            )
         );
+
+        if (success) {
+            (amount0Delta, amount1Delta) = abi.decode(returnData, (int256, int256));
+        }
     }
 
     function computePoolAddress(address tokenA, address tokenB, uint24 fee) private view returns (address pool) {

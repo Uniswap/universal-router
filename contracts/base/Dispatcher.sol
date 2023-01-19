@@ -41,12 +41,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                         (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path, bool payerIsUser)
                         = abi.decode(inputs, (address, uint256, uint256, bytes, bool));
                         address payer = payerIsUser ? msg.sender : address(this);
-                        v3SwapExactInput(recipient.map(), amountIn, amountOutMin, path, payer);
+                        success = v3SwapExactInput(recipient.map(), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
                         (address recipient, uint256 amountOut, uint256 amountInMax, bytes memory path, bool payerIsUser)
                         = abi.decode(inputs, (address, uint256, uint256, bytes, bool));
                         address payer = payerIsUser ? msg.sender : address(this);
-                        v3SwapExactOutput(recipient.map(), amountOut, amountInMax, path, payer);
+                        success = v3SwapExactOutput(recipient.map(), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
                         (address token, address recipient, uint160 amount) =
                             abi.decode(inputs, (address, address, uint160));
