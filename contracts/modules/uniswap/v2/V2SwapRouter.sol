@@ -11,13 +11,9 @@ import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
 /// @title Router for Uniswap v2 Trades
 abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
-    error V2TooLittleReceived();
-    error V2TooMuchRequested();
-    error V2InvalidPath();
-
-    function _v2Swap(address[] memory path, address recipient, address pair) private {
+    function _v2Swap(address[] memory path, address recipient, address pair) private returns (bool) {
         unchecked {
-            if (path.length < 2) revert V2InvalidPath();
+            if (path.length < 2) return false;
 
             // cached to save on duplicate operations
             (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
@@ -38,10 +34,16 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
                         UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, output, path[i + 2]
                     )
                     : (recipient, address(0));
-                IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
+                (bool success,) = pair.call(
+                    abi.encodeWithSignature(
+                        'swap(uint256,uint256,address,bytes)', amount0Out, amount1Out, nextPair, new bytes(0)
+                    )
+                );
+                if (!success) return false;
                 pair = nextPair;
             }
         }
+        return true;
     }
 
     /// @notice Performs a Uniswap v2 exact input swap
@@ -56,7 +58,7 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
         uint256 amountOutMinimum,
         address[] memory path,
         address payer
-    ) internal {
+    ) internal returns (bool) {
         address firstPair =
             UniswapV2Library.pairFor(UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, path[0], path[1]);
         if (
@@ -68,10 +70,12 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
         ERC20 tokenOut = ERC20(path[path.length - 1]);
         uint256 balanceBefore = tokenOut.balanceOf(recipient);
 
-        _v2Swap(path, recipient, firstPair);
+        bool success = _v2Swap(path, recipient, firstPair);
+        if (!success) return false;
 
         uint256 amountOut = tokenOut.balanceOf(recipient) - balanceBefore;
-        if (amountOut < amountOutMinimum) revert V2TooLittleReceived();
+        if (amountOut < amountOutMinimum) return false;
+        return true;
     }
 
     /// @notice Performs a Uniswap v2 exact output swap
@@ -86,12 +90,12 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
         uint256 amountInMaximum,
         address[] memory path,
         address payer
-    ) internal {
+    ) internal returns (bool) {
         (uint256 amountIn, address firstPair) =
             UniswapV2Library.getAmountInMultihop(UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, amountOut, path);
-        if (amountIn > amountInMaximum) revert V2TooMuchRequested();
+        if (amountIn > amountInMaximum) return false;
 
         payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
-        _v2Swap(path, recipient, firstPair);
+        return _v2Swap(path, recipient, firstPair);
     }
 }

@@ -17,9 +17,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
     using SafeCast for uint256;
 
     error V3InvalidSwap();
-    error V3TooLittleReceived();
     error V3TooMuchRequested();
-    error V3InvalidAmountOut();
     error V3InvalidCaller();
 
     /// @dev Used as the placeholder value for maxAmountIn, because the computed amount in for an exact output swap
