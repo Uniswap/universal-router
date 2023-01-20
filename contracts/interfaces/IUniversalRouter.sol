@@ -12,6 +12,19 @@ interface IUniversalRouter is IRewardsCollector, IERC721Receiver, IERC1155Receiv
     /// @notice Thrown executing commands with an expired deadline
     error TransactionDeadlinePassed();
 
+    /// @notice Thrown executing commands with an expired deadline
+    error LengthMismatch();
+
+    /// @notice Thrown when a required command has failed
+    error ExecutionFailed(uint256 commandIndex, bytes message);
+
+    /// @notice Thrown when a provided command is invalid
+    error InvalidCommandType(uint256 commandType);
+
+    /// @notice Thrown when a provided command is invalid
+    error InvalidOwnerERC721();
+    error InvalidOwnerERC1155();
+
     /// @notice Executes encoded commands along with provided inputs. Reverts if deadline has expired.
     /// @param commands A set of concatenated commands, each 1 byte in length
     /// @param inputs An array of byte strings containing abi encoded inputs for each command

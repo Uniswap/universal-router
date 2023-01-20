@@ -7,9 +7,11 @@ contract ReentrancyLock {
     uint256 private isLocked = 1;
 
     modifier isNotLocked() {
-        if (isLocked != 1) revert ContractLocked();
-        isLocked = 2;
-        _;
-        isLocked = 1;
+        if (msg.sender != address(this)) {
+            if (isLocked != 1) revert ContractLocked();
+            isLocked = 2;
+            _;
+            isLocked = 1;
+        }
     }
 }
