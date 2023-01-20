@@ -12,7 +12,7 @@ interface IUniversalRouter is IRewardsCollector, IERC721Receiver, IERC1155Receiv
     /// @notice Thrown executing commands with an expired deadline
     error TransactionDeadlinePassed();
 
-    /// @notice Thrown executing commands with an expired deadline
+    /// @notice Thrown when differing lengths of commands and inputs are given
     error LengthMismatch();
 
     /// @notice Thrown when a required command has failed
@@ -21,8 +21,10 @@ interface IUniversalRouter is IRewardsCollector, IERC721Receiver, IERC1155Receiv
     /// @notice Thrown when a provided command is invalid
     error InvalidCommandType(uint256 commandType);
 
-    /// @notice Thrown when a provided command is invalid
+    /// @notice Thrown when an ERC721 ownership check fails
     error InvalidOwnerERC721();
+
+    /// @notice Thrown when an ERC1155 ownership check fails
     error InvalidOwnerERC1155();
 
     /// @notice Executes encoded commands along with provided inputs. Reverts if deadline has expired.

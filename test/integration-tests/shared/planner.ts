@@ -53,7 +53,7 @@ const REVERTABLE_COMMANDS = new Set<CommandType>([
   CommandType.FOUNDATION,
   CommandType.SUDOSWAP,
   CommandType.NFT20,
-  CommandType.EXECUTE_SUB_PLAN
+  CommandType.EXECUTE_SUB_PLAN,
 ])
 
 const PERMIT_STRUCT =
@@ -105,8 +105,8 @@ export class RoutePlanner {
     this.inputs = []
   }
 
-  addSubPlan(subplan: RoutePlanner): void {
-    this.addCommand(CommandType.EXECUTE_SUB_PLAN, [subplan.commands, subplan.inputs], true)
+  addSubPlan(subplan: RoutePlanner, allowRevert = true): void {
+    this.addCommand(CommandType.EXECUTE_SUB_PLAN, [subplan.commands, subplan.inputs], allowRevert)
   }
 
   addCommand(type: CommandType, parameters: any[], allowRevert = false): void {

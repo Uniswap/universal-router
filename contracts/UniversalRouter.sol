@@ -8,11 +8,10 @@ import {Payments} from './modules/Payments.sol';
 import {RewardsCollector} from './base/RewardsCollector.sol';
 
 // Admin helpers
-import {ReentrancyLock} from './base/ReentrancyLock.sol';
+import {LockAndMsgSender} from './base/LockAndMsgSender.sol';
 import {RouterImmutables} from './base/RouterImmutables.sol';
 import {Callbacks} from './base/Callbacks.sol';
 import {Commands} from './libraries/Commands.sol';
-import {Recipient} from './libraries/Recipient.sol';
 import {RouterParameters, RouterImmutables} from './base/RouterImmutables.sol';
 
 // Interfaces
@@ -22,6 +21,8 @@ import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol'
 import {ICryptoPunksMarket} from './interfaces/external/ICryptoPunksMarket.sol';
 import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
 
+import {console} from 'hardhat/console.sol';
+
 contract UniversalRouter is
     IUniversalRouter,
     RouterImmutables,
@@ -30,9 +31,8 @@ contract UniversalRouter is
     V2SwapRouter,
     V3SwapRouter,
     Callbacks,
-    ReentrancyLock
+    LockAndMsgSender
 {
-    using Recipient for address;
 
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
@@ -52,6 +52,7 @@ contract UniversalRouter is
 
     /// @inheritdoc IUniversalRouter
     function execute(bytes calldata commands, bytes[] calldata inputs) public payable isNotLocked {
+        console.logBytes(commands);
         bool success;
         bytes memory output;
         uint256 numCommands = commands.length;
@@ -88,6 +89,8 @@ contract UniversalRouter is
     function dispatch(bytes1 commandType, bytes memory inputs) internal returns (bool success, bytes memory output) {
         uint256 command = uint8(commandType & Commands.COMMAND_TYPE_MASK);
 
+        console.logBytes1(commandType);
+
         success = true;
 
         if (command < 0x20) {
@@ -97,13 +100,13 @@ contract UniversalRouter is
                     if (command == Commands.V3_SWAP_EXACT_IN) {
                         (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path, bool payerIsUser)
                         = abi.decode(inputs, (address, uint256, uint256, bytes, bool));
-                        address payer = payerIsUser ? msg.sender : address(this);
-                        v3SwapExactInput(recipient.map(), amountIn, amountOutMin, path, payer);
+                        address payer = payerIsUser ? isLockedSender : address(this);
+                        v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
                         (address recipient, uint256 amountOut, uint256 amountInMax, bytes memory path, bool payerIsUser)
                         = abi.decode(inputs, (address, uint256, uint256, bytes, bool));
-                        address payer = payerIsUser ? msg.sender : address(this);
-                        v3SwapExactOutput(recipient.map(), amountOut, amountInMax, path, payer);
+                        address payer = payerIsUser ? isLockedSender : address(this);
+                        v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
                         (address token, address recipient, uint160 amount) =
                             abi.decode(inputs, (address, address, uint160));
@@ -115,15 +118,15 @@ contract UniversalRouter is
                     } else if (command == Commands.SWEEP) {
                         (address token, address recipient, uint256 amountMin) =
                             abi.decode(inputs, (address, address, uint256));
-                        Payments.sweep(token, recipient.map(), amountMin);
+                        Payments.sweep(token, map(recipient), amountMin);
                     } else if (command == Commands.TRANSFER) {
                         (address token, address recipient, uint256 value) =
                             abi.decode(inputs, (address, address, uint256));
-                        Payments.pay(token, recipient.map(), value);
+                        Payments.pay(token, map(recipient), value);
                     } else if (command == Commands.PAY_PORTION) {
                         (address token, address recipient, uint256 bips) =
                             abi.decode(inputs, (address, address, uint256));
-                        Payments.payPortion(token, recipient.map(), bips);
+                        Payments.payPortion(token, map(recipient), bips);
                     } else {
                         // placeholder area for command 0x07
                         revert InvalidCommandType(command);
@@ -138,8 +141,8 @@ contract UniversalRouter is
                             address[] memory path,
                             bool payerIsUser
                         ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
-                        address payer = payerIsUser ? msg.sender : address(this);
-                        v2SwapExactInput(recipient.map(), amountIn, amountOutMin, path, payer);
+                        address payer = payerIsUser ? isLockedSender : address(this);
+                        v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
                         (
                             address recipient,
@@ -148,22 +151,22 @@ contract UniversalRouter is
                             address[] memory path,
                             bool payerIsUser
                         ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
-                        address payer = payerIsUser ? msg.sender : address(this);
-                        v2SwapExactOutput(recipient.map(), amountOut, amountInMax, path, payer);
+                        address payer = payerIsUser ? isLockedSender : address(this);
+                        v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_PERMIT) {
                         (IAllowanceTransfer.PermitSingle memory permitSingle, bytes memory data) =
                             abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes));
                         PERMIT2.permit(msg.sender, permitSingle, data);
                     } else if (command == Commands.WRAP_ETH) {
                         (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
-                        Payments.wrapETH(recipient.map(), amountMin);
+                        Payments.wrapETH(map(recipient), amountMin);
                     } else if (command == Commands.UNWRAP_WETH) {
                         (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
-                        Payments.unwrapWETH9(recipient.map(), amountMin);
+                        Payments.unwrapWETH9(map(recipient), amountMin);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
                         (IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) =
                             abi.decode(inputs, (IAllowanceTransfer.AllowanceTransferDetails[]));
-                        permit2TransferFrom(batchDetails);
+                        permit2TransferFrom(batchDetails, isLockedSender);
                     } else {
                         // placeholder area for commands 0x0e-0x0f
                         revert InvalidCommandType(command);
@@ -187,7 +190,7 @@ contract UniversalRouter is
                         (success, output) = CRYPTOPUNKS.call{value: value}(
                             abi.encodeWithSelector(ICryptoPunksMarket.buyPunk.selector, punkId)
                         );
-                        if (success) ICryptoPunksMarket(CRYPTOPUNKS).transferPunk(recipient.map(), punkId);
+                        if (success) ICryptoPunksMarket(CRYPTOPUNKS).transferPunk(map(recipient), punkId);
                         else output = 'CryptoPunk Trade Failed';
                     } else if (command == Commands.LOOKS_RARE_1155) {
                         (success, output) = callAndTransfer1155(inputs, LOOKS_RARE);
@@ -202,7 +205,7 @@ contract UniversalRouter is
                         if (!success) output = abi.encodePacked(InvalidOwnerERC1155.selector);
                     } else if (command == Commands.SWEEP_ERC721) {
                         (address token, address recipient, uint256 id) = abi.decode(inputs, (address, address, uint256));
-                        Payments.sweepERC721(token, recipient.map(), id);
+                        Payments.sweepERC721(token, map(recipient), id);
                     }
                     // 0x18 <= command < 0x1f
                 } else {
@@ -221,7 +224,7 @@ contract UniversalRouter is
                     } else if (command == Commands.SWEEP_ERC1155) {
                         (address token, address recipient, uint256 id, uint256 amount) =
                             abi.decode(inputs, (address, address, uint256, uint256));
-                        Payments.sweepERC1155(token, recipient.map(), id, amount);
+                        Payments.sweepERC1155(token, map(recipient), id, amount);
                     } else {
                         // placeholder area for commands 0x1e-0x1f
                         revert InvalidCommandType(command);
@@ -232,8 +235,10 @@ contract UniversalRouter is
         } else {
             if (command == Commands.EXECUTE_SUB_PLAN) {
                 (bytes memory _commands, bytes[] memory _inputs) = abi.decode(inputs, (bytes, bytes[]));
+                console.logBytes(_commands);
                 (success, output) =
-                    address(this).call(abi.encodeWithSignature('execute(bytes,bytes[])', _commands, _inputs));
+                    (address(this)).call(abi.encodeWithSignature('execute(bytes,bytes[])', _commands, _inputs));
+                console.log(success);
             } else {
                 // placeholder area for commands 0x21-0x3f
                 revert InvalidCommandType(command);
@@ -253,7 +258,7 @@ contract UniversalRouter is
         (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
             abi.decode(inputs, (uint256, bytes, address, address, uint256));
         (success, output) = protocol.call{value: value}(data);
-        if (success) ERC721(token).safeTransferFrom(address(this), recipient.map(), id);
+        if (success) ERC721(token).safeTransferFrom(address(this), map(recipient), id);
     }
 
     /// @notice Performs a call to purchase an ERC1155, then transfers the ERC1155 to a specified recipient
@@ -268,7 +273,7 @@ contract UniversalRouter is
         (uint256 value, bytes memory data, address recipient, address token, uint256 id, uint256 amount) =
             abi.decode(inputs, (uint256, bytes, address, address, uint256, uint256));
         (success, output) = protocol.call{value: value}(data);
-        if (success) ERC1155(token).safeTransferFrom(address(this), recipient.map(), id, amount, new bytes(0));
+        if (success) ERC1155(token).safeTransferFrom(address(this), map(recipient), id, amount, new bytes(0));
     }
 
     /// @notice To receive ETH from WETH and NFT protocols

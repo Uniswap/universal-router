@@ -894,7 +894,7 @@ describe('Uniswap Gas Tests', () => {
             encodePathExactInput(tokens),
             SOURCE_MSG_SENDER,
           ])
-          // aggregate slippate check
+          // aggregate slippage check
           planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, expandTo18DecimalsBN(0.0005)])
 
           const { commands, inputs } = planner
@@ -916,7 +916,7 @@ describe('Uniswap Gas Tests', () => {
             encodePathExactInput(tokens),
             SOURCE_MSG_SENDER,
           ])
-          // aggregate slippate check
+          // aggregate slippage check
           planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, expandTo18DecimalsBN(0.0005)])
 
           const { commands, inputs } = planner
@@ -938,7 +938,7 @@ describe('Uniswap Gas Tests', () => {
             encodePathExactInput(tokens),
             SOURCE_ROUTER,
           ])
-          // aggregate slippate check
+          // aggregate slippage check
           planner.addCommand(CommandType.SWEEP, [USDC.address, MSG_SENDER, 0.0005 * 10 ** 6])
 
           const { commands, inputs } = planner
@@ -958,7 +958,7 @@ describe('Uniswap Gas Tests', () => {
             encodePathExactInput(tokens),
             SOURCE_MSG_SENDER,
           ])
-          // aggregate slippate check
+          // aggregate slippage check
           planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, expandTo18DecimalsBN(0.0005)])
 
           const { commands, inputs } = planner
@@ -987,7 +987,7 @@ describe('Uniswap Gas Tests', () => {
             path,
             SOURCE_MSG_SENDER,
           ])
-          // aggregate slippate check
+          // aggregate slippage check
           planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, fullAmountOut])
 
           const { commands, inputs } = planner
