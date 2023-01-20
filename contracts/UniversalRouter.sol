@@ -51,7 +51,6 @@ contract UniversalRouter is
 
     /// @inheritdoc IUniversalRouter
     function execute(bytes calldata commands, bytes[] calldata inputs) public payable isNotLocked {
-        console.logBytes(commands);
         bool success;
         bytes memory output;
         uint256 numCommands = commands.length;
@@ -87,8 +86,6 @@ contract UniversalRouter is
     /// @return output The outputs or error messages, if any, from the command
     function dispatch(bytes1 commandType, bytes memory inputs) internal returns (bool success, bytes memory output) {
         uint256 command = uint8(commandType & Commands.COMMAND_TYPE_MASK);
-
-        console.logBytes1(commandType);
 
         success = true;
 
@@ -234,10 +231,8 @@ contract UniversalRouter is
         } else {
             if (command == Commands.EXECUTE_SUB_PLAN) {
                 (bytes memory _commands, bytes[] memory _inputs) = abi.decode(inputs, (bytes, bytes[]));
-                console.logBytes(_commands);
                 (success, output) =
                     (address(this)).call(abi.encodeWithSignature('execute(bytes,bytes[])', _commands, _inputs));
-                console.log(success);
             } else {
                 // placeholder area for commands 0x21-0x3f
                 revert InvalidCommandType(command);

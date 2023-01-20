@@ -976,7 +976,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       describe('Batch reverts', () => {
-        it.only('2 sub-plans, neither fails', async () => {
+        it('2 sub-plans, neither fails', async () => {
           let subplan = new RoutePlanner()
 
           // first split route sub-plan. DAI->WETH, 2 routes on V2 and V3.
