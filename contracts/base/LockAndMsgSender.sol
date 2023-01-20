@@ -6,7 +6,7 @@ import {Constants} from '../libraries/Constants.sol';
 contract LockAndMsgSender {
     error ContractLocked();
 
-    address constant private ADDRESS_ONE = address(1);
+    address private constant ADDRESS_ONE = address(1);
     address internal isLockedSender = ADDRESS_ONE;
 
     modifier isNotLocked() {

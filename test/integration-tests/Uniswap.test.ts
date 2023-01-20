@@ -977,7 +977,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       describe('Batch reverts', () => {
         it.only('2 sub-plans, neither fails', async () => {
-
           let subplan = new RoutePlanner()
 
           // first split route sub-plan. DAI->WETH, 2 routes on V2 and V3.
@@ -1007,7 +1006,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           tokens = [USDC.address, WETH.address]
           const usdcV3AmountIn = expandTo6DecimalsBN(5)
           const wethMinAmountOut2 = expandTo18DecimalsBN(0.0005)
-          
+
           // Add the trade to the sub-plan
           subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
             MSG_SENDER,
@@ -1018,9 +1017,11 @@ describe('Uniswap V2 and V3 Tests:', () => {
           ])
 
           // add the second subplan to the main planner
-          planner.addSubPlan(subplan, false)  
+          planner.addSubPlan(subplan, false)
 
-          const { usdcBalanceBefore, usdcBalanceAfter, daiBalanceBefore, daiBalanceAfter } = await executeRouter(planner)
+          const { usdcBalanceBefore, usdcBalanceAfter, daiBalanceBefore, daiBalanceAfter } = await executeRouter(
+            planner
+          )
 
           expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.eq(usdcV3AmountIn)
           expect(daiBalanceBefore.sub(daiBalanceAfter)).to.eq(daiV2AmountIn.add(daiV3AmountIn))
