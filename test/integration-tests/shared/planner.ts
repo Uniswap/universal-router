@@ -105,8 +105,8 @@ export class RoutePlanner {
     this.inputs = []
   }
 
-  addSubPlan(subplan: RoutePlanner, allowRevert = true): void {
-    this.addCommand(CommandType.EXECUTE_SUB_PLAN, [subplan.commands, subplan.inputs], allowRevert)
+  addSubPlan(subplan: RoutePlanner): void {
+    this.addCommand(CommandType.EXECUTE_SUB_PLAN, [subplan.commands, subplan.inputs], true)
   }
 
   addCommand(type: CommandType, parameters: any[], allowRevert = false): void {

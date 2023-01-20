@@ -999,7 +999,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, wethMinAmountOut1])
 
           // add the subplan to the main planner
-          planner.addSubPlan(subplan, false)
+          planner.addSubPlan(subplan)
           subplan = new RoutePlanner()
 
           // second split route sub-plan. USDC->WETH, 1 route on V3
@@ -1017,7 +1017,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           ])
 
           // add the second subplan to the main planner
-          planner.addSubPlan(subplan, false)
+          planner.addSubPlan(subplan)
 
           const { usdcBalanceBefore, usdcBalanceAfter, daiBalanceBefore, daiBalanceAfter } = await executeRouter(
             planner
