@@ -6,17 +6,11 @@ import {IERC1155Receiver} from '@openzeppelin/contracts/token/ERC1155/IERC1155Re
 import {IRewardsCollector} from './IRewardsCollector.sol';
 
 interface IUniversalRouter is IRewardsCollector, IERC721Receiver, IERC1155Receiver {
-    /// @notice Thrown when a required command has failed
-    error ExecutionFailed(uint256 commandIndex, bytes message);
-
     /// @notice Thrown when attempting to send ETH directly to the contract
     error ETHNotAccepted();
 
     /// @notice Thrown executing commands with an expired deadline
     error TransactionDeadlinePassed();
-
-    /// @notice Thrown executing commands with an expired deadline
-    error LengthMismatch();
 
     /// @notice Executes encoded commands along with provided inputs. Reverts if deadline has expired.
     /// @param commands A set of concatenated commands, each 1 byte in length

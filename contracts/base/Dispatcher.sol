@@ -22,6 +22,39 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
     error InvalidOwnerERC721();
     error InvalidOwnerERC1155();
 
+    /// @notice Thrown executing commands with an expired deadline
+    error LengthMismatch();
+    /// @notice Thrown when a required command has failed
+    error ExecutionFailed(uint256 commandIndex, bytes message);
+
+    function _execute(bytes calldata commands, bytes[] calldata inputs) internal {
+        bool success;
+        bytes memory output;
+        uint256 numCommands = commands.length;
+        if (inputs.length != numCommands) revert LengthMismatch();
+
+        // loop through all given commands, execute them and pass along outputs as defined
+        for (uint256 commandIndex = 0; commandIndex < numCommands;) {
+            bytes1 command = commands[commandIndex];
+
+            bytes memory input = inputs[commandIndex];
+
+            (success, output) = dispatch(command, input);
+
+            if (!success && successRequired(command)) {
+                revert ExecutionFailed({commandIndex: commandIndex, message: output});
+            }
+
+            unchecked {
+                commandIndex++;
+            }
+        }
+    }
+
+    function successRequired(bytes1 command) internal pure returns (bool) {
+        return command & Commands.FLAG_ALLOW_REVERT == 0;
+    }
+
     /// @notice Decodes and executes the given command with the given inputs
     /// @param commandType The command type to execute
     /// @param inputs The inputs to execute the command with
