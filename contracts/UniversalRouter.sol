@@ -21,8 +21,6 @@ import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol'
 import {ICryptoPunksMarket} from './interfaces/external/ICryptoPunksMarket.sol';
 import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
 
-import {console} from 'hardhat/console.sol';
-
 contract UniversalRouter is
     IUniversalRouter,
     RouterImmutables,
