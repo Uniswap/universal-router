@@ -101,7 +101,9 @@ abstract contract Payments is RouterImmutables {
         }
         if (amount > 0) {
             WETH9.deposit{value: amount}();
-            WETH9.transfer(recipient, amount);
+            if (recipient != address(this)) {
+                WETH9.transfer(recipient, amount);
+            }
         }
     }
 
