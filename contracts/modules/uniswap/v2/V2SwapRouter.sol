@@ -15,7 +15,7 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
     error V2TooMuchRequested();
     error V2InvalidPath();
 
-    function _v2Swap(address[] memory path, address recipient, address pair) private {
+    function _v2Swap(address[] calldata path, address recipient, address pair) private {
         unchecked {
             if (path.length < 2) revert V2InvalidPath();
 
@@ -54,7 +54,7 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
         address recipient,
         uint256 amountIn,
         uint256 amountOutMinimum,
-        address[] memory path,
+        address[] calldata path,
         address payer
     ) internal {
         address firstPair =
@@ -84,7 +84,7 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
         address recipient,
         uint256 amountOut,
         uint256 amountInMaximum,
-        address[] memory path,
+        address[] calldata path,
         address payer
     ) internal {
         (uint256 amountIn, address firstPair) =

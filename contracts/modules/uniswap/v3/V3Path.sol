@@ -7,6 +7,8 @@ import {BytesLib} from './BytesLib.sol';
 library V3Path {
     using BytesLib for bytes;
 
+    error SliceOutOfBounds();
+
     /// @dev The length of the bytes encoded address
     uint256 private constant ADDR_SIZE = 20;
 
@@ -22,10 +24,17 @@ library V3Path {
     /// @dev The minimum length of an encoding that contains 2 or more pools
     uint256 private constant MULTIPLE_POOLS_MIN_LENGTH = POP_OFFSET + NEXT_OFFSET;
 
+    // Constants used in getFirstPool
+    // 43 bytes: token + feeTier + token
+    uint256 internal constant POOL_LENGTH = 43;
+    
+    // Constants used in skipToken
+    uint256 internal constant ADDR_AND_FEE_LENGTH = 23;
+
     /// @notice Returns true iff the path contains two or more pools
     /// @param path The encoded swap path
     /// @return True if path contains two or more pools, otherwise false
-    function hasMultiplePools(bytes memory path) internal pure returns (bool) {
+    function hasMultiplePools(bytes calldata path) internal pure returns (bool) {
         return path.length >= MULTIPLE_POOLS_MIN_LENGTH;
     }
 
@@ -34,7 +43,7 @@ library V3Path {
     /// @return tokenA The first token of the given pool
     /// @return tokenB The second token of the given pool
     /// @return fee The fee level of the pool
-    function decodeFirstPool(bytes memory path) internal pure returns (address tokenA, address tokenB, uint24 fee) {
+    function decodeFirstPool(bytes calldata path) internal pure returns (address tokenA, address tokenB, uint24 fee) {
         uint256 bytesLength = path.length;
         tokenA = path.toAddress(0, bytesLength);
         fee = path.toUint24(ADDR_SIZE, bytesLength);
@@ -44,17 +53,19 @@ library V3Path {
     /// @notice Gets the segment corresponding to the first pool in the path
     /// @param path The bytes encoded swap path
     /// @return The segment containing all data necessary to target the first pool in the path
-    function getFirstPool(bytes memory path) internal pure returns (bytes memory) {
-        return path.slicePool();
+    function getFirstPool(bytes calldata path) internal pure returns (bytes calldata) {
+        if (path.length < POOL_LENGTH) revert SliceOutOfBounds();
+        return path[:POOL_LENGTH];
     }
 
-    function decodeFirstToken(bytes memory path) internal pure returns (address tokenA) {
+    function decodeFirstToken(bytes calldata path) internal pure returns (address tokenA) {
         tokenA = path.toAddress(0, path.length);
     }
 
-    /// @notice Skips a token + fee element from the buffer in place
+    /// @notice Skips a token + fee element
     /// @param path The swap path
-    function skipToken(bytes memory path) internal pure {
-        path.inPlaceSliceToken(path.length - NEXT_OFFSET);
+    function skipToken(bytes calldata path) internal pure returns (bytes calldata)  {
+        if (path.length < ADDR_AND_FEE_LENGTH) revert SliceOutOfBounds();
+        return path[ADDR_AND_FEE_LENGTH:];
     }
 }
