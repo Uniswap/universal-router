@@ -29,7 +29,7 @@ import { BigNumber } from 'ethers'
 
 const { ethers } = hre
 
-describe.only('UniversalRouter Gas Tests', () => {
+describe('UniversalRouter Gas Tests', () => {
   let alice: SignerWithAddress
   let planner: RoutePlanner
   let router: UniversalRouter

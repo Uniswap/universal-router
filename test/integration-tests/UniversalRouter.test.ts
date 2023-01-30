@@ -110,7 +110,7 @@ describe('UniversalRouter', () => {
       const inputs: string[] = ['0x12341234']
 
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.be.revertedWith(
-        'InvalidCommandType(31)'
+        'InvalidCommandType(63)'
       )
     })
 
@@ -128,7 +128,7 @@ describe('UniversalRouter', () => {
       inputs.push('0x21341234')
 
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.be.revertedWith(
-        'InvalidCommandType(31)'
+        'InvalidCommandType(63)'
       )
     })
 
