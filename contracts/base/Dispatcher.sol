@@ -40,14 +40,14 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                 // 0x00 <= command < 0x08
                 if (command < 0x08) {
                     if (command == Commands.V3_SWAP_EXACT_IN) {
-                        (address recipient, uint256 amountIn, uint256 amountOutMin, , bool payerIsUser)
-                        = abi.decode(inputs, (address, uint256, uint256, bytes, bool));
+                        (address recipient, uint256 amountIn, uint256 amountOutMin,, bool payerIsUser) =
+                            abi.decode(inputs, (address, uint256, uint256, bytes, bool));
                         bytes calldata path = inputs.toBytes(3);
                         address payer = payerIsUser ? msg.sender : address(this);
                         v3SwapExactInput(recipient.map(), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
-                        (address recipient, uint256 amountOut, uint256 amountInMax, , bool payerIsUser)
-                        = abi.decode(inputs, (address, uint256, uint256, bytes, bool));
+                        (address recipient, uint256 amountOut, uint256 amountInMax,, bool payerIsUser) =
+                            abi.decode(inputs, (address, uint256, uint256, bytes, bool));
                         bytes calldata path = inputs.toBytes(3);
                         address payer = payerIsUser ? msg.sender : address(this);
                         v3SwapExactOutput(recipient.map(), amountOut, amountInMax, path, payer);
@@ -56,7 +56,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                             abi.decode(inputs, (address, address, uint160));
                         permit2TransferFrom(token, msg.sender, recipient.map(), amount);
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
-                        (IAllowanceTransfer.PermitBatch memory permitBatch, ) =
+                        (IAllowanceTransfer.PermitBatch memory permitBatch,) =
                             abi.decode(inputs, (IAllowanceTransfer.PermitBatch, bytes));
                         bytes calldata data = inputs.toBytes(1);
                         PERMIT2.permit(msg.sender, permitBatch, data);
@@ -83,7 +83,8 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                             address recipient,
                             uint256 amountIn,
                             uint256 amountOutMin,
-                            /* address[] memory path */,
+                            /* address[] memory path */
+                            ,
                             bool payerIsUser
                         ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
                         address[] calldata path = inputs.toAddressArray(3);
@@ -94,7 +95,8 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                             address recipient,
                             uint256 amountOut,
                             uint256 amountInMax,
-                            /* address[] memory path */,
+                            /* address[] memory path */
+                            ,
                             bool payerIsUser
                         ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
                         address[] calldata path = inputs.toAddressArray(3);
@@ -202,7 +204,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
         internal
         returns (bool success, bytes memory output)
     {
-        (uint256 value, , address recipient, address token, uint256 id) =
+        (uint256 value,, address recipient, address token, uint256 id) =
             abi.decode(inputs, (uint256, bytes, address, address, uint256));
         bytes calldata data = inputs.toBytes(1);
         (success, output) = protocol.call{value: value}(data);
@@ -218,7 +220,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
         internal
         returns (bool success, bytes memory output)
     {
-        (uint256 value, , address recipient, address token, uint256 id, uint256 amount) =
+        (uint256 value,, address recipient, address token, uint256 id, uint256 amount) =
             abi.decode(inputs, (uint256, bytes, address, address, uint256, uint256));
         bytes calldata data = inputs.toBytes(1);
         (success, output) = protocol.call{value: value}(data);

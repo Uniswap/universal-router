@@ -27,7 +27,7 @@ library V3Path {
     // Constants used in getFirstPool
     // 43 bytes: token + feeTier + token
     uint256 internal constant POOL_LENGTH = 43;
-    
+
     // Constants used in skipToken
     uint256 internal constant ADDR_AND_FEE_LENGTH = 23;
 
@@ -64,7 +64,7 @@ library V3Path {
 
     /// @notice Skips a token + fee element
     /// @param path The swap path
-    function skipToken(bytes calldata path) internal pure returns (bytes calldata)  {
+    function skipToken(bytes calldata path) internal pure returns (bytes calldata) {
         if (path.length < ADDR_AND_FEE_LENGTH) revert SliceOutOfBounds();
         return path[ADDR_AND_FEE_LENGTH:];
     }
