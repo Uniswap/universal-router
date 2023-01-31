@@ -43,7 +43,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         bytes calldata path = data.toBytes(0);
 
         // because exact output swaps are executed in reverse order, in this case tokenOut is actually tokenIn
-        (address tokenIn, address tokenOut, uint24 fee) = path.decodeFirstPool();
+        (address tokenIn, uint24 fee, address tokenOut) = path.decodeFirstPool();
 
         if (computePoolAddress(tokenIn, tokenOut, fee) != msg.sender) revert V3InvalidCaller();
 
@@ -144,7 +144,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         private
         returns (int256 amount0Delta, int256 amount1Delta, bool zeroForOne)
     {
-        (address tokenIn, address tokenOut, uint24 fee) = path.decodeFirstPool();
+        (address tokenIn, uint24 fee, address tokenOut) = path.decodeFirstPool();
 
         zeroForOne = isExactIn ? tokenIn < tokenOut : tokenOut < tokenIn;
 

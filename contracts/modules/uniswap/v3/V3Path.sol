@@ -15,21 +15,15 @@ library V3Path {
     /// @dev The length of the bytes encoded fee
     uint256 private constant FEE_SIZE = 3;
 
-    /// @dev The offset of a single token address and pool fee
+    /// @dev The offset of a single token address (20) and pool fee (3)
     uint256 private constant NEXT_OFFSET = ADDR_SIZE + FEE_SIZE;
 
     /// @dev The offset of an encoded pool key
+    /// Token (20) + Fee (3) + Token (20) = 43
     uint256 private constant POP_OFFSET = NEXT_OFFSET + ADDR_SIZE;
 
     /// @dev The minimum length of an encoding that contains 2 or more pools
     uint256 private constant MULTIPLE_POOLS_MIN_LENGTH = POP_OFFSET + NEXT_OFFSET;
-
-    // Constants used in getFirstPool
-    // 43 bytes: token + feeTier + token
-    uint256 internal constant POOL_LENGTH = 43;
-
-    // Constants used in skipToken
-    uint256 internal constant ADDR_AND_FEE_LENGTH = 23;
 
     /// @notice Returns true iff the path contains two or more pools
     /// @param path The encoded swap path
@@ -41,31 +35,28 @@ library V3Path {
     /// @notice Decodes the first pool in path
     /// @param path The bytes encoded swap path
     /// @return tokenA The first token of the given pool
-    /// @return tokenB The second token of the given pool
     /// @return fee The fee level of the pool
-    function decodeFirstPool(bytes calldata path) internal pure returns (address tokenA, address tokenB, uint24 fee) {
-        uint256 bytesLength = path.length;
-        tokenA = path.toAddress(0, bytesLength);
-        fee = path.toUint24(ADDR_SIZE, bytesLength);
-        tokenB = path.toAddress(NEXT_OFFSET, bytesLength);
+    /// @return tokenB The second token of the given pool
+    function decodeFirstPool(bytes calldata path) internal pure returns (address, uint24, address) {
+        if (path.length < POP_OFFSET) revert SliceOutOfBounds();
+        return path.toPool();
     }
 
     /// @notice Gets the segment corresponding to the first pool in the path
     /// @param path The bytes encoded swap path
     /// @return The segment containing all data necessary to target the first pool in the path
     function getFirstPool(bytes calldata path) internal pure returns (bytes calldata) {
-        if (path.length < POOL_LENGTH) revert SliceOutOfBounds();
-        return path[:POOL_LENGTH];
+        return path[:POP_OFFSET];
     }
 
     function decodeFirstToken(bytes calldata path) internal pure returns (address tokenA) {
-        tokenA = path.toAddress(0, path.length);
+        if (path.length < ADDR_SIZE) revert SliceOutOfBounds();
+        tokenA = path.toAddress();
     }
 
     /// @notice Skips a token + fee element
     /// @param path The swap path
     function skipToken(bytes calldata path) internal pure returns (bytes calldata) {
-        if (path.length < ADDR_AND_FEE_LENGTH) revert SliceOutOfBounds();
-        return path[ADDR_AND_FEE_LENGTH:];
+        return path[NEXT_OFFSET:];
     }
 }
