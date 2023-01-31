@@ -59,8 +59,9 @@ describe('Check Ownership', () => {
       ])
 
       const { commands, inputs } = planner
-      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.be.revertedWith(
-        'ExecutionFailed(0, "0x7dbe7e89")'
+      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.be.revertedWithCustomError(
+        router,
+        'InvalidOwnerERC721'
       )
     })
 
@@ -160,8 +161,9 @@ describe('Check Ownership', () => {
       planner.addCommand(CommandType.OWNER_CHECK_1155, [alice.address, makerOrder.collection, makerOrder.tokenId, 1])
 
       const { commands, inputs } = planner
-      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.be.revertedWith(
-        'ExecutionFailed(0, "0x483a6929")'
+      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.be.revertedWithCustomError(
+        router,
+        'InvalidOwnerERC1155'
       )
     })
   })

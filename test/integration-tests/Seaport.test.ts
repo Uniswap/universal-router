@@ -123,6 +123,7 @@ describe('Seaport', () => {
 
   it('reverts if order does not go through', async () => {
     let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
+
     invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
     const { advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder)
 
@@ -136,8 +137,10 @@ describe('Seaport', () => {
     planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldata])
     const { commands, inputs } = planner
 
+    const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
+
     await expect(
       router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: seaportValue })
-    ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")')
+    ).to.be.revertedWithCustomError(testCustomErrors, 'InvalidSignature')
   })
 })

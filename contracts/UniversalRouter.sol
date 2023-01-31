@@ -42,7 +42,9 @@ contract UniversalRouter is RouterImmutables, IUniversalRouter, Dispatcher, Rewa
             (success, output) = dispatch(command, input);
 
             if (!success && successRequired(command)) {
-                revert ExecutionFailed({commandIndex: commandIndex, message: output});
+                assembly {
+                    revert(add(32, output), mload(output))
+                }
             }
 
             unchecked {
