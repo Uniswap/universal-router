@@ -6,6 +6,9 @@ import {IERC1155Receiver} from '@openzeppelin/contracts/token/ERC1155/IERC1155Re
 import {IRewardsCollector} from './IRewardsCollector.sol';
 
 interface IUniversalRouter is IRewardsCollector, IERC721Receiver, IERC1155Receiver {
+    /// @notice Thriwn when a command has failed and doesnt provide a reason to bubble
+    error CommandFailedWithoutReason(uint256 commandIndex);
+
     /// @notice Thrown when attempting to send ETH directly to the contract
     error ETHNotAccepted();
 
