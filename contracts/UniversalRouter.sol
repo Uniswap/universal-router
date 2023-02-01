@@ -94,12 +94,12 @@ contract UniversalRouter is
                     if (command == Commands.V3_SWAP_EXACT_IN) {
                         (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path, bool payerIsUser)
                         = abi.decode(inputs, (address, uint256, uint256, bytes, bool));
-                        address payer = payerIsUser ? isLockedSender : address(this);
+                        address payer = payerIsUser ? lockedBy : address(this);
                         v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
                         (address recipient, uint256 amountOut, uint256 amountInMax, bytes memory path, bool payerIsUser)
                         = abi.decode(inputs, (address, uint256, uint256, bytes, bool));
-                        address payer = payerIsUser ? isLockedSender : address(this);
+                        address payer = payerIsUser ? lockedBy : address(this);
                         v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
                         (address token, address recipient, uint160 amount) =
@@ -135,7 +135,7 @@ contract UniversalRouter is
                             address[] memory path,
                             bool payerIsUser
                         ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
-                        address payer = payerIsUser ? isLockedSender : address(this);
+                        address payer = payerIsUser ? lockedBy : address(this);
                         v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
                         (
@@ -145,7 +145,7 @@ contract UniversalRouter is
                             address[] memory path,
                             bool payerIsUser
                         ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
-                        address payer = payerIsUser ? isLockedSender : address(this);
+                        address payer = payerIsUser ? lockedBy : address(this);
                         v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_PERMIT) {
                         (IAllowanceTransfer.PermitSingle memory permitSingle, bytes memory data) =
@@ -160,7 +160,7 @@ contract UniversalRouter is
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
                         (IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) =
                             abi.decode(inputs, (IAllowanceTransfer.AllowanceTransferDetails[]));
-                        permit2TransferFrom(batchDetails, isLockedSender);
+                        permit2TransferFrom(batchDetails, lockedBy);
                     } else {
                         // placeholder area for commands 0x0e-0x0f
                         revert InvalidCommandType(command);

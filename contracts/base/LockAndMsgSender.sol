@@ -7,14 +7,14 @@ contract LockAndMsgSender {
     error ContractLocked();
 
     address private constant ADDRESS_ONE = address(1);
-    address internal isLockedSender = ADDRESS_ONE;
+    address internal lockedBy = ADDRESS_ONE;
 
     modifier isNotLocked() {
         if (msg.sender != address(this)) {
-            if (isLockedSender != ADDRESS_ONE) revert ContractLocked();
-            isLockedSender = msg.sender;
+            if (lockedBy != ADDRESS_ONE) revert ContractLocked();
+            lockedBy = msg.sender;
             _;
-            isLockedSender = ADDRESS_ONE;
+            lockedBy = ADDRESS_ONE;
         } else {
             _;
         }
@@ -25,7 +25,7 @@ contract LockAndMsgSender {
     /// @return output The resultant recipient for the command
     function map(address recipient) internal view returns (address) {
         if (recipient == Constants.MSG_SENDER) {
-            return isLockedSender;
+            return lockedBy;
         } else if (recipient == Constants.ADDRESS_THIS) {
             return address(this);
         } else {
