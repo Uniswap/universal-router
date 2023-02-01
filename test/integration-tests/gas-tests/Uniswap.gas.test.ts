@@ -354,7 +354,7 @@ describe('Uniswap Gas Tests', () => {
             [DAI.address, WETH.address],
             SOURCE_MSG_SENDER,
           ])
-          planner.addCommand(CommandType.UNWRAP_WETH, [router.address, amountOut])
+          planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, amountOut])
           planner.addCommand(CommandType.PAY_PORTION, [ETH_ADDRESS, MSG_SENDER, 50])
           planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
 
@@ -389,7 +389,7 @@ describe('Uniswap Gas Tests', () => {
           const amountOut = expandTo18DecimalsBN(100)
           const value = expandTo18DecimalsBN(1)
 
-          planner.addCommand(CommandType.WRAP_ETH, [router.address, value])
+          planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, value])
           planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
             MSG_SENDER,
             amountOut,
@@ -653,7 +653,7 @@ describe('Uniswap Gas Tests', () => {
           const tokens = [WETH.address, DAI.address]
           const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
 
-          planner.addCommand(CommandType.WRAP_ETH, [router.address, amountIn])
+          planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, amountIn])
           addV3ExactInTrades(planner, 1, amountOutMin, MSG_SENDER, tokens, SOURCE_ROUTER)
 
           const { commands, inputs } = planner
@@ -666,7 +666,7 @@ describe('Uniswap Gas Tests', () => {
           const tokens = [WETH.address, DAI.address]
           const path = encodePathExactOutput(tokens)
 
-          planner.addCommand(CommandType.WRAP_ETH, [router.address, amountInMax])
+          planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, amountInMax])
           planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [MSG_SENDER, amountOut, amountInMax, path, SOURCE_ROUTER])
           planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
 
@@ -929,7 +929,7 @@ describe('Uniswap Gas Tests', () => {
           const v3AmountIn: BigNumber = expandTo18DecimalsBN(3)
           const value = v2AmountIn.add(v3AmountIn)
 
-          planner.addCommand(CommandType.WRAP_ETH, [router.address, value])
+          planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, value])
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [router.address, v2AmountIn, 0, tokens, SOURCE_ROUTER])
           planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
             router.address,

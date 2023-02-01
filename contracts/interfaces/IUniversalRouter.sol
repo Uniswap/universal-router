@@ -9,10 +9,10 @@ interface IUniversalRouter is IRewardsCollector, IERC721Receiver, IERC1155Receiv
     /// @notice Thrown when attempting to send ETH directly to the contract
     error ETHNotAccepted();
 
-    /// @notice Thrown executing commands with an expired deadline
+    /// @notice Thrown when executing commands with an expired deadline
     error TransactionDeadlinePassed();
 
-    /// @notice Thrown when differing lengths of commands and inputs are given
+    /// @notice Thrown when attempting to execute commands and an incorrect number of inputs are provided
     error LengthMismatch();
 
     /// @notice Thrown when a required command has failed
