@@ -1,5 +1,7 @@
 import { Interface, LogDescription } from '@ethersproject/abi'
 import { TransactionReceipt } from '@ethersproject/abstract-provider'
+import hre from 'hardhat'
+const { ethers } = hre
 
 export const V2_EVENTS = new Interface([
   'event Swap(address indexed sender, uint amount0In, uint amount1In, uint amount0Out, uint amount1Out, address indexed to)',
@@ -19,4 +21,17 @@ export function parseEvents(iface: Interface, receipt: TransactionReceipt): (Log
       }
     })
     .filter((n: LogDescription | undefined) => n)
+}
+
+export function findCustomErrorSelector(iface: any, name: string): string | undefined {
+  const customErrorEntry = Object.entries(iface.errors).find(([, fragment]: any) => fragment.name === name)
+
+  if (customErrorEntry === undefined) {
+    return undefined
+  }
+
+  const [customErrorSignature] = customErrorEntry
+  const customErrorSelector = ethers.utils.id(customErrorSignature).slice(0, 10)
+
+  return customErrorSelector
 }

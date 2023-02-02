@@ -13,6 +13,7 @@ import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './s
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
+import { findCustomErrorSelector } from './shared/parseEvents'
 const { ethers } = hre
 
 describe('Check Ownership', () => {
@@ -59,9 +60,11 @@ describe('Check Ownership', () => {
       ])
 
       const { commands, inputs } = planner
+
+      const customErrorSelector = findCustomErrorSelector(router.interface, 'InvalidOwnerERC721')
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
         .to.be.revertedWithCustomError(router, 'ExecutionFailed')
-        .withArgs(0, '0x7dbe7e89')
+        .withArgs(0, customErrorSelector)
     })
 
     it('checks ownership after a seaport trade for one ERC721', async () => {
@@ -160,9 +163,10 @@ describe('Check Ownership', () => {
       planner.addCommand(CommandType.OWNER_CHECK_1155, [alice.address, makerOrder.collection, makerOrder.tokenId, 1])
 
       const { commands, inputs } = planner
+      const customErrorSelector = findCustomErrorSelector(router.interface, 'InvalidOwnerERC1155')
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
         .to.be.revertedWithCustomError(router, 'ExecutionFailed')
-        .withArgs(0, '0x483a6929')
+        .withArgs(0, customErrorSelector)
     })
   })
 })

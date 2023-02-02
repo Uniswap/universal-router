@@ -35,6 +35,7 @@ import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import hre from 'hardhat'
+import { findCustomErrorSelector } from './shared/parseEvents'
 
 const { ethers } = hre
 const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
@@ -167,10 +168,10 @@ describe('UniversalRouter', () => {
       planner.addCommand(CommandType.NFTX, [0, reentrantCalldata])
       ;({ commands, inputs } = planner)
 
-      const notAllowedReenterSelector = '0xb418cb98'
+      const customErrorSelector = findCustomErrorSelector(router.interface, 'NotAllowedReenter')
       await expect(router['execute(bytes,bytes[])'](commands, inputs))
         .to.be.revertedWithCustomError(router, 'ExecutionFailed')
-        .withArgs(0, notAllowedReenterSelector)
+        .withArgs(0, customErrorSelector)
     })
 
     describe('partial fills', async () => {
@@ -210,9 +211,11 @@ describe('UniversalRouter', () => {
 
         const { commands, inputs } = planner
 
+        const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
+        const customErrorSelector = findCustomErrorSelector(testCustomErrors.interface, 'InvalidSignature')
         await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
           .to.be.revertedWithCustomError(router, 'ExecutionFailed')
-          .withArgs(1, '0x8baa579f')
+          .withArgs(1, customErrorSelector)
       })
 
       it('does not revert if invalid seaport transaction allowed to fail', async () => {

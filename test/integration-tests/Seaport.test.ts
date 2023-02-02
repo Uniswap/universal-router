@@ -13,6 +13,7 @@ import { COVEN_721, resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
+import { findCustomErrorSelector } from './shared/parseEvents'
 const { ethers } = hre
 
 describe('Seaport', () => {
@@ -137,8 +138,10 @@ describe('Seaport', () => {
     planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldata])
     const { commands, inputs } = planner
 
+    const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
+    const customErrorSelector = findCustomErrorSelector(testCustomErrors.interface, 'InvalidSignature')
     await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: seaportValue }))
       .to.be.revertedWithCustomError(router, 'ExecutionFailed')
-      .withArgs(0, '0x8baa579f')
+      .withArgs(0, customErrorSelector)
   })
 })
