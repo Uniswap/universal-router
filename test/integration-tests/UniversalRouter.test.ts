@@ -168,7 +168,7 @@ describe('UniversalRouter', () => {
       planner.addCommand(CommandType.NFTX, [0, reentrantCalldata])
       ;({ commands, inputs } = planner)
 
-      const customErrorSelector = findCustomErrorSelector(router.interface, 'NotAllowedReenter')
+      const customErrorSelector = findCustomErrorSelector(reentrantProtocol, 'NotAllowedReenter')
       await expect(router['execute(bytes,bytes[])'](commands, inputs))
         .to.be.revertedWithCustomError(router, 'ExecutionFailed')
         .withArgs(0, customErrorSelector)
