@@ -137,10 +137,8 @@ describe('Seaport', () => {
     planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldata])
     const { commands, inputs } = planner
 
-    const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
-
-    await expect(
-      router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: seaportValue })
-    ).to.be.revertedWithCustomError(testCustomErrors, 'InvalidSignature')
+    await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: seaportValue }))
+      .to.be.revertedWithCustomError(router, 'ExecutionFailed')
+      .withArgs(0, '0x8baa579f')
   })
 })

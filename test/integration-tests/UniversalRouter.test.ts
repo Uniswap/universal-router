@@ -79,6 +79,7 @@ describe('UniversalRouter', () => {
 
   describe('#execute', () => {
     let planner: RoutePlanner
+    const invalidCommand: string = '0x3f'
 
     beforeEach(async () => {
       planner = new RoutePlanner()
@@ -106,17 +107,14 @@ describe('UniversalRouter', () => {
     })
 
     it('reverts for an invalid command at index 0', async () => {
-      const commands = '0xff'
       const inputs: string[] = ['0x12341234']
 
-      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.be.revertedWithCustomError(
-        router,
-        'InvalidCommandType'
-      )
+      await expect(router['execute(bytes,bytes[],uint256)'](invalidCommand, inputs, DEADLINE))
+        .to.be.revertedWithCustomError(router, 'InvalidCommandType')
+        .withArgs(parseInt(invalidCommand))
     })
 
     it('reverts for an invalid command at index 1', async () => {
-      const invalidCommand = 'ff'
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [
         DAI.address,
         pair_DAI_WETH.liquidityToken.address,
@@ -125,12 +123,12 @@ describe('UniversalRouter', () => {
       let commands = planner.commands
       let inputs = planner.inputs
 
-      commands = commands.concat(invalidCommand)
+      commands = commands.concat(invalidCommand.slice(2))
       inputs.push('0x21341234')
 
-      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.be.revertedWith(
-        'InvalidCommandType(63)'
-      )
+      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        .to.be.revertedWithCustomError(router, 'InvalidCommandType')
+        .withArgs(parseInt(invalidCommand))
     })
 
     it('reverts if paying a portion over 100% of contract balance', async () => {
@@ -169,10 +167,10 @@ describe('UniversalRouter', () => {
       planner.addCommand(CommandType.NFTX, [0, reentrantCalldata])
       ;({ commands, inputs } = planner)
 
-      await expect(router['execute(bytes,bytes[])'](commands, inputs)).to.be.revertedWithCustomError(
-        reentrantProtocol,
-        'NotAllowedReenter'
-      )
+      const notAllowedReenterSelector = '0xb418cb98'
+      await expect(router['execute(bytes,bytes[])'](commands, inputs))
+        .to.be.revertedWithCustomError(router, 'ExecutionFailed')
+        .withArgs(0, notAllowedReenterSelector)
     })
 
     describe('partial fills', async () => {
@@ -208,15 +206,13 @@ describe('UniversalRouter', () => {
       })
 
       it('reverts if no commands are allowed to revert', async () => {
-        const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
-
         planner.addCommand(CommandType.SEAPORT, [seaportValue, invalidSeaportCalldata])
 
         const { commands, inputs } = planner
 
-        await expect(
-          router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
-        ).to.be.revertedWithCustomError(testCustomErrors, 'InvalidSignature')
+        await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+          .to.be.revertedWithCustomError(router, 'ExecutionFailed')
+          .withArgs(1, '0x8baa579f')
       })
 
       it('does not revert if invalid seaport transaction allowed to fail', async () => {
