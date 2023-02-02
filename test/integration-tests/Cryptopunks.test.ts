@@ -38,16 +38,12 @@ describe('Cryptopunks', () => {
       planner.addCommand(CommandType.CRYPTOPUNKS, [2976, ALICE_ADDRESS, value])
       const { commands, inputs } = planner
 
-      const aliceBalance = await ethers.provider.getBalance(alice.address)
-      const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
-      ).wait()
+      await expect(
+        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+      ).to.changeEtherBalance(alice, value.mul(-1))
 
       // Expect that alice has the NFT
       await expect((await cryptopunks.punkIndexToAddress(2976)).toLowerCase()).to.eq(ALICE_ADDRESS)
-      await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
-        value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice))
-      )
     })
   })
 })

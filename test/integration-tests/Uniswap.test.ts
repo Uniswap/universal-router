@@ -346,11 +346,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { gasSpent, ethBalanceBefore, ethBalanceAfter, v2SwapEventArgs } = await executeRouter(planner)
         const { amount1Out: wethTraded } = v2SwapEventArgs!
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(amountOut.sub(gasSpent))
-        expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(wethTraded.sub(gasSpent))
+        expect(wethTraded).to.eq(amountOut)
       })
 
       it('completes a V2 exactOut swap, with ETH fee', async () => {
         const amountOut = expandTo18DecimalsBN(1)
+        const feeOut = amountOut.mul(ONE_PERCENT_BIPS).div(10000)
+        const actualAmountOut = amountOut.sub(feeOut)
+
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           router.address,
           amountOut,
@@ -363,18 +366,10 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, MSG_SENDER, 0])
 
         const { commands, inputs } = planner
-        const ethBalanceBeforeAlice = await ethers.provider.getBalance(alice.address)
-        const ethBalanceBeforeBob = await ethers.provider.getBalance(bob.address)
-        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
-
-        const ethBalanceAfterAlice = await ethers.provider.getBalance(alice.address)
-        const ethBalanceAfterBob = await ethers.provider.getBalance(bob.address)
-        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-
-        const aliceFee = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice)
-        const bobEarnings = ethBalanceAfterBob.sub(ethBalanceBeforeBob).add(gasSpent)
-
-        expect(aliceFee.add(bobEarnings).mul(ONE_PERCENT_BIPS).div(10000)).to.eq(aliceFee)
+        await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.changeEtherBalances(
+          [alice, bob],
+          [feeOut, actualAmountOut]
+        )
       })
     })
 

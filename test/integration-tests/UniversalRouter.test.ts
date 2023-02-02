@@ -277,18 +277,17 @@ describe('UniversalRouter', () => {
         const { commands, inputs } = planner
         const covenBalanceBefore = await cryptoCovens.balanceOf(alice.address)
         const wethBalanceBefore = await wethContract.balanceOf(alice.address)
-        const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
 
-        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
-        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+        await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.changeEtherBalance(
+          alice,
+          0
+        )
 
         const covenBalanceAfter = await cryptoCovens.balanceOf(alice.address)
         const wethBalanceAfter = await wethContract.balanceOf(alice.address)
-        const ethBalanceAfter = await ethers.provider.getBalance(alice.address)
 
         expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
         expect(wethBalanceBefore.sub(wethBalanceAfter)).to.eq(value)
-        expect(ethBalanceBefore.sub(ethBalanceAfter)).to.eq(gasSpent)
       })
     })
   })

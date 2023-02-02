@@ -81,7 +81,7 @@ type BuyCovensReturnData = {
   calldata: string
   advancedOrder0: AdvancedOrder
   advancedOrder1: AdvancedOrder
-  value: BigNumberish
+  value: BigNumber
 }
 
 export function purchaseDataForTwoCovensSeaport(receipient: string): BuyCovensReturnData {

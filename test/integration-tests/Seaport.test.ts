@@ -50,16 +50,14 @@ describe('Seaport', () => {
     const { commands, inputs } = planner
 
     const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
-    const ethBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
+    await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).to.changeEtherBalance(
+      alice,
+      value.mul(-1)
+    )
     const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
-    const ethAfter = await ethers.provider.getBalance(alice.address)
-    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-    const ethDelta = ethBefore.sub(ethAfter)
 
     expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
     expect(ownerAfter).to.eq(alice.address)
-    expect(ethDelta.sub(gasSpent)).to.eq(value)
   })
 
   it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
@@ -80,20 +78,18 @@ describe('Seaport', () => {
     const inputs = planner.inputs
 
     const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
-    const ethBefore = await ethers.provider.getBalance(alice.address)
 
     // don't send enough ETH, so the seaport purchase reverts
     value = BigNumber.from(value).sub('1')
-    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
+    await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).to.changeEtherBalance(
+      alice,
+      0
+    )
 
     const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
-    const ethAfter = await ethers.provider.getBalance(alice.address)
-    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-    const ethDelta = ethBefore.sub(ethAfter)
 
     // The owner was unchanged, the user got the eth back
     expect(ownerBefore.toLowerCase()).to.eq(ownerAfter.toLowerCase())
-    expect(ethDelta).to.eq(gasSpent)
   })
 
   it('completes a fulfillAvailableAdvancedOrders type', async () => {
@@ -105,21 +101,19 @@ describe('Seaport', () => {
 
     const owner0Before = await cryptoCovens.ownerOf(params0.offer[0].identifierOrCriteria)
     const owner1Before = await cryptoCovens.ownerOf(params1.offer[0].identifierOrCriteria)
-    const ethBefore = await ethers.provider.getBalance(alice.address)
 
-    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
+    await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).to.changeEtherBalance(
+      alice,
+      value.mul(-1)
+    )
 
     const owner0After = await cryptoCovens.ownerOf(params0.offer[0].identifierOrCriteria)
     const owner1After = await cryptoCovens.ownerOf(params1.offer[0].identifierOrCriteria)
-    const ethAfter = await ethers.provider.getBalance(alice.address)
-    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-    const ethDelta = ethBefore.sub(ethAfter)
 
     expect(owner0Before.toLowerCase()).to.eq(params0.offerer)
     expect(owner1Before.toLowerCase()).to.eq(params1.offerer)
     expect(owner0After).to.eq(alice.address)
     expect(owner1After).to.eq(alice.address)
-    expect(ethDelta.sub(gasSpent)).to.eq(value)
   })
 
   it('reverts if order does not go through', async () => {
