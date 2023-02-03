@@ -157,7 +157,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
 
-        await expect(executeRouter(planner)).to.be.revertedWith('UnsafeCast()')
+        const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
+        await expect(executeRouter(planner)).to.be.revertedWithCustomError(testCustomErrors, 'UnsafeCast')
       })
 
       it('V3 exactIn, permiting the exact amount', async () => {
