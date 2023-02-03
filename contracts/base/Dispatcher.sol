@@ -84,8 +84,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                             address recipient,
                             uint256 amountIn,
                             uint256 amountOutMin,
-                            /* address[] memory path */
-                            ,
+                            , // address[] memory path
                             bool payerIsUser
                         ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
                         address[] calldata path = inputs.toAddressArray(3);
@@ -96,8 +95,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                             address recipient,
                             uint256 amountOut,
                             uint256 amountInMax,
-                            /* address[] memory path */
-                            ,
+                            , // address[] memory path
                             bool payerIsUser
                         ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
                         address[] calldata path = inputs.toAddressArray(3);
