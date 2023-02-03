@@ -21,6 +21,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
     using Recipient for address;
 
     error InvalidCommandType(uint256 commandType);
+    error BuyPunkFailed();
     error InvalidOwnerERC721();
     error InvalidOwnerERC1155();
 
@@ -146,7 +147,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                             abi.encodeWithSelector(ICryptoPunksMarket.buyPunk.selector, punkId)
                         );
                         if (success) ICryptoPunksMarket(CRYPTOPUNKS).transferPunk(recipient.map(), punkId);
-                        else output = 'CryptoPunk Trade Failed';
+                        else output = abi.encodeWithSignature('BuyPunkFailed()');
                     } else if (command == Commands.LOOKS_RARE_1155) {
                         (success, output) = callAndTransfer1155(inputs, LOOKS_RARE);
                     } else if (command == Commands.OWNER_CHECK_721) {

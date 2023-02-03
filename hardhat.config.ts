@@ -1,6 +1,6 @@
 import 'hardhat-typechain'
 import '@nomiclabs/hardhat-ethers'
-import '@nomiclabs/hardhat-waffle'
+import '@nomicfoundation/hardhat-chai-matchers'
 import dotenv from 'dotenv'
 dotenv.config()
 

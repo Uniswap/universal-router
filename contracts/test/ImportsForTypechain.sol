@@ -6,4 +6,4 @@ import {Permit2} from 'permit2/src/Permit2.sol';
 
 // this contract only exists to pull ERC1155 and Permit2 into the hardhat build pipeline
 // so that typechain artifacts are generated for it
-abstract contract Imports is ERC1155, Permit2 {}
+abstract contract ImportsForTypechain is ERC1155, Permit2 {}
