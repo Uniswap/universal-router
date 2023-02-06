@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import {V3Path} from './V3Path.sol';
+import {BytesLib} from './BytesLib.sol';
 import {SafeCast} from '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import {IUniswapV3Pool} from '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 import {IUniswapV3SwapCallback} from '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
@@ -14,6 +15,7 @@ import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 /// @title Router for Uniswap v3 Trades
 abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3SwapCallback {
     using V3Path for bytes;
+    using BytesLib for bytes;
     using SafeCast for uint256;
 
     error V3InvalidSwap();
@@ -37,10 +39,11 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         if (amount0Delta <= 0 && amount1Delta <= 0) revert V3InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
-        (bytes memory path, address payer) = abi.decode(data, (bytes, address));
+        (, address payer) = abi.decode(data, (bytes, address));
+        bytes calldata path = data.toBytes(0);
 
         // because exact output swaps are executed in reverse order, in this case tokenOut is actually tokenIn
-        (address tokenIn, address tokenOut, uint24 fee) = path.decodeFirstPool();
+        (address tokenIn, uint24 fee, address tokenOut) = path.decodeFirstPool();
 
         if (computePoolAddress(tokenIn, tokenOut, fee) != msg.sender) revert V3InvalidCaller();
 
@@ -54,7 +57,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
                 // this is an intermediate step so the payer is actually this contract
-                path.skipToken();
+                path = path.skipToken();
                 _swap(-amountToPay.toInt256(), msg.sender, path, payer, false);
             } else {
                 if (amountToPay > maxAmountInCached) revert V3TooMuchRequested();
@@ -74,7 +77,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         address recipient,
         uint256 amountIn,
         uint256 amountOutMinimum,
-        bytes memory path,
+        bytes calldata path,
         address payer
     ) internal {
         // use amountIn == Constants.CONTRACT_BALANCE as a flag to swap the entire balance of the contract
@@ -101,7 +104,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
             // decide whether to continue or terminate
             if (hasMultiplePools) {
                 payer = address(this);
-                path.skipToken();
+                path = path.skipToken();
             } else {
                 amountOut = amountIn;
                 break;
@@ -121,7 +124,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         address recipient,
         uint256 amountOut,
         uint256 amountInMaximum,
-        bytes memory path,
+        bytes calldata path,
         address payer
     ) internal {
         maxAmountInCached = amountInMaximum;
@@ -137,11 +140,11 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
 
     /// @dev Performs a single swap for both exactIn and exactOut
     /// For exactIn, `amount` is `amountIn`. For exactOut, `amount` is `-amountOut`
-    function _swap(int256 amount, address recipient, bytes memory path, address payer, bool isExactIn)
+    function _swap(int256 amount, address recipient, bytes calldata path, address payer, bool isExactIn)
         private
         returns (int256 amount0Delta, int256 amount1Delta, bool zeroForOne)
     {
-        (address tokenIn, address tokenOut, uint24 fee) = path.decodeFirstPool();
+        (address tokenIn, uint24 fee, address tokenOut) = path.decodeFirstPool();
 
         zeroForOne = isExactIn ? tokenIn < tokenOut : tokenOut < tokenIn;
 
