@@ -181,8 +181,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                         (address token, address recipient, uint256 id, uint256 amount) =
                             abi.decode(inputs, (address, address, uint256, uint256));
                         Payments.sweepERC1155(token, recipient.map(), id, amount);
+                    } else if (command == Commands.SEAPORT_V2) {
+                        (uint256 value,) = abi.decode(inputs, (uint256, bytes));
+                        bytes calldata data = inputs.toBytes(1);
+                        (success, output) = SEAPORT_V2.call{value: value}(data);
                     } else {
-                        // placeholder area for commands 0x1e-0x1f
+                        // placeholder area for command 0x1f
                         revert InvalidCommandType(command);
                     }
                 }
