@@ -259,7 +259,7 @@ describe('UniversalRouter', () => {
       })
     })
 
-    describe('Seaport ERC721', () => {
+    describe('Seaport SELL ERC721', () => {
       let weth: ERC20
       const id = 5757
 
@@ -337,7 +337,7 @@ describe('UniversalRouter', () => {
       })
     })
 
-    describe('Seaport ERC1155', () => {
+    describe('Seaport SELL ERC1155', () => {
       let weth: ERC20
       const id = 0
 
