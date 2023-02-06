@@ -13,6 +13,7 @@ import {RouterImmutables} from './base/RouterImmutables.sol';
 import {Callbacks} from './base/Callbacks.sol';
 import {Commands} from './libraries/Commands.sol';
 import {RouterParameters, RouterImmutables} from './base/RouterImmutables.sol';
+import {BytesLib} from './modules/uniswap/v3/BytesLib.sol';
 
 // Interfaces
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
@@ -31,6 +32,8 @@ contract UniversalRouter is
     Callbacks,
     LockAndMsgSender
 {
+    using BytesLib for bytes;
+
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
@@ -58,7 +61,7 @@ contract UniversalRouter is
         for (uint256 commandIndex = 0; commandIndex < numCommands;) {
             bytes1 command = commands[commandIndex];
 
-            bytes memory input = inputs[commandIndex];
+            bytes calldata input = inputs[commandIndex];
 
             (success, output) = dispatch(command, input);
 
@@ -82,7 +85,7 @@ contract UniversalRouter is
     /// @dev 2 masks are used to enable use of a nested-if statement in execution for efficiency reasons
     /// @return success True on success of the command, false on failure
     /// @return output The outputs or error messages, if any, from the command
-    function dispatch(bytes1 commandType, bytes memory inputs) internal returns (bool success, bytes memory output) {
+    function dispatch(bytes1 commandType, bytes calldata inputs) internal returns (bool success, bytes memory output) {
         uint256 command = uint8(commandType & Commands.COMMAND_TYPE_MASK);
 
         success = true;
@@ -92,13 +95,15 @@ contract UniversalRouter is
                 // 0x00 <= command < 0x08
                 if (command < 0x08) {
                     if (command == Commands.V3_SWAP_EXACT_IN) {
-                        (address recipient, uint256 amountIn, uint256 amountOutMin, bytes memory path, bool payerIsUser)
-                        = abi.decode(inputs, (address, uint256, uint256, bytes, bool));
+                        (address recipient, uint256 amountIn, uint256 amountOutMin,, bool payerIsUser) =
+                            abi.decode(inputs, (address, uint256, uint256, bytes, bool));
+                        bytes calldata path = inputs.toBytes(3);
                         address payer = payerIsUser ? lockedBy : address(this);
                         v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
-                        (address recipient, uint256 amountOut, uint256 amountInMax, bytes memory path, bool payerIsUser)
-                        = abi.decode(inputs, (address, uint256, uint256, bytes, bool));
+                        (address recipient, uint256 amountOut, uint256 amountInMax,, bool payerIsUser) =
+                            abi.decode(inputs, (address, uint256, uint256, bytes, bool));
+                        bytes calldata path = inputs.toBytes(3);
                         address payer = payerIsUser ? lockedBy : address(this);
                         v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
@@ -106,8 +111,9 @@ contract UniversalRouter is
                             abi.decode(inputs, (address, address, uint160));
                         permit2TransferFrom(token, msg.sender, map(recipient), amount);
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
-                        (IAllowanceTransfer.PermitBatch memory permitBatch, bytes memory data) =
+                        (IAllowanceTransfer.PermitBatch memory permitBatch,) =
                             abi.decode(inputs, (IAllowanceTransfer.PermitBatch, bytes));
+                        bytes calldata data = inputs.toBytes(1);
                         PERMIT2.permit(msg.sender, permitBatch, data);
                     } else if (command == Commands.SWEEP) {
                         (address token, address recipient, uint256 amountMin) =
@@ -132,9 +138,10 @@ contract UniversalRouter is
                             address recipient,
                             uint256 amountIn,
                             uint256 amountOutMin,
-                            address[] memory path,
+                            , // address[] memory path
                             bool payerIsUser
                         ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
+                        address[] calldata path = inputs.toAddressArray(3);
                         address payer = payerIsUser ? lockedBy : address(this);
                         v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
@@ -142,14 +149,19 @@ contract UniversalRouter is
                             address recipient,
                             uint256 amountOut,
                             uint256 amountInMax,
-                            address[] memory path,
+                            , // address[] memory path
                             bool payerIsUser
                         ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
+                        address[] calldata path = inputs.toAddressArray(3);
                         address payer = payerIsUser ? lockedBy : address(this);
                         v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_PERMIT) {
-                        (IAllowanceTransfer.PermitSingle memory permitSingle, bytes memory data) =
-                            abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes));
+                        // abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes));
+                        IAllowanceTransfer.PermitSingle calldata permitSingle;
+                        assembly {
+                            permitSingle := inputs.offset
+                        }
+                        bytes calldata data = inputs.toBytes(6); // PermitSingle takes first 6 slots (0..5)
                         PERMIT2.permit(msg.sender, permitSingle, data);
                     } else if (command == Commands.WRAP_ETH) {
                         (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
@@ -171,12 +183,14 @@ contract UniversalRouter is
                 // 0x10 <= command < 0x18
                 if (command < 0x18) {
                     if (command == Commands.SEAPORT) {
-                        (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
+                        (uint256 value,) = abi.decode(inputs, (uint256, bytes));
+                        bytes calldata data = inputs.toBytes(1);
                         (success, output) = SEAPORT.call{value: value}(data);
                     } else if (command == Commands.LOOKS_RARE_721) {
                         (success, output) = callAndTransfer721(inputs, LOOKS_RARE);
                     } else if (command == Commands.NFTX) {
-                        (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
+                        (uint256 value,) = abi.decode(inputs, (uint256, bytes));
+                        bytes calldata data = inputs.toBytes(1);
                         (success, output) = NFTX_ZAP.call{value: value}(data);
                     } else if (command == Commands.CRYPTOPUNKS) {
                         (uint256 punkId, address recipient, uint256 value) =
@@ -206,10 +220,12 @@ contract UniversalRouter is
                     if (command == Commands.X2Y2_721) {
                         (success, output) = callAndTransfer721(inputs, X2Y2);
                     } else if (command == Commands.SUDOSWAP) {
-                        (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
+                        (uint256 value,) = abi.decode(inputs, (uint256, bytes));
+                        bytes calldata data = inputs.toBytes(1);
                         (success, output) = SUDOSWAP.call{value: value}(data);
                     } else if (command == Commands.NFT20) {
-                        (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
+                        (uint256 value,) = abi.decode(inputs, (uint256, bytes));
+                        bytes calldata data = inputs.toBytes(1);
                         (success, output) = NFT20_ZAP.call{value: value}(data);
                     } else if (command == Commands.X2Y2_1155) {
                         (success, output) = callAndTransfer1155(inputs, X2Y2);
@@ -243,12 +259,13 @@ contract UniversalRouter is
     /// @param protocol The protocol to pass the calldata to
     /// @return success True on success of the command, false on failure
     /// @return output The outputs or error messages, if any, from the command
-    function callAndTransfer721(bytes memory inputs, address protocol)
+    function callAndTransfer721(bytes calldata inputs, address protocol)
         internal
         returns (bool success, bytes memory output)
     {
-        (uint256 value, bytes memory data, address recipient, address token, uint256 id) =
+        (uint256 value,, address recipient, address token, uint256 id) =
             abi.decode(inputs, (uint256, bytes, address, address, uint256));
+        bytes calldata data = inputs.toBytes(1);
         (success, output) = protocol.call{value: value}(data);
         if (success) ERC721(token).safeTransferFrom(address(this), map(recipient), id);
     }
@@ -258,12 +275,13 @@ contract UniversalRouter is
     /// @param protocol The protocol to pass the calldata to
     /// @return success True on success of the command, false on failure
     /// @return output The outputs or error messages, if any, from the command
-    function callAndTransfer1155(bytes memory inputs, address protocol)
+    function callAndTransfer1155(bytes calldata inputs, address protocol)
         internal
         returns (bool success, bytes memory output)
     {
-        (uint256 value, bytes memory data, address recipient, address token, uint256 id, uint256 amount) =
+        (uint256 value,, address recipient, address token, uint256 id, uint256 amount) =
             abi.decode(inputs, (uint256, bytes, address, address, uint256, uint256));
+        bytes calldata data = inputs.toBytes(1);
         (success, output) = protocol.call{value: value}(data);
         if (success) ERC1155(token).safeTransferFrom(address(this), map(recipient), id, amount, new bytes(0));
     }
