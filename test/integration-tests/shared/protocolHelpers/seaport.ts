@@ -9,6 +9,9 @@ const { ethers } = hre
 export const seaportOrders = JSON.parse(
   fs.readFileSync('test/integration-tests/shared/orders/Seaport.json', { encoding: 'utf8' })
 )
+export const seaportV2Orders = JSON.parse(
+  fs.readFileSync('test/integration-tests/shared/orders/SeaportV2.json', { encoding: 'utf8' })
+)
 export const seaportInterface = new ethers.utils.Interface(SEAPORT_ABI)
 
 export type OfferItem = {
