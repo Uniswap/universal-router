@@ -37,6 +37,7 @@ export enum CommandType {
   X2Y2_1155 = 0x1b,
   FOUNDATION = 0x1c,
   SWEEP_ERC1155 = 0x1d,
+  ELEMENT_MARKET = 0x1e,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -90,6 +91,7 @@ const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.OWNER_CHECK_1155]: ['address', 'address', 'uint256', 'uint256'],
   [CommandType.NFT20]: ['uint256', 'bytes'],
   [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
+  [CommandType.ELEMENT_MARKET]: ['uint256', 'bytes'],
 }
 
 export class RoutePlanner {
