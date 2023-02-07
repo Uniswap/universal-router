@@ -6,6 +6,9 @@ import {IERC1155Receiver} from '@openzeppelin/contracts/token/ERC1155/IERC1155Re
 import {IRewardsCollector} from './IRewardsCollector.sol';
 
 interface IUniversalRouter is IRewardsCollector, IERC721Receiver, IERC1155Receiver {
+    /// @notice Thrown when a required command has failed
+    error ExecutionFailed(uint256 commandIndex, bytes message);
+
     /// @notice Thrown when attempting to send ETH directly to the contract
     error ETHNotAccepted();
 
@@ -15,26 +18,9 @@ interface IUniversalRouter is IRewardsCollector, IERC721Receiver, IERC1155Receiv
     /// @notice Thrown when attempting to execute commands and an incorrect number of inputs are provided
     error LengthMismatch();
 
-    /// @notice Thrown when a required command has failed
-    error ExecutionFailed(uint256 commandIndex, bytes message);
-
-    /// @notice Thrown when a provided command is invalid
-    error InvalidCommandType(uint256 commandType);
-
-    /// @notice Thrown when an ERC721 ownership check fails
-    error InvalidOwnerERC721();
-
-    /// @notice Thrown when an ERC1155 ownership check fails
-    error InvalidOwnerERC1155();
-
     /// @notice Executes encoded commands along with provided inputs. Reverts if deadline has expired.
     /// @param commands A set of concatenated commands, each 1 byte in length
     /// @param inputs An array of byte strings containing abi encoded inputs for each command
     /// @param deadline The deadline by which the transaction must be executed
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline) external payable;
-
-    /// @notice Executes encoded commands along with provided inputs.
-    /// @param commands A set of concatenated commands, each 1 byte in length
-    /// @param inputs An array of byte strings containing abi encoded inputs for each command
-    function execute(bytes calldata commands, bytes[] calldata inputs) external payable;
 }
