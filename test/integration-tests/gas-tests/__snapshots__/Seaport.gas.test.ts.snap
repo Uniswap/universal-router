@@ -3,13 +3,13 @@
 exports[`Seaport Gas Tests gas: fulfillAdvancedOrder 1`] = `
 Object {
   "calldataByteLength": 2052,
-  "gasUsed": 199028,
+  "gasUsed": 198039,
 }
 `;
 
 exports[`Seaport Gas Tests gas: fulfillAvailableAdvancedOrders 1 orders 1`] = `
 Object {
   "calldataByteLength": 4708,
-  "gasUsed": 325628,
+  "gasUsed": 324047,
 }
 `;

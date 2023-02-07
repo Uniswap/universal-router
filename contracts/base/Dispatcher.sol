@@ -40,20 +40,47 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 // 0x00 <= command < 0x08
                 if (command < 0x08) {
                     if (command == Commands.V3_SWAP_EXACT_IN) {
-                        (address recipient, uint256 amountIn, uint256 amountOutMin,, bool payerIsUser) =
-                            abi.decode(inputs, (address, uint256, uint256, bytes, bool));
+                        // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
+                        address recipient;
+                        uint256 amountIn;
+                        uint256 amountOutMin;
+                        bool payerIsUser;
+                        assembly {
+                            recipient := calldataload(inputs.offset)
+                            amountIn := calldataload(add(inputs.offset, 0x20))
+                            amountOutMin := calldataload(add(inputs.offset, 0x40))
+                            // 0x60 offset is the path, decoded below
+                            payerIsUser := calldataload(add(inputs.offset, 0x80))
+                        }
                         bytes calldata path = inputs.toBytes(3);
                         address payer = payerIsUser ? lockedBy : address(this);
                         v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
-                        (address recipient, uint256 amountOut, uint256 amountInMax,, bool payerIsUser) =
-                            abi.decode(inputs, (address, uint256, uint256, bytes, bool));
+                        // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
+                        address recipient;
+                        uint256 amountOut;
+                        uint256 amountInMax;
+                        bool payerIsUser;
+                        assembly {
+                            recipient := calldataload(inputs.offset)
+                            amountOut := calldataload(add(inputs.offset, 0x20))
+                            amountInMax := calldataload(add(inputs.offset, 0x40))
+                            // 0x60 offset is the path, decoded below
+                            payerIsUser := calldataload(add(inputs.offset, 0x80))
+                        }
                         bytes calldata path = inputs.toBytes(3);
                         address payer = payerIsUser ? lockedBy : address(this);
                         v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
-                        (address token, address recipient, uint160 amount) =
-                            abi.decode(inputs, (address, address, uint160));
+                        // equivalent: abi.decode(inputs, (address, address, uint160))
+                        address token;
+                        address recipient;
+                        uint160 amount;
+                        assembly {
+                            token := calldataload(inputs.offset)
+                            recipient := calldataload(add(inputs.offset, 0x20))
+                            amount := calldataload(add(inputs.offset, 0x40))
+                        }
                         permit2TransferFrom(token, lockedBy, map(recipient), amount);
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
                         (IAllowanceTransfer.PermitBatch memory permitBatch,) =
@@ -61,16 +88,37 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         bytes calldata data = inputs.toBytes(1);
                         PERMIT2.permit(lockedBy, permitBatch, data);
                     } else if (command == Commands.SWEEP) {
-                        (address token, address recipient, uint256 amountMin) =
-                            abi.decode(inputs, (address, address, uint256));
+                        // equivalent:  abi.decode(inputs, (address, address, uint256))
+                        address token;
+                        address recipient;
+                        uint160 amountMin;
+                        assembly {
+                            token := calldataload(inputs.offset)
+                            recipient := calldataload(add(inputs.offset, 0x20))
+                            amountMin := calldataload(add(inputs.offset, 0x40))
+                        }
                         Payments.sweep(token, map(recipient), amountMin);
                     } else if (command == Commands.TRANSFER) {
-                        (address token, address recipient, uint256 value) =
-                            abi.decode(inputs, (address, address, uint256));
+                        // equivalent:  abi.decode(inputs, (address, address, uint256))
+                        address token;
+                        address recipient;
+                        uint256 value;
+                        assembly {
+                            token := calldataload(inputs.offset)
+                            recipient := calldataload(add(inputs.offset, 0x20))
+                            value := calldataload(add(inputs.offset, 0x40))
+                        }
                         Payments.pay(token, map(recipient), value);
                     } else if (command == Commands.PAY_PORTION) {
-                        (address token, address recipient, uint256 bips) =
-                            abi.decode(inputs, (address, address, uint256));
+                        // equivalent:  abi.decode(inputs, (address, address, uint256))
+                        address token;
+                        address recipient;
+                        uint256 bips;
+                        assembly {
+                            token := calldataload(inputs.offset)
+                            recipient := calldataload(add(inputs.offset, 0x20))
+                            bips := calldataload(add(inputs.offset, 0x40))
+                        }
                         Payments.payPortion(token, map(recipient), bips);
                     } else {
                         // placeholder area for command 0x07
@@ -79,29 +127,39 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                     // 0x08 <= command < 0x10
                 } else {
                     if (command == Commands.V2_SWAP_EXACT_IN) {
-                        (
-                            address recipient,
-                            uint256 amountIn,
-                            uint256 amountOutMin,
-                            , // address[] memory path
-                            bool payerIsUser
-                        ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
+                        // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
+                        address recipient;
+                        uint256 amountIn;
+                        uint256 amountOutMin;
+                        bool payerIsUser;
+                        assembly {
+                            recipient := calldataload(inputs.offset)
+                            amountIn := calldataload(add(inputs.offset, 0x20))
+                            amountOutMin := calldataload(add(inputs.offset, 0x40))
+                            // 0x60 offset is the path, decoded below
+                            payerIsUser := calldataload(add(inputs.offset, 0x80))
+                        }
                         address[] calldata path = inputs.toAddressArray(3);
                         address payer = payerIsUser ? lockedBy : address(this);
                         v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
-                        (
-                            address recipient,
-                            uint256 amountOut,
-                            uint256 amountInMax,
-                            , // address[] memory path
-                            bool payerIsUser
-                        ) = abi.decode(inputs, (address, uint256, uint256, address[], bool));
+                        // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
+                        address recipient;
+                        uint256 amountOut;
+                        uint256 amountInMax;
+                        bool payerIsUser;
+                        assembly {
+                            recipient := calldataload(inputs.offset)
+                            amountOut := calldataload(add(inputs.offset, 0x20))
+                            amountInMax := calldataload(add(inputs.offset, 0x40))
+                            // 0x60 offset is the path, decoded below
+                            payerIsUser := calldataload(add(inputs.offset, 0x80))
+                        }
                         address[] calldata path = inputs.toAddressArray(3);
                         address payer = payerIsUser ? lockedBy : address(this);
                         v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_PERMIT) {
-                        // abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes));
+                        // equivalent: abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes))
                         IAllowanceTransfer.PermitSingle calldata permitSingle;
                         assembly {
                             permitSingle := inputs.offset
@@ -109,10 +167,22 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         bytes calldata data = inputs.toBytes(6); // PermitSingle takes first 6 slots (0..5)
                         PERMIT2.permit(lockedBy, permitSingle, data);
                     } else if (command == Commands.WRAP_ETH) {
-                        (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
+                        // equivalent: abi.decode(inputs, (address, uint256))
+                        address recipient;
+                        uint256 amountMin;
+                        assembly {
+                            recipient := calldataload(inputs.offset)
+                            amountMin := calldataload(add(inputs.offset, 0x20))
+                        }
                         Payments.wrapETH(map(recipient), amountMin);
                     } else if (command == Commands.UNWRAP_WETH) {
-                        (address recipient, uint256 amountMin) = abi.decode(inputs, (address, uint256));
+                        // equivalent: abi.decode(inputs, (address, uint256))
+                        address recipient;
+                        uint256 amountMin;
+                        assembly {
+                            recipient := calldataload(inputs.offset)
+                            amountMin := calldataload(add(inputs.offset, 0x20))
+                        }
                         Payments.unwrapWETH9(map(recipient), amountMin);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
                         (IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) =
@@ -128,18 +198,33 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 // 0x10 <= command < 0x18
                 if (command < 0x18) {
                     if (command == Commands.SEAPORT) {
-                        (uint256 value,) = abi.decode(inputs, (uint256, bytes));
+                        // equivalent: abi.decode(inputs, (uint256, bytes))
+                        uint256 value;
+                        assembly {
+                            value := calldataload(inputs.offset)
+                        }
                         bytes calldata data = inputs.toBytes(1);
                         (success, output) = SEAPORT.call{value: value}(data);
                     } else if (command == Commands.LOOKS_RARE_721) {
                         (success, output) = callAndTransfer721(inputs, LOOKS_RARE);
                     } else if (command == Commands.NFTX) {
-                        (uint256 value,) = abi.decode(inputs, (uint256, bytes));
+                        // equivalent: abi.decode(inputs, (uint256, bytes))
+                        uint256 value;
+                        assembly {
+                            value := calldataload(inputs.offset)
+                        }
                         bytes calldata data = inputs.toBytes(1);
                         (success, output) = NFTX_ZAP.call{value: value}(data);
                     } else if (command == Commands.CRYPTOPUNKS) {
-                        (uint256 punkId, address recipient, uint256 value) =
-                            abi.decode(inputs, (uint256, address, uint256));
+                        // equivalent: abi.decode(inputs, (uint256, address, uint256))
+                        uint256 punkId;
+                        address recipient;
+                        uint256 value;
+                        assembly {
+                            punkId := calldataload(inputs.offset)
+                            recipient := calldataload(add(inputs.offset, 0x20))
+                            value := calldataload(add(inputs.offset, 0x40))
+                        }
                         (success, output) = CRYPTOPUNKS.call{value: value}(
                             abi.encodeWithSelector(ICryptoPunksMarket.buyPunk.selector, punkId)
                         );
@@ -148,16 +233,41 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                     } else if (command == Commands.LOOKS_RARE_1155) {
                         (success, output) = callAndTransfer1155(inputs, LOOKS_RARE);
                     } else if (command == Commands.OWNER_CHECK_721) {
-                        (address owner, address token, uint256 id) = abi.decode(inputs, (address, address, uint256));
+                        // equivalent: abi.decode(inputs, (address, address, uint256))
+                        address owner;
+                        address token;
+                        uint256 id;
+                        assembly {
+                            owner := calldataload(inputs.offset)
+                            token := calldataload(add(inputs.offset, 0x20))
+                            id := calldataload(add(inputs.offset, 0x40))
+                        }
                         success = (ERC721(token).ownerOf(id) == owner);
                         if (!success) output = abi.encodePacked(InvalidOwnerERC721.selector);
                     } else if (command == Commands.OWNER_CHECK_1155) {
-                        (address owner, address token, uint256 id, uint256 minBalance) =
-                            abi.decode(inputs, (address, address, uint256, uint256));
+                        // equivalent: abi.decode(inputs, (address, address, uint256, uint256))
+                        address owner;
+                        address token;
+                        uint256 id;
+                        uint256 minBalance;
+                        assembly {
+                            owner := calldataload(inputs.offset)
+                            token := calldataload(add(inputs.offset, 0x20))
+                            id := calldataload(add(inputs.offset, 0x40))
+                            minBalance := calldataload(add(inputs.offset, 0x60))
+                        }
                         success = (ERC1155(token).balanceOf(owner, id) >= minBalance);
                         if (!success) output = abi.encodePacked(InvalidOwnerERC1155.selector);
                     } else if (command == Commands.SWEEP_ERC721) {
-                        (address token, address recipient, uint256 id) = abi.decode(inputs, (address, address, uint256));
+                        // equivalent: abi.decode(inputs, (address, address, uint256))
+                        address token;
+                        address recipient;
+                        uint256 id;
+                        assembly {
+                            token := calldataload(inputs.offset)
+                            recipient := calldataload(add(inputs.offset, 0x20))
+                            id := calldataload(add(inputs.offset, 0x40))
+                        }
                         Payments.sweepERC721(token, map(recipient), id);
                     }
                     // 0x18 <= command < 0x1f
@@ -165,11 +275,19 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                     if (command == Commands.X2Y2_721) {
                         (success, output) = callAndTransfer721(inputs, X2Y2);
                     } else if (command == Commands.SUDOSWAP) {
-                        (uint256 value,) = abi.decode(inputs, (uint256, bytes));
+                        // equivalent: abi.decode(inputs, (uint256, bytes))
+                        uint256 value;
+                        assembly {
+                            value := calldataload(inputs.offset)
+                        }
                         bytes calldata data = inputs.toBytes(1);
                         (success, output) = SUDOSWAP.call{value: value}(data);
                     } else if (command == Commands.NFT20) {
-                        (uint256 value,) = abi.decode(inputs, (uint256, bytes));
+                        // equivalent: abi.decode(inputs, (uint256, bytes))
+                        uint256 value;
+                        assembly {
+                            value := calldataload(inputs.offset)
+                        }
                         bytes calldata data = inputs.toBytes(1);
                         (success, output) = NFT20_ZAP.call{value: value}(data);
                     } else if (command == Commands.X2Y2_1155) {
@@ -177,8 +295,17 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                     } else if (command == Commands.FOUNDATION) {
                         (success, output) = callAndTransfer721(inputs, FOUNDATION);
                     } else if (command == Commands.SWEEP_ERC1155) {
-                        (address token, address recipient, uint256 id, uint256 amount) =
-                            abi.decode(inputs, (address, address, uint256, uint256));
+                        // equivalent: abi.decode(inputs, (address, address, uint256, uint256))
+                        address token;
+                        address recipient;
+                        uint256 id;
+                        uint256 amount;
+                        assembly {
+                            token := calldataload(inputs.offset)
+                            recipient := calldataload(add(inputs.offset, 0x20))
+                            id := calldataload(add(inputs.offset, 0x40))
+                            amount := calldataload(add(inputs.offset, 0x60))
+                        }
                         Payments.sweepERC1155(token, map(recipient), id, amount);
                     } else {
                         // placeholder area for commands 0x1e-0x1f
@@ -213,8 +340,18 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
         internal
         returns (bool success, bytes memory output)
     {
-        (uint256 value,, address recipient, address token, uint256 id) =
-            abi.decode(inputs, (uint256, bytes, address, address, uint256));
+        // equivalent: abi.decode(inputs, (uint256, bytes, address, address, uint256))
+        uint256 value;
+        address recipient;
+        address token;
+        uint256 id;
+        assembly {
+            value := calldataload(inputs.offset)
+            // 0x20 offset is the tx data, decoded below
+            recipient := calldataload(add(inputs.offset, 0x40))
+            token := calldataload(add(inputs.offset, 0x60))
+            id := calldataload(add(inputs.offset, 0x80))
+        }
         bytes calldata data = inputs.toBytes(1);
         (success, output) = protocol.call{value: value}(data);
         if (success) ERC721(token).safeTransferFrom(address(this), map(recipient), id);
@@ -229,8 +366,20 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
         internal
         returns (bool success, bytes memory output)
     {
-        (uint256 value,, address recipient, address token, uint256 id, uint256 amount) =
-            abi.decode(inputs, (uint256, bytes, address, address, uint256, uint256));
+        // equivalent: abi.decode(inputs, (uint256, bytes, address, address, uint256, uint256))
+        uint256 value;
+        address recipient;
+        address token;
+        uint256 id;
+        uint256 amount;
+        assembly {
+            value := calldataload(inputs.offset)
+            // 0x20 offset is the tx data, decoded below
+            recipient := calldataload(add(inputs.offset, 0x40))
+            token := calldataload(add(inputs.offset, 0x60))
+            id := calldataload(add(inputs.offset, 0x80))
+            amount := calldataload(add(inputs.offset, 0xa0))
+        }
         bytes calldata data = inputs.toBytes(1);
         (success, output) = protocol.call{value: value}(data);
         if (success) ERC1155(token).safeTransferFrom(address(this), map(recipient), id, amount, new bytes(0));
