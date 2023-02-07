@@ -363,6 +363,12 @@ describe('Uniswap UX Tests gas:', () => {
 
     describe('Frequent Swapper - 10 swaps', async () => {
       it('SwapRouter02', async () => {
+        const { calldata: callDataComplex } = SwapRouter.swapCallParameters(COMPLEX_SWAP, {
+          slippageTolerance: new Percent(50, 100),
+          recipient: bob.address,
+          deadlineOrPreviousBlockhash: DEADLINE,
+        })
+
         const { calldata: callDataSimple } = SwapRouter.swapCallParameters(SIMPLE_SWAP, {
           slippageTolerance: new Percent(50, 100),
           recipient: bob.address,
@@ -371,8 +377,14 @@ describe('Uniswap UX Tests gas:', () => {
 
         let totalGas = approveSwapRouter02Gas
 
+        // Do 5 complex swaps
+        for (let i = 0; i < 5; i++) {
+          const tx = await executeSwapRouter02Swap({ value: '0', calldata: callDataComplex }, bob)
+          totalGas = totalGas.add((await tx.wait()).gasUsed)
+        }
+
         // Do 5 simple swaps
-        for (let i = 0; i < 1; i++) {
+        for (let i = 0; i < 5; i++) {
           const tx = await executeSwapRouter02Swap({ value: '0', calldata: callDataSimple }, bob)
           totalGas = totalGas.add((await tx.wait()).gasUsed)
         }
