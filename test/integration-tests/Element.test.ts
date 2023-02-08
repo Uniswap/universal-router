@@ -35,7 +35,7 @@ describe.only('Element Market polygon', () => {
         {
           forking: {
             jsonRpcUrl: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-            blockNumber: 39061195,
+            blockNumber: 39069302 - 1,
           },
         },
       ],
@@ -56,14 +56,12 @@ describe.only('Element Market polygon', () => {
     // get block number
     const blockNumber = await ethers.provider.getBlockNumber()
     console.log(blockNumber)
-
-    const currentMakerNonce = (await element.callStatic.getStorage()).hashNonces(EXAMPLE_NFT_SELL_ORDER.maker)
-    console.log(currentMakerNonce)
     
     const hash = await element.callStatic.getERC721SellOrderHash(EXAMPLE_NFT_SELL_ORDER)
     console.log(hash)
     const status = await element.callStatic.getERC721SellOrderStatus(EXAMPLE_NFT_SELL_ORDER)
     console.log(status)
+    expect(status).to.eq(1, 'order should be fillable')
 
     const value = BigNumber.from(EXAMPLE_NFT_SELL_ORDER.erc20TokenAmount) // since in example we use native token
     const calldata = ELEMENT_721_INTERFACE.encodeFunctionData('buyERC721', [

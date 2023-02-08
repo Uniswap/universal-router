@@ -54,27 +54,26 @@ export interface Property {
     propertyData: string;
 }
 
-// "buyERC721((address,address,uint256,uint256,address,uint256,(address,uint256,bytes)[],address,uint256),(uint8,uint8,bytes32,bytes32))"
-// (0xBCAD54a60C6A4C2EEDFb2E26aeF3D7212a50652B, 0x0000000000000000000000000000000000000000, 1675955317, 2, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, 38700000000000000000, [], 0xA5F1Ea7DF861952863dF2e8d1312f7305dabf215, 148889)
-// (0, 27, 0x774b221842cc94f7ebfca3b5228e8fb044728f069e577560b5d7868fbe95b96e, 0x2ff9b2a6e9e8045104ae52056c1137ba91ca8a45f922ca234833ddb552c12281)
+// (0xFfd3b35d3aeadD47c0A99259eE8be899983D9441, 0x0000000000000000000000000000000000000000, 1675972593, 1, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, 34500000000000000000, [], 0xA5F1Ea7DF861952863dF2e8d1312f7305dabf215, 152807)
+// (0, 28, 0x2102a204f2f62acf6a44c7a43c0f9a3d972231cee0ab69f682301a29d09c0f29, 0x6a6095f94a58856df46c286c792a08ae2f256f3a32f4e502f70a912e73761216)
 
 export const EXAMPLE_NFT_SELL_ORDER: NFTSellOrder = {
-    maker: "0xBCAD54a60C6A4C2EEDFb2E26aeF3D7212a50652B",
+    maker: "0xFfd3b35d3aeadD47c0A99259eE8be899983D9441",
     taker: "0x0000000000000000000000000000000000000000",
-    expiry: "1675955317",
-    nonce: "2",
+    expiry: "1675972593",
+    nonce: "1",
     erc20Token: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // native token for Element
-    erc20TokenAmount: "38700000000000000000",
+    erc20TokenAmount: "34500000000000000000",
     fees: [],
     nft: "0xA5F1Ea7DF861952863dF2e8d1312f7305dabf215",
-    nftId: "148889"
+    nftId: "152807"
 }
 
 export const EXAMPLE_NFT_SELL_ORDER_SIG: ElementOrderSignature = {
     signatureType: 0,
-    v: 27,
-    r: "0x774b221842cc94f7ebfca3b5228e8fb044728f069e577560b5d7868fbe95b96e",
-    s: "0x2ff9b2a6e9e8045104ae52056c1137ba91ca8a45f922ca234833ddb552c12281"
+    v: 28,
+    r: "0x2102a204f2f62acf6a44c7a43c0f9a3d972231cee0ab69f682301a29d09c0f29",
+    s: "0x6a6095f94a58856df46c286c792a08ae2f256f3a32f4e502f70a912e73761216"
 }
 
 // Signing over this:
