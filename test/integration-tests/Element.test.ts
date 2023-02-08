@@ -6,7 +6,7 @@ import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import { BigNumber } from 'ethers'
+import { BigNumber, Contract } from 'ethers'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { expect } from 'chai'
 import { EXAMPLE_NFT_SELL_ORDER, EXAMPLE_NFT_SELL_ORDER_SIG } from './shared/protocolHelpers/element'
@@ -24,6 +24,7 @@ describe.only('Element Market polygon', () => {
   let permit2: Permit2
   let planner: RoutePlanner
   let zedHorse: ERC721
+  let element: Contract
 
   beforeEach(async () => {
     planner = new RoutePlanner()
@@ -34,11 +35,12 @@ describe.only('Element Market polygon', () => {
         {
           forking: {
             jsonRpcUrl: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-            blockNumber: 39061196,
+            blockNumber: 39061195,
           },
         },
       ],
-    })
+    }) 
+
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
@@ -46,16 +48,32 @@ describe.only('Element Market polygon', () => {
     permit2 = (await deployPermit2()).connect(alice) as Permit2
     router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     zedHorse = new ethers.Contract(ZED_HORSE_ADDRESS, ERC721_ABI).connect(alice) as ERC721
+    element = new ethers.Contract('0xEAF5453b329Eb38Be159a872a6ce91c9A8fb0260', ELEMENT_721_INTERFACE).connect(alice) as Contract
   })
 
   it('purchases open order', async () => {
+
+    // get block number
+    const blockNumber = await ethers.provider.getBlockNumber()
+    console.log(blockNumber)
+
+    const currentMakerNonce = (await element.callStatic.getStorage()).hashNonces(EXAMPLE_NFT_SELL_ORDER.maker)
+    console.log(currentMakerNonce)
+    
+    const hash = await element.callStatic.getERC721SellOrderHash(EXAMPLE_NFT_SELL_ORDER)
+    console.log(hash)
+    const status = await element.callStatic.getERC721SellOrderStatus(EXAMPLE_NFT_SELL_ORDER)
+    console.log(status)
+
     const value = BigNumber.from(EXAMPLE_NFT_SELL_ORDER.erc20TokenAmount) // since in example we use native token
-    const calldata = ELEMENT_721_INTERFACE.encodeFunctionData('buyERC721Ex', [
+    const calldata = ELEMENT_721_INTERFACE.encodeFunctionData('buyERC721', [
       EXAMPLE_NFT_SELL_ORDER,
       EXAMPLE_NFT_SELL_ORDER_SIG,
-      alice.address, // taker
-      '0x00', // extraData
+    //   alice.address, // taker
+    //   '0x00', // extraData
     ])
+
+    console.log(calldata)
 
     planner.addCommand(CommandType.ELEMENT_MARKET, [value.toString(), calldata])
     const { commands, inputs } = planner

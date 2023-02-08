@@ -25,6 +25,7 @@ export async function deployRouter(
     x2y2: '0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3',
     foundation: '0xcDA72070E455bb31C7690a170224Ce43623d0B6f',
     sudoswap: '0x2B2e8cDA09bBA9660dCA5cB6233787738Ad68329',
+    elementMarket: '0xEAF5453b329Eb38Be159a872a6ce91c9A8fb0260', // TODO: this is polygon address for testing, replace w mainnet
     nft20Zap: '0xA42f6cADa809Bcf417DeefbdD69C5C5A909249C0',
     cryptopunks: '0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB',
     looksRare: '0x59728544B08AB483533076417FbBB2fD0B17CE3a',
