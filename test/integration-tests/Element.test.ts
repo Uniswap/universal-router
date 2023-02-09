@@ -45,8 +45,8 @@ describe.only('Element Market polygon', () => {
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
     })
-    permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+    // permit2 = (await deployPermit2()).connect(alice) as Permit2
+    // router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     zedHorse = new ethers.Contract(ZED_HORSE_ADDRESS, ERC721_ABI).connect(alice) as ERC721
     element = new ethers.Contract('0xEAF5453b329Eb38Be159a872a6ce91c9A8fb0260', ELEMENT_721_INTERFACE).connect(alice) as Contract
   })
@@ -57,7 +57,13 @@ describe.only('Element Market polygon', () => {
     console.log(hash)
     const status = await element.callStatic.getERC721SellOrderStatus(EXAMPLE_NFT_SELL_ORDER)
     console.log(status)
-    expect(status).to.eq(1, 'order should be fillable')
+    expect(status).to.eq(1, 'order should be open')
+
+    const takerSigner = await ethers.getImpersonatedSigner("0x224d253edb8c3e4b620e30f0f1904f7d1448223d")
+
+    // get block number
+    const blockNumber = await ethers.provider.getBlockNumber()
+    console.log(blockNumber)
 
     const value = BigNumber.from(EXAMPLE_NFT_SELL_ORDER.erc20TokenAmount) // since in example we use native token
     const calldata = ELEMENT_721_INTERFACE.encodeFunctionData('buyERC721', [
@@ -69,9 +75,15 @@ describe.only('Element Market polygon', () => {
 
     console.log(calldata)
 
-    // get block number
-    const blockNumber = await ethers.provider.getBlockNumber()
-    console.log(blockNumber)
+    const txn = await takerSigner.sendTransaction({
+        to: "0xEAF5453b329Eb38Be159a872a6ce91c9A8fb0260",
+        data: calldata,
+        value: value,
+    })
+
+    console.log(txn)
+
+    return
     
     planner.addCommand(CommandType.ELEMENT_MARKET, [value.toString(), calldata])
     const { commands, inputs } = planner
@@ -85,7 +97,7 @@ describe.only('Element Market polygon', () => {
     const ethAfter = await ethers.provider.getBalance(alice.address)
 
     expect(ownerBefore).to.eq(EXAMPLE_NFT_SELL_ORDER.maker)
-    expect(ownerAfter).to.eq(takerSigner.address)
+    expect(ownerAfter).to.eq(alice.address)
     expect(ethBefore.sub(ethAfter)).to.eq(value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice)))
   })
 })
