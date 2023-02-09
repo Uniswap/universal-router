@@ -48,7 +48,7 @@ library Commands {
     uint256 constant FOUNDATION = 0x1c;
     uint256 constant SWEEP_ERC1155 = 0x1d;
     uint256 constant SEAPORT_V2 = 0x1e;
-    // COMMAND_PLACEHOLDER = 0x1f 
-    
+    // COMMAND_PLACEHOLDER = 0x1f
+
     // Command types 0x20 to 0x3f (all unused)
 }
