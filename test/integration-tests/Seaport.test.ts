@@ -157,9 +157,9 @@ describe('SeaportV2', () => {
   let planner: RoutePlanner
   let testing721Token: ERC721
   // @dev 0 addr for an order that was not sent through the OpenSea conduit
-  let PLACEHOLDER_CONDUIT_KEY = "0x0000000000000000000000000000000000000000000000000000000000000000"
+  let PLACEHOLDER_CONDUIT_KEY = '0x0000000000000000000000000000000000000000000000000000000000000000'
 
-  const testingTokenAddress = "0x399F0c34c0193674A29e290Eef484DA007DDeF4E"
+  const testingTokenAddress = '0x399F0c34c0193674A29e290Eef484DA007DDeF4E'
 
   beforeEach(async () => {
     await resetFork(16592843 - 1) // 1 block before the order was created
