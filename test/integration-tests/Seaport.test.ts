@@ -18,7 +18,7 @@ import hre from 'hardhat'
 import { findCustomErrorSelector } from './shared/parseEvents'
 const { ethers } = hre
 
-describe.only('Seaport', () => {
+describe('Seaport', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
@@ -148,7 +148,7 @@ describe.only('Seaport', () => {
   })
 })
 
-describe.only('SeaportV2', () => {
+describe('SeaportV2', () => {
   // @dev TODO: change over to use cryptoCovens order once Seaport1.2 is used on OpenSea
   // for now using this order: https://etherscan.io/tx/0x5f7d6815611146b8d6bf454cc18fe7a68c5645e145999071e2d45fe9021e9357
   let alice: SignerWithAddress
