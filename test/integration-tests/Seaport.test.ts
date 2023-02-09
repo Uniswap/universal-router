@@ -18,12 +18,12 @@ import hre from 'hardhat'
 import { findCustomErrorSelector } from './shared/parseEvents'
 const { ethers } = hre
 
-describe('Seaport', () => {
+describe.only('Seaport', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
   let planner: RoutePlanner
-  let testing721Token: ERC721
+  let cryptoCovens: ERC721
 
   beforeEach(async () => {
     await resetFork()
@@ -35,7 +35,7 @@ describe('Seaport', () => {
     permit2 = (await deployPermit2()).connect(alice) as Permit2
     router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
-    testing721Token = COVEN_721.connect(alice) as ERC721
+    cryptoCovens = COVEN_721.connect(alice) as ERC721
   })
 
   it('completes a fulfillAdvancedOrder type', async () => {
@@ -51,10 +51,10 @@ describe('Seaport', () => {
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
     const { commands, inputs } = planner
 
-    const ownerBefore = await testing721Token.ownerOf(params.offer[0].identifierOrCriteria)
+    const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
     const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
-    const ownerAfter = await testing721Token.ownerOf(params.offer[0].identifierOrCriteria)
+    const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
     const ethDelta = ethBefore.sub(ethAfter)
@@ -81,14 +81,14 @@ describe('Seaport', () => {
     const commands = planner.commands
     const inputs = planner.inputs
 
-    const ownerBefore = await testing721Token.ownerOf(params.offer[0].identifierOrCriteria)
+    const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
 
     // don't send enough ETH, so the seaport purchase reverts
     value = BigNumber.from(value).sub('1')
     const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
 
-    const ownerAfter = await testing721Token.ownerOf(params.offer[0].identifierOrCriteria)
+    const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
     const ethDelta = ethBefore.sub(ethAfter)
@@ -105,14 +105,14 @@ describe('Seaport', () => {
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
     const { commands, inputs } = planner
 
-    const owner0Before = await testing721Token.ownerOf(params0.offer[0].identifierOrCriteria)
-    const owner1Before = await testing721Token.ownerOf(params1.offer[0].identifierOrCriteria)
+    const owner0Before = await cryptoCovens.ownerOf(params0.offer[0].identifierOrCriteria)
+    const owner1Before = await cryptoCovens.ownerOf(params1.offer[0].identifierOrCriteria)
     const ethBefore = await ethers.provider.getBalance(alice.address)
 
     const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
 
-    const owner0After = await testing721Token.ownerOf(params0.offer[0].identifierOrCriteria)
-    const owner1After = await testing721Token.ownerOf(params1.offer[0].identifierOrCriteria)
+    const owner0After = await cryptoCovens.ownerOf(params0.offer[0].identifierOrCriteria)
+    const owner1After = await cryptoCovens.ownerOf(params1.offer[0].identifierOrCriteria)
     const ethAfter = await ethers.provider.getBalance(alice.address)
     const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
     const ethDelta = ethBefore.sub(ethAfter)
@@ -148,8 +148,8 @@ describe('Seaport', () => {
   })
 })
 
-describe('SeaportV2', () => {
-  // @dev TODO: change over to use cryptoCoven order once Seaport1.2 is used on OpenSea
+describe.only('SeaportV2', () => {
+  // @dev TODO: change over to use cryptoCovens order once Seaport1.2 is used on OpenSea
   // for now using this order: https://etherscan.io/tx/0x5f7d6815611146b8d6bf454cc18fe7a68c5645e145999071e2d45fe9021e9357
   let alice: SignerWithAddress
   let router: UniversalRouter
