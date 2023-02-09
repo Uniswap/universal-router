@@ -17,7 +17,7 @@ exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper - 10 swaps Permit2 M
 
 exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper - 10 swaps Permit2 Sign Per Swap 1`] = `3403365`;
 
-exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper - 10 swaps SwapRouter02 1`] = `278117`;
+exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper - 10 swaps SwapRouter02 1`] = `3320620`;
 
 exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper across 3 swap router versions - 15 swaps across 3 versions Permit2 Max Approval Swap 1`] = `4342488`;
 
