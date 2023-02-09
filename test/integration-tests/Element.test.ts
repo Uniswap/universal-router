@@ -52,10 +52,6 @@ describe.only('Element Market polygon', () => {
   })
 
   it('purchases open order', async () => {
-
-    // get block number
-    const blockNumber = await ethers.provider.getBlockNumber()
-    console.log(blockNumber)
     
     const hash = await element.callStatic.getERC721SellOrderHash(EXAMPLE_NFT_SELL_ORDER)
     console.log(hash)
@@ -73,6 +69,10 @@ describe.only('Element Market polygon', () => {
 
     console.log(calldata)
 
+    // get block number
+    const blockNumber = await ethers.provider.getBlockNumber()
+    console.log(blockNumber)
+    
     planner.addCommand(CommandType.ELEMENT_MARKET, [value.toString(), calldata])
     const { commands, inputs } = planner
 
@@ -85,7 +85,7 @@ describe.only('Element Market polygon', () => {
     const ethAfter = await ethers.provider.getBalance(alice.address)
 
     expect(ownerBefore).to.eq(EXAMPLE_NFT_SELL_ORDER.maker)
-    expect(ownerAfter).to.eq(alice.address)
+    expect(ownerAfter).to.eq(takerSigner.address)
     expect(ethBefore.sub(ethAfter)).to.eq(value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice)))
   })
 })
