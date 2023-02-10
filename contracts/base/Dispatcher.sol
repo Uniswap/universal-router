@@ -318,7 +318,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
             if (command == Commands.EXECUTE_SUB_PLAN) {
                 (bytes memory _commands, bytes[] memory _inputs) = abi.decode(inputs, (bytes, bytes[]));
                 (success, output) =
-                    (address(this)).call(abi.encodeWithSignature('execute(bytes,bytes[])', _commands, _inputs));
+                    (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
             } else {
                 // placeholder area for commands 0x21-0x3f
                 revert InvalidCommandType(command);
