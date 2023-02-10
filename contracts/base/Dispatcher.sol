@@ -320,11 +320,11 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 (success, output) =
                     (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
             } else if (command == Commands.SEAPORT_V2) {
-                /// @dev Seaport 1.2 allows for orders to be created by contracts. 
+                /// @dev Seaport 1.2 allows for orders to be created by contracts.
                 ///     These orders pass control to the contract offerers during fufillment,
-                ///         allowing them to perform any number of destructive actions as a holder of the NFT. 
+                ///         allowing them to perform any number of destructive actions as a holder of the NFT.
                 ///     Integrators should be aware that in some scenarios: e.g. purchasing an NFT that allows the holder
-                ///         to claim another NFT, the contract offerer can "steal" the claim during order fufillment. 
+                ///         to claim another NFT, the contract offerer can "steal" the claim during order fufillment.
                 ///     This is also outlined in the Seaport documentation: https://github.com/ProjectOpenSea/seaport/blob/main/docs/SeaportDocumentation.md
                 uint256 value;
                 assembly {
