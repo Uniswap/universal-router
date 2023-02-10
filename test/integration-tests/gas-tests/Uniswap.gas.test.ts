@@ -33,7 +33,7 @@ import {
   SOURCE_MSG_SENDER,
   SOURCE_ROUTER,
 } from '../shared/constants'
-import { expandTo18DecimalsBN } from '../shared/helpers'
+import { expandTo18DecimalsBN, expandTo6DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { RoutePlanner, CommandType } from '../shared/planner'
@@ -354,7 +354,7 @@ describe('Uniswap Gas Tests', () => {
             [DAI.address, WETH.address],
             SOURCE_MSG_SENDER,
           ])
-          planner.addCommand(CommandType.UNWRAP_WETH, [router.address, amountOut])
+          planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, amountOut])
           planner.addCommand(CommandType.PAY_PORTION, [ETH_ADDRESS, MSG_SENDER, 50])
           planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
 
@@ -389,7 +389,7 @@ describe('Uniswap Gas Tests', () => {
           const amountOut = expandTo18DecimalsBN(100)
           const value = expandTo18DecimalsBN(1)
 
-          planner.addCommand(CommandType.WRAP_ETH, [router.address, value])
+          planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, value])
           planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
             MSG_SENDER,
             amountOut,
@@ -653,7 +653,7 @@ describe('Uniswap Gas Tests', () => {
           const tokens = [WETH.address, DAI.address]
           const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
 
-          planner.addCommand(CommandType.WRAP_ETH, [router.address, amountIn])
+          planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, amountIn])
           addV3ExactInTrades(planner, 1, amountOutMin, MSG_SENDER, tokens, SOURCE_ROUTER)
 
           const { commands, inputs } = planner
@@ -666,7 +666,7 @@ describe('Uniswap Gas Tests', () => {
           const tokens = [WETH.address, DAI.address]
           const path = encodePathExactOutput(tokens)
 
-          planner.addCommand(CommandType.WRAP_ETH, [router.address, amountInMax])
+          planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, amountInMax])
           planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [MSG_SENDER, amountOut, amountInMax, path, SOURCE_ROUTER])
           planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
 
@@ -929,7 +929,7 @@ describe('Uniswap Gas Tests', () => {
           const v3AmountIn: BigNumber = expandTo18DecimalsBN(3)
           const value = v2AmountIn.add(v3AmountIn)
 
-          planner.addCommand(CommandType.WRAP_ETH, [router.address, value])
+          planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, value])
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [router.address, v2AmountIn, 0, tokens, SOURCE_ROUTER])
           planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
             router.address,
@@ -989,6 +989,207 @@ describe('Uniswap Gas Tests', () => {
           ])
           // aggregate slippate check
           planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, fullAmountOut])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+      })
+
+      describe('Batch reverts', () => {
+        let subplan: RoutePlanner
+        const planOneTokens = [DAI.address, WETH.address]
+        const planTwoTokens = [USDC.address, WETH.address]
+        const planOneV2AmountIn: BigNumber = expandTo18DecimalsBN(2)
+        const planOneV3AmountIn: BigNumber = expandTo18DecimalsBN(3)
+        const planTwoV3AmountIn = expandTo6DecimalsBN(5)
+
+        beforeEach(async () => {
+          subplan = new RoutePlanner()
+        })
+
+        it('gas: 2 sub-plans, neither fails', async () => {
+          // first split route sub-plan. DAI->WETH, 2 routes on V2 and V3.
+          const planOneWethMinOut = expandTo18DecimalsBN(0.0005)
+
+          // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
+          subplan.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            ADDRESS_THIS,
+            planOneV2AmountIn,
+            0,
+            planOneTokens,
+            SOURCE_MSG_SENDER,
+          ])
+          // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
+          subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            ADDRESS_THIS,
+            planOneV3AmountIn,
+            0,
+            encodePathExactInput(planOneTokens),
+            SOURCE_MSG_SENDER,
+          ])
+          // aggregate slippage check
+          subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, planOneWethMinOut])
+
+          // add the subplan to the main planner
+          planner.addSubPlan(subplan)
+          subplan = new RoutePlanner()
+
+          // second split route sub-plan. USDC->WETH, 1 route on V3
+          const wethMinAmountOut2 = expandTo18DecimalsBN(0.0005)
+
+          // Add the trade to the sub-plan
+          subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            MSG_SENDER,
+            planTwoV3AmountIn,
+            wethMinAmountOut2,
+            encodePathExactInput(planTwoTokens),
+            SOURCE_MSG_SENDER,
+          ])
+
+          // add the second subplan to the main planner
+          planner.addSubPlan(subplan)
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: 2 sub-plans, the first fails', async () => {
+          // first split route sub-plan. DAI->WETH, 2 routes on V2 and V3.
+          // FAIL: large weth amount out to cause a failure
+          const planOneWethMinOut = expandTo18DecimalsBN(1)
+
+          // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
+          subplan.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            ADDRESS_THIS,
+            planOneV2AmountIn,
+            0,
+            planOneTokens,
+            SOURCE_MSG_SENDER,
+          ])
+          // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
+          subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            ADDRESS_THIS,
+            planOneV3AmountIn,
+            0,
+            encodePathExactInput(planOneTokens),
+            SOURCE_MSG_SENDER,
+          ])
+          // aggregate slippage check
+          subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, planOneWethMinOut])
+
+          // add the subplan to the main planner
+          planner.addSubPlan(subplan)
+          subplan = new RoutePlanner()
+
+          // second split route sub-plan. USDC->WETH, 1 route on V3
+          const wethMinAmountOut2 = expandTo18DecimalsBN(0.0005)
+
+          // Add the trade to the sub-plan
+          subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            MSG_SENDER,
+            planTwoV3AmountIn,
+            wethMinAmountOut2,
+            encodePathExactInput(planTwoTokens),
+            SOURCE_MSG_SENDER,
+          ])
+
+          // add the second subplan to the main planner
+          planner.addSubPlan(subplan)
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: 2 sub-plans, both fail but the transaction succeeds', async () => {
+          // first split route sub-plan. DAI->WETH, 2 routes on V2 and V3.
+          // FAIL: large amount out to cause the swap to revert
+          const planOneWethMinOut = expandTo18DecimalsBN(1)
+
+          // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
+          subplan.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            ADDRESS_THIS,
+            planOneV2AmountIn,
+            0,
+            planOneTokens,
+            SOURCE_MSG_SENDER,
+          ])
+          // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
+          subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            ADDRESS_THIS,
+            planOneV3AmountIn,
+            0,
+            encodePathExactInput(planOneTokens),
+            SOURCE_MSG_SENDER,
+          ])
+          // aggregate slippage check
+          subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, planOneWethMinOut])
+
+          // add the subplan to the main planner
+          planner.addSubPlan(subplan)
+          subplan = new RoutePlanner()
+
+          // second split route sub-plan. USDC->WETH, 1 route on V3
+          // FAIL: large amount out to cause the swap to revert
+          const wethMinAmountOut2 = expandTo18DecimalsBN(1)
+
+          // Add the trade to the sub-plan
+          subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            MSG_SENDER,
+            planTwoV3AmountIn,
+            wethMinAmountOut2,
+            encodePathExactInput(planTwoTokens),
+            SOURCE_MSG_SENDER,
+          ])
+
+          // add the second subplan to the main planner
+          planner.addSubPlan(subplan)
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: 2 sub-plans, second sub plan fails', async () => {
+          // first split route sub-plan. DAI->WETH, 2 routes on V2 and V3.
+          const planOneWethMinOut = expandTo18DecimalsBN(0.0005)
+
+          // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
+          subplan.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            ADDRESS_THIS,
+            planOneV2AmountIn,
+            0,
+            planOneTokens,
+            SOURCE_MSG_SENDER,
+          ])
+          // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
+          subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            ADDRESS_THIS,
+            planOneV3AmountIn,
+            0,
+            encodePathExactInput(planOneTokens),
+            SOURCE_MSG_SENDER,
+          ])
+          // aggregate slippage check
+          subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, planOneWethMinOut])
+
+          // add the subplan to the main planner
+          planner.addSubPlan(subplan)
+          subplan = new RoutePlanner()
+
+          // second split route sub-plan. USDC->WETH, 1 route on V3
+          // FAIL: large amount out to cause the swap to revert
+          const wethMinAmountOut2 = expandTo18DecimalsBN(1)
+
+          // Add the trade to the sub-plan
+          subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+            MSG_SENDER,
+            planTwoV3AmountIn,
+            wethMinAmountOut2,
+            encodePathExactInput(planTwoTokens),
+            SOURCE_MSG_SENDER,
+          ])
+
+          // add the second subplan to the main planner
+          planner.addSubPlan(subplan)
 
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))

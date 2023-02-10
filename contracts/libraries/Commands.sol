@@ -47,5 +47,10 @@ library Commands {
     uint256 constant X2Y2_1155 = 0x1b;
     uint256 constant FOUNDATION = 0x1c;
     uint256 constant SWEEP_ERC1155 = 0x1d;
-    // COMMAND_PLACEHOLDER = 0x1e to 0x3f (all unused)
+    // COMMAND_PLACEHOLDER = 0x0e;
+    // COMMAND_PLACEHOLDER = 0x0f;
+
+    // Command Types where 0x20<=value
+    uint256 constant EXECUTE_SUB_PLAN = 0x20;
+    // COMMAND_PLACEHOLDER for 0x21 to 0x3f
 }

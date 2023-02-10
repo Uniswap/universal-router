@@ -12,6 +12,7 @@ import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 const { ethers } = hre
 import WETH_ABI from '../../../artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
 import { BigNumber } from 'ethers'
+import { ADDRESS_THIS } from '@uniswap/router-sdk'
 
 describe('Payments Gas Tests', () => {
   let alice: SignerWithAddress
@@ -66,7 +67,7 @@ describe('Payments Gas Tests', () => {
       // seed router with WETH and unwrap it into the router
       const amount: BigNumber = expandTo18DecimalsBN(3)
       await wethContract.transfer(router.address, amount)
-      planner.addCommand(CommandType.UNWRAP_WETH, [router.address, amount])
+      planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, amount])
       let { commands, inputs } = planner
       await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
 
@@ -93,7 +94,7 @@ describe('Payments Gas Tests', () => {
       // seed router with WETH and unwrap it into the router
       const amount: BigNumber = expandTo18DecimalsBN(3)
       await wethContract.transfer(router.address, amount)
-      planner.addCommand(CommandType.UNWRAP_WETH, [router.address, amount])
+      planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, amount])
       let { commands, inputs } = planner
       await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
 
