@@ -24,8 +24,9 @@ abstract contract Permit2Payments is Payments {
 
     /// @notice Performs a batch transferFrom on Permit2
     /// @param batchDetails An array detailing each of the transfers that should occur
-    function permit2TransferFrom(IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) internal {
-        address owner = msg.sender;
+    function permit2TransferFrom(IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails, address owner)
+        internal
+    {
         uint256 batchLength = batchDetails.length;
         for (uint256 i = 0; i < batchLength; ++i) {
             if (batchDetails[i].from != owner) revert FromAddressIsNotOwner();

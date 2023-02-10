@@ -37,7 +37,9 @@ export enum CommandType {
   X2Y2_1155 = 0x1b,
   FOUNDATION = 0x1c,
   SWEEP_ERC1155 = 0x1d,
-  SEAPORT_V2 = 0x1e,
+
+  EXECUTE_SUB_PLAN = 0x20,
+  SEAPORT_V2 = 0x21,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -53,6 +55,7 @@ const REVERTABLE_COMMANDS = new Set<CommandType>([
   CommandType.FOUNDATION,
   CommandType.SUDOSWAP,
   CommandType.NFT20,
+  CommandType.EXECUTE_SUB_PLAN,
 ])
 
 const PERMIT_STRUCT =
@@ -93,6 +96,7 @@ const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.OWNER_CHECK_1155]: ['address', 'address', 'uint256', 'uint256'],
   [CommandType.NFT20]: ['uint256', 'bytes'],
   [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
+  [CommandType.EXECUTE_SUB_PLAN]: ['bytes', 'bytes[]'],
 }
 
 export class RoutePlanner {
@@ -102,6 +106,10 @@ export class RoutePlanner {
   constructor() {
     this.commands = '0x'
     this.inputs = []
+  }
+
+  addSubPlan(subplan: RoutePlanner): void {
+    this.addCommand(CommandType.EXECUTE_SUB_PLAN, [subplan.commands, subplan.inputs], true)
   }
 
   addCommand(type: CommandType, parameters: any[], allowRevert = false): void {

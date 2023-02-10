@@ -5,20 +5,20 @@ exports[`UniversalRouter Gas Tests gas: bytecode size 1`] = `23691`;
 exports[`UniversalRouter Gas Tests trading for NFTs gas: ERC20 --> ETH --> Seaport NFT 1`] = `
 Object {
   "calldataByteLength": 2500,
-  "gasUsed": 299011,
+  "gasUsed": 298767,
 }
 `;
 
 exports[`UniversalRouter Gas Tests trading for NFTs gas: ETH --> Seaport NFT 1`] = `
 Object {
   "calldataByteLength": 2052,
-  "gasUsed": 198039,
+  "gasUsed": 198272,
 }
 `;
 
 exports[`UniversalRouter Gas Tests trading for NFTs gas: WETH --> ETH --> Seaport NFT 1`] = `
 Object {
   "calldataByteLength": 2340,
-  "gasUsed": 232756,
+  "gasUsed": 233030,
 }
 `;
