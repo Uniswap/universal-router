@@ -324,7 +324,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 bytes calldata data = inputs.toBytes(1);
                 (success, output) = SEAPORT_V2.call{value: value}(data);
             } else {
-                // placeholder area for commands 0x21-0x3f
+                // placeholder area for commands 0x22-0x3f
                 revert InvalidCommandType(command);
             }
         }
