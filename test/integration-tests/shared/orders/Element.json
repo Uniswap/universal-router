@@ -1,24 +1,30 @@
-[
-  {
-    "contractAddress": "0x88af41822c65a64e9614d3784fa1c99b8a02e5f5",
-    "tokenId": "2",
-    "standard": "element-ex-v3",
-    "orderHash": "0xa44550c8883cc36fb98266e45bbae2569db44f8b7cd55e91dc39f89833716654",
-    "paymentToken": "0x0000000000000000000000000000000000000000",
-    "maker": "0x633f6c7e25ee757d12643a32ce1586ac9e8542d5",
-    "listingTime": 1665488710,
-    "side": 1,
-    "saleKind": 0,
-    "price": 0.025,
-    "isValid": true,
-    "errorDetail": "string",
-    "taker": "0x0000000000000000000000000000000000000000",
-    "expirationTime": 1666093622,
-    "quantity": "1",
-    "priceBase": 0.2,
-    "priceUsd": 309.7634,
-    "schema": "ERC721",
-    "basePrice": "120000000000000000",
-    "exchangeData": "{\"order\":{\"maker\":\"0x633f6c7e25ee757d12643a32ce1586ac9e8542d5\",\"taker\":\"0x0000000000000000000000000000000000000000\",\"expiry\":\"0x000000000000000000000000000000000000000000000000636122e0636a5d9c\",\"nonce\":\"99\",\"erc20Token\":\"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"erc20TokenAmount\":\"174000000000000000\",\"fees\":[{\"recipient\":\"0x00cA62445B06a9aDc1879a44485B4eFdcB7b75F3\",\"amount\":\"16000000000000000\",\"feeData\":\"0x\"},{\"recipient\":\"0x9226f7df5e316df051f0490ce3b753c51695d0bb\",\"amount\":\"10000000000000000\",\"feeData\":\"0x\"}],\"nft\":\"0x88af41822c65a64e9614d3784fa1c99b8a02e5f5\",\"nftId\":\"64\",\"hashNonce\":\"0\"},\"signature\":{\"signatureType\":0,\"v\":28,\"r\":\"0xc5f7bf427f39c3ce3fe39b7c981b7d60f2805a970caae6bd971d476431731706\",\"s\":\"0x04313baeb7397394ac40af76969be987e89bb221a862b5f0f97082d503fa6c16\"}}"
+{
+  "code": 0,
+  "data": {
+    "orders": [
+      {
+        "chain": "polygon",
+        "chainId": "0x89",
+        "orderHash": "0x2039d65fead7c00ab1704290b4ddfe84c5ab9156f4dc6384ce8e5568b56f20f6_2",
+        "expirationTime": 1684094785,
+        "listingTime": 1676318726,
+        "createTime": 1676318794,
+        "maker": "0x3d2d40700cb8ac8114e669ea4a70ff61bfea802a",
+        "taker": "0x0000000000000000000000000000000000000000",
+        "side": 1,
+        "saleKind": 3,
+        "paymentToken": "0x0000000000000000000000000000000000000000",
+        "quantity": "1",
+        "priceBase": 1.2,
+        "priceUSD": 1.392,
+        "price": 1.2,
+        "standard": "element-ex-v3",
+        "contractAddress": "0x56d46be8dd52ccd0551350e9e783a8282584e868",
+        "tokenId": "1540",
+        "schema": "ERC721",
+        "extra": null,
+        "exchangeData": "{\"basicCollections\":[{\"nftAddress\":\"0x56d46be8dd52ccd0551350e9e783a8282584e868\",\"platformFee\":200,\"royaltyFeeRecipient\":\"0x0000000000000000000000000000000000000000\",\"royaltyFee\":0,\"items\":[{\"erc20TokenAmount\":\"1200000000000000000\",\"nftId\":\"1540\"}]}],\"collections\":null,\"startNonce\":2,\"nonce\":2,\"hashNonce\":\"0\",\"platformFeeRecipient\":\"0xd207842d66b715df6ea08cf52f025b9e2ed28788\",\"v\":28,\"r\":\"0xa837991196760d5e2953ce0ebb386ff85db84e918645850cc0eb9e60c67e9892\",\"s\":\"0x2117cea84c0c2bac7cfda6b799ec376fb35d8d1c5492be7a87f8f8fd324d963e\",\"listingTime\":1676318726,\"expirationTime\":1684094785,\"maker\":\"0x3d2d40700cb8ac8114e669ea4a70ff61bfea802a\",\"hash\":\"0x2039d65fead7c00ab1704290b4ddfe84c5ab9156f4dc6384ce8e5568b56f20f6\",\"paymentToken\":\"0x0000000000000000000000000000000000000000\"}"
+      }
+    ]
   }
-]
+}
