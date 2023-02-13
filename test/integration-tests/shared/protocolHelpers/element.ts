@@ -108,19 +108,26 @@ const EXAMPLE_API_ORDER = {
 
 export function getOrder(apiOrder: any): { order: NFTSellOrder; signature: ElementOrderSignature; value: BigNumber } {
     const exchangeData: typeof EXAMPLE_API_ORDER = JSON.parse(apiOrder.exchangeData)
-    
+
+    const value = BigNumber.from(exchangeData.basicCollections[0].items[0].erc20TokenAmount)
+    const feeAmount = 0.024 * (10 ** 18) / 10000
+
     const order = {
         maker: apiOrder.maker,
         taker: apiOrder.taker,
         expiry: apiOrder.expirationTime,
         nonce: String(exchangeData.nonce),
         erc20Token: apiOrder.paymentToken,
-        erc20TokenAmount: exchangeData.basicCollections[0].items[0].erc20TokenAmount,
-        fees: [],
+        erc20TokenAmount: value.toString(),
+        fees: [{
+            recipient: exchangeData.platformFeeRecipient,
+            amount: feeAmount.toString(),
+            feeData: '0x',
+        }],
         nft: apiOrder.contractAddress,
         nftId: apiOrder.tokenId,
     }
-    const value = BigNumber.from(exchangeData.basicCollections[0].items[0].erc20TokenAmount)
+    console.log(order)
     const signature = {
         signatureType: 0, // TODO: don't think we have access to this data
         v: exchangeData.v,

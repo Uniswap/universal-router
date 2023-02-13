@@ -63,9 +63,8 @@ describe.only('Element Market polygon', () => {
     ).toNumber();
     console.log(blockNumber)
 
-    console.log(order, signature)
-
-    // should be 0x6ea39eb9ebaa33f9895454298c7df93dd582dd7159ea3616b6f9ab60eb2a0cc0
+    // should be 0x2039d65fead7c00ab1704290b4ddfe84c5ab9156f4dc6384ce8e5568b56f20f6
+    //  actual   0x3b2bcb1f49ced3597aa896cb47a340c45e4309c1420455fee8a6ec15aa0efa09
     const hash = await element.callStatic.getERC721SellOrderHash(order)
     console.log(hash)
     const hashNonce = await element.callStatic.getHashNonce(order.maker)
