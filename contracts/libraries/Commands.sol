@@ -8,7 +8,7 @@ library Commands {
     bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
     bytes1 internal constant COMMAND_TYPE_MASK = 0x3f;
 
-    // Command Types. Maximum supported command at this moment is 0x1e.
+    // Command Types. Maximum supported command at this moment is 0x3f.
 
     // Command Types where value<0x08, executed in the first nested-if block
     uint256 constant V3_SWAP_EXACT_IN = 0x00;

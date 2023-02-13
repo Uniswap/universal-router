@@ -308,7 +308,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         }
                         Payments.sweepERC1155(token, map(recipient), id, amount);
                     } else {
-                        // placeholder area for command 0x1e-0x1f
+                        // placeholder area for commands 0x1e-0x1f
                         revert InvalidCommandType(command);
                     }
                 }
@@ -325,6 +325,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 ///         allowing them to perform any number of destructive actions as a holder of the NFT.
                 ///     Integrators should be aware that in some scenarios: e.g. purchasing an NFT that allows the holder
                 ///         to claim another NFT, the contract offerer can "steal" the claim during order fufillment.
+                ///     For some such purchases, an OWNER_CHECK command can be prepended to ensure that all tokens have the desired owner at the end of the transaction.
                 ///     This is also outlined in the Seaport documentation: https://github.com/ProjectOpenSea/seaport/blob/main/docs/SeaportDocumentation.md
                 uint256 value;
                 assembly {
