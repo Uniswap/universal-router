@@ -5,9 +5,11 @@ import { UniversalRouter, Permit2, ERC721 } from '../../typechain'
 import {
   seaportOrders,
   seaportInterface,
+  seaportV2Interface,
   getAdvancedOrderParams,
   purchaseDataForTwoCovensSeaport,
   seaportV2Orders,
+  ZERO_CONDUIT_KEY,
 } from './shared/protocolHelpers/seaport'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { COVEN_721, resetFork } from './shared/mainnetForkHelpers'
@@ -156,8 +158,6 @@ describe('SeaportV2', () => {
   let permit2: Permit2
   let planner: RoutePlanner
   let testing721Token: ERC721
-  // @dev 0 addr for an order that was not sent through the OpenSea conduit
-  let PLACEHOLDER_CONDUIT_KEY = '0x0000000000000000000000000000000000000000000000000000000000000000'
 
   const testingTokenAddress = '0x399F0c34c0193674A29e290Eef484DA007DDeF4E'
 
@@ -177,10 +177,10 @@ describe('SeaportV2', () => {
   it('completes a fulfillAdvancedOrder type', async () => {
     const { advancedOrder, value } = getAdvancedOrderParams(seaportV2Orders[0])
     const params = advancedOrder.parameters
-    const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+    const calldata = seaportV2Interface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
       [],
-      PLACEHOLDER_CONDUIT_KEY,
+      ZERO_CONDUIT_KEY,
       alice.address,
     ])
 
@@ -203,10 +203,10 @@ describe('SeaportV2', () => {
   it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
     let { advancedOrder, value } = getAdvancedOrderParams(seaportV2Orders[0])
     const params = advancedOrder.parameters
-    const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+    const calldata = seaportV2Interface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
       [],
-      PLACEHOLDER_CONDUIT_KEY,
+      ZERO_CONDUIT_KEY,
       alice.address,
     ])
 
@@ -240,10 +240,10 @@ describe('SeaportV2', () => {
     invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
     const { advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder)
 
-    const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+    const calldata = seaportV2Interface.encodeFunctionData('fulfillAdvancedOrder', [
       seaportOrder,
       [],
-      PLACEHOLDER_CONDUIT_KEY,
+      ZERO_CONDUIT_KEY,
       alice.address,
     ])
 
