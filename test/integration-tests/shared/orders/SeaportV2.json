@@ -1,0 +1,60 @@
+[
+  {
+    "created_date": "ignored",
+    "closing_date": "ignored",
+    "listing_time": "ignored",
+    "expiration_time": "ignored",
+    "order_hash": "ignored",
+    "protocol_data": {
+      "parameters": {
+        "offerer": "0x1108f964b384f1dCDa03658B24310ccBc48E226F",
+        "offer": [
+          {
+            "itemType": 2,
+            "token": "0x399F0c34c0193674A29e290Eef484DA007DDeF4E",
+            "identifierOrCriteria": "30",
+            "startAmount": "1",
+            "endAmount": "1"
+          }
+        ],
+        "consideration": [
+          {
+            "itemType": 0,
+            "token": "0x0000000000000000000000000000000000000000",
+            "identifierOrCriteria": "0",
+            "startAmount": "9250000000",
+            "endAmount": "9250000000",
+            "recipient": "0x1108f964b384f1dCDa03658B24310ccBc48E226F"
+          },
+          {
+            "itemType": 0,
+            "token": "0x0000000000000000000000000000000000000000",
+            "identifierOrCriteria": "0",
+            "startAmount": "250000000",
+            "endAmount": "250000000",
+            "recipient": "0x0000a26b00c1F0DF003000390027140000fAa719"
+          },
+          {
+            "itemType": 0,
+            "token": "0x0000000000000000000000000000000000000000",
+            "identifierOrCriteria": "0",
+            "startAmount": "500000000",
+            "endAmount": "500000000",
+            "recipient": "0x6e367F09327c4C15a1a4BC28f7764d63a8F38F76"
+          }
+        ],
+        "startTime": "1675965425",
+        "endTime": "1676224625",
+        "orderType": 0,
+        "zone": "0x0000000000000000000000000000000000000000",
+        "zoneHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "salt": "24446860302761739304752683030156737591518664810215442929816833703684783391141",
+        "conduitKey": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "totalOriginalConsiderationItems": 3,
+        "counter": "getsDeletedAnyways"
+      },
+      "signature": "0xc269d4fb6786e49168e23eb5f98e725433fc21edad29d896a343b37a8917f0251a953546ab20ba88d12b2621608fa1d977f20325a41d2bde2de28a1e962ee44b1c"
+    },
+    "protocol_address": "0x00000000000006c7676171937C444f6BDe3D6282"
+  }
+]

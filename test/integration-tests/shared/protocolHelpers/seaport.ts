@@ -1,4 +1,5 @@
 import SEAPORT_ABI from '../abis/Seaport.json'
+import SEAPORT_V2_ABI from '../abis/SeaportV2.json'
 import { BigNumber, BigNumberish } from 'ethers'
 import { expandTo18DecimalsBN } from '../helpers'
 import { OPENSEA_CONDUIT_KEY } from '../constants'
@@ -9,7 +10,13 @@ const { ethers } = hre
 export const seaportOrders = JSON.parse(
   fs.readFileSync('test/integration-tests/shared/orders/Seaport.json', { encoding: 'utf8' })
 )
+export const seaportV2Orders = JSON.parse(
+  fs.readFileSync('test/integration-tests/shared/orders/SeaportV2.json', { encoding: 'utf8' })
+)
 export const seaportInterface = new ethers.utils.Interface(SEAPORT_ABI)
+export const seaportV2Interface = new ethers.utils.Interface(SEAPORT_V2_ABI)
+// @dev 0 bytes conduit key for an order that was not sent through the OpenSea conduit
+export const ZERO_CONDUIT_KEY = '0x0000000000000000000000000000000000000000000000000000000000000000'
 
 export type OfferItem = {
   itemType: BigNumber // enum
