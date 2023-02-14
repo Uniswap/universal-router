@@ -38,7 +38,7 @@ describe.only('Element Market polygon', () => {
         {
           forking: {
             jsonRpcUrl: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-            blockNumber: 39069302 - 1,
+            blockNumber: 39069302 - 1
           },
         },
       ],
@@ -57,6 +57,9 @@ describe.only('Element Market polygon', () => {
   })
 
   it('purchases open order', async () => {
+    const chainId = hre.network.config.chainId
+    console.log(chainId)
+
     // get block number
     const bn = await ethers.provider.getBlockNumber()
     console.log(bn)
@@ -74,11 +77,11 @@ describe.only('Element Market polygon', () => {
     expect(status).to.eq(1, 'order should be open')
 
     const value = BigNumber.from(order.erc20TokenAmount) // since in example we use native token
-    const calldata = ELEMENT_721_INTERFACE.encodeFunctionData('buyERC721', [
+    const calldata = ELEMENT_721_INTERFACE.encodeFunctionData('buyERC721Ex', [
       order,
       signature,
-    //   alice.address, // taker
-    //   '0x00', // extraData
+      alice.address, // taker
+      '0x00', // extraData
     ])
 
     console.log(calldata)
@@ -90,6 +93,11 @@ describe.only('Element Market polygon', () => {
     })
 
     console.log(txn)
+
+    const oa = await zedHorse.ownerOf(order.nftId)
+
+    console.log(oa)
+    expect(oa).to.eq(alice.address, 'alice should own the nft')
 
     return
     

@@ -41,8 +41,8 @@ export const EXAMPLE_NFT_SELL_ORDER: NFTSellOrder = {
     fees: [],
     nft: "0xA5F1Ea7DF861952863dF2e8d1312f7305dabf215",
     nftId: "152807",
-    nftProperties: [],
-    hashNonce: "0"
+    // nftProperties: [],
+    // hashNonce: "0"
 }
 
 export const EXAMPLE_NFT_SELL_ORDER_SIG: ElementOrderSignature = {
@@ -64,7 +64,7 @@ export interface NFTSellOrder {
     nft: string;
     nftId: string;
     nftProperties?: Property[];
-    hashNonce: string;
+    hashNonce?: string;
 } 
 
 export interface ERC1155SellOrder {
