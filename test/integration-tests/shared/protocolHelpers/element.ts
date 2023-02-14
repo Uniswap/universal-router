@@ -29,26 +29,28 @@ export interface Property {
     propertyData: string;
 }
 
-// 39257188
 
-// export const EXAMPLE_NFT_SELL_ORDER: NFTSellOrder = {
-//     maker: "0xFfd3b35d3aeadD47c0A99259eE8be899983D9441",
-//     taker: "0x0000000000000000000000000000000000000000",
-//     expiry: "1675972593",
-//     nonce: "1",
-//     erc20Token: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // native token for Element
-//     erc20TokenAmount: "34500000000000000000",
-//     fees: [],
-//     nft: "0xA5F1Ea7DF861952863dF2e8d1312f7305dabf215",
-//     nftId: "152807"
-// }
+// https://polygonscan.com/tx/0x63045765f2a6ba7ebd5b2fe524b41fb8fa2c0128958631f1409bd543384a5b40#eventlog
+export const EXAMPLE_NFT_SELL_ORDER: NFTSellOrder = {
+    maker: "0xFfd3b35d3aeadD47c0A99259eE8be899983D9441",
+    taker: "0x0000000000000000000000000000000000000000",
+    expiry: "1675972593",
+    nonce: "1",
+    erc20Token: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // native token for Element
+    erc20TokenAmount: "34500000000000000000",
+    fees: [],
+    nft: "0xA5F1Ea7DF861952863dF2e8d1312f7305dabf215",
+    nftId: "152807",
+    nftProperties: [],
+    hashNonce: "0"
+}
 
-// export const EXAMPLE_NFT_SELL_ORDER_SIG: ElementOrderSignature = {
-//     signatureType: 0,
-//     v: 28,
-//     r: "0x2102a204f2f62acf6a44c7a43c0f9a3d972231cee0ab69f682301a29d09c0f29",
-//     s: "0x6a6095f94a58856df46c286c792a08ae2f256f3a32f4e502f70a912e73761216"
-// }
+export const EXAMPLE_NFT_SELL_ORDER_SIG: ElementOrderSignature = {
+    signatureType: 0,
+    v: 28,
+    r: "0x2102a204f2f62acf6a44c7a43c0f9a3d972231cee0ab69f682301a29d09c0f29",
+    s: "0x6a6095f94a58856df46c286c792a08ae2f256f3a32f4e502f70a912e73761216"
+}
 
 // Signing over this:
 export interface NFTSellOrder {
@@ -61,7 +63,9 @@ export interface NFTSellOrder {
     fees: Fee[];
     nft: string;
     nftId: string;
-}
+    nftProperties?: Property[];
+    hashNonce: string;
+} 
 
 export interface ERC1155SellOrder {
     maker: string;
@@ -76,6 +80,7 @@ export interface ERC1155SellOrder {
     erc1155TokenAmount: string;
 }
 
+// block 39257188
 const EXAMPLE_API_ORDER = {
     "basicCollections": [
         {
@@ -124,8 +129,11 @@ export function getOrder(apiOrder: any): { order: NFTSellOrder; signature: Eleme
             amount: feeAmount.toString(),
             feeData: '0x',
         }],
+        // fees: [],
         nft: apiOrder.contractAddress,
         nftId: apiOrder.tokenId,
+        nftProperties: [],
+        hashNonce: exchangeData.hashNonce,
     }
     console.log(order)
     const signature = {

@@ -11,7 +11,7 @@ import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol
 import { expect } from 'chai'
 import { getOrder } from './shared/protocolHelpers/element'
 // TODO: Uncomment after getting api response
-import { element721Orders } from './shared/protocolHelpers/element'
+import { element721Orders, EXAMPLE_NFT_SELL_ORDER, EXAMPLE_NFT_SELL_ORDER_SIG} from './shared/protocolHelpers/element'
 
 const { ethers } = hre
 
@@ -26,7 +26,9 @@ describe.only('Element Market polygon', () => {
   let zedHorse: ERC721
   let element: Contract
 
-  const {order, signature, value} = getOrder(element721Orders[0])
+  // const {order, signature, value} = getOrder(element721Orders[0])
+  const order = EXAMPLE_NFT_SELL_ORDER
+  const signature = EXAMPLE_NFT_SELL_ORDER_SIG
   const nftContractAddress = order.nft
 
   beforeEach(async () => {
@@ -36,7 +38,7 @@ describe.only('Element Market polygon', () => {
         {
           forking: {
             jsonRpcUrl: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-            blockNumber: 39257188,
+            blockNumber: 39069302 - 1,
           },
         },
       ],
@@ -63,8 +65,6 @@ describe.only('Element Market polygon', () => {
     ).toNumber();
     console.log(blockNumber)
 
-    // should be 0x2039d65fead7c00ab1704290b4ddfe84c5ab9156f4dc6384ce8e5568b56f20f6
-    //  actual   0x3b2bcb1f49ced3597aa896cb47a340c45e4309c1420455fee8a6ec15aa0efa09
     const hash = await element.callStatic.getERC721SellOrderHash(order)
     console.log(hash)
     const hashNonce = await element.callStatic.getHashNonce(order.maker)
