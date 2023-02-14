@@ -17,7 +17,7 @@ const { ethers } = hre
 
 const ELEMENT_721_INTERFACE = new ethers.utils.Interface(ELEMENT_ABI)
 
-describe.only('Element Market', () => {
+describe('Element Market', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
