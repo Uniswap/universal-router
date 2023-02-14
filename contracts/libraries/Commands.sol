@@ -49,7 +49,7 @@ library Commands {
     uint256 constant SWEEP_ERC1155 = 0x1d;
     uint256 constant ELEMENT_MARKET = 0x1e;
     // COMMAND_PLACEHOLDER = 0x1f;
-    
+
     // Command Types where 0x20<=value
     uint256 constant EXECUTE_SUB_PLAN = 0x20;
     uint256 constant SEAPORT_V2 = 0x21;

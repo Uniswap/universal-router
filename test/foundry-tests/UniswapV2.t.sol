@@ -39,6 +39,7 @@ abstract contract UniswapV2Test is Test {
             x2y2: address(0),
             foundation: address(0),
             sudoswap: address(0),
+            elementMarket: address(0),
             nft20Zap: address(0),
             cryptopunks: address(0),
             looksRare: address(0),
