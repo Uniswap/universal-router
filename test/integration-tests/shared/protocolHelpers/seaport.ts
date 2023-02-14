@@ -15,7 +15,7 @@ export const seaportV2Orders = JSON.parse(
 )
 export const seaportInterface = new ethers.utils.Interface(SEAPORT_ABI)
 export const seaportV2Interface = new ethers.utils.Interface(SEAPORT_V2_ABI)
-// @dev 0 addr for an order that was not sent through the OpenSea conduit
+// @dev 0 bytes conduit key for an order that was not sent through the OpenSea conduit
 export const ZERO_CONDUIT_KEY = '0x0000000000000000000000000000000000000000000000000000000000000000'
 
 export type OfferItem = {
