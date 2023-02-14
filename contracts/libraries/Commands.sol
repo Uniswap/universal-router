@@ -8,7 +8,7 @@ library Commands {
     bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
     bytes1 internal constant COMMAND_TYPE_MASK = 0x3f;
 
-    // Command Types. Maximum supported command at this moment is 0x1F.
+    // Command Types. Maximum supported command at this moment is 0x3f.
 
     // Command Types where value<0x08, executed in the first nested-if block
     uint256 constant V3_SWAP_EXACT_IN = 0x00;
@@ -49,6 +49,9 @@ library Commands {
     uint256 constant SWEEP_ERC1155 = 0x1d;
     uint256 constant ELEMENT_MARKET = 0x1e;
     // COMMAND_PLACEHOLDER = 0x1f;
-
-    // COMMAND_PLACEHOLDER = 0x20 to 0x3f (all unused)
+    
+    // Command Types where 0x20<=value
+    uint256 constant EXECUTE_SUB_PLAN = 0x20;
+    uint256 constant SEAPORT_V2 = 0x21;
+    // COMMAND_PLACEHOLDER for 0x22 to 0x3f (all unused)
 }
