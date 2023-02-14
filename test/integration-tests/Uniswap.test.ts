@@ -19,6 +19,7 @@ import {
   MAX_UINT160,
   MSG_SENDER,
   ONE_PERCENT_BIPS,
+  PAYMENT_RECIPIENT,
   SOURCE_MSG_SENDER,
   SOURCE_ROUTER,
 } from './shared/constants'
@@ -288,17 +289,27 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, inputs } = planner
         const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
         const wethBalanceBeforeBob = await wethContract.balanceOf(bob.address)
+        const wethBalanceBeforeRecipient = await wethContract.balanceOf(PAYMENT_RECIPIENT)
 
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
 
         const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
         const wethBalanceAfterBob = await wethContract.balanceOf(bob.address)
+        const wethBalanceAfterRecipient = await wethContract.balanceOf(PAYMENT_RECIPIENT)
 
         const aliceFee = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
+        const recipientPayment = wethBalanceAfterRecipient.sub(wethBalanceBeforeRecipient)
         const bobEarnings = wethBalanceAfterBob.sub(wethBalanceBeforeBob)
+        const totalFee = aliceFee.add(recipientPayment)
 
         expect(bobEarnings).to.be.gt(0)
-        expect(aliceFee.add(bobEarnings).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
+        expect(aliceFee).to.be.gt(0)
+        expect(recipientPayment).to.be.gt(0)
+
+        // recipient gets 1% of alice's fee
+        expect(aliceFee.add(recipientPayment).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(recipientPayment)
+        // total fee is 1% of bob's output
+        expect(totalFee.add(bobEarnings).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(totalFee)
       })
 
       it('completes a V2 exactIn swap with longer path', async () => {
@@ -367,16 +378,27 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, inputs } = planner
         const ethBalanceBeforeAlice = await ethers.provider.getBalance(alice.address)
         const ethBalanceBeforeBob = await ethers.provider.getBalance(bob.address)
+        const ethBalanceBeforeRecipient = await ethers.provider.getBalance(PAYMENT_RECIPIENT)
         const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
 
         const ethBalanceAfterAlice = await ethers.provider.getBalance(alice.address)
         const ethBalanceAfterBob = await ethers.provider.getBalance(bob.address)
+        const ethBalanceAfterRecipient = await ethers.provider.getBalance(PAYMENT_RECIPIENT)
         const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
         const aliceFee = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice)
+        const recipientPayment = ethBalanceAfterRecipient.sub(ethBalanceBeforeRecipient)
         const bobEarnings = ethBalanceAfterBob.sub(ethBalanceBeforeBob).add(gasSpent)
+        const totalFee = aliceFee.add(recipientPayment)
 
-        expect(aliceFee.add(bobEarnings).mul(ONE_PERCENT_BIPS).div(10000)).to.eq(aliceFee)
+        expect(bobEarnings).to.be.gt(0)
+        expect(aliceFee).to.be.gt(0)
+        expect(recipientPayment).to.be.gt(0)
+
+        // recipient gets 1% of alice's fee
+        expect(aliceFee.add(recipientPayment).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(recipientPayment)
+        // total fee is 1% of bob's output
+        expect(totalFee.add(bobEarnings).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(totalFee)
       })
     })
 
