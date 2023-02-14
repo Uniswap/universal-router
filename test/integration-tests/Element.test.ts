@@ -11,12 +11,11 @@ import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol
 import { expect } from 'chai'
 import { getOrder } from './shared/protocolHelpers/element'
 // TODO: Uncomment after getting api response
-import { element721Orders, EXAMPLE_ETH_SELL_ORDER, EXAMPLE_ETH_SELL_ORDER_SIG} from './shared/protocolHelpers/element'
+import { element721Orders, EXAMPLE_ETH_SELL_ORDER, EXAMPLE_ETH_SELL_ORDER_SIG } from './shared/protocolHelpers/element'
 
 const { ethers } = hre
 
 const ELEMENT_721_INTERFACE = new ethers.utils.Interface(ELEMENT_ABI)
-const ELEMENT_ETH_ADDRESS = "0x20F780A973856B93f63670377900C1d2a50a77c4"
 
 describe.only('Element Market', () => {
   let alice: SignerWithAddress
@@ -53,7 +52,7 @@ describe.only('Element Market', () => {
       order.taker, // taker
       '0x00', // extraData
     ])
-    
+
     planner.addCommand(CommandType.ELEMENT_MARKET, [value.toString(), calldata])
     const { commands, inputs } = planner
 
