@@ -1,6 +1,5 @@
 import ELEMENT_721_ABI from '../abis/Element.json'
-import { BigNumber, BigNumberish, Signature } from 'ethers'
-import { expandTo18DecimalsBN } from '../helpers'
+import { BigNumber } from 'ethers'
 import fs from 'fs'
 import hre from 'hardhat'
 const { ethers } = hre
@@ -24,32 +23,23 @@ export interface Fee {
     feeData: string;
 }
 
-export interface Property {
-    propertyValidator: string;
-    propertyData: string;
-}
-
-
-// https://polygonscan.com/tx/0x63045765f2a6ba7ebd5b2fe524b41fb8fa2c0128958631f1409bd543384a5b40#eventlog
-export const EXAMPLE_NFT_SELL_ORDER: NFTSellOrder = {
-    maker: "0xFfd3b35d3aeadD47c0A99259eE8be899983D9441",
-    taker: "0x0000000000000000000000000000000000000000",
-    expiry: "1675972593",
-    nonce: "1",
-    erc20Token: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", // native token for Element
-    erc20TokenAmount: "34500000000000000000",
+export const EXAMPLE_ETH_SELL_ORDER: NFTSellOrder = {
+    maker: "0xABd6a19345943dD175026Cdb52902FD3392a3262",
+    taker: "0x75B6568025f463a98fB01082eEb6dCe04efA3Ae4",
+    expiry: "7199994275163324196",
+    nonce: "3",
+    erc20Token: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    erc20TokenAmount: "55000000000000000",
     fees: [],
-    nft: "0xA5F1Ea7DF861952863dF2e8d1312f7305dabf215",
-    nftId: "152807",
-    // nftProperties: [],
-    // hashNonce: "0"
+    nft: "0x4C69dBc3a2Aa3476c3F7a1227ab70950DB1F4858",
+    nftId: "998"
 }
 
-export const EXAMPLE_NFT_SELL_ORDER_SIG: ElementOrderSignature = {
+export const EXAMPLE_ETH_SELL_ORDER_SIG: ElementOrderSignature = {
     signatureType: 0,
-    v: 28,
-    r: "0x2102a204f2f62acf6a44c7a43c0f9a3d972231cee0ab69f682301a29d09c0f29",
-    s: "0x6a6095f94a58856df46c286c792a08ae2f256f3a32f4e502f70a912e73761216"
+    v: 27,
+    r: "0x59ceb2bc0e21029209e6cfa872b1224631b01da3e19d25fad9b929b8be4e6f60",
+    s: "0x72cadb8ed8a5bf5938829f888ff60c9ebe163954dc15af3e5d6014e8f6801b83"
 }
 
 // Signing over this:
@@ -63,8 +53,6 @@ export interface NFTSellOrder {
     fees: Fee[];
     nft: string;
     nftId: string;
-    nftProperties?: Property[];
-    hashNonce?: string;
 } 
 
 export interface ERC1155SellOrder {
@@ -80,42 +68,42 @@ export interface ERC1155SellOrder {
     erc1155TokenAmount: string;
 }
 
-// block 39257188
-const EXAMPLE_API_ORDER = {
-    "basicCollections": [
+export type ExchangeData = {
+    basicCollections: [
         {
-            "nftAddress": "0x56d46be8dd52ccd0551350e9e783a8282584e868",
-            "platformFee": 200,
-            "royaltyFeeRecipient": "0x0000000000000000000000000000000000000000",
-            "royaltyFee": 0,
-            "items": [
+            nftAddress: string;
+            platformFee: number;
+            royaltyFeeRecipient: string;
+            royaltyFee: number;
+            items: [
                 {
-                    "erc20TokenAmount": "1200000000000000000",
-                    "nftId": "1540"
+                    erc20TokenAmount: string;
+                    nftId: string;
                 }
             ]
         }
     ],
-    "collections": null,
-    "startNonce": 2,
-    "nonce": 2,
-    "hashNonce": "0",
-    "platformFeeRecipient": "0xd207842d66b715df6ea08cf52f025b9e2ed28788",
-    "v": 28,
-    "r": "0xa837991196760d5e2953ce0ebb386ff85db84e918645850cc0eb9e60c67e9892",
-    "s": "0x2117cea84c0c2bac7cfda6b799ec376fb35d8d1c5492be7a87f8f8fd324d963e",
-    "listingTime": 1676318726,
-    "expirationTime": 1684094785,
-    "maker": "0x3d2d40700cb8ac8114e669ea4a70ff61bfea802a",
-    "hash": "0x2039d65fead7c00ab1704290b4ddfe84c5ab9156f4dc6384ce8e5568b56f20f6",
-    "paymentToken": "0x0000000000000000000000000000000000000000"
+    collections: null,
+    startNonce: number;
+    nonce: number;
+    hashNonce: string;
+    platformFeeRecipient: string;
+    v: number;
+    r: string;
+    s: string;
+    listingTime: number;
+    expirationTime: number;
+    maker: string;
+    hash: string;
+    paymentToken: string;
 }
 
 export function getOrder(apiOrder: any): { order: NFTSellOrder; signature: ElementOrderSignature; value: BigNumber } {
-    const exchangeData: typeof EXAMPLE_API_ORDER = JSON.parse(apiOrder.exchangeData)
+    const exchangeData: ExchangeData = JSON.parse(apiOrder.exchangeData)
 
     const value = BigNumber.from(exchangeData.basicCollections[0].items[0].erc20TokenAmount)
-    const feeAmount = 0.024 * (10 ** 18) / 10000
+    // TODO: how to calculate this
+    const feeAmount = 0.0000185 * (10 ** 18) // / 10000
 
     const order = {
         maker: apiOrder.maker,
@@ -131,13 +119,10 @@ export function getOrder(apiOrder: any): { order: NFTSellOrder; signature: Eleme
         }],
         // fees: [],
         nft: apiOrder.contractAddress,
-        nftId: apiOrder.tokenId,
-        nftProperties: [],
-        hashNonce: exchangeData.hashNonce,
+        nftId: apiOrder.tokenId
     }
-    console.log(order)
     const signature = {
-        signatureType: 0, // TODO: don't think we have access to this data
+        signatureType: 0, // I think all returned orders are type 0 here (not presigned)
         v: exchangeData.v,
         r: exchangeData.r,
         s: exchangeData.s,
