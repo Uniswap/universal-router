@@ -20,6 +20,7 @@ export enum CommandType {
   WRAP_ETH = 0x0b,
   UNWRAP_WETH = 0x0c,
   PERMIT2_TRANSFER_FROM_BATCH = 0x0d,
+  BALANCE_CHECK_ERC20 = 0x0e,
 
   // NFT-related command types
   SEAPORT = 0x10,
@@ -39,12 +40,14 @@ export enum CommandType {
   SWEEP_ERC1155 = 0x1d,
 
   EXECUTE_SUB_PLAN = 0x20,
+  SEAPORT_V2 = 0x21,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
 
 const REVERTABLE_COMMANDS = new Set<CommandType>([
   CommandType.SEAPORT,
+  CommandType.SEAPORT_V2,
   CommandType.NFTX,
   CommandType.LOOKS_RARE_721,
   CommandType.LOOKS_RARE_1155,
@@ -76,6 +79,7 @@ const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.V2_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'address[]', 'bool'],
   [CommandType.V2_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'address[]', 'bool'],
   [CommandType.SEAPORT]: ['uint256', 'bytes'],
+  [CommandType.SEAPORT_V2]: ['uint256', 'bytes'],
   [CommandType.WRAP_ETH]: ['address', 'uint256'],
   [CommandType.UNWRAP_WETH]: ['address', 'uint256'],
   [CommandType.SWEEP]: ['address', 'address', 'uint256'],
@@ -91,6 +95,7 @@ const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.SUDOSWAP]: ['uint256', 'bytes'],
   [CommandType.OWNER_CHECK_721]: ['address', 'address', 'uint256'],
   [CommandType.OWNER_CHECK_1155]: ['address', 'address', 'uint256', 'uint256'],
+  [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
   [CommandType.NFT20]: ['uint256', 'bytes'],
   [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
   [CommandType.EXECUTE_SUB_PLAN]: ['bytes', 'bytes[]'],

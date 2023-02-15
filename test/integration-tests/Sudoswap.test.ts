@@ -52,21 +52,16 @@ describe('Sudoswap', () => {
         1665685098,
       ])
       planner.addCommand(CommandType.SUDOSWAP, [value, calldata])
-      const { commands, inputs } = planner
 
-      const aliceBalance = await ethers.provider.getBalance(alice.address)
-      const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
-      ).wait()
+      const { commands, inputs } = planner
+      await expect(
+        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+      ).to.changeEtherBalance(alice, value.mul(-1))
 
       // Expect that alice has the NFTs
       await expect((await sudolets.ownerOf(80)).toLowerCase()).to.eq(ALICE_ADDRESS)
       await expect((await sudolets.ownerOf(35)).toLowerCase()).to.eq(ALICE_ADDRESS)
       await expect((await sudolets.ownerOf(93)).toLowerCase()).to.eq(ALICE_ADDRESS)
-      // Expect that alice's account has 0.073 (plus gas) less ETH in it
-      await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
-        value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice))
-      )
     })
   })
 })
