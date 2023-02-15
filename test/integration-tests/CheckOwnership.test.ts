@@ -8,12 +8,14 @@ import {
   purchaseDataForTwoCovensSeaport,
 } from './shared/protocolHelpers/seaport'
 import { createLooksRareOrders, looksRareOrders, LOOKS_RARE_1155_ORDER } from './shared/protocolHelpers/looksRare'
-import { resetFork, COVEN_721 } from './shared/mainnetForkHelpers'
+import { resetFork, COVEN_721, USDC } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { findCustomErrorSelector } from './shared/parseEvents'
+import { BigNumber, Contract } from 'ethers'
+import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 const { ethers } = hre
 
 describe('Check Ownership', () => {
@@ -36,7 +38,7 @@ describe('Check Ownership', () => {
     cryptoCovens = COVEN_721.connect(alice)
   })
 
-  describe('checksOwnership ERC721', () => {
+  describe('checks ownership ERC721', () => {
     it('passes with valid owner', async () => {
       const { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
       const params = advancedOrder.parameters
@@ -87,18 +89,13 @@ describe('Check Ownership', () => {
       const { commands, inputs } = planner
 
       const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
-      const ethBefore = await ethers.provider.getBalance(alice.address)
-      const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
-      ).wait()
+      await expect(
+        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+      ).to.changeEtherBalance(alice, value.mul(-1))
       const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
-      const ethAfter = await ethers.provider.getBalance(alice.address)
-      const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-      const ethDelta = ethBefore.sub(ethAfter)
 
       expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
       expect(ownerAfter).to.eq(alice.address)
-      expect(ethDelta.sub(gasSpent)).to.eq(value)
     })
 
     it('checks ownership after a seaport trade for two ERC721s', async () => {
@@ -122,27 +119,22 @@ describe('Check Ownership', () => {
 
       const owner0Before = await cryptoCovens.ownerOf(params0.offer[0].identifierOrCriteria)
       const owner1Before = await cryptoCovens.ownerOf(params1.offer[0].identifierOrCriteria)
-      const ethBefore = await ethers.provider.getBalance(alice.address)
 
-      const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
-      ).wait()
+      await expect(
+        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+      ).to.changeEtherBalance(alice, value.mul(-1))
 
       const owner0After = await cryptoCovens.ownerOf(params0.offer[0].identifierOrCriteria)
       const owner1After = await cryptoCovens.ownerOf(params1.offer[0].identifierOrCriteria)
-      const ethAfter = await ethers.provider.getBalance(alice.address)
-      const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-      const ethDelta = ethBefore.sub(ethAfter)
 
       expect(owner0Before.toLowerCase()).to.eq(params0.offerer)
       expect(owner1Before.toLowerCase()).to.eq(params1.offerer)
       expect(owner0After).to.eq(alice.address)
       expect(owner1After).to.eq(alice.address)
-      expect(ethDelta.sub(gasSpent)).to.eq(value)
     })
   })
 
-  describe('checksOwnership ERC1155', () => {
+  describe('checks ownership ERC1155', () => {
     it('passes with valid ownership', async () => {
       const { makerOrder } = createLooksRareOrders(looksRareOrders[LOOKS_RARE_1155_ORDER], router.address)
 
@@ -164,6 +156,33 @@ describe('Check Ownership', () => {
 
       const { commands, inputs } = planner
       const customErrorSelector = findCustomErrorSelector(router.interface, 'InvalidOwnerERC1155')
+      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        .to.be.revertedWithCustomError(router, 'ExecutionFailed')
+        .withArgs(0, customErrorSelector)
+    })
+  })
+
+  describe('checks balance ERC20', () => {
+    let aliceUSDCBalance: BigNumber
+    let usdcContract: Contract
+
+    before(async () => {
+      usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
+      aliceUSDCBalance = await usdcContract.balanceOf(ALICE_ADDRESS)
+    })
+
+    it('passes with sufficient balance', async () => {
+      planner.addCommand(CommandType.BALANCE_CHECK_ERC20, [ALICE_ADDRESS, USDC.address, aliceUSDCBalance])
+
+      const { commands, inputs } = planner
+      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.not.be.reverted
+    })
+
+    it('reverts for insufficient balance', async () => {
+      planner.addCommand(CommandType.BALANCE_CHECK_ERC20, [ALICE_ADDRESS, USDC.address, aliceUSDCBalance.add(1)])
+
+      const { commands, inputs } = planner
+      const customErrorSelector = findCustomErrorSelector(router.interface, 'BalanceTooLow')
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
         .to.be.revertedWithCustomError(router, 'ExecutionFailed')
         .withArgs(0, customErrorSelector)

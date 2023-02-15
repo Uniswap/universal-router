@@ -11,6 +11,7 @@ import {Commands} from '../libraries/Commands.sol';
 import {LockAndMsgSender} from './LockAndMsgSender.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
+import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
@@ -23,6 +24,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
     error BuyPunkFailed();
     error InvalidOwnerERC721();
     error InvalidOwnerERC1155();
+    error BalanceTooLow();
 
     /// @notice Decodes and executes the given command with the given inputs
     /// @param commandType The command type to execute
@@ -188,8 +190,20 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         (IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) =
                             abi.decode(inputs, (IAllowanceTransfer.AllowanceTransferDetails[]));
                         permit2TransferFrom(batchDetails, lockedBy);
+                    } else if (command == Commands.BALANCE_CHECK_ERC20) {
+                        // equivalent: abi.decode(inputs, (address, address, uint256))
+                        address owner;
+                        address token;
+                        uint256 minBalance;
+                        assembly {
+                            owner := calldataload(inputs.offset)
+                            token := calldataload(add(inputs.offset, 0x20))
+                            minBalance := calldataload(add(inputs.offset, 0x40))
+                        }
+                        success = (ERC20(token).balanceOf(owner) >= minBalance);
+                        if (!success) output = abi.encodePacked(BalanceTooLow.selector);
                     } else {
-                        // placeholder area for commands 0x0e-0x0f
+                        // placeholder area for command 0x0f
                         revert InvalidCommandType(command);
                     }
                 }
@@ -319,8 +333,22 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 (bytes memory _commands, bytes[] memory _inputs) = abi.decode(inputs, (bytes, bytes[]));
                 (success, output) =
                     (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
+            } else if (command == Commands.SEAPORT_V2) {
+                /// @dev Seaport 1.2 allows for orders to be created by contracts.
+                ///     These orders pass control to the contract offerers during fufillment,
+                ///         allowing them to perform any number of destructive actions as a holder of the NFT.
+                ///     Integrators should be aware that in some scenarios: e.g. purchasing an NFT that allows the holder
+                ///         to claim another NFT, the contract offerer can "steal" the claim during order fufillment.
+                ///     For some such purchases, an OWNER_CHECK command can be prepended to ensure that all tokens have the desired owner at the end of the transaction.
+                ///     This is also outlined in the Seaport documentation: https://github.com/ProjectOpenSea/seaport/blob/main/docs/SeaportDocumentation.md
+                uint256 value;
+                assembly {
+                    value := calldataload(inputs.offset)
+                }
+                bytes calldata data = inputs.toBytes(1);
+                (success, output) = SEAPORT_V2.call{value: value}(data);
             } else {
-                // placeholder area for commands 0x21-0x3f
+                // placeholder area for commands 0x22-0x3f
                 revert InvalidCommandType(command);
             }
         }

@@ -1,7 +1,7 @@
 import type { Contract } from '@ethersproject/contracts'
 import { TransactionReceipt } from '@ethersproject/abstract-provider'
 import { Pair } from '@uniswap/v2-sdk'
-import { FeeAmount } from '@uniswap/v3-sdk'
+import { FeeAmount, subIn256 } from '@uniswap/v3-sdk'
 import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
 import { encodePath } from './shared/swapRouter02Helpers'
@@ -359,11 +359,15 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { gasSpent, ethBalanceBefore, ethBalanceAfter, v2SwapEventArgs } = await executeRouter(planner)
         const { amount1Out: wethTraded } = v2SwapEventArgs!
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(amountOut.sub(gasSpent))
-        expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(wethTraded.sub(gasSpent))
+        expect(wethTraded).to.eq(amountOut)
       })
 
       it('completes a V2 exactOut swap, with ETH fee', async () => {
         const amountOut = expandTo18DecimalsBN(1)
+        const totalPortion = amountOut.mul(ONE_PERCENT_BIPS).div(10000)
+        const onePercentOfPortion = totalPortion.mul(ONE_PERCENT_BIPS).div(10000)
+        const actualAmountOut = amountOut.sub(totalPortion)
+
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
           ADDRESS_THIS,
           amountOut,
@@ -376,29 +380,11 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, MSG_SENDER, 0])
 
         const { commands, inputs } = planner
-        const ethBalanceBeforeAlice = await ethers.provider.getBalance(alice.address)
-        const ethBalanceBeforeBob = await ethers.provider.getBalance(bob.address)
-        const ethBalanceBeforeRecipient = await ethers.provider.getBalance(PAYMENT_RECIPIENT)
-        const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).wait()
 
-        const ethBalanceAfterAlice = await ethers.provider.getBalance(alice.address)
-        const ethBalanceAfterBob = await ethers.provider.getBalance(bob.address)
-        const ethBalanceAfterRecipient = await ethers.provider.getBalance(PAYMENT_RECIPIENT)
-        const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-
-        const aliceFee = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice)
-        const recipientPayment = ethBalanceAfterRecipient.sub(ethBalanceBeforeRecipient)
-        const bobEarnings = ethBalanceAfterBob.sub(ethBalanceBeforeBob).add(gasSpent)
-        const totalFee = aliceFee.add(recipientPayment)
-
-        expect(bobEarnings).to.be.gt(0)
-        expect(aliceFee).to.be.gt(0)
-        expect(recipientPayment).to.be.gt(0)
-
-        // recipient gets 1% of alice's fee
-        expect(aliceFee.add(recipientPayment).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(recipientPayment)
-        // total fee is 1% of bob's output
-        expect(totalFee.add(bobEarnings).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(totalFee)
+        await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.changeEtherBalances(
+          [alice, bob, PAYMENT_RECIPIENT],
+          [totalPortion.sub(onePercentOfPortion), actualAmountOut, onePercentOfPortion]
+        )
       })
     })
 

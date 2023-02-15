@@ -7,11 +7,12 @@ import {
   getAdvancedOrderParams,
   purchaseDataForTwoCovensSeaport,
 } from './../shared/protocolHelpers/seaport'
-import { resetFork } from './../shared/mainnetForkHelpers'
+import { resetFork, USDC } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import deployUniversalRouter, { deployPermit2 } from './../shared/deployUniversalRouter'
+import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 const { ethers } = hre
 
 describe('Check Ownership Gas', () => {
@@ -98,6 +99,16 @@ describe('Check Ownership Gas', () => {
       COVEN_ADDRESS,
       params.offer[0].identifierOrCriteria,
     ])
+
+    const { commands, inputs } = planner
+    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+  })
+
+  it('gas: balance check ERC20', async () => {
+    const usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
+    const aliceUSDCBalance = await usdcContract.balanceOf(ALICE_ADDRESS)
+
+    planner.addCommand(CommandType.BALANCE_CHECK_ERC20, [ALICE_ADDRESS, USDC.address, aliceUSDCBalance])
 
     const { commands, inputs } = planner
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
