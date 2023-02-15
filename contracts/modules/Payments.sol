@@ -17,6 +17,7 @@ abstract contract Payments is RouterImmutables {
     error InsufficientToken();
     error InsufficientETH();
     error InvalidBips();
+    error InvalidSpender();
 
     uint256 internal constant FEE_BIPS_BASE = 10_000;
 
@@ -34,6 +35,18 @@ abstract contract Payments is RouterImmutables {
 
             ERC20(token).safeTransfer(recipient, value);
         }
+    }
+
+    function approveERC20(address token, uint256 spenderID) internal {
+        // check spender is one of our approved spenders
+        address spender;
+        if (spenderID == 0) spender = SEAPORT;
+        else if (spenderID == 1) spender = SEAPORT_V2;
+        else if (spenderID == 2) spender = SUDOSWAP;
+        else revert InvalidSpender();
+
+        // set approval
+        ERC20(token).safeApprove(spender, type(uint256).max);
     }
 
     /// @notice Pays a proportion of the contract's ETH or ERC20 to a recipient
