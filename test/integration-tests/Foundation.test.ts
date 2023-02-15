@@ -43,20 +43,12 @@ describe('Foundation', () => {
       planner.addCommand(CommandType.FOUNDATION, [value, calldata, ALICE_ADDRESS, MENTAL_WORLDS_ADDRESS, 32])
       const { commands, inputs } = planner
 
-      const aliceBalance = await ethers.provider.getBalance(alice.address)
-      const referrerBalance = await ethers.provider.getBalance(REFERRER)
-      const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
-      ).wait()
+      await expect(
+        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+      ).to.changeEtherBalances([alice, REFERRER], [value.mul(-1), value.div(100)])
 
       // Expect that alice has the NFT
       await expect((await MENTAL_WORLDS_721.connect(alice).ownerOf(32)).toLowerCase()).to.eq(ALICE_ADDRESS)
-      // Expect that alice's account has 0.01 (plus gas) less ETH in it
-      await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
-        value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice))
-      )
-      // Expect that referrer's account has 0.0001 more ETH in it (referrers receive 1% of NFT value)
-      await expect((await ethers.provider.getBalance(REFERRER)).sub(referrerBalance)).to.eq(value.div(100))
     })
   })
 })
