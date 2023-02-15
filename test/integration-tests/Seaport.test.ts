@@ -15,7 +15,7 @@ import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRo
 import { COVEN_721, WETH, resetFork } from './shared/mainnetForkHelpers'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC20_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { DEADLINE, ETH_ADDRESS, MAX_UINT, OPENSEA_CONDUIT, OPENSEA_CONDUIT_KEY } from './shared/constants'
+import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, MAX_UINT, OPENSEA_CONDUIT, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { findCustomErrorSelector } from './shared/parseEvents'
@@ -25,6 +25,7 @@ const { ethers } = hre
 describe.only('Seaport', () => {
   let bob: SignerWithAddress
   let router: UniversalRouter
+  let routerSigner: SignerWithAddress
   let permit2: Permit2
   let planner: RoutePlanner
   let cryptoCovens: ERC721
@@ -32,18 +33,28 @@ describe.only('Seaport', () => {
 
   beforeEach(async () => {
     await resetFork(16635782)
-    // bob can't sign permits for some reason so we need bob
+    // alice's permits fail w/ account not found so using bob from default signers
     bob = (await ethers.getSigners())[1]
     permit2 = (await deployPermit2()).connect(bob) as Permit2
     router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
     planner = new RoutePlanner()
     cryptoCovens = COVEN_721.connect(bob) as ERC721
     weth = new ethers.Contract(WETH.address, ERC20_ABI, bob)
+    routerSigner = await ethers.getImpersonatedSigner(router.address)
 
     // bob deposits 10 eth into weth
     await bob.sendTransaction({ to: weth.address, value: ethers.utils.parseEther('10') })
     // approve permit2 for all for bob's weth
     await weth.connect(bob).approve(permit2.address, ethers.constants.MaxUint256)
+    // custom approve the conduit key for router
+    await weth.connect(routerSigner).approve(OPENSEA_CONDUIT, MAX_UINT)
+
+    planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, bob.address, 0])
+    let { commands, inputs } = planner
+    // const eve = (await ethers.getSigners())[0]
+    await router.connect(bob)['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: 0 })
+
+    expect(await ethers.provider.getBalance(router.address)).eq(0)
   })
 
   it('completes a fulfillAdvancedOrder type', async () => {
@@ -71,9 +82,6 @@ describe.only('Seaport', () => {
   })
 
   it('completes an advanced order offering ERC20', async () => {
-    // custom approve the conduit key for router
-    const routerSigner = await ethers.getImpersonatedSigner(router.address)
-    await weth.connect(routerSigner).approve(OPENSEA_CONDUIT, MAX_UINT)
     // seaportOrders[2] is an order containing ERC20 (WETH) as consideration
     const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[2])
     const params = advancedOrder.parameters
@@ -100,7 +108,7 @@ describe.only('Seaport', () => {
     planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
     planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
     planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [weth.address, router.address, value])
-    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+    planner.addCommand(CommandType.SEAPORT, [0, calldata])
     const { commands, inputs } = planner
 
     const wethBalanceBefore = await weth.balanceOf(bob.address)
