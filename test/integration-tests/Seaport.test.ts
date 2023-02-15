@@ -1,6 +1,6 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
-import { BigNumber } from 'ethers'
+import { BigNumber, Contract } from 'ethers'
 import { UniversalRouter, Permit2, ERC721 } from '../../typechain'
 import {
   seaportOrders,
@@ -12,32 +12,44 @@ import {
   ZERO_CONDUIT_KEY,
 } from './shared/protocolHelpers/seaport'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
-import { COVEN_721, resetFork } from './shared/mainnetForkHelpers'
+import { COVEN_721, WETH, resetFork } from './shared/mainnetForkHelpers'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
-import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, OPENSEA_CONDUIT_KEY } from './shared/constants'
+import { abi as ERC20_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
+import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, MAX_UINT, OPENSEA_CONDUIT, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { findCustomErrorSelector } from './shared/parseEvents'
+import { getPermitSignature } from './shared/protocolHelpers/permit2'
 const { ethers } = hre
 
-describe('Seaport', () => {
+describe.only('Seaport', () => {
   let alice: SignerWithAddress
+  let bob: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
   let planner: RoutePlanner
   let cryptoCovens: ERC721
+  let weth: Contract
 
   beforeEach(async () => {
-    await resetFork()
+    await resetFork(16635782)
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
     })
+    // alice can't sign permits for some reason so we need bob
     alice = await ethers.getSigner(ALICE_ADDRESS)
+    bob = (await ethers.getSigners())[1]
     permit2 = (await deployPermit2()).connect(alice) as Permit2
     router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
     cryptoCovens = COVEN_721.connect(alice) as ERC721
+    weth = new ethers.Contract(WETH.address, ERC20_ABI, alice)
+
+    // transfer some WETH for bob
+    await weth.transfer(bob.address, ethers.utils.parseEther('10'))
+    // approve permit2 for all for bob
+    await weth.connect(bob).approve(permit2.address, ethers.constants.MaxUint256)
   })
 
   it('completes a fulfillAdvancedOrder type', async () => {
@@ -62,6 +74,50 @@ describe('Seaport', () => {
 
     expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
     expect(ownerAfter).to.eq(alice.address)
+  })
+
+  it('completes an advanced order offering ERC20', async () => {
+    // custom approve the conduit key for router
+    const routerSigner = await ethers.getImpersonatedSigner(router.address)
+    await weth.connect(routerSigner).approve(OPENSEA_CONDUIT, MAX_UINT)
+    // seaportOrders[2] is an order containing ERC20 (WETH) as consideration
+    const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[2])
+    const params = advancedOrder.parameters
+    const calldata = seaportV2Interface.encodeFunctionData('fulfillAdvancedOrder', [
+      advancedOrder,
+      [],
+      OPENSEA_CONDUIT_KEY,
+      bob.address,
+    ])
+    const considerationToken = params.consideration[0].token
+    // allow Seaport (0) to spend the consideration token
+    const permit = {
+      details: {
+        token: weth.address,
+        amount: value,
+        expiration: 0, // expiration of 0 is block.timestamp
+        nonce: 0, // this is his first trade
+      },
+      spender: router.address,
+      sigDeadline: DEADLINE,
+    }
+    const sig = await getPermitSignature(permit, bob, permit2.connect(bob))
+
+    planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
+    planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
+    planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [weth.address, router.address, value])
+    planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+    const { commands, inputs } = planner
+
+    const wethBalanceBefore = await weth.balanceOf(bob.address)
+    const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
+    await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+    const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
+    const wethBalanceAfter = await weth.balanceOf(bob.address)
+    
+    expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
+    expect(ownerAfter).to.eq(bob.address)
+    expect(wethBalanceBefore.sub(wethBalanceAfter)).to.eq(value)
   })
 
   it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
