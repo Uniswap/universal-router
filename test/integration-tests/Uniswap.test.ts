@@ -1,7 +1,7 @@
 import type { Contract } from '@ethersproject/contracts'
 import { TransactionReceipt } from '@ethersproject/abstract-provider'
 import { Pair } from '@uniswap/v2-sdk'
-import { FeeAmount, subIn256 } from '@uniswap/v3-sdk'
+import { FeeAmount } from '@uniswap/v3-sdk'
 import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
 import { encodePath } from './shared/swapRouter02Helpers'
