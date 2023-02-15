@@ -3,6 +3,6 @@
 exports[`SeaportV2 Gas Tests gas: fulfillAdvancedOrder 1`] = `
 Object {
   "calldataByteLength": 2052,
-  "gasUsed": 172037,
+  "gasUsed": 172061,
 }
 `;

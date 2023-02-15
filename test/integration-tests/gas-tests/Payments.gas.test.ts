@@ -130,5 +130,13 @@ describe('Payments Gas Tests', () => {
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })
+
+    it('gas: APPROVE_ERC20', async () => {
+      const SEAPORT_V2_ID: number = 1
+      planner.addCommand(CommandType.APPROVE_ERC20, [DAI.address, SEAPORT_V2_ID])
+
+      const { commands, inputs } = planner
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+    })
   })
 })

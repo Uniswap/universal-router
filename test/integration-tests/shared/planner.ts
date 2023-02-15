@@ -41,6 +41,7 @@ export enum CommandType {
 
   EXECUTE_SUB_PLAN = 0x20,
   SEAPORT_V2 = 0x21,
+  APPROVE_ERC20 = 0x22,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -99,6 +100,7 @@ const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.NFT20]: ['uint256', 'bytes'],
   [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
   [CommandType.EXECUTE_SUB_PLAN]: ['bytes', 'bytes[]'],
+  [CommandType.APPROVE_ERC20]: ['address', 'uint256'],
 }
 
 export class RoutePlanner {

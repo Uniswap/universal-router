@@ -1,5 +1,12 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Payments Gas Tests Individual Command Tests gas: APPROVE_ERC20 1`] = `
+Object {
+  "calldataByteLength": 324,
+  "gasUsed": 53776,
+}
+`;
+
 exports[`Payments Gas Tests Individual Command Tests gas: SWEEP with ERC20 1`] = `
 Object {
   "calldataByteLength": 356,

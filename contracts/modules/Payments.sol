@@ -37,6 +37,9 @@ abstract contract Payments is RouterImmutables {
         }
     }
 
+    /// @notice Approves a protocol to spend ERC20s in the router
+    /// @param token The token to approve
+    /// @param spenderID An ID signalling which protocol to approve
     function approveERC20(address token, uint256 spenderID) internal {
         // check spender is one of our approved spenders
         address spender;
