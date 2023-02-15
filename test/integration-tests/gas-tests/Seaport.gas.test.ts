@@ -19,7 +19,7 @@ describe('Seaport Gas Tests', () => {
   let planner: RoutePlanner
   let weth: Contract
 
-  describe('Seaport Gas Tests - ERC20 -> NFT', () => {
+  describe('ERC20 -> NFT', () => {
     let bob: SignerWithAddress
     beforeEach(async () => {
       await resetFork(16635782)
