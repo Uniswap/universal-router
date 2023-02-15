@@ -85,6 +85,8 @@ describe('Seaport', () => {
       }
       const sig = await getPermitSignature(permit, bob, permit2)
 
+      // @dev this APPROVE_ERC20 doesn't work right now as we should be approving the conduit,
+      // not the Seaport contract itself
       planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [weth.address, router.address, value])
