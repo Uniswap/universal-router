@@ -8,12 +8,14 @@ import {
   purchaseDataForTwoCovensSeaport,
 } from './shared/protocolHelpers/seaport'
 import { createLooksRareOrders, looksRareOrders, LOOKS_RARE_1155_ORDER } from './shared/protocolHelpers/looksRare'
-import { resetFork, COVEN_721 } from './shared/mainnetForkHelpers'
+import { resetFork, COVEN_721, USDC } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { findCustomErrorSelector } from './shared/parseEvents'
+import { BigNumber, Contract } from 'ethers'
+import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 const { ethers } = hre
 
 describe('Check Ownership', () => {
@@ -36,7 +38,7 @@ describe('Check Ownership', () => {
     cryptoCovens = COVEN_721.connect(alice)
   })
 
-  describe('checksOwnership ERC721', () => {
+  describe('checks ownership ERC721', () => {
     it('passes with valid owner', async () => {
       const { advancedOrder } = getAdvancedOrderParams(seaportOrders[0])
       const params = advancedOrder.parameters
@@ -132,7 +134,7 @@ describe('Check Ownership', () => {
     })
   })
 
-  describe('checksOwnership ERC1155', () => {
+  describe('checks ownership ERC1155', () => {
     it('passes with valid ownership', async () => {
       const { makerOrder } = createLooksRareOrders(looksRareOrders[LOOKS_RARE_1155_ORDER], router.address)
 
@@ -154,6 +156,33 @@ describe('Check Ownership', () => {
 
       const { commands, inputs } = planner
       const customErrorSelector = findCustomErrorSelector(router.interface, 'InvalidOwnerERC1155')
+      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        .to.be.revertedWithCustomError(router, 'ExecutionFailed')
+        .withArgs(0, customErrorSelector)
+    })
+  })
+
+  describe('checks balance ERC20', () => {
+    let aliceUSDCBalance: BigNumber
+    let usdcContract: Contract
+
+    before(async () => {
+      usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
+      aliceUSDCBalance = await usdcContract.balanceOf(ALICE_ADDRESS)
+    })
+
+    it('passes with sufficient balance', async () => {
+      planner.addCommand(CommandType.BALANCE_CHECK_ERC20, [ALICE_ADDRESS, USDC.address, aliceUSDCBalance])
+
+      const { commands, inputs } = planner
+      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.not.be.reverted
+    })
+
+    it('reverts for insufficient balance', async () => {
+      planner.addCommand(CommandType.BALANCE_CHECK_ERC20, [ALICE_ADDRESS, USDC.address, aliceUSDCBalance.add(1)])
+
+      const { commands, inputs } = planner
+      const customErrorSelector = findCustomErrorSelector(router.interface, 'BalanceTooLow')
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
         .to.be.revertedWithCustomError(router, 'ExecutionFailed')
         .withArgs(0, customErrorSelector)

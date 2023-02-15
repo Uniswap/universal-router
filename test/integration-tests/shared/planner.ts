@@ -20,6 +20,7 @@ export enum CommandType {
   WRAP_ETH = 0x0b,
   UNWRAP_WETH = 0x0c,
   PERMIT2_TRANSFER_FROM_BATCH = 0x0d,
+  BALANCE_CHECK_ERC20 = 0x0e,
 
   // NFT-related command types
   SEAPORT = 0x10,
@@ -94,6 +95,7 @@ const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.SUDOSWAP]: ['uint256', 'bytes'],
   [CommandType.OWNER_CHECK_721]: ['address', 'address', 'uint256'],
   [CommandType.OWNER_CHECK_1155]: ['address', 'address', 'uint256', 'uint256'],
+  [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
   [CommandType.NFT20]: ['uint256', 'bytes'],
   [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
   [CommandType.EXECUTE_SUB_PLAN]: ['bytes', 'bytes[]'],

@@ -11,6 +11,7 @@ import {Commands} from '../libraries/Commands.sol';
 import {LockAndMsgSender} from './LockAndMsgSender.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
+import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
 
@@ -23,6 +24,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
     error BuyPunkFailed();
     error InvalidOwnerERC721();
     error InvalidOwnerERC1155();
+    error BalanceTooLow();
 
     /// @notice Decodes and executes the given command with the given inputs
     /// @param commandType The command type to execute
@@ -188,8 +190,20 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         (IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) =
                             abi.decode(inputs, (IAllowanceTransfer.AllowanceTransferDetails[]));
                         permit2TransferFrom(batchDetails, lockedBy);
+                    } else if (command == Commands.BALANCE_CHECK_ERC20) {
+                        // equivalent: abi.decode(inputs, (address, address, uint256))
+                        address owner;
+                        address token;
+                        uint256 minBalance;
+                        assembly {
+                            owner := calldataload(inputs.offset)
+                            token := calldataload(add(inputs.offset, 0x20))
+                            minBalance := calldataload(add(inputs.offset, 0x40))
+                        }
+                        success = (ERC20(token).balanceOf(owner) >= minBalance);
+                        if (!success) output = abi.encodePacked(BalanceTooLow.selector);
                     } else {
-                        // placeholder area for commands 0x0e-0x0f
+                        // placeholder area for command 0x0f
                         revert InvalidCommandType(command);
                     }
                 }
