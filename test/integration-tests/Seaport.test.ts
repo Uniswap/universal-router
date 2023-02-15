@@ -15,17 +15,16 @@ import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRo
 import { COVEN_721, WETH, resetFork } from './shared/mainnetForkHelpers'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC20_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, MAX_UINT, OPENSEA_CONDUIT, OPENSEA_CONDUIT_KEY } from './shared/constants'
+import { DEADLINE, ETH_ADDRESS, MAX_UINT, OPENSEA_CONDUIT, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { findCustomErrorSelector } from './shared/parseEvents'
 import { getPermitSignature } from './shared/protocolHelpers/permit2'
 const { ethers } = hre
 
-describe.only('Seaport', () => {
+describe('Seaport', () => {
   let bob: SignerWithAddress
   let router: UniversalRouter
-  let routerSigner: SignerWithAddress
   let permit2: Permit2
   let planner: RoutePlanner
   let cryptoCovens: ERC721
@@ -40,7 +39,7 @@ describe.only('Seaport', () => {
     planner = new RoutePlanner()
     cryptoCovens = COVEN_721.connect(bob) as ERC721
     weth = new ethers.Contract(WETH.address, ERC20_ABI, bob)
-    routerSigner = await ethers.getImpersonatedSigner(router.address)
+    const routerSigner = await ethers.getImpersonatedSigner(router.address)
 
     // bob deposits 10 eth into weth
     await bob.sendTransaction({ to: weth.address, value: ethers.utils.parseEther('10') })
@@ -79,7 +78,7 @@ describe.only('Seaport', () => {
     // seaportOrders[2] is an order containing ERC20 (WETH) as consideration
     const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[2])
     const params = advancedOrder.parameters
-    const calldata = seaportV2Interface.encodeFunctionData('fulfillAdvancedOrder', [
+    const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
       [],
       OPENSEA_CONDUIT_KEY,
@@ -97,7 +96,7 @@ describe.only('Seaport', () => {
       spender: router.address,
       sigDeadline: DEADLINE,
     }
-    const sig = await getPermitSignature(permit, bob, permit2.connect(bob))
+    const sig = await getPermitSignature(permit, bob, permit2)
 
     planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
     planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
