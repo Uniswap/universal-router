@@ -48,13 +48,6 @@ describe.only('Seaport', () => {
     await weth.connect(bob).approve(permit2.address, ethers.constants.MaxUint256)
     // custom approve the conduit key for router
     await weth.connect(routerSigner).approve(OPENSEA_CONDUIT, MAX_UINT)
-
-    planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, bob.address, 0])
-    let { commands, inputs } = planner
-    // const eve = (await ethers.getSigners())[0]
-    await router.connect(bob)['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: 0 })
-
-    expect(await ethers.provider.getBalance(router.address)).eq(0)
   })
 
   it('completes a fulfillAdvancedOrder type', async () => {
@@ -75,6 +68,7 @@ describe.only('Seaport', () => {
       bob,
       value.mul(-1)
     )
+
     const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
 
     expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
@@ -123,6 +117,15 @@ describe.only('Seaport', () => {
   })
 
   it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
+    // @dev We are testing against orders made in recent blocks,
+    // and unfortunately a recently created EOA has the same address for the router.
+    // thus there is dust ETH (0.2) in the contract to begin with.
+    planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, bob.address, 0])
+    let { commands, inputs } = planner
+    // const eve = (await ethers.getSigners())[0]
+    await router.connect(bob)['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: 0 })
+    expect(await ethers.provider.getBalance(router.address)).eq(0)
+
     let { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
     const params = advancedOrder.parameters
     const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
@@ -136,20 +139,19 @@ describe.only('Seaport', () => {
     planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata], true)
     planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, bob.address, 0])
 
-    const commands = planner.commands
-    const inputs = planner.inputs
+    commands = planner.commands
+    inputs = planner.inputs
 
     const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
 
     // don't send enough ETH, so the seaport purchase reverts
-    value = BigNumber.from(value).sub('1')
+    value = BigNumber.from(value).sub(1)
     await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).to.changeEtherBalance(
       bob,
       0
     )
 
     const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
-
     // The owner was unchanged, the user got the eth back
     expect(ownerBefore.toLowerCase()).to.eq(ownerAfter.toLowerCase())
   })
