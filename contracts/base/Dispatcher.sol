@@ -333,8 +333,22 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 (bytes memory _commands, bytes[] memory _inputs) = abi.decode(inputs, (bytes, bytes[]));
                 (success, output) =
                     (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
+            } else if (command == Commands.SEAPORT_V2) {
+                /// @dev Seaport 1.2 allows for orders to be created by contracts.
+                ///     These orders pass control to the contract offerers during fufillment,
+                ///         allowing them to perform any number of destructive actions as a holder of the NFT.
+                ///     Integrators should be aware that in some scenarios: e.g. purchasing an NFT that allows the holder
+                ///         to claim another NFT, the contract offerer can "steal" the claim during order fufillment.
+                ///     For some such purchases, an OWNER_CHECK command can be prepended to ensure that all tokens have the desired owner at the end of the transaction.
+                ///     This is also outlined in the Seaport documentation: https://github.com/ProjectOpenSea/seaport/blob/main/docs/SeaportDocumentation.md
+                uint256 value;
+                assembly {
+                    value := calldataload(inputs.offset)
+                }
+                bytes calldata data = inputs.toBytes(1);
+                (success, output) = SEAPORT_V2.call{value: value}(data);
             } else {
-                // placeholder area for commands 0x21-0x3f
+                // placeholder area for commands 0x22-0x3f
                 revert InvalidCommandType(command);
             }
         }

@@ -16,6 +16,7 @@ import {
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import hre from 'hardhat'
+import { BigNumber } from 'ethers'
 const { ethers } = hre
 
 const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
@@ -137,7 +138,7 @@ describe('NFTX', () => {
   it('returns all extra ETH when sending too much', async () => {
     const value = expandTo18DecimalsBN(10)
     const numCovens = 2
-    const saleCost = '476686977628668346'
+    const saleCost = BigNumber.from('476686977628668346')
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
       NFTX_COVEN_VAULT_ID,
       numCovens,
@@ -149,11 +150,9 @@ describe('NFTX', () => {
     planner.addCommand(CommandType.NFTX, [value.toString(), calldata])
     const { commands, inputs } = planner
 
-    const ethBalanceBefore = await ethers.provider.getBalance(alice.address)
-    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
-    const ethDelta = ethBalanceBefore.sub(await ethers.provider.getBalance(alice.address))
-    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-
-    expect(ethDelta.sub(gasSpent)).to.eq(saleCost)
+    await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).to.changeEtherBalance(
+      alice,
+      saleCost.mul(-1)
+    )
   })
 })
