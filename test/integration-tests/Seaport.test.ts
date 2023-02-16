@@ -15,12 +15,7 @@ import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRo
 import { COVEN_721, WETH, resetFork } from './shared/mainnetForkHelpers'
 import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC20_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import {
-  ALICE_ADDRESS,
-  DEADLINE,
-  ETH_ADDRESS,
-  OPENSEA_CONDUIT_KEY,
-} from './shared/constants'
+import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { findCustomErrorSelector } from './shared/parseEvents'
