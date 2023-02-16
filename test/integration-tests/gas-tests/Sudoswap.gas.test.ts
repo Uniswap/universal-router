@@ -83,7 +83,7 @@ describe('Sudoswap Gas Tests', () => {
       }
       const sig = await getPermitSignature(permit, bob, permit2)
 
-      planner.addCommand(CommandType.APPROVE_ERC20, [fraxToken.address, 2])
+      planner.addCommand(CommandType.APPROVE_ERC20, [fraxToken.address, 1])
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [fraxToken.address, router.address, value])
       planner.addCommand(CommandType.SUDOSWAP, [0, calldata])
