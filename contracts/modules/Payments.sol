@@ -43,9 +43,9 @@ abstract contract Payments is RouterImmutables {
     function approveERC20(address token, uint256 spenderID) internal {
         // check spender is one of our approved spenders
         address spender;
-        if (spenderID == 0) spender = SEAPORT;
-        else if (spenderID == 1) spender = SEAPORT_V2;
-        else if (spenderID == 2) spender = SUDOSWAP;
+        /// @dev use 0 = Opensea Conduit for both Seaport and Seaport1.2 
+        if (spenderID == 0) spender = OPENSEA_CONDUIT;
+        else if (spenderID == 1) spender = SUDOSWAP;
         else revert InvalidSpender();
 
         // set approval

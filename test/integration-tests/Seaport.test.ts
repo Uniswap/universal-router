@@ -19,8 +19,6 @@ import {
   ALICE_ADDRESS,
   DEADLINE,
   ETH_ADDRESS,
-  MAX_UINT,
-  OPENSEA_CONDUIT,
   OPENSEA_CONDUIT_KEY,
 } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -51,14 +49,11 @@ describe('Seaport', () => {
       planner = new RoutePlanner()
       cryptoCovens = COVEN_721.connect(bob) as ERC721
       weth = new ethers.Contract(WETH.address, ERC20_ABI, bob)
-      const routerSigner = await ethers.getImpersonatedSigner(router.address)
 
       // bob deposits 10 eth into weth
       await bob.sendTransaction({ to: weth.address, value: ethers.utils.parseEther('10') })
       // approve permit2 for all for bob's weth
       await weth.connect(bob).approve(permit2.address, ethers.constants.MaxUint256)
-      // custom approve the conduit key for router
-      await weth.connect(routerSigner).approve(OPENSEA_CONDUIT, MAX_UINT)
     })
 
     it('completes an advanced order offering ERC20', async () => {
@@ -72,7 +67,6 @@ describe('Seaport', () => {
         bob.address,
       ])
       const considerationToken = params.consideration[0].token
-      // allow Seaport (0) to spend the consideration token
       const permit = {
         details: {
           token: weth.address,
@@ -85,8 +79,6 @@ describe('Seaport', () => {
       }
       const sig = await getPermitSignature(permit, bob, permit2)
 
-      // @dev this APPROVE_ERC20 doesn't work right now as we should be approving the conduit,
-      // not the Seaport contract itself
       planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [weth.address, router.address, value])
