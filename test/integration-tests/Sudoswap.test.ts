@@ -17,9 +17,9 @@ const { ethers } = hre
 const SUDOSWAP_INTERFACE = new ethers.utils.Interface(SUDOSWAP_ABI)
 const SUDOLETS_ADDRESS = '0xfa9937555dc20a020a161232de4d2b109c62aa9c'
 const BASED_GHOUL_ADDRESS = '0xeF1a89cbfAbE59397FfdA11Fc5DF293E9bC5Db90'
-const FRAX_ADDRESS = '0x853d955acef822db058eb8505911ed77f175b99e'
+export const FRAX_ADDRESS = '0x853d955acef822db058eb8505911ed77f175b99e'
 
-describe.only('Sudoswap', () => {
+describe('Sudoswap', () => {
   let bob: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
@@ -48,7 +48,7 @@ describe.only('Sudoswap', () => {
         [[['0x339e7004372e04b1d59443f0ddc075efd9d80360', ['173', '239', '240']], value]],
         bob.address,
         bob.address,
-        1765685098,
+        1700000000,
       ])
       planner.addCommand(CommandType.SUDOSWAP, [value, calldata])
 
@@ -88,7 +88,7 @@ describe.only('Sudoswap', () => {
         [[[ghlFraxPairAddress, ['2402', '2509']], value]],
         value,
         bob.address,
-        1776575269,
+        1700000000,
       ])
 
       const permit = {
