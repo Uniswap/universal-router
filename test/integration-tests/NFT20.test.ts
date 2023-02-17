@@ -37,7 +37,8 @@ describe('NFT20', () => {
   // We will send 0.021~ ETH (20583701229648230 wei), and we will get refunded 1086067487962785 wei
   describe('Buy 3 alphabetties from NFT20', () => {
     it('purchases token ids 129, 193, 278 of Alphabetties', async () => {
-      const value = BigNumber.from('20583701229648230')
+      const toSend = BigNumber.from('20583701229648230')
+      const expectedRefund = BigNumber.from('1086067487962785')
       const calldata = NFT20_INTERFACE.encodeFunctionData('ethForNft', [
         ALPHABETTIES_ADDRESS,
         ['129', '193', '278'],
@@ -46,22 +47,17 @@ describe('NFT20', () => {
         0,
         false,
       ])
-      planner.addCommand(CommandType.NFT20, [value, calldata])
-      const { commands, inputs } = planner
+      planner.addCommand(CommandType.NFT20, [toSend, calldata])
 
-      const aliceBalance = await ethers.provider.getBalance(alice.address)
-      const receipt = await (
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
-      ).wait()
+      const { commands, inputs } = planner
+      await expect(
+        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: toSend })
+      ).to.changeEtherBalance(alice, toSend.sub(expectedRefund).mul(-1))
 
       // Expect that alice has the NFTs
       await expect((await alphabetties.ownerOf(129)).toLowerCase()).to.eq(ALICE_ADDRESS)
       await expect((await alphabetties.ownerOf(193)).toLowerCase()).to.eq(ALICE_ADDRESS)
       await expect((await alphabetties.ownerOf(278)).toLowerCase()).to.eq(ALICE_ADDRESS)
-      // Expect that alice's account has 0.021 (plus gas, minus refund) less ETH in it
-      await expect(aliceBalance.sub(await ethers.provider.getBalance(alice.address))).to.eq(
-        value.add(receipt.gasUsed.mul(receipt.effectiveGasPrice)).sub(BigNumber.from('1086067487962785'))
-      )
     })
   })
 })
