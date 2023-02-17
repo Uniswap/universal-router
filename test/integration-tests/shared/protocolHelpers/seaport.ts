@@ -1,6 +1,6 @@
 import SEAPORT_ABI from '../abis/Seaport.json'
 import SEAPORT_V3_ABI from '../abis/SeaportV3.json'
-import { BigNumber, BigNumberish } from 'ethers'
+import { BigNumber } from 'ethers'
 import { expandTo18DecimalsBN } from '../helpers'
 import { OPENSEA_CONDUIT_KEY } from '../constants'
 import fs from 'fs'
