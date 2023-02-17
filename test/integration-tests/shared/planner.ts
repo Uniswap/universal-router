@@ -40,14 +40,14 @@ export enum CommandType {
   SWEEP_ERC1155 = 0x1d,
 
   EXECUTE_SUB_PLAN = 0x20,
-  SEAPORT_V2 = 0x21,
+  SEAPORT_V3 = 0x21,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
 
 const REVERTABLE_COMMANDS = new Set<CommandType>([
   CommandType.SEAPORT,
-  CommandType.SEAPORT_V2,
+  CommandType.SEAPORT_V3,
   CommandType.NFTX,
   CommandType.LOOKS_RARE_721,
   CommandType.LOOKS_RARE_1155,
@@ -79,7 +79,7 @@ const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.V2_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'address[]', 'bool'],
   [CommandType.V2_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'address[]', 'bool'],
   [CommandType.SEAPORT]: ['uint256', 'bytes'],
-  [CommandType.SEAPORT_V2]: ['uint256', 'bytes'],
+  [CommandType.SEAPORT_V3]: ['uint256', 'bytes'],
   [CommandType.WRAP_ETH]: ['address', 'uint256'],
   [CommandType.UNWRAP_WETH]: ['address', 'uint256'],
   [CommandType.SWEEP]: ['address', 'address', 'uint256'],
