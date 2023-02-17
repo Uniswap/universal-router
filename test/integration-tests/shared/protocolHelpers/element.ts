@@ -13,8 +13,8 @@ export const element721Interface = new ethers.utils.Interface(ELEMENT_721_ABI)
 export type ElementOrderSignature = {
   signatureType: number // 0 for 721 and 1 for presigned
   v: number
-  r: string // bytes32
-  s: string // bytes32
+  r: string
+  s: string
 }
 
 export interface Fee {
@@ -42,7 +42,6 @@ export const EXAMPLE_ETH_SELL_ORDER_SIG: ElementOrderSignature = {
   s: '0x72cadb8ed8a5bf5938829f888ff60c9ebe163954dc15af3e5d6014e8f6801b83',
 }
 
-// Signing over this:
 export interface NFTSellOrder {
   maker: string
   taker: string
@@ -102,8 +101,6 @@ export function getOrder(apiOrder: any): { order: NFTSellOrder; signature: Eleme
   const exchangeData: ExchangeData = JSON.parse(apiOrder.exchangeData)
 
   const value = BigNumber.from(exchangeData.basicCollections[0].items[0].erc20TokenAmount)
-  // TODO: how to calculate this
-  const feeAmount = 0.0000185 * 10 ** 18 // / 10000
 
   const order = {
     maker: apiOrder.maker,
@@ -112,19 +109,12 @@ export function getOrder(apiOrder: any): { order: NFTSellOrder; signature: Eleme
     nonce: String(exchangeData.nonce),
     erc20Token: apiOrder.paymentToken,
     erc20TokenAmount: value.toString(),
-    fees: [
-      {
-        recipient: exchangeData.platformFeeRecipient,
-        amount: feeAmount.toString(),
-        feeData: '0x',
-      },
-    ],
-    // fees: [],
+    fees: [], // TODO: add support for calculating fees from api order
     nft: apiOrder.contractAddress,
     nftId: apiOrder.tokenId,
   }
   const signature = {
-    signatureType: 0, // I think all returned orders are type 0 here (not presigned)
+    signatureType: 0,
     v: exchangeData.v,
     r: exchangeData.r,
     s: exchangeData.s,
