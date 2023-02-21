@@ -9,7 +9,7 @@ struct RouterParameters {
     address permit2;
     address weth9;
     address seaport;
-    address seaportV3;
+    address seaportV4;
     address nftxZap;
     address x2y2;
     address foundation;
@@ -39,7 +39,7 @@ contract RouterImmutables {
     address internal immutable SEAPORT;
 
     /// @dev Seaport 1.2 address
-    address internal immutable SEAPORT_V3;
+    address internal immutable SEAPORT_V4;
 
     /// @dev The address of NFTX zap contract for interfacing with vaults
     address internal immutable NFTX_ZAP;
@@ -87,7 +87,7 @@ contract RouterImmutables {
         PERMIT2 = IAllowanceTransfer(params.permit2);
         WETH9 = IWETH9(params.weth9);
         SEAPORT = params.seaport;
-        SEAPORT_V3 = params.seaportV3;
+        SEAPORT_V4 = params.seaportV4;
         NFTX_ZAP = params.nftxZap;
         X2Y2 = params.x2y2;
         FOUNDATION = params.foundation;

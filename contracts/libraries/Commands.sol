@@ -52,6 +52,6 @@ library Commands {
 
     // Command Types where 0x20<=value
     uint256 constant EXECUTE_SUB_PLAN = 0x20;
-    uint256 constant SEAPORT_V3 = 0x21;
+    uint256 constant SEAPORT_V4 = 0x21;
     // COMMAND_PLACEHOLDER for 0x22 to 0x3f (all unused)
 }

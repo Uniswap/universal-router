@@ -32,7 +32,7 @@ contract UniversalRouterTest is Test {
             permit2: address(0),
             weth9: address(0),
             seaport: address(0),
-            seaportV3: address(0),
+            seaportV4: address(0),
             nftxZap: address(0),
             x2y2: address(0),
             foundation: address(0),

@@ -2,8 +2,8 @@ import { CommandType, RoutePlanner } from '../shared/planner'
 import { UniversalRouter, Permit2 } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import {
-  seaportV3Orders,
-  seaportV3Interface,
+  seaportV4Orders,
+  seaportV4Interface,
   getAdvancedOrderParams,
   ZERO_CONDUIT_KEY,
 } from '../shared/protocolHelpers/seaport'
@@ -14,7 +14,7 @@ import hre from 'hardhat'
 import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
 const { ethers } = hre
 
-describe('SeaportV3 Gas Tests', () => {
+describe('SeaportV4 Gas Tests', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
@@ -33,15 +33,15 @@ describe('SeaportV3 Gas Tests', () => {
   })
 
   it('gas: fulfillAdvancedOrder', async () => {
-    const { advancedOrder, value } = getAdvancedOrderParams(seaportV3Orders[0])
-    const calldata = seaportV3Interface.encodeFunctionData('fulfillAdvancedOrder', [
+    const { advancedOrder, value } = getAdvancedOrderParams(seaportV4Orders[0])
+    const calldata = seaportV4Interface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
       [],
       ZERO_CONDUIT_KEY,
       alice.address,
     ])
 
-    planner.addCommand(CommandType.SEAPORT_V3, [value.toString(), calldata])
+    planner.addCommand(CommandType.SEAPORT_V4, [value.toString(), calldata])
     const { commands, inputs } = planner
 
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
