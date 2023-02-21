@@ -334,7 +334,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 (success, output) =
                     (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
             } else if (command == Commands.SEAPORT_V4) {
-                /// @dev Seaport 1.3 allows for orders to be created by contracts.
+                /// @dev Seaport 1.4 allows for orders to be created by contracts.
                 ///     These orders pass control to the contract offerers during fufillment,
                 ///         allowing them to perform any number of destructive actions as a holder of the NFT.
                 ///     Integrators should be aware that in some scenarios: e.g. purchasing an NFT that allows the holder
