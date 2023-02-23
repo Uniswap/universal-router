@@ -1,5 +1,10 @@
 [
   {
+    "inputs": [{ "internalType": "address", "name": "conduitController", "type": "address" }],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
     "inputs": [
       {
         "components": [
