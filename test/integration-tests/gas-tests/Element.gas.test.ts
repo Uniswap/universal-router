@@ -49,8 +49,6 @@ describe('Element Market gas tests', () => {
     planner.addCommand(CommandType.ELEMENT_MARKET, [value.toString(), calldata])
     const { commands, inputs } = planner
 
-    await snapshotGasCost(
-      router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
-    )
+    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 })
