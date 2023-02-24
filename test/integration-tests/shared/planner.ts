@@ -38,6 +38,7 @@ export enum CommandType {
   X2Y2_1155 = 0x1b,
   FOUNDATION = 0x1c,
   SWEEP_ERC1155 = 0x1d,
+  ELEMENT_MARKET = 0x1e,
 
   EXECUTE_SUB_PLAN = 0x20,
   SEAPORT_V2 = 0x21,
@@ -98,6 +99,7 @@ const ABI_DEFINITION: { [key in CommandType]: any } = {
   [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
   [CommandType.NFT20]: ['uint256', 'bytes'],
   [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
+  [CommandType.ELEMENT_MARKET]: ['uint256', 'bytes'],
   [CommandType.EXECUTE_SUB_PLAN]: ['bytes', 'bytes[]'],
 }
 

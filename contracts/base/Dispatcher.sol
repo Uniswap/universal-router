@@ -321,8 +321,16 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                             amount := calldataload(add(inputs.offset, 0x60))
                         }
                         Payments.sweepERC1155(token, map(recipient), id, amount);
+                    } else if (command == Commands.ELEMENT_MARKET) {
+                        // equivalent: abi.decode(inputs, (uint256, bytes))
+                        uint256 value;
+                        assembly {
+                            value := calldataload(inputs.offset)
+                        }
+                        bytes calldata data = inputs.toBytes(1);
+                        (success, output) = ELEMENT_MARKET.call{value: value}(data);
                     } else {
-                        // placeholder area for commands 0x1e-0x1f
+                        // placeholder for command 0x1f
                         revert InvalidCommandType(command);
                     }
                 }
