@@ -330,7 +330,8 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
             // 0x20 <= command
         } else {
             if (command == Commands.EXECUTE_SUB_PLAN) {
-                (bytes memory _commands, bytes[] memory _inputs) = abi.decode(inputs, (bytes, bytes[]));
+                bytes calldata _commands = inputs.toBytes(0);
+                bytes[] memory _inputs = inputs.toBytesArray(1);
                 (success, output) =
                     (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
             } else if (command == Commands.SEAPORT_V2) {
