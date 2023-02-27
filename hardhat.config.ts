@@ -59,6 +59,9 @@ export default {
     optimism: {
       url: `https://mainnet.optimism.io`,
     },
+    polygon: {
+      url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    },
   },
   namedAccounts: {
     deployer: 0,

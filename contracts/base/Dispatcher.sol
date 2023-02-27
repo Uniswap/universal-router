@@ -321,8 +321,16 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                             amount := calldataload(add(inputs.offset, 0x60))
                         }
                         Payments.sweepERC1155(token, map(recipient), id, amount);
+                    } else if (command == Commands.ELEMENT_MARKET) {
+                        // equivalent: abi.decode(inputs, (uint256, bytes))
+                        uint256 value;
+                        assembly {
+                            value := calldataload(inputs.offset)
+                        }
+                        bytes calldata data = inputs.toBytes(1);
+                        (success, output) = ELEMENT_MARKET.call{value: value}(data);
                     } else {
-                        // placeholder area for commands 0x1e-0x1f
+                        // placeholder for command 0x1f
                         revert InvalidCommandType(command);
                     }
                 }
@@ -330,7 +338,8 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
             // 0x20 <= command
         } else {
             if (command == Commands.EXECUTE_SUB_PLAN) {
-                (bytes memory _commands, bytes[] memory _inputs) = abi.decode(inputs, (bytes, bytes[]));
+                bytes calldata _commands = inputs.toBytes(0);
+                bytes[] memory _inputs = inputs.toBytesArray(1);
                 (success, output) =
                     (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
             } else if (command == Commands.SEAPORT_V2) {

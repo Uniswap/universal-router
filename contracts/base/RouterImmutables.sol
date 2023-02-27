@@ -15,6 +15,7 @@ struct RouterParameters {
     address x2y2;
     address foundation;
     address sudoswap;
+    address elementMarket;
     address nft20Zap;
     address cryptopunks;
     address looksRare;
@@ -57,6 +58,9 @@ contract RouterImmutables {
     // @dev The address of Sudoswap's router
     address internal immutable SUDOSWAP;
 
+    // @dev The address of Element Market
+    address internal immutable ELEMENT_MARKET;
+
     // @dev the address of NFT20's zap contract
     address internal immutable NFT20_ZAP;
 
@@ -97,6 +101,7 @@ contract RouterImmutables {
         X2Y2 = params.x2y2;
         FOUNDATION = params.foundation;
         SUDOSWAP = params.sudoswap;
+        ELEMENT_MARKET = params.elementMarket;
         NFT20_ZAP = params.nft20Zap;
         CRYPTOPUNKS = params.cryptopunks;
         LOOKS_RARE = params.looksRare;

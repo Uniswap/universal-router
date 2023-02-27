@@ -32,6 +32,7 @@ contract DeployUniversalRouter is Script {
             x2y2: mapUnsupported(params.x2y2, unsupported),
             foundation: mapUnsupported(params.foundation, unsupported),
             sudoswap: mapUnsupported(params.sudoswap, unsupported),
+            elementMarket: mapUnsupported(params.elementMarket, unsupported),
             nft20Zap: mapUnsupported(params.nft20Zap, unsupported),
             cryptopunks: mapUnsupported(params.cryptopunks, unsupported),
             looksRare: mapUnsupported(params.looksRare, unsupported),
