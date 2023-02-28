@@ -98,8 +98,7 @@ describe('Seaport', () => {
 
       // A previous txn which approves the conduit to spend the router's consideration token balance
       planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
-      let { commands, inputs } = planner
-      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: 0 })
+      await router['execute(bytes,bytes[],uint256)'](planner.commands, planner.inputs, DEADLINE, { value: 0 })
 
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
@@ -120,12 +119,11 @@ describe('Seaport', () => {
       }
       const sig = await getPermitSignature(permit, bob, permit2)
 
+      planner = new RoutePlanner()
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [weth.address, router.address, value])
       planner.addCommand(CommandType.SEAPORT, [0, calldata])
-
-      commands = planner.commands
-      inputs = planner.inputs
+      const { commands, inputs } = planner
 
       const wethBalanceBefore = await weth.balanceOf(bob.address)
       const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)

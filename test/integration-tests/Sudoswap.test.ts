@@ -33,8 +33,6 @@ describe('Sudoswap', () => {
     router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
   })
 
-  // In this test we will buy token ids 173, 239, 240 of Sudolets (0xfa9937555dc20a020a161232de4d2b109c62aa9c),
-  // which costs 0.073 ETH (exactly 73337152777777692 wei)
   describe('Buy with ETH', () => {
     let sudolets: ERC721
 
@@ -42,6 +40,8 @@ describe('Sudoswap', () => {
       sudolets = new ethers.Contract(SUDOLETS_ADDRESS, ERC721_ABI).connect(bob) as ERC721
     })
 
+    // In this test we will buy token ids 173, 239, 240 of Sudolets (0xfa9937555dc20a020a161232de4d2b109c62aa9c),
+    // which costs 0.073 ETH (exactly 73337152777777692 wei)
     it('purchases token ids 173, 239, 240 of Sudolets', async () => {
       const value = BigNumber.from('73337152777777692')
       const calldata = SUDOSWAP_INTERFACE.encodeFunctionData('robustSwapETHForSpecificNFTs', [
@@ -64,7 +64,6 @@ describe('Sudoswap', () => {
     })
   })
 
-  // Buy tokens 2402, 2509 of Based Ghoul (0xeF1a89cbfAbE59397FfdA11Fc5DF293E9bC5Db90)
   describe('Buy using ERC20', () => {
     let fraxToken: ERC20
     let basedGhoul: ERC721
@@ -104,6 +103,44 @@ describe('Sudoswap', () => {
       const sig = await getPermitSignature(permit, bob, permit2)
 
       planner.addCommand(CommandType.APPROVE_ERC20, [fraxToken.address, 1])
+      planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
+      planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [fraxToken.address, router.address, value])
+      planner.addCommand(CommandType.SUDOSWAP, [0, calldata])
+      const { commands, inputs } = planner
+
+      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+
+      // Expect that bob has the NFTs
+      expect(await basedGhoul.ownerOf(2402)).to.eq(bob.address)
+      expect(await basedGhoul.ownerOf(2509)).to.eq(bob.address)
+    })
+
+    it('buys NFTs with ERC20 already approved', async () => {
+      planner.addCommand(CommandType.APPROVE_ERC20, [fraxToken.address, 1])
+      await router['execute(bytes,bytes[],uint256)'](planner.commands, planner.inputs, DEADLINE, { value: 0 })
+
+      const value = BigNumber.from('226492000000000000000')
+      const ghlFraxPairAddress = '0x9c9604405dea60d5AC4433FCf87D76a0bC6bB68B'
+      const calldata = SUDOSWAP_INTERFACE.encodeFunctionData('robustSwapERC20ForSpecificNFTs', [
+        [[[ghlFraxPairAddress, ['2402', '2509']], value]],
+        value,
+        bob.address,
+        1700000000,
+      ])
+
+      const permit = {
+        details: {
+          token: fraxToken.address,
+          amount: value,
+          expiration: 0, // expiration of 0 is block.timestamp
+          nonce: 0, // this is his first trade
+        },
+        spender: router.address,
+        sigDeadline: DEADLINE,
+      }
+      const sig = await getPermitSignature(permit, bob, permit2)
+
+      planner = new RoutePlanner()
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [fraxToken.address, router.address, value])
       planner.addCommand(CommandType.SUDOSWAP, [0, calldata])

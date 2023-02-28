@@ -3,7 +3,7 @@ import { UniversalRouter, Permit2 } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { seaportOrders, seaportInterface, getAdvancedOrderParams } from '../shared/protocolHelpers/seaport'
 import { resetFork, WETH } from '../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, MAX_UINT, OPENSEA_CONDUIT, OPENSEA_CONDUIT_KEY } from '../shared/constants'
+import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
 import { abi as ERC20_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -73,8 +73,7 @@ describe('Seaport Gas Tests', () => {
 
       // A previous txn which approves the conduit to spend the router's consideration token balance
       planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
-      let { commands, inputs } = planner
-      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: 0 })
+      await router['execute(bytes,bytes[],uint256)'](planner.commands, planner.inputs, DEADLINE, { value: 0 })
 
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
@@ -94,11 +93,11 @@ describe('Seaport Gas Tests', () => {
       }
       const sig = await getPermitSignature(permit, bob, permit2)
 
+      planner = new RoutePlanner()
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [weth.address, router.address, value])
       planner.addCommand(CommandType.SEAPORT, [0, calldata])
-      commands = planner.commands
-      inputs = planner.inputs
+      const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
     })
