@@ -20,30 +20,32 @@ describe('SeaportV2 Gas Tests', () => {
   let permit2: Permit2
   let planner: RoutePlanner
 
-  beforeEach(async () => {
-    await resetFork(16592843 - 1) // 1 block before the order was created
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [ALICE_ADDRESS],
+  describe('ETH -> NFT', () => {
+    beforeEach(async () => {
+      await resetFork(16592843 - 1) // 1 block before the order was created
+      await hre.network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [ALICE_ADDRESS],
+      })
+      alice = await ethers.getSigner(ALICE_ADDRESS)
+      permit2 = (await deployPermit2()).connect(alice) as Permit2
+      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      planner = new RoutePlanner()
     })
-    alice = await ethers.getSigner(ALICE_ADDRESS)
-    permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
-    planner = new RoutePlanner()
-  })
 
-  it('gas: fulfillAdvancedOrder', async () => {
-    const { advancedOrder, value } = getAdvancedOrderParams(seaportV2Orders[0])
-    const calldata = seaportV2Interface.encodeFunctionData('fulfillAdvancedOrder', [
-      advancedOrder,
-      [],
-      ZERO_CONDUIT_KEY,
-      alice.address,
-    ])
+    it('gas: fulfillAdvancedOrder', async () => {
+      const { advancedOrder, value } = getAdvancedOrderParams(seaportV2Orders[0])
+      const calldata = seaportV2Interface.encodeFunctionData('fulfillAdvancedOrder', [
+        advancedOrder,
+        [],
+        ZERO_CONDUIT_KEY,
+        alice.address,
+      ])
 
-    planner.addCommand(CommandType.SEAPORT_V2, [value.toString(), calldata])
-    const { commands, inputs } = planner
+      planner.addCommand(CommandType.SEAPORT_V2, [value.toString(), calldata])
+      const { commands, inputs } = planner
 
-    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+    })
   })
 })

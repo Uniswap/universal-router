@@ -35,6 +35,7 @@ abstract contract UniswapV2Test is Test {
             weth9: address(WETH9),
             seaport: address(0),
             seaportV2: address(0),
+            openseaConduit: address(0),
             nftxZap: address(0),
             x2y2: address(0),
             foundation: address(0),
