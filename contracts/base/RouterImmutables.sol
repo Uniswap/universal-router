@@ -10,10 +10,12 @@ struct RouterParameters {
     address weth9;
     address seaport;
     address seaportV2;
+    address openseaConduit;
     address nftxZap;
     address x2y2;
     address foundation;
     address sudoswap;
+    address elementMarket;
     address nft20Zap;
     address cryptopunks;
     address looksRare;
@@ -43,6 +45,9 @@ contract RouterImmutables {
     /// @dev Seaport 1.2 address
     address internal immutable SEAPORT_V2;
 
+    /// @dev The address of OpenSea's conduit used in both Seaport and Seaport 1.2
+    address internal immutable OPENSEA_CONDUIT;
+
     /// @dev The address of NFTX zap contract for interfacing with vaults
     address internal immutable NFTX_ZAP;
 
@@ -54,6 +59,9 @@ contract RouterImmutables {
 
     // @dev The address of Sudoswap's router
     address internal immutable SUDOSWAP;
+
+    // @dev The address of Element Market
+    address internal immutable ELEMENT_MARKET;
 
     // @dev the address of NFT20's zap contract
     address internal immutable NFT20_ZAP;
@@ -93,10 +101,12 @@ contract RouterImmutables {
         WETH9 = IWETH9(params.weth9);
         SEAPORT = params.seaport;
         SEAPORT_V2 = params.seaportV2;
+        OPENSEA_CONDUIT = params.openseaConduit;
         NFTX_ZAP = params.nftxZap;
         X2Y2 = params.x2y2;
         FOUNDATION = params.foundation;
         SUDOSWAP = params.sudoswap;
+        ELEMENT_MARKET = params.elementMarket;
         NFT20_ZAP = params.nft20Zap;
         CRYPTOPUNKS = params.cryptopunks;
         LOOKS_RARE = params.looksRare;
