@@ -29,27 +29,48 @@ library BytesLib {
         }
     }
 
+    /// @notice Decode the `arg`-th element in `_bytes` as a dynamic array
+    /// @dev The decoding of `length` and `offset` is universal,
+    /// whereas the type declaration of `res` instructs the compiler how to read it.
+    /// @return length Length of the array
+    /// @return offset Pointer to the data part of the array
+    function toLengthOffset(bytes calldata _bytes, uint256 arg)
+        internal
+        pure
+        returns (uint256 length, uint256 offset)
+    {
+        assembly {
+            // The offset of the `arg`-th element is `32 * arg`, which stores the offset of the length pointer.
+            let lengthPtr := add(_bytes.offset, calldataload(add(_bytes.offset, mul(32, arg))))
+            length := calldataload(lengthPtr)
+            offset := add(lengthPtr, 32)
+        }
+    }
+
+    /// @notice Decode the `arg`-th element in `_bytes` as `bytes`
     function toBytes(bytes calldata _bytes, uint256 arg) internal pure returns (bytes calldata res) {
+        (uint256 length, uint256 offset) = toLengthOffset(_bytes, arg);
         assembly {
-            let lengthPtr := add(_bytes.offset, calldataload(add(_bytes.offset, mul(0x20, arg))))
-            res.offset := add(lengthPtr, 0x20)
-            res.length := calldataload(lengthPtr)
+            res.length := length
+            res.offset := offset
         }
     }
 
+    /// @notice Decode the `arg`-th element in `_bytes` as `address[]`
     function toAddressArray(bytes calldata _bytes, uint256 arg) internal pure returns (address[] calldata res) {
+        (uint256 length, uint256 offset) = toLengthOffset(_bytes, arg);
         assembly {
-            let lengthPtr := add(_bytes.offset, calldataload(add(_bytes.offset, mul(0x20, arg))))
-            res.offset := add(lengthPtr, 0x20)
-            res.length := calldataload(lengthPtr)
+            res.length := length
+            res.offset := offset
         }
     }
 
+    /// @notice Decode the `arg`-th element in `_bytes` as `bytes[]`
     function toBytesArray(bytes calldata _bytes, uint256 arg) internal pure returns (bytes[] calldata res) {
+        (uint256 length, uint256 offset) = toLengthOffset(_bytes, arg);
         assembly {
-            let lengthPtr := add(_bytes.offset, calldataload(add(_bytes.offset, mul(0x20, arg))))
-            res.offset := add(lengthPtr, 0x20)
-            res.length := calldataload(lengthPtr)
+            res.length := length
+            res.offset := offset
         }
     }
 }
