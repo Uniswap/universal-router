@@ -41,9 +41,9 @@ library BytesLib {
     {
         assembly {
             // The offset of the `arg`-th element is `32 * arg`, which stores the offset of the length pointer.
-            let lengthPtr := add(_bytes.offset, calldataload(add(_bytes.offset, mul(32, arg))))
+            let lengthPtr := add(_bytes.offset, calldataload(add(_bytes.offset, mul(0x20, arg))))
             length := calldataload(lengthPtr)
-            offset := add(lengthPtr, 32)
+            offset := add(lengthPtr, 0x20)
         }
     }
 
