@@ -27,10 +27,12 @@ contract DeployUniversalRouter is Script {
             weth9: mapUnsupported(params.weth9, unsupported),
             seaport: mapUnsupported(params.seaport, unsupported),
             seaportV4: mapUnsupported(params.seaportV4, unsupported),
+            openseaConduit: mapUnsupported(params.openseaConduit, unsupported),
             nftxZap: mapUnsupported(params.nftxZap, unsupported),
             x2y2: mapUnsupported(params.x2y2, unsupported),
             foundation: mapUnsupported(params.foundation, unsupported),
             sudoswap: mapUnsupported(params.sudoswap, unsupported),
+            elementMarket: mapUnsupported(params.elementMarket, unsupported),
             nft20Zap: mapUnsupported(params.nft20Zap, unsupported),
             cryptopunks: mapUnsupported(params.cryptopunks, unsupported),
             looksRare: mapUnsupported(params.looksRare, unsupported),
@@ -40,7 +42,9 @@ contract DeployUniversalRouter is Script {
             v2Factory: mapUnsupported(params.v2Factory, unsupported),
             v3Factory: mapUnsupported(params.v3Factory, unsupported),
             pairInitCodeHash: params.pairInitCodeHash,
-            poolInitCodeHash: params.poolInitCodeHash
+            poolInitCodeHash: params.poolInitCodeHash,
+            paymentRecipient: params.paymentRecipient,
+            paymentAmountBips: params.paymentAmountBips
         });
 
         router = new UniversalRouter(params);

@@ -35,10 +35,12 @@ abstract contract UniswapV2Test is Test {
             weth9: address(WETH9),
             seaport: address(0),
             seaportV4: address(0),
+            openseaConduit: address(0),
             nftxZap: address(0),
             x2y2: address(0),
             foundation: address(0),
             sudoswap: address(0),
+            elementMarket: address(0),
             nft20Zap: address(0),
             cryptopunks: address(0),
             looksRare: address(0),
@@ -48,7 +50,9 @@ abstract contract UniswapV2Test is Test {
             v2Factory: address(FACTORY),
             v3Factory: address(0),
             pairInitCodeHash: bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f),
-            poolInitCodeHash: bytes32(0)
+            poolInitCodeHash: bytes32(0),
+            paymentRecipient: address(0),
+            paymentAmountBips: 0
         });
         router = new UniversalRouter(params);
 

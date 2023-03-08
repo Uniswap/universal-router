@@ -9,6 +9,8 @@ import {
   ROUTER_REWARDS_DISTRIBUTOR,
   LOOKSRARE_REWARDS_DISTRIBUTOR,
   LOOKSRARE_TOKEN,
+  PAYMENT_RECIPIENT,
+  ONE_PERCENT_BIPS,
 } from './constants'
 
 export async function deployRouter(
@@ -22,10 +24,12 @@ export async function deployRouter(
     weth9: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     seaport: '0x00000000006c3852cbEf3e08E8dF289169EdE581',
     seaportV4: '0x00000000000001ad428e4906aE43D8F9852d0dD6',
+    openseaConduit: '0x1e0049783f008a0085193e00003d00cd54003c71',
     nftxZap: mockReentrantProtocol ?? '0x0fc584529a2AEfA997697FAfAcbA5831faC0c22d',
     x2y2: '0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3',
     foundation: '0xcDA72070E455bb31C7690a170224Ce43623d0B6f',
     sudoswap: '0x2B2e8cDA09bBA9660dCA5cB6233787738Ad68329',
+    elementMarket: '0x20F780A973856B93f63670377900C1d2a50a77c4',
     nft20Zap: '0xA42f6cADa809Bcf417DeefbdD69C5C5A909249C0',
     cryptopunks: '0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB',
     looksRare: '0x59728544B08AB483533076417FbBB2fD0B17CE3a',
@@ -36,6 +40,8 @@ export async function deployRouter(
     v3Factory: V3_FACTORY_MAINNET,
     pairInitCodeHash: V2_INIT_CODE_HASH_MAINNET,
     poolInitCodeHash: V3_INIT_CODE_HASH_MAINNET,
+    paymentRecipient: PAYMENT_RECIPIENT,
+    paymentAmountBips: ONE_PERCENT_BIPS,
   }
 
   const routerFactory = await ethers.getContractFactory('UniversalRouter')

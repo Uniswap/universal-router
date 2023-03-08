@@ -10,10 +10,12 @@ struct RouterParameters {
     address weth9;
     address seaport;
     address seaportV4;
+    address openseaConduit;
     address nftxZap;
     address x2y2;
     address foundation;
     address sudoswap;
+    address elementMarket;
     address nft20Zap;
     address cryptopunks;
     address looksRare;
@@ -24,6 +26,8 @@ struct RouterParameters {
     address v3Factory;
     bytes32 pairInitCodeHash;
     bytes32 poolInitCodeHash;
+    address paymentRecipient;
+    uint256 paymentAmountBips;
 }
 
 /// @title Router Immutable Storage contract
@@ -41,6 +45,9 @@ contract RouterImmutables {
     /// @dev Seaport 1.2 address
     address internal immutable SEAPORT_V4;
 
+    /// @dev The address of OpenSea's conduit used in both Seaport and Seaport 1.2
+    address internal immutable OPENSEA_CONDUIT;
+
     /// @dev The address of NFTX zap contract for interfacing with vaults
     address internal immutable NFTX_ZAP;
 
@@ -52,6 +59,9 @@ contract RouterImmutables {
 
     // @dev The address of Sudoswap's router
     address internal immutable SUDOSWAP;
+
+    // @dev The address of Element Market
+    address internal immutable ELEMENT_MARKET;
 
     // @dev the address of NFT20's zap contract
     address internal immutable NFT20_ZAP;
@@ -83,15 +93,20 @@ contract RouterImmutables {
     /// @dev The bytes corresponding to UniswapV3Pool initcodehash
     bytes32 internal immutable UNISWAP_V3_POOL_INIT_CODE_HASH;
 
+    address internal immutable PAYMENT_RECIPIENT;
+    uint256 internal immutable PAYMENT_AMOUNT_BIPS;
+
     constructor(RouterParameters memory params) {
         PERMIT2 = IAllowanceTransfer(params.permit2);
         WETH9 = IWETH9(params.weth9);
         SEAPORT = params.seaport;
         SEAPORT_V4 = params.seaportV4;
+        OPENSEA_CONDUIT = params.openseaConduit;
         NFTX_ZAP = params.nftxZap;
         X2Y2 = params.x2y2;
         FOUNDATION = params.foundation;
         SUDOSWAP = params.sudoswap;
+        ELEMENT_MARKET = params.elementMarket;
         NFT20_ZAP = params.nft20Zap;
         CRYPTOPUNKS = params.cryptopunks;
         LOOKS_RARE = params.looksRare;
@@ -102,5 +117,7 @@ contract RouterImmutables {
         UNISWAP_V2_PAIR_INIT_CODE_HASH = params.pairInitCodeHash;
         UNISWAP_V3_FACTORY = params.v3Factory;
         UNISWAP_V3_POOL_INIT_CODE_HASH = params.poolInitCodeHash;
+        PAYMENT_RECIPIENT = params.paymentRecipient;
+        PAYMENT_AMOUNT_BIPS = params.paymentAmountBips;
     }
 }
