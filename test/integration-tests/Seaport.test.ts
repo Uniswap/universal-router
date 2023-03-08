@@ -8,12 +8,10 @@ import {
   seaportV1_4Interface,
   getAdvancedOrderParams,
   purchaseDataForTwoCovensSeaport,
-  seaportV1_4Orders,
-  ZERO_CONDUIT_KEY,
+  seaportV1_4Orders
 } from './shared/protocolHelpers/seaport'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { COVEN_721, WETH, resetFork } from './shared/mainnetForkHelpers'
-import { abi as ERC721_ABI } from '../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
 import { abi as ERC20_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -254,18 +252,16 @@ describe('Seaport', () => {
   })
 })
 
-xdescribe('SeaportV1_4', () => {
+describe.only('SeaportV1_4', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
   let planner: RoutePlanner
-  let testing721Token: ERC721
+  let cryptoCovens: ERC721
 
-  const testingTokenAddress = '0x399F0c34c0193674A29e290Eef484DA007DDeF4E'
-
-  describe('SeaportV2 ETH -> NFT', () => {
+  describe('SeaportV1_4 ETH -> NFT', () => {
     beforeEach(async () => {
-      await resetFork(16592843 - 1) // 1 block before the order was created
+      await resetFork(16784176 - 1) // 1 block before the order was created
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
@@ -274,7 +270,7 @@ xdescribe('SeaportV1_4', () => {
       permit2 = (await deployPermit2()).connect(alice) as Permit2
       router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
-      testing721Token = new ethers.Contract(testingTokenAddress, ERC721_ABI).connect(alice) as ERC721
+      cryptoCovens = COVEN_721.connect(alice) as ERC721
     })
 
     it('completes a fulfillAdvancedOrder type', async () => {
@@ -283,19 +279,19 @@ xdescribe('SeaportV1_4', () => {
       const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
         [],
-        ZERO_CONDUIT_KEY,
+        OPENSEA_CONDUIT_KEY,
         alice.address,
       ])
 
       planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata])
       const { commands, inputs } = planner
 
-      const ownerBefore = await testing721Token.ownerOf(params.offer[0].identifierOrCriteria)
+      const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
       const ethBefore = await ethers.provider.getBalance(alice.address)
       const receipt = await (
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
       ).wait()
-      const ownerAfter = await testing721Token.ownerOf(params.offer[0].identifierOrCriteria)
+      const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
       const ethAfter = await ethers.provider.getBalance(alice.address)
       const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
       const ethDelta = ethBefore.sub(ethAfter)
@@ -311,7 +307,7 @@ xdescribe('SeaportV1_4', () => {
       const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
         [],
-        ZERO_CONDUIT_KEY,
+        OPENSEA_CONDUIT_KEY,
         alice.address,
       ])
 
@@ -322,7 +318,7 @@ xdescribe('SeaportV1_4', () => {
       const commands = planner.commands
       const inputs = planner.inputs
 
-      const ownerBefore = await testing721Token.ownerOf(params.offer[0].identifierOrCriteria)
+      const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
       const ethBefore = await ethers.provider.getBalance(alice.address)
 
       // don't send enough ETH, so the seaport purchase reverts
@@ -331,7 +327,7 @@ xdescribe('SeaportV1_4', () => {
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
       ).wait()
 
-      const ownerAfter = await testing721Token.ownerOf(params.offer[0].identifierOrCriteria)
+      const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
       const ethAfter = await ethers.provider.getBalance(alice.address)
       const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
       const ethDelta = ethBefore.sub(ethAfter)
@@ -350,7 +346,7 @@ xdescribe('SeaportV1_4', () => {
       const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
         seaportOrder,
         [],
-        ZERO_CONDUIT_KEY,
+        OPENSEA_CONDUIT_KEY,
         alice.address,
       ])
 
