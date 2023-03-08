@@ -1,0 +1,8 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SeaportV1_4 Gas Tests ETH -> NFT gas: fulfillAdvancedOrder 1`] = `
+Object {
+  "calldataByteLength": 2052,
+  "gasUsed": 70907,
+}
+`;

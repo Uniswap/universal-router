@@ -1,8 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`SeaportV4 Gas Tests gas: fulfillAdvancedOrder 1`] = `
-Object {
-  "calldataByteLength": 2052,
-  "gasUsed": 70889,
-}
-`;

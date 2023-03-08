@@ -5,10 +5,10 @@ import { UniversalRouter, Permit2, ERC721 } from '../../typechain'
 import {
   seaportOrders,
   seaportInterface,
-  seaportV4Interface,
+  seaportV1_4Interface,
   getAdvancedOrderParams,
   purchaseDataForTwoCovensSeaport,
-  seaportV4Orders,
+  seaportV1_4Orders,
   ZERO_CONDUIT_KEY,
 } from './shared/protocolHelpers/seaport'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
@@ -254,9 +254,7 @@ describe('Seaport', () => {
   })
 })
 
-/// @dev Seaport1.3 was just released so there are no orders on mainnet yet to test against
-/// however this code worked for Seaport1.2, so it will work for 1.3 as there are no relevant changes
-xdescribe('SeaportV4', () => {
+xdescribe('SeaportV1_4', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
@@ -280,16 +278,16 @@ xdescribe('SeaportV4', () => {
     })
 
   it('completes a fulfillAdvancedOrder type', async () => {
-    const { advancedOrder, value } = getAdvancedOrderParams(seaportV4Orders[0])
+    const { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
     const params = advancedOrder.parameters
-    const calldata = seaportV4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+    const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
       [],
       ZERO_CONDUIT_KEY,
       alice.address,
     ])
 
-    planner.addCommand(CommandType.SEAPORT_V4, [value.toString(), calldata])
+    planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata])
     const { commands, inputs } = planner
 
       const ownerBefore = await testing721Token.ownerOf(params.offer[0].identifierOrCriteria)
@@ -308,9 +306,9 @@ xdescribe('SeaportV4', () => {
     })
 
   it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
-    let { advancedOrder, value } = getAdvancedOrderParams(seaportV4Orders[0])
+    let { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
     const params = advancedOrder.parameters
-    const calldata = seaportV4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+    const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
       advancedOrder,
       [],
       ZERO_CONDUIT_KEY,
@@ -318,7 +316,7 @@ xdescribe('SeaportV4', () => {
     ])
 
     // Allow seaport to revert
-    planner.addCommand(CommandType.SEAPORT_V4, [value.toString(), calldata], true)
+    planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata], true)
     planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
 
       const commands = planner.commands
@@ -344,19 +342,19 @@ xdescribe('SeaportV4', () => {
     })
 
   it('reverts if order does not go through', async () => {
-    let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportV4Orders[0]))
+    let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportV1_4Orders[0]))
 
       invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
       const { advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder)
 
-    const calldata = seaportV4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+    const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
       seaportOrder,
       [],
       ZERO_CONDUIT_KEY,
       alice.address,
     ])
 
-    planner.addCommand(CommandType.SEAPORT_V4, [seaportValue.toString(), calldata])
+    planner.addCommand(CommandType.SEAPORT_V1_4, [seaportValue.toString(), calldata])
     const { commands, inputs } = planner
 
       const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()

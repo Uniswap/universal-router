@@ -9,7 +9,7 @@ struct RouterParameters {
     address permit2;
     address weth9;
     address seaport;
-    address seaportV4;
+    address seaportV1_4;
     address openseaConduit;
     address nftxZap;
     address x2y2;
@@ -43,7 +43,7 @@ contract RouterImmutables {
     address internal immutable SEAPORT;
 
     /// @dev Seaport 1.2 address
-    address internal immutable SEAPORT_V4;
+    address internal immutable SEAPORT_V1_4;
 
     /// @dev The address of OpenSea's conduit used in both Seaport and Seaport 1.2
     address internal immutable OPENSEA_CONDUIT;
@@ -100,7 +100,7 @@ contract RouterImmutables {
         PERMIT2 = IAllowanceTransfer(params.permit2);
         WETH9 = IWETH9(params.weth9);
         SEAPORT = params.seaport;
-        SEAPORT_V4 = params.seaportV4;
+        SEAPORT_V1_4 = params.seaportV1_4;
         OPENSEA_CONDUIT = params.openseaConduit;
         NFTX_ZAP = params.nftxZap;
         X2Y2 = params.x2y2;
