@@ -5,10 +5,9 @@ import {
   seaportV1_4Orders,
   seaportV1_4Interface,
   getAdvancedOrderParams,
-  ZERO_CONDUIT_KEY,
 } from '../shared/protocolHelpers/seaport'
 import { resetFork } from '../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE } from '../shared/constants'
+import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
@@ -22,7 +21,7 @@ describe('SeaportV1_4 Gas Tests', () => {
 
   describe('ETH -> NFT', () => {
     beforeEach(async () => {
-      await resetFork(16592843 - 1) // 1 block before the order was created
+      await resetFork(16784176 - 1) // 1 block before the order was created
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
@@ -38,7 +37,7 @@ describe('SeaportV1_4 Gas Tests', () => {
       const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
         [],
-        ZERO_CONDUIT_KEY,
+        OPENSEA_CONDUIT_KEY,
         alice.address,
       ])
 

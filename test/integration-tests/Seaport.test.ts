@@ -252,7 +252,7 @@ describe('Seaport', () => {
   })
 })
 
-describe.only('SeaportV1_4', () => {
+describe('SeaportV1_4', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
