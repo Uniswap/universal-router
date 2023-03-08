@@ -33,17 +33,17 @@ describe('SeaportV1_4 Gas Tests', () => {
       planner = new RoutePlanner()
     })
 
-  it('gas: fulfillAdvancedOrder', async () => {
-    const { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
-    const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
-      advancedOrder,
-      [],
-      ZERO_CONDUIT_KEY,
-      alice.address,
-    ])
+    it('gas: fulfillAdvancedOrder', async () => {
+      const { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
+      const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+        advancedOrder,
+        [],
+        ZERO_CONDUIT_KEY,
+        alice.address,
+      ])
 
-    planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata])
-    const { commands, inputs } = planner
+      planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata])
+      const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
     })

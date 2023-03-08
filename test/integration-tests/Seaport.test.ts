@@ -277,18 +277,18 @@ xdescribe('SeaportV1_4', () => {
       testing721Token = new ethers.Contract(testingTokenAddress, ERC721_ABI).connect(alice) as ERC721
     })
 
-  it('completes a fulfillAdvancedOrder type', async () => {
-    const { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
-    const params = advancedOrder.parameters
-    const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
-      advancedOrder,
-      [],
-      ZERO_CONDUIT_KEY,
-      alice.address,
-    ])
+    it('completes a fulfillAdvancedOrder type', async () => {
+      const { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
+      const params = advancedOrder.parameters
+      const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+        advancedOrder,
+        [],
+        ZERO_CONDUIT_KEY,
+        alice.address,
+      ])
 
-    planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata])
-    const { commands, inputs } = planner
+      planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata])
+      const { commands, inputs } = planner
 
       const ownerBefore = await testing721Token.ownerOf(params.offer[0].identifierOrCriteria)
       const ethBefore = await ethers.provider.getBalance(alice.address)
@@ -305,19 +305,19 @@ xdescribe('SeaportV1_4', () => {
       expect(ethDelta.sub(gasSpent)).to.eq(value)
     })
 
-  it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
-    let { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
-    const params = advancedOrder.parameters
-    const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
-      advancedOrder,
-      [],
-      ZERO_CONDUIT_KEY,
-      alice.address,
-    ])
+    it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
+      let { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
+      const params = advancedOrder.parameters
+      const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+        advancedOrder,
+        [],
+        ZERO_CONDUIT_KEY,
+        alice.address,
+      ])
 
-    // Allow seaport to revert
-    planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata], true)
-    planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
+      // Allow seaport to revert
+      planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata], true)
+      planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
 
       const commands = planner.commands
       const inputs = planner.inputs
@@ -341,21 +341,21 @@ xdescribe('SeaportV1_4', () => {
       expect(ethDelta).to.eq(gasSpent)
     })
 
-  it('reverts if order does not go through', async () => {
-    let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportV1_4Orders[0]))
+    it('reverts if order does not go through', async () => {
+      let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportV1_4Orders[0]))
 
       invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
       const { advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder)
 
-    const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
-      seaportOrder,
-      [],
-      ZERO_CONDUIT_KEY,
-      alice.address,
-    ])
+      const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+        seaportOrder,
+        [],
+        ZERO_CONDUIT_KEY,
+        alice.address,
+      ])
 
-    planner.addCommand(CommandType.SEAPORT_V1_4, [seaportValue.toString(), calldata])
-    const { commands, inputs } = planner
+      planner.addCommand(CommandType.SEAPORT_V1_4, [seaportValue.toString(), calldata])
+      const { commands, inputs } = planner
 
       const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
       const customErrorSelector = findCustomErrorSelector(testCustomErrors.interface, 'InvalidSignature')
