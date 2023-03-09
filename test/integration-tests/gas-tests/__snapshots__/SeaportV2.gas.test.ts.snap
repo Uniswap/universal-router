@@ -3,6 +3,6 @@
 exports[`SeaportV2 Gas Tests ETH -> NFT gas: fulfillAdvancedOrder 1`] = `
 Object {
   "calldataByteLength": 2052,
-  "gasUsed": 172055,
+  "gasUsed": 172046,
 }
 `;
