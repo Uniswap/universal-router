@@ -50,38 +50,38 @@ describe('Seaport Gas Tests', () => {
     })
 
     it('gas: fulfillAvailableAdvancedOrders 1 orders', async () => {
-    const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
-    const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
-    const value = value1.add(value2)
-    const considerationFulfillment = [
-      [[0, 0]],
-      [
-        [0, 1],
-        [1, 1],
-      ],
-      [
-        [0, 2],
-        [1, 2],
-      ],
-      [[1, 0]],
-    ]
+      const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
+      const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
+      const value = value1.add(value2)
+      const considerationFulfillment = [
+        [[0, 0]],
+        [
+          [0, 1],
+          [1, 1],
+        ],
+        [
+          [0, 2],
+          [1, 2],
+        ],
+        [[1, 0]],
+      ]
 
-    const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
-      [advancedOrder0, advancedOrder1],
-      [],
-      [[[0, 0]], [[1, 0]]],
-      considerationFulfillment,
-      OPENSEA_CONDUIT_KEY,
-      alice.address,
-      100,
-    ])
+      const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
+        [advancedOrder0, advancedOrder1],
+        [],
+        [[[0, 0]], [[1, 0]]],
+        considerationFulfillment,
+        OPENSEA_CONDUIT_KEY,
+        alice.address,
+        100,
+      ])
 
-    planner.addCommand(CommandType.SEAPORT, [value, calldata])
-    const { commands, inputs } = planner
+      planner.addCommand(CommandType.SEAPORT, [value, calldata])
+      const { commands, inputs } = planner
 
-    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+    })
   })
-})
 
   describe('Seaport v1.4', () => {
     beforeEach(async () => {
