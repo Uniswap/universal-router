@@ -1,7 +1,13 @@
 import { CommandType, RoutePlanner } from '../shared/planner'
 import { UniversalRouter, Permit2 } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import { seaportOrders, seaportInterface, getAdvancedOrderParams } from '../shared/protocolHelpers/seaport'
+import {
+  seaportOrders,
+  seaportV1_4Orders,
+  seaportInterface,
+  seaportV1_4Interface,
+  getAdvancedOrderParams,
+} from '../shared/protocolHelpers/seaport'
 import { resetFork } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -73,5 +79,22 @@ describe('Seaport Gas Tests', () => {
     const { commands, inputs } = planner
 
     await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+  })
+
+  describe('Seaport v1.4', () => {
+    it('gas: completes a fulfillAdvancedOrder type', async () => {
+      const { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
+      const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+        advancedOrder,
+        [],
+        OPENSEA_CONDUIT_KEY,
+        alice.address,
+      ])
+
+      planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata])
+      const { commands, inputs } = planner
+
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+    })
   })
 })

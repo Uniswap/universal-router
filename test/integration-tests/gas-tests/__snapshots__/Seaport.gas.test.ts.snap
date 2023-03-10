@@ -1,5 +1,12 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Seaport Gas Tests Seaport v1.4 gas: completes a fulfillAdvancedOrder type 1`] = `
+Object {
+  "calldataByteLength": 2020,
+  "gasUsed": 75995,
+}
+`;
+
 exports[`Seaport Gas Tests gas: fulfillAdvancedOrder 1`] = `
 Object {
   "calldataByteLength": 2052,
