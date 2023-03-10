@@ -5,8 +5,10 @@ import { UniversalRouter, Permit2, ERC721 } from '../../typechain'
 import {
   seaportOrders,
   seaportInterface,
+  seaportV1_4Interface,
   getAdvancedOrderParams,
   purchaseDataForTwoCovensSeaport,
+  seaportV1_4Orders,
 } from './shared/protocolHelpers/seaport'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { COVEN_721, resetFork } from './shared/mainnetForkHelpers'
@@ -139,5 +141,107 @@ describe('Seaport', () => {
     await expect(
       router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: seaportValue })
     ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")')
+  })
+})
+
+describe('SeaportV1_4', () => {
+  let alice: SignerWithAddress
+  let router: UniversalRouter
+  let permit2: Permit2
+  let planner: RoutePlanner
+  let cryptoCovens: ERC721
+
+  beforeEach(async () => {
+    await resetFork(16784176 - 1) // 1 block before the order was created
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [ALICE_ADDRESS],
+    })
+    alice = await ethers.getSigner(ALICE_ADDRESS)
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+    planner = new RoutePlanner()
+    cryptoCovens = COVEN_721.connect(alice) as ERC721
+  })
+
+  it('completes a fulfillAdvancedOrder type', async () => {
+    const { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
+    const params = advancedOrder.parameters
+    const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+      advancedOrder,
+      [],
+      OPENSEA_CONDUIT_KEY,
+      alice.address,
+    ])
+
+    planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata])
+    const { commands, inputs } = planner
+
+    const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
+    const ethBefore = await ethers.provider.getBalance(alice.address)
+    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
+    const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
+    const ethAfter = await ethers.provider.getBalance(alice.address)
+    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+    const ethDelta = ethBefore.sub(ethAfter)
+
+    expect(ownerBefore.toLowerCase()).to.eq(params.offerer.toLowerCase())
+    expect(ownerAfter).to.eq(alice.address)
+    expect(ethDelta.sub(gasSpent)).to.eq(value)
+  })
+
+  it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
+    let { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
+    const params = advancedOrder.parameters
+    const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+      advancedOrder,
+      [],
+      OPENSEA_CONDUIT_KEY,
+      alice.address,
+    ])
+
+    // Allow seaport to revert
+    planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata], true)
+    planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
+
+    const commands = planner.commands
+    const inputs = planner.inputs
+
+    const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
+    const ethBefore = await ethers.provider.getBalance(alice.address)
+
+    // don't send enough ETH, so the seaport purchase reverts
+    value = BigNumber.from(value).sub('1')
+    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
+
+    const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
+    const ethAfter = await ethers.provider.getBalance(alice.address)
+    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+    const ethDelta = ethBefore.sub(ethAfter)
+
+    // The owner was unchanged, the user got the eth back
+    expect(ownerBefore.toLowerCase()).to.eq(ownerAfter.toLowerCase())
+    expect(ethDelta).to.eq(gasSpent)
+  })
+
+  it('reverts if order does not go through', async () => {
+    let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportV1_4Orders[0]))
+
+    invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
+    const { advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder)
+
+    const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+      seaportOrder,
+      [],
+      OPENSEA_CONDUIT_KEY,
+      alice.address,
+    ])
+
+    planner.addCommand(CommandType.SEAPORT_V1_4, [seaportValue.toString(), calldata])
+    const { commands, inputs } = planner
+
+    await expect(
+      router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: seaportValue })
+    ).to.be.revertedWith('ExecutionFailed(0, "0x8baa579f")') // InvalidSignature()
   })
 })
