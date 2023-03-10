@@ -29,7 +29,7 @@ library Commands {
     uint256 constant WRAP_ETH = 0x0b;
     uint256 constant UNWRAP_WETH = 0x0c;
     uint256 constant PERMIT2_TRANSFER_FROM_BATCH = 0x0d;
-    uint256 constant COMMAND_PLACEHOLDER_0x0e = 0x0e;
+    uint256 constant SEAPORT_V1_4 = 0x0e;
     uint256 constant COMMAND_PLACEHOLDER_0x0f = 0x0f;
 
     // Command Types where 0x10<=value<0x18, executed in the third nested-if block

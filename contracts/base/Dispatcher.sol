@@ -93,9 +93,9 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks 
                     (IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) =
                         abi.decode(inputs, (IAllowanceTransfer.AllowanceTransferDetails[]));
                     permit2TransferFrom(batchDetails);
-                } else if (command == Commands.COMMAND_PLACEHOLDER_0x0e) {
-                    // placeholder for a future command
-                    revert InvalidCommandType(command);
+                } else if (command == Commands.SEAPORT_V1_4) {
+                    (uint256 value, bytes memory data) = abi.decode(inputs, (uint256, bytes));
+                    (success, output) = SEAPORT_V1_4.call{value: value}(data);
                 } else if (command == Commands.COMMAND_PLACEHOLDER_0x0f) {
                     // placeholder for a future command
                     revert InvalidCommandType(command);
