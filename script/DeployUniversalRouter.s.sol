@@ -16,11 +16,9 @@ contract DeployUniversalRouter is Script {
 
     function setUp() public {}
 
-    function run(RouterParameters memory params) public returns (UniversalRouter router) {
+    function run(RouterParameters memory params, address unsupported) public returns (UniversalRouter router) {
         vm.startBroadcast();
 
-        address unsupported = params.unsupportedProtocol;
-        
         // only deploy unsupported if this chain doesn't already have one
         if (unsupported == address(0)) {
             unsupported = address(new UnsupportedProtocol());
@@ -60,24 +58,29 @@ contract DeployUniversalRouter is Script {
     }
 
     function run(string memory pathToJSON) public returns (UniversalRouter router) {
-        return run(fetchParameters(pathToJSON));
+        (RouterParameters memory params, address unsupported) = fetchParameters(pathToJSON);
+        return run(params, unsupported);
     }
 
     function runAndDeployPermit2(string memory pathToJSON) public returns (UniversalRouter router) {
-        RouterParameters memory params = fetchParameters(pathToJSON);
+        (RouterParameters memory params, address unsupported) = fetchParameters(pathToJSON);
         vm.startBroadcast();
         address permit2 = address(new Permit2{salt: SALT}());
         params.permit2 = permit2;
         console2.log('Permit2 Deployed:', address(permit2));
 
-        return run(params);
+        return run(params, unsupported);
     }
 
-    function fetchParameters(string memory pathToJSON) internal view returns (RouterParameters memory params) {
+    function fetchParameters(string memory pathToJSON)
+        internal
+        view
+        returns (RouterParameters memory params, address unsupportedProtocol)
+    {
         string memory root = vm.projectRoot();
         string memory json = vm.readFile(string.concat(root, '/', pathToJSON));
         bytes memory rawParams = json.parseRaw('.*');
-        params = abi.decode(rawParams, (RouterParameters));
+        (params, unsupportedProtocol) = abi.decode(rawParams, (RouterParameters, address));
     }
 
     function mapUnsupported(address protocol, address unsupported) internal pure returns (address) {
