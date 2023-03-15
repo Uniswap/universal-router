@@ -64,7 +64,7 @@ contract DeployUniversalRouter is Script {
 
     function runAndDeployPermit2(string memory pathToJSON) public returns (UniversalRouter router) {
         (RouterParameters memory params, address unsupported) = fetchParameters(pathToJSON);
-        vm.startBroadcast();
+        vm.broadcast();
         address permit2 = address(new Permit2{salt: SALT}());
         params.permit2 = permit2;
         console2.log('Permit2 Deployed:', address(permit2));
