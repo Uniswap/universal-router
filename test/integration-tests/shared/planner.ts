@@ -40,9 +40,11 @@ export enum CommandType {
   SWEEP_ERC1155 = 0x1d,
   ELEMENT_MARKET = 0x1e,
 
-  EXECUTE_SUB_PLAN = 0x20,
+  // BLUR = 0x20
   SEAPORT_V1_4 = 0x21,
-  APPROVE_ERC20 = 0x22,
+  LOOKS_RARE_V2 = 0x22,
+  EXECUTE_SUB_PLAN = 0x23,
+  APPROVE_ERC20 = 0x24,
 }
 
 const ALLOW_REVERT_FLAG = 0x80

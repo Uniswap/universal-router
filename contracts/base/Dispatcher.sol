@@ -337,11 +337,8 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
             }
             // 0x20 <= command
         } else {
-            if (command == Commands.EXECUTE_SUB_PLAN) {
-                bytes calldata _commands = inputs.toBytes(0);
-                bytes[] calldata _inputs = inputs.toBytesArray(1);
-                (success, output) =
-                    (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
+            if (command == Commands.BLUR) {
+                // BLUR
             } else if (command == Commands.SEAPORT_V1_4) {
                 /// @dev Seaport 1.4 allows for orders to be created by contracts.
                 ///     These orders pass control to the contract offerers during fufillment,
@@ -356,6 +353,19 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 }
                 bytes calldata data = inputs.toBytes(1);
                 (success, output) = SEAPORT_V1_4.call{value: value}(data);
+            } else if (command == Commands.LOOKS_RARE_V2) {
+                // equivalent: abi.decode(inputs, (uint256, bytes))
+                uint256 value;
+                assembly {
+                    value := calldataload(inputs.offset)
+                }
+                bytes calldata data = inputs.toBytes(1);
+                (success, output) = LOOKS_RARE_V2.call{value: value}(data);
+            } else if (command == Commands.EXECUTE_SUB_PLAN) {
+                bytes calldata _commands = inputs.toBytes(0);
+                bytes[] calldata _inputs = inputs.toBytesArray(1);
+                (success, output) =
+                    (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
             } else if (command == Commands.APPROVE_ERC20) {
                 address token;
                 uint256 spenderID;
