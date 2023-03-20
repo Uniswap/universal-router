@@ -338,7 +338,13 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
             // 0x20 <= command
         } else {
             if (command == Commands.BLUR) {
-                // BLUR
+                // equivalent: abi.decode(inputs, (uint256, bytes))
+                uint256 value;
+                assembly {
+                    value := calldataload(inputs.offset)
+                }
+                bytes calldata data = inputs.toBytes(1);
+                (success, output) = BLUR.call{value: value}(data);
             } else if (command == Commands.SEAPORT_V1_4) {
                 /// @dev Seaport 1.4 allows for orders to be created by contracts.
                 ///     These orders pass control to the contract offerers during fufillment,

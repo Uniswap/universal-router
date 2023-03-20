@@ -11,6 +11,7 @@ import {
   LOOKSRARE_TOKEN,
   PAYMENT_RECIPIENT,
   ONE_PERCENT_BIPS,
+  ZERO_ADDRESS,
 } from './constants'
 
 export async function deployRouter(
@@ -33,6 +34,8 @@ export async function deployRouter(
     nft20Zap: '0xA42f6cADa809Bcf417DeefbdD69C5C5A909249C0',
     cryptopunks: '0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB',
     looksRare: '0x59728544B08AB483533076417FbBB2fD0B17CE3a',
+    looksRareV2: ZERO_ADDRESS,
+    blur: '0x000000000000Ad05Ccc4F10045630fb830B95127',
     routerRewardsDistributor: ROUTER_REWARDS_DISTRIBUTOR,
     looksRareRewardsDistributor: mockLooksRareRewardsDistributor ?? LOOKSRARE_REWARDS_DISTRIBUTOR,
     looksRareToken: mockLooksRareToken ?? LOOKSRARE_TOKEN,
