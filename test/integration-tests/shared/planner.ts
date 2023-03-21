@@ -47,7 +47,7 @@ export enum CommandType {
 
 const ALLOW_REVERT_FLAG = 0x80
 
-const REVERTABLE_COMMANDS = new Set<CommandType>([
+const REVERTIBLE_COMMANDS = new Set<CommandType>([
   CommandType.SEAPORT,
   CommandType.SEAPORT_V1_4,
   CommandType.NFTX,
@@ -59,6 +59,8 @@ const REVERTABLE_COMMANDS = new Set<CommandType>([
   CommandType.SUDOSWAP,
   CommandType.NFT20,
   CommandType.EXECUTE_SUB_PLAN,
+  CommandType.CRYPTOPUNKS,
+  CommandType.ELEMENT_MARKET,
 ])
 
 const PERMIT_STRUCT =
@@ -70,39 +72,48 @@ const PERMIT_BATCH_STRUCT =
 const PERMIT2_TRANSFER_FROM_STRUCT = '(address from,address to,uint160 amount,address token)'
 const PERMIT2_TRANSFER_FROM_BATCH_STRUCT = PERMIT2_TRANSFER_FROM_STRUCT + '[]'
 
-const ABI_DEFINITION: { [key in CommandType]: any } = {
+const ABI_DEFINITION: { [key in CommandType]: string[] } = {
+  // Batch Reverts
+  [CommandType.EXECUTE_SUB_PLAN]: ['bytes', 'bytes[]'],
+
+  // Permit2 Actions
   [CommandType.PERMIT2_PERMIT]: [PERMIT_STRUCT, 'bytes'],
   [CommandType.PERMIT2_PERMIT_BATCH]: [PERMIT_BATCH_STRUCT, 'bytes'],
   [CommandType.PERMIT2_TRANSFER_FROM]: ['address', 'address', 'uint160'],
   [CommandType.PERMIT2_TRANSFER_FROM_BATCH]: [PERMIT2_TRANSFER_FROM_BATCH_STRUCT],
-  [CommandType.TRANSFER]: ['address', 'address', 'uint256'],
+
+  // Uniswap Actions
   [CommandType.V3_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
   [CommandType.V3_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
   [CommandType.V2_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'address[]', 'bool'],
   [CommandType.V2_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'address[]', 'bool'],
-  [CommandType.SEAPORT]: ['uint256', 'bytes'],
-  [CommandType.SEAPORT_V1_4]: ['uint256', 'bytes'],
+
+  // Token Actions and Checks
   [CommandType.WRAP_ETH]: ['address', 'uint256'],
   [CommandType.UNWRAP_WETH]: ['address', 'uint256'],
   [CommandType.SWEEP]: ['address', 'address', 'uint256'],
   [CommandType.SWEEP_ERC721]: ['address', 'address', 'uint256'],
   [CommandType.SWEEP_ERC1155]: ['address', 'address', 'uint256', 'uint256'],
-  [CommandType.NFTX]: ['uint256', 'bytes'],
-  [CommandType.LOOKS_RARE_721]: ['uint256', 'bytes', 'address', 'address', 'uint256'],
-  [CommandType.X2Y2_721]: ['uint256', 'bytes', 'address', 'address', 'uint256'],
-  [CommandType.LOOKS_RARE_1155]: ['uint256', 'bytes', 'address', 'address', 'uint256', 'uint256'],
-  [CommandType.X2Y2_1155]: ['uint256', 'bytes', 'address', 'address', 'uint256', 'uint256'],
-  [CommandType.FOUNDATION]: ['uint256', 'bytes', 'address', 'address', 'uint256'],
+  [CommandType.TRANSFER]: ['address', 'address', 'uint256'],
   [CommandType.PAY_PORTION]: ['address', 'address', 'uint256'],
-  [CommandType.SUDOSWAP]: ['uint256', 'bytes'],
+  [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
   [CommandType.OWNER_CHECK_721]: ['address', 'address', 'uint256'],
   [CommandType.OWNER_CHECK_1155]: ['address', 'address', 'uint256', 'uint256'],
-  [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
+  [CommandType.APPROVE_ERC20]: ['address', 'uint256'],
+
+  // NFT Markets
+  [CommandType.SEAPORT]: ['uint256', 'bytes'],
+  [CommandType.SEAPORT_V1_4]: ['uint256', 'bytes'],
+  [CommandType.NFTX]: ['uint256', 'bytes'],
+  [CommandType.LOOKS_RARE_721]: ['uint256', 'bytes', 'address', 'address', 'uint256'],
+  [CommandType.LOOKS_RARE_1155]: ['uint256', 'bytes', 'address', 'address', 'uint256', 'uint256'],
+  [CommandType.X2Y2_721]: ['uint256', 'bytes', 'address', 'address', 'uint256'],
+  [CommandType.X2Y2_1155]: ['uint256', 'bytes', 'address', 'address', 'uint256', 'uint256'],
+  [CommandType.FOUNDATION]: ['uint256', 'bytes', 'address', 'address', 'uint256'],
+  [CommandType.SUDOSWAP]: ['uint256', 'bytes'],
   [CommandType.NFT20]: ['uint256', 'bytes'],
   [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
   [CommandType.ELEMENT_MARKET]: ['uint256', 'bytes'],
-  [CommandType.EXECUTE_SUB_PLAN]: ['bytes', 'bytes[]'],
-  [CommandType.APPROVE_ERC20]: ['address', 'uint256'],
 }
 
 export class RoutePlanner {
@@ -122,7 +133,7 @@ export class RoutePlanner {
     let command = createCommand(type, parameters)
     this.inputs.push(command.encodedInput)
     if (allowRevert) {
-      if (!REVERTABLE_COMMANDS.has(command.type)) {
+      if (!REVERTIBLE_COMMANDS.has(command.type)) {
         throw new Error(`command type: ${command.type} cannot be allowed to revert`)
       }
       command.type = command.type | ALLOW_REVERT_FLAG
