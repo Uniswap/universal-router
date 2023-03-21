@@ -45,7 +45,6 @@ abstract contract UniswapV2Test is Test {
             cryptopunks: address(0),
             looksRare: address(0),
             looksRareV2: address(0),
-            blur: address(0),
             routerRewardsDistributor: address(0),
             looksRareRewardsDistributor: address(0),
             looksRareToken: address(0),

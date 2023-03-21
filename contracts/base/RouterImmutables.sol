@@ -20,7 +20,6 @@ struct RouterParameters {
     address cryptopunks;
     address looksRare;
     address looksRareV2;
-    address blur;
     address routerRewardsDistributor;
     address looksRareRewardsDistributor;
     address looksRareToken;
@@ -77,9 +76,6 @@ contract RouterImmutables {
     /// @dev The address of LooksRareV2
     address internal immutable LOOKS_RARE_V2;
 
-    /// @dev The address of Blur
-    address internal immutable BLUR;
-
     /// @dev The address of LooksRare token
     ERC20 internal immutable LOOKS_RARE_TOKEN;
 
@@ -119,7 +115,6 @@ contract RouterImmutables {
         CRYPTOPUNKS = params.cryptopunks;
         LOOKS_RARE = params.looksRare;
         LOOKS_RARE_V2 = params.looksRareV2;
-        BLUR = params.blur;
         LOOKS_RARE_TOKEN = ERC20(params.looksRareToken);
         LOOKS_RARE_REWARDS_DISTRIBUTOR = params.looksRareRewardsDistributor;
         ROUTER_REWARDS_DISTRIBUTOR = params.routerRewardsDistributor;

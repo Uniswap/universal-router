@@ -40,7 +40,6 @@ contract DeployUniversalRouter is Script {
             cryptopunks: mapUnsupported(params.cryptopunks, unsupported),
             looksRare: mapUnsupported(params.looksRare, unsupported),
             looksRareV2: mapUnsupported(params.looksRareV2, unsupported),
-            blur: mapUnsupported(params.blur, unsupported),
             routerRewardsDistributor: mapUnsupported(params.routerRewardsDistributor, unsupported),
             looksRareRewardsDistributor: mapUnsupported(params.looksRareRewardsDistributor, unsupported),
             looksRareToken: mapUnsupported(params.looksRareToken, unsupported),

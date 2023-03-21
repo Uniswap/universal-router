@@ -51,10 +51,9 @@ library Commands {
     // COMMAND_PLACEHOLDER = 0x1f;
 
     // Command Types where 0x20<=value
-    uint256 constant BLUR = 0x20;
-    uint256 constant SEAPORT_V1_4 = 0x21;
-    uint256 constant LOOKS_RARE_V2 = 0x22;
-    uint256 constant EXECUTE_SUB_PLAN = 0x23;
-    uint256 constant APPROVE_ERC20 = 0x24;
-    // COMMAND_PLACEHOLDER for 0x25 to 0x3f (all unused)
+    uint256 constant SEAPORT_V1_4 = 0x20;
+    uint256 constant LOOKS_RARE_V2 = 0x21;
+    uint256 constant EXECUTE_SUB_PLAN = 0x22;
+    uint256 constant APPROVE_ERC20 = 0x23;
+    // COMMAND_PLACEHOLDER for 0x24 to 0x3f (all unused)
 }
