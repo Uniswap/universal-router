@@ -319,7 +319,7 @@ describe('Seaport v1.4', () => {
       const { commands, inputs } = planner
       await expect(await townStarNFT.balanceOf(bob.address, tokenId)).to.eq(0)
       await expect(
-        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+        router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
       ).to.changeTokenBalance(galaContract, bob.address, value.mul(-1))
       await expect(await townStarNFT.balanceOf(bob.address, tokenId)).to.eq(1)
     })
