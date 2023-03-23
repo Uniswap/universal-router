@@ -36,7 +36,7 @@ describe('Seaport v1.1', () => {
   describe('ERC20 -> NFT', () => {
     beforeEach(async () => {
       await resetFork(16635782)
-      // alice can't sign permits as we don;t have her private key. Instead bob is used
+      // alice can't sign permits as we don't have her private key. Instead bob is used
       bob = (await ethers.getSigners())[1]
       permit2 = (await deployPermit2()).connect(bob) as Permit2
       router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
@@ -273,7 +273,7 @@ describe('Seaport v1.4', () => {
       alice = await ethers.getSigner(ALICE_ADDRESS)
       galaContract = new ethers.Contract(GALA.address, TOKEN_ABI, alice)
 
-      // alice can't sign permits as we don;t have her private key. Instead bob is used
+      // alice can't sign permits as we don't have her private key. Instead bob is used
       bob = (await ethers.getSigners())[1]
       permit2 = (await deployPermit2()).connect(bob) as Permit2
       router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
