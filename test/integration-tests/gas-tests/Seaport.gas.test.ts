@@ -12,7 +12,7 @@ import { Contract } from 'ethers'
 import { getPermitSignature } from '../shared/protocolHelpers/permit2'
 const { ethers } = hre
 
-describe('Seaport Gas Tests', () => {
+describe('Seaport v1.1 Gas Tests', () => {
   let router: UniversalRouter
   let permit2: Permit2
   let planner: RoutePlanner

@@ -9,7 +9,7 @@ import hre from 'hardhat'
 import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
 const { ethers } = hre
 
-describe('SeaportV1_4 Gas Tests', () => {
+describe('Seaport v1.4 Gas Tests', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
