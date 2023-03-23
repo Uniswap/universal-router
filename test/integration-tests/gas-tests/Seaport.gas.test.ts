@@ -73,7 +73,7 @@ describe('Seaport v1.1 Gas Tests', () => {
 
       // A previous txn which approves the conduit to spend the router's consideration token balance
       planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
-      await router['execute(bytes,bytes[],uint256)'](planner.commands, planner.inputs, DEADLINE, { value: 0 })
+      await router['execute(bytes,bytes[],uint256)'](planner.commands, planner.inputs, DEADLINE)
 
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
@@ -99,7 +99,7 @@ describe('Seaport v1.1 Gas Tests', () => {
       planner.addCommand(CommandType.SEAPORT, [0, calldata])
       const { commands, inputs } = planner
 
-      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })
   })
 
