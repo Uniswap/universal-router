@@ -8,10 +8,10 @@ library BytesLib {
     /// @notice Returns the address starting at byte 0
     /// @dev length and overflow checks must be carried out before calling
     /// @param _bytes The input bytes string to slice
-    /// @return tempAddress The address starting at byte 0
-    function toAddress(bytes calldata _bytes) internal pure returns (address tempAddress) {
+    /// @return _address The address starting at byte 0
+    function toAddress(bytes calldata _bytes) internal pure returns (address _address) {
         assembly {
-            tempAddress := shr(96, calldataload(_bytes.offset))
+            _address := shr(96, calldataload(_bytes.offset))
         }
     }
 
@@ -23,8 +23,9 @@ library BytesLib {
     /// @return token1 The address at byte 23
     function toPool(bytes calldata _bytes) internal pure returns (address token0, uint24 fee, address token1) {
         assembly {
-            token0 := shr(96, calldataload(_bytes.offset))
-            fee := shr(232, calldataload(add(_bytes.offset, 20)))
+            let firstWord := calldataload(_bytes.offset)
+            token0 := shr(96, firstWord)
+            fee := and(shr(72, firstWord), 0xffffff)
             token1 := shr(96, calldataload(add(_bytes.offset, 23)))
         }
     }
@@ -43,7 +44,7 @@ library BytesLib {
     {
         assembly {
             // The offset of the `_arg`-th element is `32 * arg`, which stores the offset of the length pointer.
-            let lengthPtr := add(_bytes.offset, calldataload(add(_bytes.offset, mul(0x20, _arg))))
+            let lengthPtr := add(_bytes.offset, calldataload(add(_bytes.offset, shl(5, _arg))))
             length := calldataload(lengthPtr)
             offset := add(lengthPtr, 0x20)
         }
