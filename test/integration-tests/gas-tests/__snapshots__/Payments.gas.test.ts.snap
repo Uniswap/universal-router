@@ -3,7 +3,7 @@
 exports[`Payments Gas Tests Individual Command Tests gas: APPROVE_ERC20 1`] = `
 Object {
   "calldataByteLength": 324,
-  "gasUsed": 53768,
+  "gasUsed": 53827,
 }
 `;
 
@@ -38,14 +38,14 @@ Object {
 exports[`Payments Gas Tests Individual Command Tests gas: UNWRAP_WETH 1`] = `
 Object {
   "calldataByteLength": 324,
-  "gasUsed": 46767,
+  "gasUsed": 46764,
 }
 `;
 
 exports[`Payments Gas Tests Individual Command Tests gas: UNWRAP_WETH_WITH_FEE 1`] = `
 Object {
   "calldataByteLength": 644,
-  "gasUsed": 55871,
+  "gasUsed": 55868,
 }
 `;
 

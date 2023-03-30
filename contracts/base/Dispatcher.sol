@@ -358,12 +358,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 (success, output) = SEAPORT_V1_4.call{value: value}(data);
             } else if (command == Commands.APPROVE_ERC20) {
                 ERC20 token;
-                uint256 spenderID;
+                RouterImmutables.Spenders spender;
                 assembly {
                     token := calldataload(inputs.offset)
-                    spenderID := calldataload(add(inputs.offset, 0x20))
+                    spender := calldataload(add(inputs.offset, 0x20))
                 }
-                Payments.approveERC20(token, spenderID);
+                Payments.approveERC20(token, spender);
             } else {
                 // placeholder area for commands 0x22-0x3f
                 revert InvalidCommandType(command);

@@ -96,6 +96,11 @@ contract RouterImmutables {
     address internal immutable PAYMENT_RECIPIENT;
     uint256 internal immutable PAYMENT_AMOUNT_BIPS;
 
+    enum Spenders {
+        OSConduit,
+        Sudoswap
+    }
+
     constructor(RouterParameters memory params) {
         PERMIT2 = IAllowanceTransfer(params.permit2);
         WETH9 = IWETH9(params.weth9);
