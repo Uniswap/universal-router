@@ -357,7 +357,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 bytes calldata data = inputs.toBytes(1);
                 (success, output) = SEAPORT_V1_4.call{value: value}(data);
             } else if (command == Commands.APPROVE_ERC20) {
-                address token;
+                ERC20 token;
                 uint256 spenderID;
                 assembly {
                     token := calldataload(inputs.offset)
