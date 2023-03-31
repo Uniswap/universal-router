@@ -8,6 +8,13 @@ library Commands {
     bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
     bytes1 internal constant COMMAND_TYPE_MASK = 0x3f;
 
+    // The commands are executed in nested if blocks to minimise gas consumption
+    // The following constants define the boundaries where the if blocks split commands
+    uint256 constant FIRST_IF_BOUNDARY = 0x08;
+    uint256 constant SECOND_IF_BOUNDARY = 0x10;
+    uint256 constant THIRD_IF_BOUNDARY = 0x18;
+    uint256 constant FOURTH_IF_BOUNDARY = 0x20;
+
     // Command Types. Maximum supported command at this moment is 0x3f.
 
     // Command Types where value<0x08, executed in the first nested-if block

@@ -37,10 +37,10 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
 
         success = true;
 
-        if (command < 0x20) {
-            if (command < 0x10) {
+        if (command < Commands.FOURTH_IF_BOUNDARY) {
+            if (command < Commands.SECOND_IF_BOUNDARY) {
                 // 0x00 <= command < 0x08
-                if (command < 0x08) {
+                if (command < Commands.FIRST_IF_BOUNDARY) {
                     if (command == Commands.V3_SWAP_EXACT_IN) {
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
                         address recipient;
@@ -210,7 +210,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 // 0x10 <= command
             } else {
                 // 0x10 <= command < 0x18
-                if (command < 0x18) {
+                if (command < Commands.THIRD_IF_BOUNDARY) {
                     if (command == Commands.SEAPORT) {
                         // equivalent: abi.decode(inputs, (uint256, bytes))
                         uint256 value;
