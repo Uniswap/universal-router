@@ -50,6 +50,7 @@ library BytesLib {
         uint256 relativeOffset;
         assembly {
             // The offset of the `_arg`-th element is `32 * arg`, which stores the offset of the length pointer.
+            // shl(5, x) is equivalent to mul(32, x)
             let lengthPtr := add(_bytes.offset, calldataload(add(_bytes.offset, shl(5, _arg))))
             length := calldataload(lengthPtr)
             offset := add(lengthPtr, 0x20)
