@@ -8,13 +8,6 @@ library Commands {
     bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
     bytes1 internal constant COMMAND_TYPE_MASK = 0x3f;
 
-    // The commands are executed in nested if blocks to minimise gas consumption
-    // The following constants define the boundaries where the if blocks split commands
-    uint256 constant FIRST_IF_BOUNDARY = 0x08;
-    uint256 constant SECOND_IF_BOUNDARY = 0x10;
-    uint256 constant THIRD_IF_BOUNDARY = 0x18;
-    uint256 constant FOURTH_IF_BOUNDARY = 0x20;
-
     // Command Types. Maximum supported command at this moment is 0x3f.
 
     // Command Types where value<0x08, executed in the first nested-if block
@@ -27,6 +20,10 @@ library Commands {
     uint256 constant PAY_PORTION = 0x06;
     // COMMAND_PLACEHOLDER = 0x07;
 
+    // The commands are executed in nested if blocks to minimise gas consumption
+    // The following constant defines one of the boundaries where the if blocks split commands
+    uint256 constant FIRST_IF_BOUNDARY = 0x08;
+
     // Command Types where 0x08<=value<=0x0f, executed in the second nested-if block
     uint256 constant V2_SWAP_EXACT_IN = 0x08;
     uint256 constant V2_SWAP_EXACT_OUT = 0x09;
@@ -36,6 +33,10 @@ library Commands {
     uint256 constant PERMIT2_TRANSFER_FROM_BATCH = 0x0d;
     uint256 constant BALANCE_CHECK_ERC20 = 0x0e;
     // COMMAND_PLACEHOLDER = 0x0f;
+
+    // The commands are executed in nested if blocks to minimise gas consumption
+    // The following constant defines one of the boundaries where the if blocks split commands
+    uint256 constant SECOND_IF_BOUNDARY = 0x10;
 
     // Command Types where 0x10<=value<0x18, executed in the third nested-if block
     uint256 constant SEAPORT = 0x10;
@@ -47,6 +48,10 @@ library Commands {
     uint256 constant OWNER_CHECK_1155 = 0x16;
     uint256 constant SWEEP_ERC721 = 0x17;
 
+    // The commands are executed in nested if blocks to minimise gas consumption
+    // The following constant defines one of the boundaries where the if blocks split commands
+    uint256 constant THIRD_IF_BOUNDARY = 0x18;
+
     // Command Types where 0x18<=value<=0x1f, executed in the final nested-if block
     uint256 constant X2Y2_721 = 0x18;
     uint256 constant SUDOSWAP = 0x19;
@@ -56,6 +61,10 @@ library Commands {
     uint256 constant SWEEP_ERC1155 = 0x1d;
     uint256 constant ELEMENT_MARKET = 0x1e;
     // COMMAND_PLACEHOLDER = 0x1f;
+
+    // The commands are executed in nested if blocks to minimise gas consumption
+    // The following constant defines one of the boundaries where the if blocks split commands
+    uint256 constant FOURTH_IF_BOUNDARY = 0x20;
 
     // Command Types where 0x20<=value
     uint256 constant EXECUTE_SUB_PLAN = 0x20;
