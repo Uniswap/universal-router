@@ -10,7 +10,7 @@ Object {
 exports[`Sudoswap Gas Tests ERC20 -> NFT gas: purchases tokens 2402, 2509 of Based Ghoul with FRAX ERC20 token 1`] = `
 Object {
   "calldataByteLength": 1508,
-  "gasUsed": 311134,
+  "gasUsed": 311193,
 }
 `;
 
