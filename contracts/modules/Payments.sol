@@ -60,11 +60,15 @@ abstract contract Payments is RouterImmutables {
         if (bips == 0 || bips > 10_000) revert InvalidBips();
         if (token == Constants.ETH) {
             uint256 balance = address(this).balance;
-            uint256 amount = (balance * bips) / FEE_BIPS_BASE;
+            // store intermediate value to protect against phantom overflow
+            uint256 numerator = balance * bips;
+            uint256 amount = numerator / FEE_BIPS_BASE;
             recipient.safeTransferETH(amount);
         } else {
             uint256 balance = ERC20(token).balanceOf(address(this));
-            uint256 amount = (balance * bips) / FEE_BIPS_BASE;
+            // store intermediate value to protect against phantom overflow
+            uint256 numerator = balance * bips;
+            uint256 amount = numerator / FEE_BIPS_BASE;
             ERC20(token).safeTransfer(recipient, amount);
         }
     }
