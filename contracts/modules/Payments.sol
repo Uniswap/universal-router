@@ -57,18 +57,14 @@ abstract contract Payments is RouterImmutables {
     /// @param recipient The address that will receive payment
     /// @param bips Portion in bips of whole balance of the contract
     function payPortion(address token, address recipient, uint256 bips) internal {
-        if (bips == 0 || bips > 10_000) revert InvalidBips();
+        if (bips == 0 || bips > FEE_BIPS_BASE) revert InvalidBips();
         if (token == Constants.ETH) {
             uint256 balance = address(this).balance;
-            // store intermediate value to protect against phantom overflow
-            uint256 numerator = balance * bips;
-            uint256 amount = numerator / FEE_BIPS_BASE;
+            uint256 amount = (balance * bips) / FEE_BIPS_BASE;
             recipient.safeTransferETH(amount);
         } else {
             uint256 balance = ERC20(token).balanceOf(address(this));
-            // store intermediate value to protect against phantom overflow
-            uint256 numerator = balance * bips;
-            uint256 amount = numerator / FEE_BIPS_BASE;
+            uint256 amount = (balance * bips) / FEE_BIPS_BASE;
             ERC20(token).safeTransfer(recipient, amount);
         }
     }
