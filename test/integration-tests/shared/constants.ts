@@ -12,7 +12,6 @@ export const ETH_ADDRESS = ethers.constants.AddressZero
 export const ONE_PERCENT_BIPS = 100
 export const MSG_SENDER: string = '0x0000000000000000000000000000000000000001'
 export const ADDRESS_THIS: string = '0x0000000000000000000000000000000000000002'
-export const PAYMENT_RECIPIENT: string = '0x4444444444444444444444444444444444444444'
 export const SOURCE_MSG_SENDER: boolean = true
 export const SOURCE_ROUTER: boolean = false
 

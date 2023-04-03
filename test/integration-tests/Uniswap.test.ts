@@ -19,7 +19,6 @@ import {
   MAX_UINT160,
   MSG_SENDER,
   ONE_PERCENT_BIPS,
-  PAYMENT_RECIPIENT,
   SOURCE_MSG_SENDER,
   SOURCE_ROUTER,
 } from './shared/constants'
@@ -289,27 +288,20 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, inputs } = planner
         const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
         const wethBalanceBeforeBob = await wethContract.balanceOf(bob.address)
-        const wethBalanceBeforeRecipient = await wethContract.balanceOf(PAYMENT_RECIPIENT)
 
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
 
         const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
         const wethBalanceAfterBob = await wethContract.balanceOf(bob.address)
-        const wethBalanceAfterRecipient = await wethContract.balanceOf(PAYMENT_RECIPIENT)
 
         const aliceFee = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
-        const recipientPayment = wethBalanceAfterRecipient.sub(wethBalanceBeforeRecipient)
         const bobEarnings = wethBalanceAfterBob.sub(wethBalanceBeforeBob)
-        const totalFee = aliceFee.add(recipientPayment)
 
         expect(bobEarnings).to.be.gt(0)
         expect(aliceFee).to.be.gt(0)
-        expect(recipientPayment).to.be.gt(0)
 
-        // recipient gets 1% of alice's fee
-        expect(aliceFee.add(recipientPayment).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(recipientPayment)
         // total fee is 1% of bob's output
-        expect(totalFee.add(bobEarnings).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(totalFee)
+        expect(aliceFee.add(bobEarnings).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
       })
 
       it('completes a V2 exactIn swap with longer path', async () => {
@@ -365,7 +357,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
       it('completes a V2 exactOut swap, with ETH fee', async () => {
         const amountOut = expandTo18DecimalsBN(1)
         const totalPortion = amountOut.mul(ONE_PERCENT_BIPS).div(10000)
-        const onePercentOfPortion = totalPortion.mul(ONE_PERCENT_BIPS).div(10000)
         const actualAmountOut = amountOut.sub(totalPortion)
 
         planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
@@ -382,8 +373,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, inputs } = planner
 
         await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.changeEtherBalances(
-          [alice, bob, PAYMENT_RECIPIENT],
-          [totalPortion.sub(onePercentOfPortion), actualAmountOut, onePercentOfPortion]
+          [alice, bob],
+          [totalPortion, actualAmountOut]
         )
       })
     })

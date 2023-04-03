@@ -26,9 +26,7 @@ contract DeployCelo is DeployUniversalRouter {
             v2Factory: UNSUPPORTED_PROTOCOL,
             v3Factory: 0xAfE208a311B21f13EF87E33A90049fC17A7acDEc,
             pairInitCodeHash: BYTES32_ZERO,
-            poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
-            paymentRecipient: UNSUPPORTED_PROTOCOL,
-            paymentAmountBips: 0
+            poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54
         });
 
         unsupported = 0x5Dc88340E1c5c6366864Ee415d6034cadd1A9897;

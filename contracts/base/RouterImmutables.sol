@@ -26,8 +26,6 @@ struct RouterParameters {
     address v3Factory;
     bytes32 pairInitCodeHash;
     bytes32 poolInitCodeHash;
-    address paymentRecipient;
-    uint256 paymentAmountBips;
 }
 
 /// @title Router Immutable Storage contract
@@ -93,9 +91,6 @@ contract RouterImmutables {
     /// @dev The UniswapV3Pool initcodehash
     bytes32 internal immutable UNISWAP_V3_POOL_INIT_CODE_HASH;
 
-    address internal immutable PAYMENT_RECIPIENT;
-    uint256 internal immutable PAYMENT_AMOUNT_BIPS;
-
     enum Spenders {
         OSConduit,
         Sudoswap
@@ -122,7 +117,5 @@ contract RouterImmutables {
         UNISWAP_V2_PAIR_INIT_CODE_HASH = params.pairInitCodeHash;
         UNISWAP_V3_FACTORY = params.v3Factory;
         UNISWAP_V3_POOL_INIT_CODE_HASH = params.poolInitCodeHash;
-        PAYMENT_RECIPIENT = params.paymentRecipient;
-        PAYMENT_AMOUNT_BIPS = params.paymentAmountBips;
     }
 }
