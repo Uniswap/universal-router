@@ -61,16 +61,11 @@ abstract contract Payments is RouterImmutables {
         if (token == Constants.ETH) {
             uint256 balance = address(this).balance;
             uint256 amount = (balance * bips) / FEE_BIPS_BASE;
-            uint256 fixedAmount = (amount * PAYMENT_AMOUNT_BIPS) / FEE_BIPS_BASE;
-            PAYMENT_RECIPIENT.safeTransferETH(fixedAmount);
-            recipient.safeTransferETH(amount - fixedAmount);
+            recipient.safeTransferETH(amount);
         } else {
             uint256 balance = ERC20(token).balanceOf(address(this));
             uint256 amount = (balance * bips) / FEE_BIPS_BASE;
-            uint256 fixedAmount = (amount * PAYMENT_AMOUNT_BIPS) / FEE_BIPS_BASE;
-            // pay with tokens already in the contract (for the exact input multihop case)
-            ERC20(token).safeTransfer(PAYMENT_RECIPIENT, fixedAmount);
-            ERC20(token).safeTransfer(recipient, amount - fixedAmount);
+            ERC20(token).safeTransfer(recipient, amount);
         }
     }
 
