@@ -3,27 +3,27 @@
 exports[`Seaport Gas Tests ERC20 -> NFT gas: fufillAdvancedOrder with ERC20 1`] = `
 Object {
   "calldataByteLength": 2756,
-  "gasUsed": 275224,
+  "gasUsed": 275604,
 }
 `;
 
 exports[`Seaport Gas Tests ERC20 -> NFT gas: fufillAdvancedOrder with ERC20 already approved 1`] = `
 Object {
   "calldataByteLength": 2628,
-  "gasUsed": 251164,
+  "gasUsed": 251506,
 }
 `;
 
 exports[`Seaport Gas Tests ETH -> NFT gas: fulfillAdvancedOrder 1`] = `
 Object {
   "calldataByteLength": 2052,
-  "gasUsed": 198278,
+  "gasUsed": 198418,
 }
 `;
 
 exports[`Seaport Gas Tests ETH -> NFT gas: fulfillAvailableAdvancedOrders 1 orders 1`] = `
 Object {
   "calldataByteLength": 4708,
-  "gasUsed": 324286,
+  "gasUsed": 324427,
 }
 `;
