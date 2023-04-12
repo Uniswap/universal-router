@@ -17,6 +17,7 @@ import {
   LOOKS_RARE_721_ORDER,
 } from '../shared/protocolHelpers/looksRare'
 import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
+import { LRv2BuyOrder, looksRareV2Interface, looksRareV2Orders } from '../shared/protocolHelpers/looksRareV2'
 
 describe('LooksRare Gas Tests', () => {
   let alice: SignerWithAddress
@@ -96,5 +97,48 @@ describe('LooksRare Gas Tests', () => {
     it('gas: buy 1 ERC-1155 on looks rare', async () => {
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
     })
+  })
+})
+
+describe('LooksRareV2 Gas Test', () => {
+  let alice: SignerWithAddress
+  let router: UniversalRouter
+  let permit2: Permit2
+  let value: BigNumber
+  let planner: RoutePlanner
+  let order: LRv2BuyOrder
+  let tokenId: number
+
+  beforeEach(async () => {
+    await resetFork(17030829)
+
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [ALICE_ADDRESS],
+    })
+    alice = await ethers.getSigner(ALICE_ADDRESS)
+
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+    planner = new RoutePlanner()
+  })
+
+  it('Buy a 721', async () => {
+    order = looksRareV2Orders[0]
+    value = BigNumber.from(order.makerAsk.price)
+    order.takerBid.recipient = alice.address
+
+    const calldata = looksRareV2Interface.encodeFunctionData('executeTakerBid', [
+      order.takerBid,
+      order.makerAsk,
+      order.makerSignature,
+      order.merkleTree,
+      order.affiliate,
+    ])
+    planner.addCommand(CommandType.LOOKS_RARE_V2, [value, calldata])
+
+    const { commands, inputs } = planner
+
+    await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
   })
 })

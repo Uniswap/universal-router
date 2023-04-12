@@ -13,3 +13,10 @@ Object {
   "gasUsed": 266297,
 }
 `;
+
+exports[`LooksRareV2 Gas Test Buy a 721 1`] = `
+Object {
+  "calldataByteLength": 1508,
+  "gasUsed": 189846,
+}
+`;
