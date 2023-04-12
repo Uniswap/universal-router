@@ -13,13 +13,12 @@ import {
   ALICE_ADDRESS,
   DEADLINE,
   OPENSEA_CONDUIT_KEY,
-  NFTX_COVEN_VAULT,
-  NFTX_COVEN_VAULT_ID,
   ROUTER_REWARDS_DISTRIBUTOR,
   SOURCE_MSG_SENDER,
   MAX_UINT160,
   MAX_UINT,
   ETH_ADDRESS,
+  NFTX_MILADY_VAULT_ID,
 } from './shared/constants'
 import {
   seaportOrders,
@@ -29,7 +28,7 @@ import {
   AdvancedOrder,
   Order,
 } from './shared/protocolHelpers/seaport'
-import { resetFork, WETH, DAI, COVEN_721 } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, COVEN_721, MILADY_721 } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
 import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -41,7 +40,7 @@ const { ethers } = hre
 const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
 const routerInterface = new ethers.utils.Interface(ROUTER_ABI)
 
-describe('UniversalRouter', () => {
+describe.only('UniversalRouter', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
@@ -176,20 +175,23 @@ describe('UniversalRouter', () => {
 
     describe('partial fills', async () => {
       let nftxValue: BigNumber
-      let numCovens: number
+      let numMiladys: number
       let value: BigNumber
       let invalidSeaportCalldata: string
       let seaportValue: BigNumber
+      let miladyContract = MILADY_721.connect(alice) as ERC721
 
       beforeEach(async () => {
+        // Since new NFTX contract was recently released, we have to fork from a much newer block
+        await resetFork(17029001) // 17029002 - 1
         // add valid nftx order to planner
-        nftxValue = expandTo18DecimalsBN(4)
-        numCovens = 2
+        nftxValue = expandTo18DecimalsBN(2.036523961400441269)
+        numMiladys = 1
         const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-          NFTX_COVEN_VAULT_ID,
-          numCovens,
+          NFTX_MILADY_VAULT_ID,
+          numMiladys,
           [],
-          [WETH.address, NFTX_COVEN_VAULT],
+          '0xd9627aa400000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000001bfb8d0ff32c43470000000000000000000000000000000000000000000000000e27c49886e6000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000227c7df69d3ed1ae7574a1a7685fded90292eb48869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000465b3a7f1b643618cb',
           alice.address,
         ])
         planner.addCommand(CommandType.NFTX, [nftxValue, calldata])
@@ -222,10 +224,10 @@ describe('UniversalRouter', () => {
         planner.addCommand(CommandType.SEAPORT, [seaportValue, invalidSeaportCalldata], true)
         const { commands, inputs } = planner
 
-        const covenBalanceBefore = await cryptoCovens.balanceOf(alice.address)
+        const miladyBalanceBefore = await miladyContract.balanceOf(alice.address)
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
-        const covenBalanceAfter = await cryptoCovens.balanceOf(alice.address)
-        expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(numCovens)
+        const miladyBalanceAfter = await miladyContract.balanceOf(alice.address)
+        expect(miladyBalanceAfter.sub(miladyBalanceBefore)).to.eq(numMiladys)
       })
     })
 
