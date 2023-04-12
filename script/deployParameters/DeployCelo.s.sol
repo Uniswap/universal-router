@@ -20,6 +20,7 @@ contract DeployCelo is DeployUniversalRouter {
             nft20Zap: UNSUPPORTED_PROTOCOL,
             cryptopunks: UNSUPPORTED_PROTOCOL,
             looksRare: UNSUPPORTED_PROTOCOL,
+            looksRareV2: UNSUPPORTED_PROTOCOL,
             routerRewardsDistributor: UNSUPPORTED_PROTOCOL,
             looksRareRewardsDistributor: UNSUPPORTED_PROTOCOL,
             looksRareToken: UNSUPPORTED_PROTOCOL,

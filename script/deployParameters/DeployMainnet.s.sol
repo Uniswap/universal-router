@@ -20,6 +20,7 @@ contract DeployMainnet is DeployUniversalRouter {
             nft20Zap: 0xA42f6cADa809Bcf417DeefbdD69C5C5A909249C0,
             cryptopunks: 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB,
             looksRare: 0x59728544B08AB483533076417FbBB2fD0B17CE3a,
+            looksRareV2: 0x0000000000E655fAe4d56241588680F86E3b2377,
             routerRewardsDistributor: 0xea37093ce161f090e443f304e1bF3a8f14D7bb40,
             looksRareRewardsDistributor: 0x0554f068365eD43dcC98dcd7Fd7A8208a5638C72,
             looksRareToken: 0xf4d2888d29D722226FafA5d9B24F9164c092421E,

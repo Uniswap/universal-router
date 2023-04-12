@@ -20,6 +20,7 @@ contract DeployGoerli is DeployUniversalRouter {
             nft20Zap: UNSUPPORTED_PROTOCOL,
             cryptopunks: UNSUPPORTED_PROTOCOL,
             looksRare: 0xD112466471b5438C1ca2D218694200e49d81D047,
+            looksRareV2: UNSUPPORTED_PROTOCOL, // this is incorrect - have asked the LR team for the address
             routerRewardsDistributor: UNSUPPORTED_PROTOCOL,
             looksRareRewardsDistributor: UNSUPPORTED_PROTOCOL,
             looksRareToken: UNSUPPORTED_PROTOCOL,

@@ -81,6 +81,7 @@ abstract contract DeployUniversalRouter is Script {
         console2.log('nft20Zap:', params.nft20Zap);
         console2.log('cryptopunks:', params.cryptopunks);
         console2.log('looksRare:', params.looksRare);
+        console2.log('looksRareV2:', params.looksRareV2);
         console2.log('routerRewardsDistributor:', params.routerRewardsDistributor);
         console2.log('looksRareRewardsDistributor:', params.looksRareRewardsDistributor);
         console2.log('looksRareToken:', params.looksRareToken);
