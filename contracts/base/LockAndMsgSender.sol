@@ -6,15 +6,15 @@ import {Constants} from '../libraries/Constants.sol';
 contract LockAndMsgSender {
     error ContractLocked();
 
-    address private constant ADDRESS_ONE = address(1);
-    address internal lockedBy = ADDRESS_ONE;
+    address internal constant NOT_LOCKED_FLAG = address(1);
+    address internal lockedBy = NOT_LOCKED_FLAG;
 
     modifier isNotLocked() {
         if (msg.sender != address(this)) {
-            if (lockedBy != ADDRESS_ONE) revert ContractLocked();
+            if (lockedBy != NOT_LOCKED_FLAG) revert ContractLocked();
             lockedBy = msg.sender;
             _;
-            lockedBy = ADDRESS_ONE;
+            lockedBy = NOT_LOCKED_FLAG;
         } else {
             _;
         }

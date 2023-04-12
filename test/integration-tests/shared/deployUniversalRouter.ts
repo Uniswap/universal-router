@@ -9,8 +9,6 @@ import {
   ROUTER_REWARDS_DISTRIBUTOR,
   LOOKSRARE_REWARDS_DISTRIBUTOR,
   LOOKSRARE_TOKEN,
-  PAYMENT_RECIPIENT,
-  ONE_PERCENT_BIPS,
   ZERO_ADDRESS,
 } from './constants'
 
@@ -42,8 +40,6 @@ export async function deployRouter(
     v3Factory: V3_FACTORY_MAINNET,
     pairInitCodeHash: V2_INIT_CODE_HASH_MAINNET,
     poolInitCodeHash: V3_INIT_CODE_HASH_MAINNET,
-    paymentRecipient: PAYMENT_RECIPIENT,
-    paymentAmountBips: ONE_PERCENT_BIPS,
   }
 
   const routerFactory = await ethers.getContractFactory('UniversalRouter')

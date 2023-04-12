@@ -39,17 +39,17 @@ abstract contract Payments is RouterImmutables {
 
     /// @notice Approves a protocol to spend ERC20s in the router
     /// @param token The token to approve
-    /// @param spenderID An ID signalling which protocol to approve
-    function approveERC20(address token, uint256 spenderID) internal {
+    /// @param spender Which protocol to approve
+    function approveERC20(ERC20 token, Spenders spender) internal {
         // check spender is one of our approved spenders
-        address spender;
+        address spenderAddress;
         /// @dev use 0 = Opensea Conduit for both Seaport and Seaport1.4
-        if (spenderID == 0) spender = OPENSEA_CONDUIT;
-        else if (spenderID == 1) spender = SUDOSWAP;
+        if (spender == Spenders.OSConduit) spenderAddress = OPENSEA_CONDUIT;
+        else if (spender == Spenders.Sudoswap) spenderAddress = SUDOSWAP;
         else revert InvalidSpender();
 
         // set approval
-        ERC20(token).safeApprove(spender, type(uint256).max);
+        token.safeApprove(spenderAddress, type(uint256).max);
     }
 
     /// @notice Pays a proportion of the contract's ETH or ERC20 to a recipient
@@ -57,20 +57,15 @@ abstract contract Payments is RouterImmutables {
     /// @param recipient The address that will receive payment
     /// @param bips Portion in bips of whole balance of the contract
     function payPortion(address token, address recipient, uint256 bips) internal {
-        if (bips == 0 || bips > 10_000) revert InvalidBips();
+        if (bips == 0 || bips > FEE_BIPS_BASE) revert InvalidBips();
         if (token == Constants.ETH) {
             uint256 balance = address(this).balance;
             uint256 amount = (balance * bips) / FEE_BIPS_BASE;
-            uint256 fixedAmount = (amount * PAYMENT_AMOUNT_BIPS) / FEE_BIPS_BASE;
-            PAYMENT_RECIPIENT.safeTransferETH(fixedAmount);
-            recipient.safeTransferETH(amount - fixedAmount);
+            recipient.safeTransferETH(amount);
         } else {
             uint256 balance = ERC20(token).balanceOf(address(this));
             uint256 amount = (balance * bips) / FEE_BIPS_BASE;
-            uint256 fixedAmount = (amount * PAYMENT_AMOUNT_BIPS) / FEE_BIPS_BASE;
-            // pay with tokens already in the contract (for the exact input multihop case)
-            ERC20(token).safeTransfer(PAYMENT_RECIPIENT, fixedAmount);
-            ERC20(token).safeTransfer(recipient, amount - fixedAmount);
+            ERC20(token).safeTransfer(recipient, amount);
         }
     }
 
