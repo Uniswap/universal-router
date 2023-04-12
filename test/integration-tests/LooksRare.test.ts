@@ -1,6 +1,6 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { UniversalRouter, Permit2, ERC721, ERC1155 } from '../../typechain'
-import { resetFork, COVEN_721, TWERKY_1155 } from './shared/mainnetForkHelpers'
+import { resetFork, COVEN_721, TWERKY_1155, DRAGON_721 } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE } from './shared/constants'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -17,6 +17,7 @@ import {
   MakerOrder,
   TakerOrder,
 } from './shared/protocolHelpers/looksRare'
+import { looksRareV2Interface, looksRareV2Orders, LRv2BuyOrder } from './shared/protocolHelpers/looksRareV2'
 
 describe('LooksRare', () => {
   let alice: SignerWithAddress
@@ -98,5 +99,54 @@ describe('LooksRare', () => {
       await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: value })
       await expect(await twerkyContract.balanceOf(alice.address, tokenId)).to.eq(1)
     })
+  })
+})
+
+describe('LooksRareV2', () => {
+  let alice: SignerWithAddress
+  let router: UniversalRouter
+  let permit2: Permit2
+  let value: BigNumber
+  let planner: RoutePlanner
+  let dragonNFT: ERC721
+  let order: LRv2BuyOrder
+  let tokenId: number
+
+  beforeEach(async () => {
+    await resetFork(17030829)
+    dragonNFT = DRAGON_721.connect(alice)
+
+    await hre.network.provider.request({
+      method: 'hardhat_impersonateAccount',
+      params: [ALICE_ADDRESS],
+    })
+    alice = await ethers.getSigner(ALICE_ADDRESS)
+
+    permit2 = (await deployPermit2()).connect(alice) as Permit2
+    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+    planner = new RoutePlanner()
+  })
+
+  it('Buys a Dragon', async () => {
+    order = looksRareV2Orders[0]
+    value = BigNumber.from(order.makerAsk.price)
+    tokenId = order.makerAsk.itemIds[0]
+    order.takerBid.recipient = alice.address
+
+    const calldata = looksRareV2Interface.encodeFunctionData('executeTakerBid', [
+      order.takerBid,
+      order.makerAsk,
+      order.makerSignature,
+      order.merkleTree,
+      order.affiliate,
+    ])
+    planner.addCommand(CommandType.LOOKS_RARE_V2, [value, calldata])
+
+    const { commands, inputs } = planner
+
+    await expect((await dragonNFT.connect(alice).ownerOf(tokenId)).toLowerCase()).not.to.eq(ALICE_ADDRESS)
+
+    await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
+    await expect((await dragonNFT.connect(alice).ownerOf(905)).toLowerCase()).to.eq(ALICE_ADDRESS)
   })
 })

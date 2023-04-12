@@ -42,10 +42,18 @@ export type TakerOrder = {
 export const LOOKS_RARE_V2_TREE_LEFT = 0
 export const LOOKS_RARE_V2_TREE_RIGHT = 1
 
-export type MerkeTree = {
+export type MerkleTree = {
   root: string
   proof: {
     value: string
     position: number
   }[]
+}
+
+export type LRv2BuyOrder = {
+  takerBid: TakerOrder
+  makerAsk: MakerOrder
+  makerSignature: string
+  merkleTree: MerkleTree
+  affiliate: string
 }
