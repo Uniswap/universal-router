@@ -12,7 +12,7 @@ export const looksRareInterface = new ethers.utils.Interface(LOOKS_RARE_ABI)
 export const LOOKS_RARE_721_ORDER = 0
 export const LOOKS_RARE_1155_ORDER = 2
 
-export type APIOrder = Omit<MakerOrder, 'collection' | 'currency'> & {
+export type LRAPIOrder = Omit<MakerOrder, 'collection' | 'currency'> & {
   collectionAddress: string
   currencyAddress: string
 }
@@ -46,7 +46,7 @@ export type TakerOrder = {
 }
 
 export function createLooksRareOrders(
-  apiOrder: APIOrder,
+  apiOrder: LRAPIOrder,
   taker: string
 ): { makerOrder: MakerOrder; takerOrder: TakerOrder; value: BigNumber } {
   const collection = apiOrder.collectionAddress

@@ -1,7 +1,7 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { UniversalRouter, Permit2, ERC721, ERC1155 } from '../../typechain'
 import { resetFork, COVEN_721, TWERKY_1155, DRAGON_721 } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE } from './shared/constants'
+import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE, ZERO_ADDRESS } from './shared/constants'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -17,7 +17,13 @@ import {
   MakerOrder,
   TakerOrder,
 } from './shared/protocolHelpers/looksRare'
-import { looksRareV2Interface, looksRareV2Orders, LRv2BuyOrder } from './shared/protocolHelpers/looksRareV2'
+import {
+  createLooksRareV2Order,
+  looksRareV2Interface,
+  looksRareV2Orders,
+  LRV2APIOrder,
+  LRv2BuyOrder,
+} from './shared/protocolHelpers/looksRareV2'
 
 describe('LooksRare', () => {
   let alice: SignerWithAddress
@@ -106,11 +112,9 @@ describe('LooksRareV2', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
-  let value: BigNumber
   let planner: RoutePlanner
   let dragonNFT: ERC721
-  let order: LRv2BuyOrder
-  let tokenId: number
+  let order: LRV2APIOrder
 
   beforeEach(async () => {
     await resetFork(17030829)
@@ -129,16 +133,14 @@ describe('LooksRareV2', () => {
 
   it('Buys a Dragon', async () => {
     order = looksRareV2Orders[0]
-    value = BigNumber.from(order.makerAsk.price)
-    tokenId = order.makerAsk.itemIds[0]
-    order.takerBid.recipient = alice.address
-
+    const { takerBid, makerOrder, makerSignature, value, merkleTree } = createLooksRareV2Order(order, alice.address)
+    const tokenId = makerOrder.itemIds[0]
     const calldata = looksRareV2Interface.encodeFunctionData('executeTakerBid', [
-      order.takerBid,
-      order.makerAsk,
-      order.makerSignature,
-      order.merkleTree,
-      order.affiliate,
+      takerBid,
+      makerOrder,
+      makerSignature,
+      merkleTree,
+      ZERO_ADDRESS,
     ])
     planner.addCommand(CommandType.LOOKS_RARE_V2, [value, calldata])
 
