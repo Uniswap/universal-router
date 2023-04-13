@@ -147,6 +147,6 @@ describe('LooksRareV2', () => {
     await expect((await dragonNFT.connect(alice).ownerOf(tokenId)).toLowerCase()).not.to.eq(ALICE_ADDRESS)
 
     await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
-    await expect((await dragonNFT.connect(alice).ownerOf(905)).toLowerCase()).to.eq(ALICE_ADDRESS)
+    await expect((await dragonNFT.connect(alice).ownerOf(tokenId)).toLowerCase()).to.eq(ALICE_ADDRESS)
   })
 })
