@@ -252,7 +252,6 @@ describe('UniversalRouter', () => {
   })
 })
 
-
 describe('UniversalRouter newer block', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
@@ -297,7 +296,7 @@ describe('UniversalRouter newer block', () => {
       let invalidSeaportCalldata: string
       let seaportValue: BigNumber
       let miladyContract: ERC721
-    
+
       beforeEach(async () => {
         miladyContract = MILADY_721.connect(alice) as ERC721
 
@@ -312,7 +311,7 @@ describe('UniversalRouter newer block', () => {
           alice.address,
         ])
         planner.addCommand(CommandType.NFTX, [nftxValue, calldata])
-    
+
         let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
         invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
         let seaportOrder: Order
@@ -321,14 +320,14 @@ describe('UniversalRouter newer block', () => {
           seaportOrder,
           OPENSEA_CONDUIT_KEY,
         ])
-    
+
         value = seaportValue.add(nftxValue)
       })
-    
+
       it('does not revert if invalid seaport transaction allowed to fail', async () => {
         planner.addCommand(CommandType.SEAPORT, [seaportValue, invalidSeaportCalldata], true)
         const { commands, inputs } = planner
-    
+
         const miladyBalanceBefore = await miladyContract.balanceOf(alice.address)
         console.log(miladyBalanceBefore.toString())
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
@@ -338,5 +337,3 @@ describe('UniversalRouter newer block', () => {
     })
   })
 })
-
-
