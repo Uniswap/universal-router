@@ -19,9 +19,9 @@ export const LOOKS_RARE_V2_ASK = 1
 
 export type MakerOrder = {
   quoteType: number
-  globalNonce: number
-  subsetNonce: number
-  orderNonce: number
+  globalNonce: string
+  subsetNonce: string
+  orderNonce: string
   strategyId: number
   collectionType: number
   collection: string
@@ -29,9 +29,9 @@ export type MakerOrder = {
   signer: string
   startTime: number
   endTime: number
-  price: number
-  itemIds: number[]
-  amounts: number[]
+  price: string
+  itemIds: string[]
+  amounts: string[]
   additionalParameters: string
 }
 
