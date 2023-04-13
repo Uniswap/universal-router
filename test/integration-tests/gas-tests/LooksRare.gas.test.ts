@@ -1,7 +1,7 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
 import { UniversalRouter, Permit2 } from '../../../typechain'
 import { resetFork } from './../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE } from './../shared/constants'
+import { ALICE_ADDRESS, COVEN_ADDRESS, TWERKY_ADDRESS, DEADLINE, ZERO_ADDRESS } from './../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -17,7 +17,7 @@ import {
   LOOKS_RARE_721_ORDER,
 } from '../shared/protocolHelpers/looksRare'
 import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
-import { LRv2BuyOrder, looksRareV2Interface, looksRareV2Orders } from '../shared/protocolHelpers/looksRareV2'
+import { LRV2APIOrder, createLooksRareV2Order, looksRareV2Interface, looksRareV2Orders } from '../shared/protocolHelpers/looksRareV2'
 
 describe('LooksRare Gas Tests', () => {
   let alice: SignerWithAddress
@@ -104,10 +104,8 @@ describe('LooksRareV2 Gas Test', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
-  let value: BigNumber
   let planner: RoutePlanner
-  let order: LRv2BuyOrder
-  let tokenId: number
+  let order: LRV2APIOrder
 
   beforeEach(async () => {
     await resetFork(17030829)
@@ -125,15 +123,13 @@ describe('LooksRareV2 Gas Test', () => {
 
   it('Buy a 721', async () => {
     order = looksRareV2Orders[0]
-    value = BigNumber.from(order.makerAsk.price)
-    order.takerBid.recipient = alice.address
-
+    const { takerBid, makerOrder, makerSignature, value, merkleTree } = createLooksRareV2Order(order, alice.address)
     const calldata = looksRareV2Interface.encodeFunctionData('executeTakerBid', [
-      order.takerBid,
-      order.makerAsk,
-      order.makerSignature,
-      order.merkleTree,
-      order.affiliate,
+      takerBid,
+      makerOrder,
+      makerSignature,
+      merkleTree,
+      ZERO_ADDRESS,
     ])
     planner.addCommand(CommandType.LOOKS_RARE_V2, [value, calldata])
 

@@ -22,7 +22,6 @@ import {
   looksRareV2Interface,
   looksRareV2Orders,
   LRV2APIOrder,
-  LRv2BuyOrder,
 } from './shared/protocolHelpers/looksRareV2'
 
 describe('LooksRare', () => {
