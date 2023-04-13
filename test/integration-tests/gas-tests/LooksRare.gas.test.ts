@@ -17,7 +17,12 @@ import {
   LOOKS_RARE_721_ORDER,
 } from '../shared/protocolHelpers/looksRare'
 import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
-import { LRV2APIOrder, createLooksRareV2Order, looksRareV2Interface, looksRareV2Orders } from '../shared/protocolHelpers/looksRareV2'
+import {
+  LRV2APIOrder,
+  createLooksRareV2Order,
+  looksRareV2Interface,
+  looksRareV2Orders,
+} from '../shared/protocolHelpers/looksRareV2'
 
 describe('LooksRare Gas Tests', () => {
   let alice: SignerWithAddress
