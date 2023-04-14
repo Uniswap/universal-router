@@ -3,14 +3,14 @@
 exports[`Sudoswap Gas Tests ERC20 -> NFT gas: purchases NFTs with FRAX ERC20 token already approved 1`] = `
 Object {
   "calldataByteLength": 1380,
-  "gasUsed": 289926,
+  "gasUsed": 289938,
 }
 `;
 
 exports[`Sudoswap Gas Tests ERC20 -> NFT gas: purchases tokens 2402, 2509 of Based Ghoul with FRAX ERC20 token 1`] = `
 Object {
   "calldataByteLength": 1508,
-  "gasUsed": 311573,
+  "gasUsed": 311585,
 }
 `;
 
