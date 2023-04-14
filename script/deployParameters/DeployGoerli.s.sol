@@ -12,7 +12,7 @@ contract DeployGoerli is DeployUniversalRouter {
             seaport: 0x00000000006c3852cbEf3e08E8dF289169EdE581,
             seaportV1_4: 0x00000000000001ad428e4906aE43D8F9852d0dD6,
             openseaConduit: 0x1E0049783F008A0085193E00003D00cd54003c71,
-            nftxZap: 0x27124948dcc9EbF3113681898FF217d3E4f56900,
+            nftxZap: 0x177246adb119ed83f982d1e3c4859f354578d5ef,
             x2y2: UNSUPPORTED_PROTOCOL,
             foundation: UNSUPPORTED_PROTOCOL,
             sudoswap: 0x25b4EfC43c9dCAe134233CD577fFca7CfAd6748F,
