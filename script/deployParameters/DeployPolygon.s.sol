@@ -19,7 +19,6 @@ contract DeployPolygon is DeployUniversalRouter {
             elementMarket: 0xEAF5453b329Eb38Be159a872a6ce91c9A8fb0260,
             nft20Zap: UNSUPPORTED_PROTOCOL,
             cryptopunks: UNSUPPORTED_PROTOCOL,
-            looksRare: UNSUPPORTED_PROTOCOL,
             looksRareV2: UNSUPPORTED_PROTOCOL,
             routerRewardsDistributor: UNSUPPORTED_PROTOCOL,
             looksRareRewardsDistributor: UNSUPPORTED_PROTOCOL,

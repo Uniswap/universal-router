@@ -49,7 +49,6 @@ abstract contract DeployUniversalRouter is Script {
             elementMarket: mapUnsupported(params.elementMarket),
             nft20Zap: mapUnsupported(params.nft20Zap),
             cryptopunks: mapUnsupported(params.cryptopunks),
-            looksRare: mapUnsupported(params.looksRare),
             looksRareV2: mapUnsupported(params.looksRareV2),
             routerRewardsDistributor: mapUnsupported(params.routerRewardsDistributor),
             looksRareRewardsDistributor: mapUnsupported(params.looksRareRewardsDistributor),
@@ -80,7 +79,6 @@ abstract contract DeployUniversalRouter is Script {
         console2.log('elementMarket:', params.elementMarket);
         console2.log('nft20Zap:', params.nft20Zap);
         console2.log('cryptopunks:', params.cryptopunks);
-        console2.log('looksRare:', params.looksRare);
         console2.log('looksRareV2:', params.looksRareV2);
         console2.log('routerRewardsDistributor:', params.routerRewardsDistributor);
         console2.log('looksRareRewardsDistributor:', params.looksRareRewardsDistributor);
