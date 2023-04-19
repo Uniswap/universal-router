@@ -90,3 +90,31 @@ export function createLooksRareV2Order(
 
   return { takerBid, makerOrder, makerSignature, value, merkleTree }
 }
+
+export function createLooksRareV2Orders(
+  apiOrders: LRV2APIOrder[],
+  taker: string
+): {
+  takerBids: TakerOrder[]
+  makerOrders: MakerOrder[]
+  makerSignatures: string[]
+  totalValue: BigNumber
+  merkleTrees: MerkleTree[]
+} {
+  let takerBids: TakerOrder[] = []
+  let makerOrders: MakerOrder[] = []
+  let makerSignatures: string[] = []
+  let totalValue: BigNumber = BigNumber.from(0)
+  let merkleTrees: MerkleTree[] = []
+
+  apiOrders.forEach((apiOrder) => {
+    const { takerBid, makerOrder, makerSignature, value, merkleTree } = createLooksRareV2Order(apiOrder, taker)
+    takerBids.push(takerBid)
+    makerOrders.push(makerOrder)
+    makerSignatures.push(makerSignature)
+    totalValue = totalValue.add(value)
+    merkleTrees.push(merkleTree)
+  })
+
+  return { takerBids, makerOrders, makerSignatures, totalValue, merkleTrees }
+}
