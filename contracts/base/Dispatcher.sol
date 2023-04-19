@@ -352,13 +352,6 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
     /// @param inputs An array of byte strings containing abi encoded inputs for each command
     function execute(bytes calldata commands, bytes[] calldata inputs) external payable virtual;
 
-    function getValueAndData(bytes calldata inputs) internal pure returns (uint256 value, bytes calldata data) {
-        assembly {
-            value := calldataload(inputs.offset)
-        }
-        data = inputs.toBytes(1);
-    }
-
     /// @notice Performs a call to purchase an ERC721, then transfers the ERC721 to a specified recipient
     /// @param inputs The inputs for the protocol and ERC721 transfer, encoded
     /// @param protocol The protocol to pass the calldata to
@@ -407,5 +400,17 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
         }
         (success, output) = protocol.call{value: value}(data);
         if (success) ERC1155(token).safeTransferFrom(address(this), map(recipient), id, amount, new bytes(0));
+    }
+
+    /// @notice Helper function to extract `value` and `data` parameters from input bytes string
+    /// @dev The helper assumes that `value` is the first parameter, and `data` is the second
+    /// @param inputs The bytes string beginning with value and data parameters
+    /// @return value The 256 bit integer value
+    /// @return data The data bytes string
+    function getValueAndData(bytes calldata inputs) internal pure returns (uint256 value, bytes calldata data) {
+        assembly {
+            value := calldataload(inputs.offset)
+        }
+        data = inputs.toBytes(1);
     }
 }
