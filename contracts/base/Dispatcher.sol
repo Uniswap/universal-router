@@ -219,8 +219,14 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         }
                         bytes calldata data = inputs.toBytes(1);
                         (success, output) = SEAPORT.call{value: value}(data);
-                    } else if (command == Commands.LOOKS_RARE_721) {
-                        (success, output) = callAndTransfer721(inputs, LOOKS_RARE);
+                    } else if (command == Commands.LOOKS_RARE_V2) {
+                        // equivalent: abi.decode(inputs, (uint256, bytes))
+                        uint256 value;
+                        assembly {
+                            value := calldataload(inputs.offset)
+                        }
+                        bytes calldata data = inputs.toBytes(1);
+                        (success, output) = LOOKS_RARE_V2.call{value: value}(data);
                     } else if (command == Commands.NFTX) {
                         // equivalent: abi.decode(inputs, (uint256, bytes))
                         uint256 value;
@@ -244,8 +250,6 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         );
                         if (success) ICryptoPunksMarket(CRYPTOPUNKS).transferPunk(map(recipient), punkId);
                         else output = abi.encodePacked(BuyPunkFailed.selector);
-                    } else if (command == Commands.LOOKS_RARE_1155) {
-                        (success, output) = callAndTransfer1155(inputs, LOOKS_RARE);
                     } else if (command == Commands.OWNER_CHECK_721) {
                         // equivalent: abi.decode(inputs, (address, address, uint256))
                         address owner;
@@ -351,14 +355,6 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 }
                 bytes calldata data = inputs.toBytes(1);
                 (success, output) = SEAPORT_V1_4.call{value: value}(data);
-            } else if (command == Commands.LOOKS_RARE_V2) {
-                // equivalent: abi.decode(inputs, (uint256, bytes))
-                uint256 value;
-                assembly {
-                    value := calldataload(inputs.offset)
-                }
-                bytes calldata data = inputs.toBytes(1);
-                (success, output) = LOOKS_RARE_V2.call{value: value}(data);
             } else if (command == Commands.EXECUTE_SUB_PLAN) {
                 bytes calldata _commands = inputs.toBytes(0);
                 bytes[] calldata _inputs = inputs.toBytesArray(1);
