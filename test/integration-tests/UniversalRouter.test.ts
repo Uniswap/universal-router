@@ -23,10 +23,11 @@ import {
 import {
   seaportOrders,
   seaportInterface,
-  getOrderParams,
   getAdvancedOrderParams,
   AdvancedOrder,
   Order,
+  seaportV1_4Orders,
+  seaportV1_4Interface,
 } from './shared/protocolHelpers/seaport'
 import { resetFork, WETH, DAI, COVEN_721, MILADY_721 } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
@@ -312,24 +313,37 @@ describe('UniversalRouter newer block', () => {
         ])
         planner.addCommand(CommandType.NFTX, [nftxValue, calldata])
 
-        let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
+        let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportV1_4Orders[1]))
         invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
         let seaportOrder: Order
-        ;({ order: seaportOrder, value: seaportValue } = getOrderParams(invalidSeaportOrder))
-        invalidSeaportCalldata = seaportInterface.encodeFunctionData('fulfillOrder', [
+        ;({ advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder))
+        invalidSeaportCalldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
           seaportOrder,
+          [],
           OPENSEA_CONDUIT_KEY,
+          alice.address
         ])
 
         value = seaportValue.add(nftxValue)
       })
 
+      it('reverts if no commands are allowed to revert', async () => {
+        planner.addCommand(CommandType.SEAPORT_V1_4, [seaportValue, invalidSeaportCalldata])
+
+        const { commands, inputs } = planner
+
+        const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
+        const customErrorSelector = findCustomErrorSelector(testCustomErrors.interface, 'InvalidSignature')
+        await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
+          .to.be.revertedWithCustomError(router, 'ExecutionFailed')
+          .withArgs(1, customErrorSelector)
+      })
+
       it('does not revert if invalid seaport transaction allowed to fail', async () => {
-        planner.addCommand(CommandType.SEAPORT, [seaportValue, invalidSeaportCalldata], true)
+        planner.addCommand(CommandType.SEAPORT_V1_4, [seaportValue, invalidSeaportCalldata], true)
         const { commands, inputs } = planner
 
         const miladyBalanceBefore = await miladyContract.balanceOf(alice.address)
-        console.log(miladyBalanceBefore.toString())
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
         const miladyBalanceAfter = await miladyContract.balanceOf(alice.address)
         expect(miladyBalanceAfter.sub(miladyBalanceBefore)).to.eq(numMiladys)
