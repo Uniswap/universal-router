@@ -321,7 +321,7 @@ describe('UniversalRouter newer block', () => {
           seaportOrder,
           [],
           OPENSEA_CONDUIT_KEY,
-          alice.address
+          alice.address,
         ])
 
         value = seaportValue.add(nftxValue)
