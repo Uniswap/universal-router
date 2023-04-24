@@ -12,7 +12,7 @@ contract DeployArbitrum is DeployUniversalRouter {
             seaport: 0x00000000006c3852cbEf3e08E8dF289169EdE581,
             seaportV1_4: 0x00000000000001ad428e4906aE43D8F9852d0dD6,
             openseaConduit: 0x1E0049783F008A0085193E00003D00cd54003c71,
-            nftxZap: 0x66f26E38bD50FD52A50da8E87E435f04f98001B7,
+            nftxZap: 0x3BD7512966CbC3406962f8877edbE80aea8A2904,
             x2y2: UNSUPPORTED_PROTOCOL,
             foundation: UNSUPPORTED_PROTOCOL,
             sudoswap: UNSUPPORTED_PROTOCOL,
