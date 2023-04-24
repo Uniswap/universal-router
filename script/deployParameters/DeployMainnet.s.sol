@@ -12,7 +12,7 @@ contract DeployMainnet is DeployUniversalRouter {
             seaport: 0x00000000006c3852cbEf3e08E8dF289169EdE581,
             seaportV1_4: 0x00000000000001ad428e4906aE43D8F9852d0dD6,
             openseaConduit: 0x1E0049783F008A0085193E00003D00cd54003c71,
-            nftxZap: 0x0fc584529a2AEfA997697FAfAcbA5831faC0c22d,
+            nftxZap: 0x941A6d105802CCCaa06DE58a13a6F49ebDCD481C,
             x2y2: 0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3,
             foundation: 0xcDA72070E455bb31C7690a170224Ce43623d0B6f,
             sudoswap: 0x2B2e8cDA09bBA9660dCA5cB6233787738Ad68329,

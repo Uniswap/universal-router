@@ -2,8 +2,8 @@ import { CommandType, RoutePlanner } from './../shared/planner'
 import { UniversalRouter, Permit2 } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import NFTX_ZAP_ABI from './../shared/abis/NFTXZap.json'
-import { resetFork, WETH } from './../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, NFTX_COVEN_VAULT_ID } from './../shared/constants'
+import { resetFork } from './../shared/mainnetForkHelpers'
+import { ALICE_ADDRESS, DEADLINE, NFTX_MILADY_VAULT_ID } from './../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './../shared/helpers'
 import hre from 'hardhat'
@@ -19,7 +19,7 @@ describe('NFTX Gas Tests', () => {
   let planner: RoutePlanner
 
   beforeEach(async () => {
-    await resetFork()
+    await resetFork(17029001) // 17029002 - 1
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
@@ -32,12 +32,12 @@ describe('NFTX Gas Tests', () => {
 
   it('gas: buyAndRedeem w/ specific selection', async () => {
     const value = expandTo18DecimalsBN(4)
-    const numCovens = 2
+    const numMiladys = 1
     const calldata = nftxZapInterface.encodeFunctionData('buyAndRedeem', [
-      NFTX_COVEN_VAULT_ID,
-      numCovens,
-      [584, 3033],
-      [WETH.address, '0xd89b16331f39ab3878daf395052851d3ac8cf3cd'],
+      NFTX_MILADY_VAULT_ID,
+      numMiladys,
+      [7132],
+      '0xd9627aa400000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000001bfb8d0ff32c43470000000000000000000000000000000000000000000000000e27c49886e6000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000227c7df69d3ed1ae7574a1a7685fded90292eb48869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000000000000000000465b3a7f1b643618cb',
       alice.address,
     ])
 
