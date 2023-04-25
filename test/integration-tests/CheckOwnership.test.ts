@@ -7,7 +7,6 @@ import {
   getAdvancedOrderParams,
   purchaseDataForTwoCovensSeaport,
 } from './shared/protocolHelpers/seaport'
-import { createLooksRareOrders, looksRareOrders, LOOKS_RARE_1155_ORDER } from './shared/protocolHelpers/looksRare'
 import { resetFork, COVEN_721, USDC } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -135,24 +134,19 @@ describe('Check Ownership', () => {
   })
 
   describe('checks ownership ERC1155', () => {
-    it('passes with valid ownership', async () => {
-      const { makerOrder } = createLooksRareOrders(looksRareOrders[LOOKS_RARE_1155_ORDER], router.address)
+    const tokenOwner = '0x8246137C39BB05261972655186A868bdC8a9Eb11'
+    const tokenAddress = '0xf4680c917A873E2dd6eAd72f9f433e74EB9c623C'
+    const tokenId = 40
 
-      planner.addCommand(CommandType.OWNER_CHECK_1155, [
-        makerOrder.signer,
-        makerOrder.collection,
-        makerOrder.tokenId,
-        1,
-      ])
+    it('passes with valid ownership', async () => {
+      planner.addCommand(CommandType.OWNER_CHECK_1155, [tokenOwner, tokenAddress, tokenId, 1])
 
       const { commands, inputs } = planner
       await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.not.be.reverted
     })
 
     it('reverts for invalid ownership', async () => {
-      const { makerOrder } = createLooksRareOrders(looksRareOrders[LOOKS_RARE_1155_ORDER], router.address)
-
-      planner.addCommand(CommandType.OWNER_CHECK_1155, [alice.address, makerOrder.collection, makerOrder.tokenId, 1])
+      planner.addCommand(CommandType.OWNER_CHECK_1155, [alice.address, tokenAddress, tokenId, 1])
 
       const { commands, inputs } = planner
       const customErrorSelector = findCustomErrorSelector(router.interface, 'InvalidOwnerERC1155')

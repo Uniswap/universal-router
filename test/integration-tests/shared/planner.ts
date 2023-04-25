@@ -24,10 +24,10 @@ export enum CommandType {
 
   // NFT-related command types
   SEAPORT = 0x10,
-  LOOKS_RARE_721 = 0x11,
+  LOOKS_RARE_V2 = 0x11,
   NFTX = 0x12,
   CRYPTOPUNKS = 0x13,
-  LOOKS_RARE_1155 = 0x14,
+  // 0x14,
   OWNER_CHECK_721 = 0x15,
   OWNER_CHECK_1155 = 0x16,
   SWEEP_ERC721 = 0x17,
@@ -40,8 +40,8 @@ export enum CommandType {
   SWEEP_ERC1155 = 0x1d,
   ELEMENT_MARKET = 0x1e,
 
-  EXECUTE_SUB_PLAN = 0x20,
-  SEAPORT_V1_4 = 0x21,
+  SEAPORT_V1_4 = 0x20,
+  EXECUTE_SUB_PLAN = 0x21,
   APPROVE_ERC20 = 0x22,
 }
 
@@ -51,8 +51,7 @@ const REVERTIBLE_COMMANDS = new Set<CommandType>([
   CommandType.SEAPORT,
   CommandType.SEAPORT_V1_4,
   CommandType.NFTX,
-  CommandType.LOOKS_RARE_721,
-  CommandType.LOOKS_RARE_1155,
+  CommandType.LOOKS_RARE_V2,
   CommandType.X2Y2_721,
   CommandType.X2Y2_1155,
   CommandType.FOUNDATION,
@@ -105,8 +104,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.SEAPORT]: ['uint256', 'bytes'],
   [CommandType.SEAPORT_V1_4]: ['uint256', 'bytes'],
   [CommandType.NFTX]: ['uint256', 'bytes'],
-  [CommandType.LOOKS_RARE_721]: ['uint256', 'bytes', 'address', 'address', 'uint256'],
-  [CommandType.LOOKS_RARE_1155]: ['uint256', 'bytes', 'address', 'address', 'uint256', 'uint256'],
+  [CommandType.LOOKS_RARE_V2]: ['uint256', 'bytes'],
   [CommandType.X2Y2_721]: ['uint256', 'bytes', 'address', 'address', 'uint256'],
   [CommandType.X2Y2_1155]: ['uint256', 'bytes', 'address', 'address', 'uint256', 'uint256'],
   [CommandType.FOUNDATION]: ['uint256', 'bytes', 'address', 'address', 'uint256'],

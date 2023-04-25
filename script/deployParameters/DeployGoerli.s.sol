@@ -19,7 +19,7 @@ contract DeployGoerli is DeployUniversalRouter {
             elementMarket: UNSUPPORTED_PROTOCOL,
             nft20Zap: UNSUPPORTED_PROTOCOL,
             cryptopunks: UNSUPPORTED_PROTOCOL,
-            looksRare: 0xD112466471b5438C1ca2D218694200e49d81D047,
+            looksRareV2: 0x35C2215F2FFe8917B06454eEEaba189877F200cf,
             routerRewardsDistributor: UNSUPPORTED_PROTOCOL,
             looksRareRewardsDistributor: UNSUPPORTED_PROTOCOL,
             looksRareToken: UNSUPPORTED_PROTOCOL,

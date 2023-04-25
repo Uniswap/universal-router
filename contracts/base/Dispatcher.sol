@@ -215,8 +215,14 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         // equivalent: abi.decode(inputs, (uint256, bytes))
                         (uint256 value, bytes calldata data) = getValueAndData(inputs);
                         (success, output) = SEAPORT.call{value: value}(data);
-                    } else if (command == Commands.LOOKS_RARE_721) {
-                        (success, output) = callAndTransfer721(inputs, LOOKS_RARE);
+                    } else if (command == Commands.LOOKS_RARE_V2) {
+                        // equivalent: abi.decode(inputs, (uint256, bytes))
+                        uint256 value;
+                        assembly {
+                            value := calldataload(inputs.offset)
+                        }
+                        bytes calldata data = inputs.toBytes(1);
+                        (success, output) = LOOKS_RARE_V2.call{value: value}(data);
                     } else if (command == Commands.NFTX) {
                         // equivalent: abi.decode(inputs, (uint256, bytes))
                         (uint256 value, bytes calldata data) = getValueAndData(inputs);
@@ -236,8 +242,6 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         );
                         if (success) ICryptoPunksMarket(CRYPTOPUNKS).transferPunk(map(recipient), punkId);
                         else output = abi.encodePacked(BuyPunkFailed.selector);
-                    } else if (command == Commands.LOOKS_RARE_1155) {
-                        (success, output) = callAndTransfer1155(inputs, LOOKS_RARE);
                     } else if (command == Commands.OWNER_CHECK_721) {
                         // equivalent: abi.decode(inputs, (address, address, uint256))
                         address owner;
@@ -317,12 +321,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
             }
             // 0x20 <= command
         } else {
-            if (command == Commands.EXECUTE_SUB_PLAN) {
-                bytes calldata _commands = inputs.toBytes(0);
-                bytes[] calldata _inputs = inputs.toBytesArray(1);
-                (success, output) =
-                    (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
-            } else if (command == Commands.SEAPORT_V1_4) {
+            if (command == Commands.SEAPORT_V1_4) {
                 /// @dev Seaport 1.4 allows for orders to be created by contracts.
                 ///     These orders pass control to the contract offerers during fufillment,
                 ///         allowing them to perform any number of destructive actions as a holder of the NFT.
@@ -332,6 +331,11 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 ///     This is also outlined in the Seaport documentation: https://github.com/ProjectOpenSea/seaport/blob/main/docs/SeaportDocumentation.md
                 (uint256 value, bytes calldata data) = getValueAndData(inputs);
                 (success, output) = SEAPORT_V1_4.call{value: value}(data);
+            } else if (command == Commands.EXECUTE_SUB_PLAN) {
+                bytes calldata _commands = inputs.toBytes(0);
+                bytes[] calldata _inputs = inputs.toBytesArray(1);
+                (success, output) =
+                    (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
             } else if (command == Commands.APPROVE_ERC20) {
                 ERC20 token;
                 RouterImmutables.Spenders spender;

@@ -19,7 +19,7 @@ contract DeployPolygonMumbai is DeployUniversalRouter {
             elementMarket: UNSUPPORTED_PROTOCOL,
             nft20Zap: UNSUPPORTED_PROTOCOL,
             cryptopunks: UNSUPPORTED_PROTOCOL,
-            looksRare: UNSUPPORTED_PROTOCOL,
+            looksRareV2: UNSUPPORTED_PROTOCOL,
             routerRewardsDistributor: UNSUPPORTED_PROTOCOL,
             looksRareRewardsDistributor: UNSUPPORTED_PROTOCOL,
             looksRareToken: UNSUPPORTED_PROTOCOL,

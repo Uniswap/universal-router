@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LooksRareV2 Gas Test Bulk Buy Buys 2 721s 1`] = `
+Object {
+  "calldataByteLength": 2884,
+  "gasUsed": 335502,
+}
+`;
+
+exports[`LooksRareV2 Gas Test Single Buy Buy a 721 1`] = `
+Object {
+  "calldataByteLength": 1508,
+  "gasUsed": 189890,
+}
+`;

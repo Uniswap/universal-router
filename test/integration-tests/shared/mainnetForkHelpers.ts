@@ -10,6 +10,7 @@ import {
   MENTAL_WORLDS_ADDRESS,
   TWERKY_ADDRESS,
   CRYPTOPUNKS_MARKET_ADDRESS,
+  DECENTRA_DRAGON_ADDRESS,
   TOWNSTAR_ADDRESS,
   MILADY_ADDRESS,
 } from './constants'
@@ -116,6 +117,7 @@ export const resetFork = async (block: number = 15360000) => {
 }
 
 export const COVEN_721 = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI) as ERC721
+export const DRAGON_721 = new ethers.Contract(DECENTRA_DRAGON_ADDRESS, ERC721_ABI) as ERC721
 export const MILADY_721 = new ethers.Contract(MILADY_ADDRESS, ERC721_ABI) as ERC721
 export const ENS_721 = new ethers.Contract(ENS_NFT_ADDRESS, ERC721_ABI) as ERC721
 export const MENTAL_WORLDS_721 = new ethers.Contract(MENTAL_WORLDS_ADDRESS, ERC721_ABI) as ERC721

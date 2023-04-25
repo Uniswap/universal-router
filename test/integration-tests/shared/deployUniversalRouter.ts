@@ -9,6 +9,7 @@ import {
   ROUTER_REWARDS_DISTRIBUTOR,
   LOOKSRARE_REWARDS_DISTRIBUTOR,
   LOOKSRARE_TOKEN,
+  ZERO_ADDRESS,
 } from './constants'
 
 export async function deployRouter(
@@ -30,7 +31,7 @@ export async function deployRouter(
     elementMarket: '0x20F780A973856B93f63670377900C1d2a50a77c4',
     nft20Zap: '0xA42f6cADa809Bcf417DeefbdD69C5C5A909249C0',
     cryptopunks: '0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB',
-    looksRare: '0x59728544B08AB483533076417FbBB2fD0B17CE3a',
+    looksRareV2: '0x0000000000E655fAe4d56241588680F86E3b2377',
     routerRewardsDistributor: ROUTER_REWARDS_DISTRIBUTOR,
     looksRareRewardsDistributor: mockLooksRareRewardsDistributor ?? LOOKSRARE_REWARDS_DISTRIBUTOR,
     looksRareToken: mockLooksRareToken ?? LOOKSRARE_TOKEN,

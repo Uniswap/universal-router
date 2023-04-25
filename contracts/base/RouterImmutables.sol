@@ -18,7 +18,7 @@ struct RouterParameters {
     address elementMarket;
     address nft20Zap;
     address cryptopunks;
-    address looksRare;
+    address looksRareV2;
     address routerRewardsDistributor;
     address looksRareRewardsDistributor;
     address looksRareToken;
@@ -67,8 +67,8 @@ contract RouterImmutables {
     // @dev the address of Larva Lab's cryptopunks marketplace
     address internal immutable CRYPTOPUNKS;
 
-    /// @dev The address of LooksRare
-    address internal immutable LOOKS_RARE;
+    /// @dev The address of LooksRareV2
+    address internal immutable LOOKS_RARE_V2;
 
     /// @dev The address of LooksRare token
     ERC20 internal immutable LOOKS_RARE_TOKEN;
@@ -109,7 +109,7 @@ contract RouterImmutables {
         ELEMENT_MARKET = params.elementMarket;
         NFT20_ZAP = params.nft20Zap;
         CRYPTOPUNKS = params.cryptopunks;
-        LOOKS_RARE = params.looksRare;
+        LOOKS_RARE_V2 = params.looksRareV2;
         LOOKS_RARE_TOKEN = ERC20(params.looksRareToken);
         LOOKS_RARE_REWARDS_DISTRIBUTOR = params.looksRareRewardsDistributor;
         ROUTER_REWARDS_DISTRIBUTOR = params.routerRewardsDistributor;

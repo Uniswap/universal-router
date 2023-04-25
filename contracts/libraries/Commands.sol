@@ -40,10 +40,10 @@ library Commands {
 
     // Command Types where 0x10<=value<0x18, executed in the third nested-if block
     uint256 constant SEAPORT = 0x10;
-    uint256 constant LOOKS_RARE_721 = 0x11;
+    uint256 constant LOOKS_RARE_V2 = 0x11;
     uint256 constant NFTX = 0x12;
     uint256 constant CRYPTOPUNKS = 0x13;
-    uint256 constant LOOKS_RARE_1155 = 0x14;
+    // 0x14;
     uint256 constant OWNER_CHECK_721 = 0x15;
     uint256 constant OWNER_CHECK_1155 = 0x16;
     uint256 constant SWEEP_ERC721 = 0x17;
@@ -67,8 +67,8 @@ library Commands {
     uint256 constant FOURTH_IF_BOUNDARY = 0x20;
 
     // Command Types where 0x20<=value
-    uint256 constant EXECUTE_SUB_PLAN = 0x20;
-    uint256 constant SEAPORT_V1_4 = 0x21;
+    uint256 constant SEAPORT_V1_4 = 0x20;
+    uint256 constant EXECUTE_SUB_PLAN = 0x21;
     uint256 constant APPROVE_ERC20 = 0x22;
     // COMMAND_PLACEHOLDER for 0x23 to 0x3f (all unused)
 }
