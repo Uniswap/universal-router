@@ -5,7 +5,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "1.4.0-beta.0",
+  "version": "1.4.0",
   "keywords": [
     "uniswap",
     "router",
@@ -68,6 +68,7 @@
     "symlink": "ln -s ./lib/solmate ./solmate && ln -s ./lib/permit2 ./permit2",
     "prettier:fix": "prettier --write '**/*.ts' && prettier --write '**/*.json'",
     "lint:fix": "yarn prettier:fix && forge fmt",
-    "prettier": "prettier --check '**/*.ts' && forge fmt --check"
+    "prettier": "prettier --check '**/*.ts' && forge fmt --check",
+    "postpublish": "PACKAGE_VERSION=$(cat package.json | grep \\\"version\\\" | head -1 | awk -F: '{ print $2 }' | sed 's/[\",]//g' | tr -d '[[:space:]]') && git tag v$PACKAGE_VERSION && git push --tags"
   }
 }
