@@ -208,15 +208,14 @@ yarn test:gas
 
 ### To Deploy
 
-Fill out parameters in `script/deployParameters/<network>.json`
+Fill out parameters in `script/deployParameters/Deploy<network>.s.sol`
 
 ```console
 forge script --broadcast \
 --rpc-url <RPC-URL> \
 --private-key <PRIVATE_KEY> \
---sig 'run(string)' \
-script/DeployUniversalRouter.s.sol:DeployUniversalRouter \
-<pathToJSON>
+--sig 'run()' \
+script/Deploy<network>.s.sol:Deploy<network>
 ```
 
 ### To Deploy and Verify
@@ -225,10 +224,8 @@ script/DeployUniversalRouter.s.sol:DeployUniversalRouter \
 forge script --broadcast \
 --rpc-url <RPC-URL> \
 --private-key <PRIVATE-KEY> \
---sig 'run(string)' \
-script/DeployUniversalRouter.s.sol:DeployUniversalRouter \
-<pathToJSON> \
---chain-id <CHAIN-ID> \
+--sig 'run()' \
+script/Deploy<network>.s.sol:Deploy<network>
 --etherscan-api-key <ETHERSCAN-API-KEY> \
 --verify
 ```
