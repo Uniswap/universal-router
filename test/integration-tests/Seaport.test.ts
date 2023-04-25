@@ -286,7 +286,7 @@ describe('Seaport v1.4', () => {
     })
 
     it('completes a fulfillAdvancedOrder type', async () => {
-      let { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[1])
+      let { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[2])
       value = value.div(2) // the numerator/denominator mean this is a partial fill
       const params = advancedOrder.parameters
       const considerationToken = params.consideration[0].token

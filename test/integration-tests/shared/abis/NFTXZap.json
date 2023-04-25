@@ -2,7 +2,9 @@
   {
     "inputs": [
       { "internalType": "address", "name": "_nftxFactory", "type": "address" },
-      { "internalType": "address", "name": "_sushiRouter", "type": "address" }
+      { "internalType": "address", "name": "_WETH", "type": "address" },
+      { "internalType": "address payable", "name": "_swapTarget", "type": "address" },
+      { "internalType": "uint256", "name": "_dustThreshold", "type": "uint256" }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -15,6 +17,16 @@
       { "indexed": false, "internalType": "address", "name": "to", "type": "address" }
     ],
     "name": "Buy",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": false, "internalType": "uint256", "name": "ethAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "vTokenAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "address", "name": "to", "type": "address" }
+    ],
+    "name": "DustReturned",
     "type": "event"
   },
   {
@@ -58,8 +70,8 @@
       { "internalType": "uint256", "name": "vaultId", "type": "uint256" },
       { "internalType": "uint256", "name": "amount", "type": "uint256" },
       { "internalType": "uint256[]", "name": "specificIds", "type": "uint256[]" },
-      { "internalType": "address[]", "name": "path", "type": "address[]" },
-      { "internalType": "address", "name": "to", "type": "address" }
+      { "internalType": "bytes", "name": "swapCallData", "type": "bytes" },
+      { "internalType": "address payable", "name": "to", "type": "address" }
     ],
     "name": "buyAndRedeem",
     "outputs": [],
@@ -69,25 +81,11 @@
   {
     "inputs": [
       { "internalType": "uint256", "name": "vaultId", "type": "uint256" },
-      { "internalType": "uint256", "name": "amount", "type": "uint256" },
-      { "internalType": "uint256[]", "name": "specificIds", "type": "uint256[]" },
-      { "internalType": "uint256", "name": "maxWethIn", "type": "uint256" },
-      { "internalType": "address[]", "name": "path", "type": "address[]" },
-      { "internalType": "address", "name": "to", "type": "address" }
-    ],
-    "name": "buyAndRedeemWETH",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "vaultId", "type": "uint256" },
       { "internalType": "uint256[]", "name": "idsIn", "type": "uint256[]" },
       { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" },
       { "internalType": "uint256[]", "name": "specificIds", "type": "uint256[]" },
-      { "internalType": "address[]", "name": "path", "type": "address[]" },
-      { "internalType": "address", "name": "to", "type": "address" }
+      { "internalType": "bytes", "name": "swapCallData", "type": "bytes" },
+      { "internalType": "address payable", "name": "to", "type": "address" }
     ],
     "name": "buyAndSwap1155",
     "outputs": [],
@@ -98,24 +96,9 @@
     "inputs": [
       { "internalType": "uint256", "name": "vaultId", "type": "uint256" },
       { "internalType": "uint256[]", "name": "idsIn", "type": "uint256[]" },
-      { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" },
       { "internalType": "uint256[]", "name": "specificIds", "type": "uint256[]" },
-      { "internalType": "uint256", "name": "maxWethIn", "type": "uint256" },
-      { "internalType": "address[]", "name": "path", "type": "address[]" },
-      { "internalType": "address", "name": "to", "type": "address" }
-    ],
-    "name": "buyAndSwap1155WETH",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "vaultId", "type": "uint256" },
-      { "internalType": "uint256[]", "name": "idsIn", "type": "uint256[]" },
-      { "internalType": "uint256[]", "name": "specificIds", "type": "uint256[]" },
-      { "internalType": "address[]", "name": "path", "type": "address[]" },
-      { "internalType": "address", "name": "to", "type": "address" }
+      { "internalType": "bytes", "name": "swapCallData", "type": "bytes" },
+      { "internalType": "address payable", "name": "to", "type": "address" }
     ],
     "name": "buyAndSwap721",
     "outputs": [],
@@ -123,23 +106,16 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "uint256", "name": "vaultId", "type": "uint256" },
-      { "internalType": "uint256[]", "name": "idsIn", "type": "uint256[]" },
-      { "internalType": "uint256[]", "name": "specificIds", "type": "uint256[]" },
-      { "internalType": "uint256", "name": "maxWethIn", "type": "uint256" },
-      { "internalType": "address[]", "name": "path", "type": "address[]" },
-      { "internalType": "address", "name": "to", "type": "address" }
-    ],
-    "name": "buyAndSwap721WETH",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "inputs": [],
+    "name": "dustThreshold",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "lpStaking",
-    "outputs": [{ "internalType": "contract INFTXLPStaking", "name": "", "type": "address" }],
+    "name": "feeDistributor",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -148,9 +124,8 @@
       { "internalType": "uint256", "name": "vaultId", "type": "uint256" },
       { "internalType": "uint256[]", "name": "ids", "type": "uint256[]" },
       { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" },
-      { "internalType": "uint256", "name": "minWethOut", "type": "uint256" },
-      { "internalType": "address[]", "name": "path", "type": "address[]" },
-      { "internalType": "address", "name": "to", "type": "address" }
+      { "internalType": "bytes", "name": "swapCallData", "type": "bytes" },
+      { "internalType": "address payable", "name": "to", "type": "address" }
     ],
     "name": "mintAndSell1155",
     "outputs": [],
@@ -161,38 +136,10 @@
     "inputs": [
       { "internalType": "uint256", "name": "vaultId", "type": "uint256" },
       { "internalType": "uint256[]", "name": "ids", "type": "uint256[]" },
-      { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" },
-      { "internalType": "uint256", "name": "minWethOut", "type": "uint256" },
-      { "internalType": "address[]", "name": "path", "type": "address[]" },
-      { "internalType": "address", "name": "to", "type": "address" }
-    ],
-    "name": "mintAndSell1155WETH",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "vaultId", "type": "uint256" },
-      { "internalType": "uint256[]", "name": "ids", "type": "uint256[]" },
-      { "internalType": "uint256", "name": "minEthOut", "type": "uint256" },
-      { "internalType": "address[]", "name": "path", "type": "address[]" },
-      { "internalType": "address", "name": "to", "type": "address" }
+      { "internalType": "bytes", "name": "swapCallData", "type": "bytes" },
+      { "internalType": "address payable", "name": "to", "type": "address" }
     ],
     "name": "mintAndSell721",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "vaultId", "type": "uint256" },
-      { "internalType": "uint256[]", "name": "ids", "type": "uint256[]" },
-      { "internalType": "uint256", "name": "minWethOut", "type": "uint256" },
-      { "internalType": "address[]", "name": "path", "type": "address[]" },
-      { "internalType": "address", "name": "to", "type": "address" }
-    ],
-    "name": "mintAndSell721WETH",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -201,6 +148,13 @@
     "inputs": [],
     "name": "nftxFactory",
     "outputs": [{ "internalType": "contract INFTXVaultFactory", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "nftxVaultAddresses",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -249,6 +203,20 @@
     "stateMutability": "view",
     "type": "function"
   },
+  {
+    "inputs": [{ "internalType": "bool", "name": "_paused", "type": "bool" }],
+    "name": "pause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paused",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
   { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
   {
     "inputs": [{ "internalType": "address", "name": "token", "type": "address" }],
@@ -258,16 +226,16 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "bytes4", "name": "interfaceId", "type": "bytes4" }],
-    "name": "supportsInterface",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "view",
+    "inputs": [{ "internalType": "uint256", "name": "_dustThreshold", "type": "uint256" }],
+    "name": "setDustThreshold",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "sushiRouter",
-    "outputs": [{ "internalType": "contract IUniswapV2Router01", "name": "", "type": "address" }],
+    "inputs": [{ "internalType": "bytes4", "name": "interfaceId", "type": "bytes4" }],
+    "name": "supportsInterface",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
   },
