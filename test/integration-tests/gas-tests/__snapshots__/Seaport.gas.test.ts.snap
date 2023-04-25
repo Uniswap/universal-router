@@ -1,27 +1,27 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Seaport Gas Tests ERC20 -> NFT gas: fufillAdvancedOrder with ERC20 1`] = `
+exports[`Seaport v1.1 Gas Tests ERC20 -> NFT gas: fufillAdvancedOrder with ERC20 1`] = `
 Object {
   "calldataByteLength": 2756,
   "gasUsed": 275583,
 }
 `;
 
-exports[`Seaport Gas Tests ERC20 -> NFT gas: fufillAdvancedOrder with ERC20 already approved 1`] = `
+exports[`Seaport v1.1 Gas Tests ERC20 -> NFT gas: fufillAdvancedOrder with ERC20 already approved 1`] = `
 Object {
   "calldataByteLength": 2628,
   "gasUsed": 251503,
 }
 `;
 
-exports[`Seaport Gas Tests ETH -> NFT gas: fulfillAdvancedOrder 1`] = `
+exports[`Seaport v1.1 Gas Tests ETH -> NFT gas: fulfillAdvancedOrder 1`] = `
 Object {
   "calldataByteLength": 2052,
   "gasUsed": 198415,
 }
 `;
 
-exports[`Seaport Gas Tests ETH -> NFT gas: fulfillAvailableAdvancedOrders 1 orders 1`] = `
+exports[`Seaport v1.1 Gas Tests ETH -> NFT gas: fulfillAvailableAdvancedOrders 1 orders 1`] = `
 Object {
   "calldataByteLength": 4708,
   "gasUsed": 324424,

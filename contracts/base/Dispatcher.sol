@@ -213,11 +213,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 if (command < Commands.THIRD_IF_BOUNDARY) {
                     if (command == Commands.SEAPORT) {
                         // equivalent: abi.decode(inputs, (uint256, bytes))
-                        uint256 value;
-                        assembly {
-                            value := calldataload(inputs.offset)
-                        }
-                        bytes calldata data = inputs.toBytes(1);
+                        (uint256 value, bytes calldata data) = getValueAndData(inputs);
                         (success, output) = SEAPORT.call{value: value}(data);
                     } else if (command == Commands.LOOKS_RARE_V2) {
                         // equivalent: abi.decode(inputs, (uint256, bytes))
@@ -229,11 +225,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         (success, output) = LOOKS_RARE_V2.call{value: value}(data);
                     } else if (command == Commands.NFTX) {
                         // equivalent: abi.decode(inputs, (uint256, bytes))
-                        uint256 value;
-                        assembly {
-                            value := calldataload(inputs.offset)
-                        }
-                        bytes calldata data = inputs.toBytes(1);
+                        (uint256 value, bytes calldata data) = getValueAndData(inputs);
                         (success, output) = NFTX_ZAP.call{value: value}(data);
                     } else if (command == Commands.CRYPTOPUNKS) {
                         // equivalent: abi.decode(inputs, (uint256, address, uint256))
@@ -294,19 +286,11 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         (success, output) = callAndTransfer721(inputs, X2Y2);
                     } else if (command == Commands.SUDOSWAP) {
                         // equivalent: abi.decode(inputs, (uint256, bytes))
-                        uint256 value;
-                        assembly {
-                            value := calldataload(inputs.offset)
-                        }
-                        bytes calldata data = inputs.toBytes(1);
+                        (uint256 value, bytes calldata data) = getValueAndData(inputs);
                         (success, output) = SUDOSWAP.call{value: value}(data);
                     } else if (command == Commands.NFT20) {
                         // equivalent: abi.decode(inputs, (uint256, bytes))
-                        uint256 value;
-                        assembly {
-                            value := calldataload(inputs.offset)
-                        }
-                        bytes calldata data = inputs.toBytes(1);
+                        (uint256 value, bytes calldata data) = getValueAndData(inputs);
                         (success, output) = NFT20_ZAP.call{value: value}(data);
                     } else if (command == Commands.X2Y2_1155) {
                         (success, output) = callAndTransfer1155(inputs, X2Y2);
@@ -327,11 +311,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         Payments.sweepERC1155(token, map(recipient), id, amount);
                     } else if (command == Commands.ELEMENT_MARKET) {
                         // equivalent: abi.decode(inputs, (uint256, bytes))
-                        uint256 value;
-                        assembly {
-                            value := calldataload(inputs.offset)
-                        }
-                        bytes calldata data = inputs.toBytes(1);
+                        (uint256 value, bytes calldata data) = getValueAndData(inputs);
                         (success, output) = ELEMENT_MARKET.call{value: value}(data);
                     } else {
                         // placeholder for command 0x1f
@@ -349,11 +329,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 ///         to claim another NFT, the contract offerer can "steal" the claim during order fufillment.
                 ///     For some such purchases, an OWNER_CHECK command can be prepended to ensure that all tokens have the desired owner at the end of the transaction.
                 ///     This is also outlined in the Seaport documentation: https://github.com/ProjectOpenSea/seaport/blob/main/docs/SeaportDocumentation.md
-                uint256 value;
-                assembly {
-                    value := calldataload(inputs.offset)
-                }
-                bytes calldata data = inputs.toBytes(1);
+                (uint256 value, bytes calldata data) = getValueAndData(inputs);
                 (success, output) = SEAPORT_V1_4.call{value: value}(data);
             } else if (command == Commands.EXECUTE_SUB_PLAN) {
                 bytes calldata _commands = inputs.toBytes(0);
@@ -390,18 +366,16 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
         returns (bool success, bytes memory output)
     {
         // equivalent: abi.decode(inputs, (uint256, bytes, address, address, uint256))
-        uint256 value;
+        (uint256 value, bytes calldata data) = getValueAndData(inputs);
         address recipient;
         address token;
         uint256 id;
         assembly {
-            value := calldataload(inputs.offset)
-            // 0x20 offset is the tx data, decoded below
+            // 0x00 and 0x20 offsets are value and data, above
             recipient := calldataload(add(inputs.offset, 0x40))
             token := calldataload(add(inputs.offset, 0x60))
             id := calldataload(add(inputs.offset, 0x80))
         }
-        bytes calldata data = inputs.toBytes(1);
         (success, output) = protocol.call{value: value}(data);
         if (success) ERC721(token).safeTransferFrom(address(this), map(recipient), id);
     }
@@ -416,21 +390,31 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
         returns (bool success, bytes memory output)
     {
         // equivalent: abi.decode(inputs, (uint256, bytes, address, address, uint256, uint256))
-        uint256 value;
+        (uint256 value, bytes calldata data) = getValueAndData(inputs);
         address recipient;
         address token;
         uint256 id;
         uint256 amount;
         assembly {
-            value := calldataload(inputs.offset)
-            // 0x20 offset is the tx data, decoded below
+            // 0x00 and 0x20 offsets are value and data, above
             recipient := calldataload(add(inputs.offset, 0x40))
             token := calldataload(add(inputs.offset, 0x60))
             id := calldataload(add(inputs.offset, 0x80))
             amount := calldataload(add(inputs.offset, 0xa0))
         }
-        bytes calldata data = inputs.toBytes(1);
         (success, output) = protocol.call{value: value}(data);
         if (success) ERC1155(token).safeTransferFrom(address(this), map(recipient), id, amount, new bytes(0));
+    }
+
+    /// @notice Helper function to extract `value` and `data` parameters from input bytes string
+    /// @dev The helper assumes that `value` is the first parameter, and `data` is the second
+    /// @param inputs The bytes string beginning with value and data parameters
+    /// @return value The 256 bit integer value
+    /// @return data The data bytes string
+    function getValueAndData(bytes calldata inputs) internal pure returns (uint256 value, bytes calldata data) {
+        assembly {
+            value := calldataload(inputs.offset)
+        }
+        data = inputs.toBytes(1);
     }
 }
