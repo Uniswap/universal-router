@@ -61,14 +61,14 @@
   },
   "scripts": {
     "compile": "hardhat compile",
-    "test": "hardhat test",
-    "test:gas": "UPDATE_SNAPSHOT=1 yarn test --grep gas",
-    "test:all": "UPDATE_SNAPSHOT=1 yarn test",
-    "presymlink": "rm -rf ./solmate && rm -rf ./permit2",
-    "symlink": "ln -s ./lib/solmate ./solmate && ln -s ./lib/permit2 ./permit2",
-    "prettier:fix": "prettier --write '**/*.ts' && prettier --write '**/*.json'",
     "lint:fix": "yarn prettier:fix && forge fmt",
+    "postpublish": "PACKAGE_VERSION=$(cat package.json | grep \\\"version\\\" | head -1 | awk -F: '{ print $2 }' | sed 's/[\",]//g' | tr -d '[[:space:]]') && git tag v$PACKAGE_VERSION && git push --tags",
+    "presymlink": "rm -rf ./solmate && rm -rf ./permit2",
     "prettier": "prettier --check '**/*.ts' && forge fmt --check",
-    "postpublish": "PACKAGE_VERSION=$(cat package.json | grep \\\"version\\\" | head -1 | awk -F: '{ print $2 }' | sed 's/[\",]//g' | tr -d '[[:space:]]') && git tag v$PACKAGE_VERSION && git push --tags"
+    "prettier:fix": "prettier --write '**/*.ts' && prettier --write '**/*.json'",
+    "symlink": "ln -s ./lib/solmate ./solmate && ln -s ./lib/permit2 ./permit2",
+    "test": "hardhat test",
+    "test:all": "UPDATE_SNAPSHOT=1 yarn test",
+    "test:gas": "UPDATE_SNAPSHOT=1 yarn test --grep gas"
   }
 }
