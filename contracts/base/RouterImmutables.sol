@@ -40,7 +40,7 @@ contract RouterImmutables {
     /// @dev Seaport address
     address internal immutable SEAPORT;
 
-    /// @dev Seaport 1.4 address
+    /// @dev Seaport 1.5 address
     address internal immutable SEAPORT_V1_5;
 
     /// @dev The address of OpenSea's conduit used in both Seaport and Seaport 1.4
