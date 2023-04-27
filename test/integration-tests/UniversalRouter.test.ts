@@ -328,7 +328,7 @@ describe('UniversalRouter newer block', () => {
       })
 
       it('reverts if no commands are allowed to revert', async () => {
-        planner.addCommand(CommandType.SEAPORT_V1_4, [seaportValue, invalidSeaportCalldata])
+        planner.addCommand(CommandType.SEAPORT_V1_5, [seaportValue, invalidSeaportCalldata])
 
         const { commands, inputs } = planner
 
@@ -340,7 +340,7 @@ describe('UniversalRouter newer block', () => {
       })
 
       it('does not revert if invalid seaport transaction allowed to fail', async () => {
-        planner.addCommand(CommandType.SEAPORT_V1_4, [seaportValue, invalidSeaportCalldata], true)
+        planner.addCommand(CommandType.SEAPORT_V1_5, [seaportValue, invalidSeaportCalldata], true)
         const { commands, inputs } = planner
 
         const miladyBalanceBefore = await miladyContract.balanceOf(alice.address)

@@ -10,7 +10,7 @@ contract DeployOptimismGoerli is DeployUniversalRouter {
             permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
             weth9: 0x4200000000000000000000000000000000000006,
             seaport: UNSUPPORTED_PROTOCOL,
-            seaportV1_4: UNSUPPORTED_PROTOCOL,
+            seaportV1_5: UNSUPPORTED_PROTOCOL,
             openseaConduit: UNSUPPORTED_PROTOCOL,
             nftxZap: UNSUPPORTED_PROTOCOL,
             x2y2: UNSUPPORTED_PROTOCOL,

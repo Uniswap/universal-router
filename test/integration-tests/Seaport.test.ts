@@ -314,7 +314,7 @@ describe('Seaport v1.4', () => {
       planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [considerationToken, router.address, value])
-      planner.addCommand(CommandType.SEAPORT_V1_4, [0, calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [0, calldata])
 
       const { commands, inputs } = planner
       await expect(await townStarNFT.balanceOf(bob.address, tokenId)).to.eq(0)
@@ -351,7 +351,7 @@ describe('Seaport v1.4', () => {
         alice.address,
       ])
 
-      planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
       const { commands, inputs } = planner
 
       const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
@@ -375,7 +375,7 @@ describe('Seaport v1.4', () => {
       ])
 
       // Allow seaport to revert
-      planner.addCommand(CommandType.SEAPORT_V1_4, [value.toString(), calldata], true)
+      planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata], true)
       planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
 
       const commands = planner.commands
@@ -413,7 +413,7 @@ describe('Seaport v1.4', () => {
         alice.address,
       ])
 
-      planner.addCommand(CommandType.SEAPORT_V1_4, [seaportValue.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [seaportValue.toString(), calldata])
       const { commands, inputs } = planner
 
       const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()

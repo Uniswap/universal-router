@@ -321,7 +321,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
             }
             // 0x20 <= command
         } else {
-            if (command == Commands.SEAPORT_V1_4) {
+            if (command == Commands.SEAPORT_V1_5) {
                 /// @dev Seaport 1.4 allows for orders to be created by contracts.
                 ///     These orders pass control to the contract offerers during fufillment,
                 ///         allowing them to perform any number of destructive actions as a holder of the NFT.
@@ -330,7 +330,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 ///     For some such purchases, an OWNER_CHECK command can be prepended to ensure that all tokens have the desired owner at the end of the transaction.
                 ///     This is also outlined in the Seaport documentation: https://github.com/ProjectOpenSea/seaport/blob/main/docs/SeaportDocumentation.md
                 (uint256 value, bytes calldata data) = getValueAndData(inputs);
-                (success, output) = SEAPORT_V1_4.call{value: value}(data);
+                (success, output) = SEAPORT_V1_5.call{value: value}(data);
             } else if (command == Commands.EXECUTE_SUB_PLAN) {
                 bytes calldata _commands = inputs.toBytes(0);
                 bytes[] calldata _inputs = inputs.toBytesArray(1);

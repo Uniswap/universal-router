@@ -40,7 +40,7 @@ abstract contract DeployUniversalRouter is Script {
             permit2: mapUnsupported(params.permit2),
             weth9: mapUnsupported(params.weth9),
             seaport: mapUnsupported(params.seaport),
-            seaportV1_4: mapUnsupported(params.seaportV1_4),
+            seaportV1_5: mapUnsupported(params.seaportV1_5),
             openseaConduit: mapUnsupported(params.openseaConduit),
             nftxZap: mapUnsupported(params.nftxZap),
             x2y2: mapUnsupported(params.x2y2),
@@ -70,7 +70,7 @@ abstract contract DeployUniversalRouter is Script {
         console2.log('permit2:', params.permit2);
         console2.log('weth9:', params.weth9);
         console2.log('seaport:', params.seaport);
-        console2.log('seaportV1_4:', params.seaportV1_4);
+        console2.log('seaportV1_5:', params.seaportV1_5);
         console2.log('openseaConduit:', params.openseaConduit);
         console2.log('nftxZap:', params.nftxZap);
         console2.log('x2y2:', params.x2y2);

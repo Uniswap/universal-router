@@ -22,7 +22,7 @@ export async function deployRouter(
     permit2: permit2.address,
     weth9: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     seaport: '0x00000000006c3852cbEf3e08E8dF289169EdE581',
-    seaportV1_4: '0x00000000000001ad428e4906aE43D8F9852d0dD6', // needs to be updated to v1.5 when we have test data
+    seaportV1_5: '0x00000000000001ad428e4906aE43D8F9852d0dD6', // needs to be updated to v1.5 when we have test data
     openseaConduit: '0x1E0049783F008A0085193E00003D00cd54003c71',
     nftxZap: mockReentrantProtocol ?? '0x941A6d105802CCCaa06DE58a13a6F49ebDCD481C',
     x2y2: '0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3',
