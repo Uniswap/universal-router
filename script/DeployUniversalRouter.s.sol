@@ -39,7 +39,7 @@ abstract contract DeployUniversalRouter is Script {
         params = RouterParameters({
             permit2: mapUnsupported(params.permit2),
             weth9: mapUnsupported(params.weth9),
-            seaport: mapUnsupported(params.seaport),
+            seaportV1_5: mapUnsupported(params.seaport),
             seaportV1_4: mapUnsupported(params.seaportV1_4),
             openseaConduit: mapUnsupported(params.openseaConduit),
             nftxZap: mapUnsupported(params.nftxZap),

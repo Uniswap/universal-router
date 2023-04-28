@@ -60,7 +60,7 @@ describe('Seaport v1.1 Gas Tests', () => {
       planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [weth.address, router.address, value])
-      planner.addCommand(CommandType.SEAPORT, [0, calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [0, calldata])
       const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
@@ -96,7 +96,7 @@ describe('Seaport v1.1 Gas Tests', () => {
       planner = new RoutePlanner()
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [weth.address, router.address, value])
-      planner.addCommand(CommandType.SEAPORT, [0, calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [0, calldata])
       const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -126,7 +126,7 @@ describe('Seaport v1.1 Gas Tests', () => {
         alice.address,
       ])
 
-      planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
       const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
@@ -159,7 +159,7 @@ describe('Seaport v1.1 Gas Tests', () => {
         100,
       ])
 
-      planner.addCommand(CommandType.SEAPORT, [value, calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [value, calldata])
       const { commands, inputs } = planner
 
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))

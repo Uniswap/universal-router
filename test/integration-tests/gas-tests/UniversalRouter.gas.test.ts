@@ -75,7 +75,7 @@ describe('UniversalRouter Gas Tests', () => {
         alice.address,
       ])
 
-      planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
       const { commands, inputs } = planner
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
     })
@@ -97,7 +97,7 @@ describe('UniversalRouter Gas Tests', () => {
         SOURCE_MSG_SENDER,
       ])
       planner.addCommand(CommandType.UNWRAP_WETH, [alice.address, value])
-      planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
       const { commands, inputs } = planner
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))
     })
@@ -112,7 +112,7 @@ describe('UniversalRouter Gas Tests', () => {
 
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [WETH.address, ADDRESS_THIS, value])
       planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, value])
-      planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
 
       const { commands, inputs } = planner
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value }))

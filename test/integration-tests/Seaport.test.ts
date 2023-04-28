@@ -76,7 +76,7 @@ describe('Seaport v1.1', () => {
       planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [weth.address, router.address, value])
-      planner.addCommand(CommandType.SEAPORT, [0, calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [0, calldata])
       const { commands, inputs } = planner
 
       const wethBalanceBefore = await weth.balanceOf(bob.address)
@@ -122,7 +122,7 @@ describe('Seaport v1.1', () => {
       planner = new RoutePlanner()
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [weth.address, router.address, value])
-      planner.addCommand(CommandType.SEAPORT, [0, calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [0, calldata])
       const { commands, inputs } = planner
 
       const wethBalanceBefore = await weth.balanceOf(bob.address)
@@ -162,7 +162,7 @@ describe('Seaport v1.1', () => {
         alice.address,
       ])
 
-      planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
       const { commands, inputs } = planner
 
       const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
@@ -187,7 +187,7 @@ describe('Seaport v1.1', () => {
       ])
 
       // Allow seaport to revert
-      planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata], true)
+      planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata], true)
       planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
 
       const { commands, inputs } = planner
@@ -209,7 +209,7 @@ describe('Seaport v1.1', () => {
       const { calldata, advancedOrder0, advancedOrder1, value } = purchaseDataForTwoCovensSeaport(alice.address)
       const params0 = advancedOrder0.parameters
       const params1 = advancedOrder1.parameters
-      planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
       const { commands, inputs } = planner
 
       const owner0Before = await cryptoCovens.ownerOf(params0.offer[0].identifierOrCriteria)
@@ -241,7 +241,7 @@ describe('Seaport v1.1', () => {
         alice.address,
       ])
 
-      planner.addCommand(CommandType.SEAPORT, [seaportValue.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [seaportValue.toString(), calldata])
       const { commands, inputs } = planner
 
       const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
