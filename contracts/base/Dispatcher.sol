@@ -211,10 +211,16 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
             } else {
                 // 0x10 <= command < 0x18
                 if (command < Commands.THIRD_IF_BOUNDARY) {
-                    if (command == Commands.SEAPORT) {
-                        // equivalent: abi.decode(inputs, (uint256, bytes))
+                    if (command == Commands.SEAPORT_V1_5) {
+                        /// @dev Seaport 1.4 and 1.5 allow for orders to be created by contracts.
+                        ///     These orders pass control to the contract offerers during fufillment,
+                        ///         allowing them to perform any number of destructive actions as a holder of the NFT.
+                        ///     Integrators should be aware that in some scenarios: e.g. purchasing an NFT that allows the holder
+                        ///         to claim another NFT, the contract offerer can "steal" the claim during order fufillment.
+                        ///     For some such purchases, an OWNER_CHECK command can be prepended to ensure that all tokens have the desired owner at the end of the transaction.
+                        ///     This is also outlined in the Seaport documentation: https://github.com/ProjectOpenSea/seaport/blob/main/docs/SeaportDocumentation.md
                         (uint256 value, bytes calldata data) = getValueAndData(inputs);
-                        (success, output) = SEAPORT.call{value: value}(data);
+                        (success, output) = SEAPORT_V1_5.call{value: value}(data);
                     } else if (command == Commands.LOOKS_RARE_V2) {
                         // equivalent: abi.decode(inputs, (uint256, bytes))
                         uint256 value;
@@ -322,7 +328,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
             // 0x20 <= command
         } else {
             if (command == Commands.SEAPORT_V1_4) {
-                /// @dev Seaport 1.4 allows for orders to be created by contracts.
+                /// @dev Seaport 1.4 and 1.5 allow for orders to be created by contracts.
                 ///     These orders pass control to the contract offerers during fufillment,
                 ///         allowing them to perform any number of destructive actions as a holder of the NFT.
                 ///     Integrators should be aware that in some scenarios: e.g. purchasing an NFT that allows the holder

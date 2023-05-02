@@ -8,7 +8,7 @@ import {IWETH9} from '../interfaces/external/IWETH9.sol';
 struct RouterParameters {
     address permit2;
     address weth9;
-    address seaport;
+    address seaportV1_5;
     address seaportV1_4;
     address openseaConduit;
     address nftxZap;
@@ -37,13 +37,13 @@ contract RouterImmutables {
     /// @dev Permit2 address
     IAllowanceTransfer internal immutable PERMIT2;
 
-    /// @dev Seaport address
-    address internal immutable SEAPORT;
+    /// @dev Seaport 1.5 address
+    address internal immutable SEAPORT_V1_5;
 
     /// @dev Seaport 1.4 address
     address internal immutable SEAPORT_V1_4;
 
-    /// @dev The address of OpenSea's conduit used in both Seaport and Seaport 1.4
+    /// @dev The address of OpenSea's conduit used in both Seaport 1.4 and Seaport 1.5
     address internal immutable OPENSEA_CONDUIT;
 
     /// @dev The address of NFTX zap contract for interfacing with vaults
@@ -99,7 +99,7 @@ contract RouterImmutables {
     constructor(RouterParameters memory params) {
         PERMIT2 = IAllowanceTransfer(params.permit2);
         WETH9 = IWETH9(params.weth9);
-        SEAPORT = params.seaport;
+        SEAPORT_V1_5 = params.seaportV1_5;
         SEAPORT_V1_4 = params.seaportV1_4;
         OPENSEA_CONDUIT = params.openseaConduit;
         NFTX_ZAP = params.nftxZap;

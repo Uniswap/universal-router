@@ -78,7 +78,7 @@ describe('Check Ownership', () => {
         alice.address,
       ])
 
-      planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
       planner.addCommand(CommandType.OWNER_CHECK_721, [
         alice.address,
         COVEN_ADDRESS,
@@ -102,7 +102,7 @@ describe('Check Ownership', () => {
       const params0 = advancedOrder0.parameters
       const params1 = advancedOrder1.parameters
 
-      planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
       planner.addCommand(CommandType.OWNER_CHECK_721, [
         alice.address,
         COVEN_ADDRESS,

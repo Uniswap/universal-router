@@ -23,7 +23,7 @@ export enum CommandType {
   BALANCE_CHECK_ERC20 = 0x0e,
 
   // NFT-related command types
-  SEAPORT = 0x10,
+  SEAPORT_V1_5 = 0x10,
   LOOKS_RARE_V2 = 0x11,
   NFTX = 0x12,
   CRYPTOPUNKS = 0x13,
@@ -48,7 +48,7 @@ export enum CommandType {
 const ALLOW_REVERT_FLAG = 0x80
 
 const REVERTIBLE_COMMANDS = new Set<CommandType>([
-  CommandType.SEAPORT,
+  CommandType.SEAPORT_V1_5,
   CommandType.SEAPORT_V1_4,
   CommandType.NFTX,
   CommandType.LOOKS_RARE_V2,
@@ -101,7 +101,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.APPROVE_ERC20]: ['address', 'uint256'],
 
   // NFT Markets
-  [CommandType.SEAPORT]: ['uint256', 'bytes'],
+  [CommandType.SEAPORT_V1_5]: ['uint256', 'bytes'],
   [CommandType.SEAPORT_V1_4]: ['uint256', 'bytes'],
   [CommandType.NFTX]: ['uint256', 'bytes'],
   [CommandType.LOOKS_RARE_V2]: ['uint256', 'bytes'],

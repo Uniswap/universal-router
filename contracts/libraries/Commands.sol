@@ -39,7 +39,7 @@ library Commands {
     uint256 constant SECOND_IF_BOUNDARY = 0x10;
 
     // Command Types where 0x10<=value<0x18, executed in the third nested-if block
-    uint256 constant SEAPORT = 0x10;
+    uint256 constant SEAPORT_V1_5 = 0x10;
     uint256 constant LOOKS_RARE_V2 = 0x11;
     uint256 constant NFTX = 0x12;
     uint256 constant CRYPTOPUNKS = 0x13;

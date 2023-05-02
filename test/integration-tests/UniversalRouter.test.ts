@@ -199,7 +199,7 @@ describe('UniversalRouter', () => {
           SOURCE_MSG_SENDER,
         ])
         planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, value])
-        planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+        planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
         const { commands, inputs } = planner
         const covenBalanceBefore = await cryptoCovens.balanceOf(alice.address)
         await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
@@ -217,7 +217,7 @@ describe('UniversalRouter', () => {
 
         planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [WETH.address, ADDRESS_THIS, value])
         planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, value])
-        planner.addCommand(CommandType.SEAPORT, [value.toString(), calldata])
+        planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
 
         const { commands, inputs } = planner
         const covenBalanceBefore = await cryptoCovens.balanceOf(alice.address)
