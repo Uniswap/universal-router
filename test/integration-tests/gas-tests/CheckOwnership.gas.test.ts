@@ -5,7 +5,7 @@ import {
   seaportOrders,
   seaportInterface,
   getAdvancedOrderParams,
-  purchaseDataForTwoCovensSeaport,
+  purchaseDataForTwoTownstarsSeaport,
 } from './../shared/protocolHelpers/seaport'
 import { resetFork, USDC } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from './../shared/constants'
@@ -70,7 +70,7 @@ describe('Check Ownership Gas', () => {
   })
 
   it('gas: checks ownership after a seaport trade, two NFTs', async () => {
-    const { calldata, advancedOrder0, advancedOrder1, value } = purchaseDataForTwoCovensSeaport(alice.address)
+    const { calldata, advancedOrder0, advancedOrder1, value } = purchaseDataForTwoTownstarsSeaport(alice.address)
     const params0 = advancedOrder0.parameters
     const params1 = advancedOrder1.parameters
 

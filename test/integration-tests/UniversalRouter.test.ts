@@ -27,7 +27,7 @@ import {
   AdvancedOrder,
   Order,
   seaportV1_4Orders,
-  seaportV1_4Interface,
+  seaportInterface,
 } from './shared/protocolHelpers/seaport'
 import { resetFork, WETH, DAI, COVEN_721, MILADY_721 } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
@@ -317,7 +317,7 @@ describe('UniversalRouter newer block', () => {
         invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
         let seaportOrder: Order
         ;({ advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder))
-        invalidSeaportCalldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+        invalidSeaportCalldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
           seaportOrder,
           [],
           OPENSEA_CONDUIT_KEY,
