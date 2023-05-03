@@ -1,4 +1,12 @@
-import { UniversalRouter, Permit2, ERC20, IWETH9, MockLooksRareRewardsDistributor, ERC721 } from '../../typechain'
+import {
+  UniversalRouter,
+  Permit2,
+  ERC20,
+  IWETH9,
+  MockLooksRareRewardsDistributor,
+  ERC721,
+  ERC1155,
+} from '../../typechain'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
@@ -21,15 +29,14 @@ import {
   NFTX_MILADY_VAULT_ID,
 } from './shared/constants'
 import {
-  seaportOrders,
   seaportInterface,
   getAdvancedOrderParams,
   AdvancedOrder,
   Order,
   seaportV1_4Orders,
-  seaportInterface,
+  seaportV1_5Orders,
 } from './shared/protocolHelpers/seaport'
-import { resetFork, WETH, DAI, COVEN_721, MILADY_721 } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, MILADY_721, TOWNSTAR_1155 } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
 import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -50,7 +57,6 @@ describe('UniversalRouter', () => {
   let mockLooksRareToken: ERC20
   let mockLooksRareRewardsDistributor: MockLooksRareRewardsDistributor
   let pair_DAI_WETH: Pair
-  let cryptoCovens: ERC721
 
   beforeEach(async () => {
     await resetFork()
@@ -75,7 +81,6 @@ describe('UniversalRouter', () => {
     router = (
       await deployUniversalRouter(permit2, mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)
     ).connect(alice) as UniversalRouter
-    cryptoCovens = COVEN_721.connect(alice) as ERC721
   })
 
   describe('#execute', () => {
@@ -173,68 +178,6 @@ describe('UniversalRouter', () => {
         .to.be.revertedWithCustomError(router, 'ExecutionFailed')
         .withArgs(0, customErrorSelector)
     })
-
-    describe('ERC20 --> NFT', () => {
-      let advancedOrder: AdvancedOrder
-      let value: BigNumber
-
-      beforeEach(async () => {
-        ;({ advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0]))
-      })
-
-      it('completes a trade for ERC20 --> ETH --> Seaport NFT', async () => {
-        const maxAmountIn = expandTo18DecimalsBN(100_000)
-        const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
-          advancedOrder,
-          [],
-          OPENSEA_CONDUIT_KEY,
-          alice.address,
-        ])
-
-        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
-          ADDRESS_THIS,
-          value,
-          maxAmountIn,
-          [DAI.address, WETH.address],
-          SOURCE_MSG_SENDER,
-        ])
-        planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, value])
-        planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
-        const { commands, inputs } = planner
-        const covenBalanceBefore = await cryptoCovens.balanceOf(alice.address)
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
-        const covenBalanceAfter = await cryptoCovens.balanceOf(alice.address)
-        expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
-      })
-
-      it('completes a trade for WETH --> ETH --> Seaport NFT', async () => {
-        const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
-          advancedOrder,
-          [],
-          OPENSEA_CONDUIT_KEY,
-          alice.address,
-        ])
-
-        planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [WETH.address, ADDRESS_THIS, value])
-        planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, value])
-        planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
-
-        const { commands, inputs } = planner
-        const covenBalanceBefore = await cryptoCovens.balanceOf(alice.address)
-        const wethBalanceBefore = await wethContract.balanceOf(alice.address)
-
-        await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.changeEtherBalance(
-          alice,
-          0
-        )
-
-        const covenBalanceAfter = await cryptoCovens.balanceOf(alice.address)
-        const wethBalanceAfter = await wethContract.balanceOf(alice.address)
-
-        expect(covenBalanceAfter.sub(covenBalanceBefore)).to.eq(1)
-        expect(wethBalanceBefore.sub(wethBalanceAfter)).to.eq(value)
-      })
-    })
   })
 
   describe('#collectRewards', () => {
@@ -253,41 +196,100 @@ describe('UniversalRouter', () => {
   })
 })
 
-describe('UniversalRouter newer block', () => {
+describe('UniversalRouter', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
   let permit2: Permit2
   let mockLooksRareToken: ERC20
   let mockLooksRareRewardsDistributor: MockLooksRareRewardsDistributor
-
-  beforeEach(async () => {
-    // Since new NFTX contract was recently released, we have to fork from a much newer block
-    await resetFork(17029001) // 17029002 - 1
-    alice = await ethers.getSigner(ALICE_ADDRESS)
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [ALICE_ADDRESS],
-    })
-
-    // mock rewards contracts
-    const tokenFactory = await ethers.getContractFactory('MintableERC20')
-    const mockDistributorFactory = await ethers.getContractFactory('MockLooksRareRewardsDistributor')
-    mockLooksRareToken = (await tokenFactory.connect(alice).deploy(expandTo18DecimalsBN(5))) as ERC20
-    mockLooksRareRewardsDistributor = (await mockDistributorFactory.deploy(
-      ROUTER_REWARDS_DISTRIBUTOR,
-      mockLooksRareToken.address
-    )) as MockLooksRareRewardsDistributor
-    permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (
-      await deployUniversalRouter(permit2, mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)
-    ).connect(alice) as UniversalRouter
-  })
+  let daiContract: ERC20
+  let wethContract: IWETH9
+  let townStarNFT: ERC1155
 
   describe('#execute', () => {
     let planner: RoutePlanner
 
     beforeEach(() => {
       planner = new RoutePlanner()
+    })
+
+    describe('ERC20 --> NFT', () => {
+      let advancedOrder: AdvancedOrder
+      let value: BigNumber
+
+      beforeEach(async () => {
+        await resetFork(17179617)
+        alice = await ethers.getSigner(ALICE_ADDRESS)
+        await hre.network.provider.request({
+          method: 'hardhat_impersonateAccount',
+          params: [ALICE_ADDRESS],
+        })
+        daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
+        wethContract = new ethers.Contract(WETH.address, WETH_ABI, alice) as IWETH9
+        permit2 = (await deployPermit2()).connect(alice) as Permit2
+        router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+        townStarNFT = TOWNSTAR_1155.connect(alice) as ERC1155
+        ;({ advancedOrder, value } = getAdvancedOrderParams(seaportV1_5Orders[0]))
+        await daiContract.approve(permit2.address, MAX_UINT)
+        await wethContract.approve(permit2.address, MAX_UINT)
+        await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
+        await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
+      })
+
+      it('completes a trade for ERC20 --> ETH --> Seaport NFT', async () => {
+        const maxAmountIn = expandTo18DecimalsBN(100_000)
+        const tokenId = advancedOrder.parameters.offer[0].identifierOrCriteria
+        const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+          advancedOrder,
+          [],
+          OPENSEA_CONDUIT_KEY,
+          alice.address,
+        ])
+
+        planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
+          ADDRESS_THIS,
+          value,
+          maxAmountIn,
+          [DAI.address, WETH.address],
+          SOURCE_MSG_SENDER,
+        ])
+        planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, value])
+        planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
+        const { commands, inputs } = planner
+        const balanceBefore = await townStarNFT.balanceOf(alice.address, tokenId)
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        const balanceAfter = await townStarNFT.balanceOf(alice.address, tokenId)
+        expect(balanceAfter.sub(balanceBefore)).to.eq(1)
+      })
+
+      it('completes a trade for WETH --> ETH --> Seaport NFT', async () => {
+        const tokenId = advancedOrder.parameters.offer[0].identifierOrCriteria
+        const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
+          advancedOrder,
+          [],
+          OPENSEA_CONDUIT_KEY,
+          alice.address,
+        ])
+
+        planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [WETH.address, ADDRESS_THIS, value])
+        planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, value])
+        planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
+
+        const { commands, inputs } = planner
+        const balanceBefore = await townStarNFT.balanceOf(alice.address, tokenId)
+        const wethBalanceBefore = await wethContract.balanceOf(alice.address)
+
+        await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.changeEtherBalance(
+          alice,
+          0
+        )
+
+        const balanceAfter = await townStarNFT.balanceOf(alice.address, tokenId)
+        const wethBalanceAfter = await wethContract.balanceOf(alice.address)
+
+        expect(balanceAfter.sub(balanceBefore)).to.eq(1)
+        expect(wethBalanceBefore.sub(wethBalanceAfter)).to.eq(value)
+      })
     })
 
     describe('partial fills', async () => {
@@ -299,6 +301,26 @@ describe('UniversalRouter newer block', () => {
       let miladyContract: ERC721
 
       beforeEach(async () => {
+        await resetFork(17029001) // 17029002 - 1
+        alice = await ethers.getSigner(ALICE_ADDRESS)
+        await hre.network.provider.request({
+          method: 'hardhat_impersonateAccount',
+          params: [ALICE_ADDRESS],
+        })
+
+        // mock rewards contracts
+        const tokenFactory = await ethers.getContractFactory('MintableERC20')
+        const mockDistributorFactory = await ethers.getContractFactory('MockLooksRareRewardsDistributor')
+        mockLooksRareToken = (await tokenFactory.connect(alice).deploy(expandTo18DecimalsBN(5))) as ERC20
+        mockLooksRareRewardsDistributor = (await mockDistributorFactory.deploy(
+          ROUTER_REWARDS_DISTRIBUTOR,
+          mockLooksRareToken.address
+        )) as MockLooksRareRewardsDistributor
+        permit2 = (await deployPermit2()).connect(alice) as Permit2
+        router = (
+          await deployUniversalRouter(permit2, mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)
+        ).connect(alice) as UniversalRouter
+
         miladyContract = MILADY_721.connect(alice) as ERC721
 
         // add valid nftx order to planner

@@ -117,7 +117,6 @@ describe('Check Ownership', () => {
       router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
       townStarNFT = TOWNSTAR_1155.connect(alice) as ERC1155
-
       ;({ calldata, advancedOrder0, advancedOrder1, value } = purchaseDataForTwoTownstarsSeaport(alice.address))
     })
 

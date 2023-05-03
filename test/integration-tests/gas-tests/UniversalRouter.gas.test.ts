@@ -1,6 +1,5 @@
 import { UniversalRouter, Permit2, IWETH9, ERC20 } from '../../../typechain'
 import { expect } from '../shared/expect'
-import type { Contract } from '@ethersproject/contracts'
 import {
   ALICE_ADDRESS,
   ADDRESS_THIS,
