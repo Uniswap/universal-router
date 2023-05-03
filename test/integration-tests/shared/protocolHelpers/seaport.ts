@@ -82,14 +82,14 @@ export function calculateValue(considerations: ConsiderationItem[]): BigNumber {
   )
 }
 
-type BuyCovensReturnData = {
+type BuyTownStarsReturnData = {
   calldata: string
   advancedOrder0: AdvancedOrder
   advancedOrder1: AdvancedOrder
   value: BigNumber
 }
 
-export function purchaseDataForTwoTownstarsSeaport(receipient: string): BuyCovensReturnData {
+export function purchaseDataForTwoTownstarsSeaport(receipient: string): BuyTownStarsReturnData {
   const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportV1_5Orders[1])
   const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportV1_5Orders[2])
   const value = value1.add(value2)

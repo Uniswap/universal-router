@@ -1,4 +1,4 @@
-import { UniversalRouter, Permit2, IWETH9 } from '../../../typechain'
+import { UniversalRouter, Permit2, IWETH9, ERC20 } from '../../../typechain'
 import { expect } from '../shared/expect'
 import type { Contract } from '@ethersproject/contracts'
 import {
@@ -18,7 +18,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { expandTo18DecimalsBN } from '../shared/helpers'
 import {
-  seaportOrders,
+  seaportV1_5Orders,
   seaportInterface,
   getAdvancedOrderParams,
   AdvancedOrder,
@@ -34,17 +34,17 @@ describe('UniversalRouter Gas Tests', () => {
   let planner: RoutePlanner
   let router: UniversalRouter
   let permit2: Permit2
-  let daiContract: Contract
+  let daiContract: ERC20
   let wethContract: IWETH9
 
   beforeEach(async () => {
-    await resetFork()
+    await resetFork(17179617)
     alice = await ethers.getSigner(ALICE_ADDRESS)
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
     })
-    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
+    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
     wethContract = new ethers.Contract(WETH.address, WETH_ABI, alice) as IWETH9
     permit2 = (await deployPermit2()).connect(alice) as Permit2
     router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
@@ -60,7 +60,7 @@ describe('UniversalRouter Gas Tests', () => {
     let value: BigNumber
 
     beforeEach(async () => {
-      ;({ advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0]))
+      ;({ advancedOrder, value } = getAdvancedOrderParams(seaportV1_5Orders[0]))
       await daiContract.approve(permit2.address, MAX_UINT)
       await wethContract.approve(permit2.address, MAX_UINT)
       await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)

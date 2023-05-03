@@ -19,16 +19,15 @@ import { getPermitSignature } from './shared/protocolHelpers/permit2'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 const { ethers } = hre
 
-describe.only('Seaport v1.5', () => {
+describe('Seaport v1.5', () => {
   let router: UniversalRouter
   let permit2: Permit2
   let planner: RoutePlanner
-  let townStarNFT: Contract
+  let townStarNFT: ERC1155
   let alice: SignerWithAddress
 
   describe('ETH -> NFT', () => {
     beforeEach(async () => {
-      // test data from block 17175824
       await resetFork(17179617)
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -117,11 +116,10 @@ describe.only('Seaport v1.5', () => {
     })
 
     it('reverts if order does not go through', async () => {
-      let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportV1_5Orders[0]))
+      let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportV1_5Orders[1]))
 
       invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
       const { advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder)
-      const tokenId = seaportOrder.parameters.offer[0].identifierOrCriteria
 
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         seaportOrder,
@@ -130,20 +128,14 @@ describe.only('Seaport v1.5', () => {
         alice.address,
       ])
 
-      planner.addCommand(CommandType.SEAPORT_V1_5, [seaportValue.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_4, [seaportValue.toString(), calldata])
       const { commands, inputs } = planner
 
-      console.log("commands (should be 0x10 for non-reverting): " + commands)
-      console.log("inputs (should include 0xdeadbeef): " + inputs)
-      const balanceBefore = await townStarNFT.balanceOf(alice.address, tokenId)
-
-      // const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
-      // const customErrorSelector = findCustomErrorSelector(testCustomErrors.interface, 'InvalidSignature')
-      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: seaportValue })
-
-      const balanceAfter = await townStarNFT.balanceOf(alice.address, tokenId)
-      console.log("alice NFT Balance before: " + balanceBefore)
-      console.log("alice NFT Balance after: " + balanceAfter)
+      const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
+      const customErrorSelector = findCustomErrorSelector(testCustomErrors.interface, 'InvalidSignature')
+      await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value: seaportValue }))
+        .to.be.revertedWithCustomError(router, 'ExecutionFailed')
+        .withArgs(0, customErrorSelector)
     })
   })
 })
