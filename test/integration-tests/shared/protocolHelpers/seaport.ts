@@ -1,5 +1,4 @@
-import SEAPORT_ABI from '../abis/Seaport.json'
-import SEAPORT_V1_4_ABI from '../abis/SeaportV1_4.json'
+import SEAPORT_V1_4_AND_V1_5_ABI from '../abis/Seaport.json'
 import { BigNumber } from 'ethers'
 import { expandTo18DecimalsBN } from '../helpers'
 import { OPENSEA_CONDUIT_KEY } from '../constants'
@@ -7,14 +6,13 @@ import fs from 'fs'
 import hre from 'hardhat'
 const { ethers } = hre
 
-export const seaportOrders = JSON.parse(
-  fs.readFileSync('test/integration-tests/shared/orders/Seaport.json', { encoding: 'utf8' })
+export const seaportV1_5Orders = JSON.parse(
+  fs.readFileSync('test/integration-tests/shared/orders/SeaportV1_5.json', { encoding: 'utf8' })
 )
 export const seaportV1_4Orders = JSON.parse(
   fs.readFileSync('test/integration-tests/shared/orders/SeaportV1_4.json', { encoding: 'utf8' })
 )
-export const seaportInterface = new ethers.utils.Interface(SEAPORT_ABI)
-export const seaportV1_4Interface = new ethers.utils.Interface(SEAPORT_V1_4_ABI)
+export const seaportInterface = new ethers.utils.Interface(SEAPORT_V1_4_AND_V1_5_ABI)
 // @dev 0 bytes conduit key for an order that was not sent through the OpenSea conduit
 export const ZERO_CONDUIT_KEY = '0x0000000000000000000000000000000000000000000000000000000000000000'
 
@@ -84,34 +82,35 @@ export function calculateValue(considerations: ConsiderationItem[]): BigNumber {
   )
 }
 
-type BuyCovensReturnData = {
+type BuyTownStarsReturnData = {
   calldata: string
   advancedOrder0: AdvancedOrder
   advancedOrder1: AdvancedOrder
   value: BigNumber
 }
 
-export function purchaseDataForTwoCovensSeaport(receipient: string): BuyCovensReturnData {
-  const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportOrders[0])
-  const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportOrders[1])
+export function purchaseDataForTwoTownstarsSeaport(receipient: string): BuyTownStarsReturnData {
+  const { advancedOrder: advancedOrder0, value: value1 } = getAdvancedOrderParams(seaportV1_5Orders[1])
+  const { advancedOrder: advancedOrder1, value: value2 } = getAdvancedOrderParams(seaportV1_5Orders[2])
   const value = value1.add(value2)
+  const orderFulFillment = [[{ orderIndex: '0', itemIndex: '0' }], [{ orderIndex: '1', itemIndex: '0' }]]
   const considerationFulfillment = [
-    [[0, 0]],
+    [{ orderIndex: '0', itemIndex: '0' }],
     [
-      [0, 1],
-      [1, 1],
+      { orderIndex: '0', itemIndex: '1' },
+      { orderIndex: '1', itemIndex: '1' },
     ],
     [
-      [0, 2],
-      [1, 2],
+      { orderIndex: '0', itemIndex: '2' },
+      { orderIndex: '1', itemIndex: '2' },
     ],
-    [[1, 0]],
+    [{ orderIndex: '1', itemIndex: '0' }],
   ]
 
   const calldata = seaportInterface.encodeFunctionData('fulfillAvailableAdvancedOrders', [
     [advancedOrder0, advancedOrder1],
     [],
-    [[[0, 0]], [[1, 0]]],
+    orderFulFillment,
     considerationFulfillment,
     OPENSEA_CONDUIT_KEY,
     receipient,
