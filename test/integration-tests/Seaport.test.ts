@@ -3,16 +3,14 @@ import { expect } from './shared/expect'
 import { BigNumber, Contract } from 'ethers'
 import { UniversalRouter, Permit2, ERC721, ERC1155 } from '../../typechain'
 import {
-  seaportOrders,
+  seaportV1_5Orders,
   seaportInterface,
-  seaportV1_4Interface,
   getAdvancedOrderParams,
-  purchaseDataForTwoCovensSeaport,
   seaportV1_4Orders,
+  purchaseDataForTwoTownstarsSeaport,
 } from './shared/protocolHelpers/seaport'
 import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
-import { COVEN_721, WETH, resetFork, TOWNSTAR_1155, GALA } from './shared/mainnetForkHelpers'
-import { abi as ERC20_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
+import { COVEN_721, resetFork, TOWNSTAR_1155, GALA } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -21,125 +19,16 @@ import { getPermitSignature } from './shared/protocolHelpers/permit2'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 const { ethers } = hre
 
-describe('Seaport v1.1', () => {
+describe('Seaport v1.5', () => {
   let router: UniversalRouter
   let permit2: Permit2
   let planner: RoutePlanner
-  let cryptoCovens: ERC721
-  let weth: Contract
-  let bob: SignerWithAddress
+  let townStarNFT: ERC1155
   let alice: SignerWithAddress
-
-  // @dev We have to separate the ERC20 tests because we use orders taken from a much
-  // newer block. If we were to replace all of the example orders with newer ones,
-  // many existing tests would break.
-  describe('ERC20 -> NFT', () => {
-    beforeEach(async () => {
-      await resetFork(16635782)
-      // alice can't sign permits as we don't have her private key. Instead bob is used
-      bob = (await ethers.getSigners())[1]
-      permit2 = (await deployPermit2()).connect(bob) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
-      planner = new RoutePlanner()
-      cryptoCovens = COVEN_721.connect(bob) as ERC721
-      weth = new ethers.Contract(WETH.address, ERC20_ABI, bob)
-
-      // bob deposits 10 eth into weth
-      await bob.sendTransaction({ to: weth.address, value: ethers.utils.parseEther('10') })
-      // approve permit2 for all for bob's weth
-      await weth.approve(permit2.address, ethers.constants.MaxUint256)
-    })
-
-    it('completes an advanced order offering ERC20', async () => {
-      // seaportOrders[2] is an order containing ERC20 (WETH) as consideration
-      const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[2])
-      const params = advancedOrder.parameters
-      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
-        advancedOrder,
-        [],
-        OPENSEA_CONDUIT_KEY,
-        bob.address,
-      ])
-      const considerationToken = params.consideration[0].token
-      const permit = {
-        details: {
-          token: weth.address,
-          amount: value,
-          expiration: 0, // expiration of 0 is block.timestamp
-          nonce: 0, // this is his first trade
-        },
-        spender: router.address,
-        sigDeadline: DEADLINE,
-      }
-      const sig = await getPermitSignature(permit, bob, permit2)
-
-      planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
-      planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
-      planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [weth.address, router.address, value])
-      planner.addCommand(CommandType.SEAPORT_V1_5, [0, calldata])
-      const { commands, inputs } = planner
-
-      const wethBalanceBefore = await weth.balanceOf(bob.address)
-      const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
-      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
-      const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
-      const wethBalanceAfter = await weth.balanceOf(bob.address)
-
-      expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
-      expect(ownerAfter).to.eq(bob.address)
-      expect(wethBalanceBefore.sub(wethBalanceAfter)).to.eq(value)
-    })
-
-    it('completes an advanced order where ERC20 is already approved', async () => {
-      // seaportOrders[2] is an order containing ERC20 (WETH) as consideration
-      const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[2])
-      const params = advancedOrder.parameters
-      const considerationToken = params.consideration[0].token
-
-      // A previous txn which approves the conduit to spend the router's consideration token balance
-      planner.addCommand(CommandType.APPROVE_ERC20, [considerationToken, 0])
-      await router['execute(bytes,bytes[],uint256)'](planner.commands, planner.inputs, DEADLINE)
-
-      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
-        advancedOrder,
-        [],
-        OPENSEA_CONDUIT_KEY,
-        bob.address,
-      ])
-
-      const permit = {
-        details: {
-          token: weth.address,
-          amount: value,
-          expiration: 0, // expiration of 0 is block.timestamp
-          nonce: 0, // this is his first trade
-        },
-        spender: router.address,
-        sigDeadline: DEADLINE,
-      }
-      const sig = await getPermitSignature(permit, bob, permit2)
-
-      planner = new RoutePlanner()
-      planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
-      planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [weth.address, router.address, value])
-      planner.addCommand(CommandType.SEAPORT_V1_5, [0, calldata])
-      const { commands, inputs } = planner
-
-      const wethBalanceBefore = await weth.balanceOf(bob.address)
-      const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
-      await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
-      const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
-      const wethBalanceAfter = await weth.balanceOf(bob.address)
-
-      expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
-      expect(ownerAfter).to.eq(bob.address)
-      expect(wethBalanceBefore.sub(wethBalanceAfter)).to.eq(value)
-    })
-  })
 
   describe('ETH -> NFT', () => {
     beforeEach(async () => {
-      await resetFork()
+      await resetFork(17179617)
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
@@ -148,12 +37,11 @@ describe('Seaport v1.1', () => {
       permit2 = (await deployPermit2()).connect(alice) as Permit2
       router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
-      cryptoCovens = COVEN_721.connect(alice) as ERC721
-      weth = new ethers.Contract(WETH.address, ERC20_ABI, alice)
+      townStarNFT = TOWNSTAR_1155.connect(alice) as ERC1155
     })
 
     it('completes a fulfillAdvancedOrder type', async () => {
-      const { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
+      const { advancedOrder, value } = getAdvancedOrderParams(seaportV1_5Orders[0])
       const params = advancedOrder.parameters
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
@@ -161,23 +49,23 @@ describe('Seaport v1.1', () => {
         OPENSEA_CONDUIT_KEY,
         alice.address,
       ])
+      const tokenId = params.offer[0].identifierOrCriteria
 
       planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
       const { commands, inputs } = planner
 
-      const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
+      const balanceBefore = await townStarNFT.balanceOf(alice.address, tokenId)
       await expect(
         router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
       ).to.changeEtherBalance(alice, value.mul(-1))
 
-      const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
+      const balanceAfter = await townStarNFT.balanceOf(alice.address, tokenId)
 
-      expect(ownerBefore.toLowerCase()).to.eq(params.offerer)
-      expect(ownerAfter).to.eq(alice.address)
+      expect(balanceAfter.sub(balanceBefore)).to.eq(1)
     })
 
     it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
-      let { advancedOrder, value } = getAdvancedOrderParams(seaportOrders[0])
+      let { advancedOrder, value } = getAdvancedOrderParams(seaportV1_5Orders[0])
       const params = advancedOrder.parameters
       const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
@@ -185,6 +73,7 @@ describe('Seaport v1.1', () => {
         OPENSEA_CONDUIT_KEY,
         alice.address,
       ])
+      const tokenId = params.offer[0].identifierOrCriteria
 
       // Allow seaport to revert
       planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata], true)
@@ -192,7 +81,7 @@ describe('Seaport v1.1', () => {
 
       const { commands, inputs } = planner
 
-      const ownerBefore = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
+      const balanceBefore = await townStarNFT.balanceOf(alice.address, tokenId)
 
       // don't send enough ETH, so the seaport purchase reverts
       value = BigNumber.from(value).sub(1)
@@ -200,36 +89,34 @@ describe('Seaport v1.1', () => {
         router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
       ).to.changeEtherBalance(alice, 0)
 
-      const ownerAfter = await cryptoCovens.ownerOf(params.offer[0].identifierOrCriteria)
-      // The owner was unchanged, the user got the eth back
-      expect(ownerBefore.toLowerCase()).to.eq(ownerAfter.toLowerCase())
+      const balanceAfter = await townStarNFT.balanceOf(alice.address, tokenId)
+      // The balance was unchanged, the user got the eth back
+      expect(balanceBefore).to.eq(balanceAfter)
     })
 
     it('completes a fulfillAvailableAdvancedOrders type', async () => {
-      const { calldata, advancedOrder0, advancedOrder1, value } = purchaseDataForTwoCovensSeaport(alice.address)
+      const { calldata, advancedOrder0, advancedOrder1, value } = purchaseDataForTwoTownstarsSeaport(alice.address)
       const params0 = advancedOrder0.parameters
       const params1 = advancedOrder1.parameters
       planner.addCommand(CommandType.SEAPORT_V1_5, [value.toString(), calldata])
       const { commands, inputs } = planner
 
-      const owner0Before = await cryptoCovens.ownerOf(params0.offer[0].identifierOrCriteria)
-      const owner1Before = await cryptoCovens.ownerOf(params1.offer[0].identifierOrCriteria)
+      const balance0Before = await townStarNFT.balanceOf(alice.address, params0.offer[0].identifierOrCriteria)
+      const balance1Before = await townStarNFT.balanceOf(alice.address, params1.offer[0].identifierOrCriteria)
 
       await expect(
         router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })
       ).to.changeEtherBalance(alice, value.mul(-1))
 
-      const owner0After = await cryptoCovens.ownerOf(params0.offer[0].identifierOrCriteria)
-      const owner1After = await cryptoCovens.ownerOf(params1.offer[0].identifierOrCriteria)
+      const balance0After = await townStarNFT.balanceOf(alice.address, params0.offer[0].identifierOrCriteria)
+      const balance1After = await townStarNFT.balanceOf(alice.address, params1.offer[0].identifierOrCriteria)
 
-      expect(owner0Before.toLowerCase()).to.eq(params0.offerer)
-      expect(owner1Before.toLowerCase()).to.eq(params1.offerer)
-      expect(owner0After).to.eq(alice.address)
-      expect(owner1After).to.eq(alice.address)
+      expect(balance0After.sub(balance0Before)).to.eq(1)
+      expect(balance1After.sub(balance1Before)).to.eq(1)
     })
 
     it('reverts if order does not go through', async () => {
-      let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportOrders[0]))
+      let invalidSeaportOrder = JSON.parse(JSON.stringify(seaportV1_5Orders[1]))
 
       invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
       const { advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder)
@@ -241,7 +128,7 @@ describe('Seaport v1.1', () => {
         alice.address,
       ])
 
-      planner.addCommand(CommandType.SEAPORT_V1_5, [seaportValue.toString(), calldata])
+      planner.addCommand(CommandType.SEAPORT_V1_4, [seaportValue.toString(), calldata])
       const { commands, inputs } = planner
 
       const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
@@ -292,7 +179,7 @@ describe('Seaport v1.4', () => {
       const considerationToken = params.consideration[0].token
       const tokenId = params.offer[0].identifierOrCriteria
 
-      const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
         [],
         OPENSEA_CONDUIT_KEY,
@@ -344,7 +231,7 @@ describe('Seaport v1.4', () => {
     it('completes a fulfillAdvancedOrder type', async () => {
       const { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
       const params = advancedOrder.parameters
-      const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
         [],
         OPENSEA_CONDUIT_KEY,
@@ -367,7 +254,7 @@ describe('Seaport v1.4', () => {
     it('revertable fulfillAdvancedOrder reverts and sweeps ETH', async () => {
       let { advancedOrder, value } = getAdvancedOrderParams(seaportV1_4Orders[0])
       const params = advancedOrder.parameters
-      const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         advancedOrder,
         [],
         OPENSEA_CONDUIT_KEY,
@@ -406,7 +293,7 @@ describe('Seaport v1.4', () => {
       invalidSeaportOrder.protocol_data.signature = '0xdeadbeef'
       const { advancedOrder: seaportOrder, value: seaportValue } = getAdvancedOrderParams(invalidSeaportOrder)
 
-      const calldata = seaportV1_4Interface.encodeFunctionData('fulfillAdvancedOrder', [
+      const calldata = seaportInterface.encodeFunctionData('fulfillAdvancedOrder', [
         seaportOrder,
         [],
         OPENSEA_CONDUIT_KEY,
