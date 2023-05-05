@@ -1,4 +1,4 @@
-import SEAPORT_V1_4_ABI from '../abis/SeaportV1_4.json'
+import SEAPORT_V1_4_AND_V1_5_ABI from '../abis/Seaport.json'
 import { BigNumber } from 'ethers'
 import { expandTo18DecimalsBN } from '../helpers'
 import { OPENSEA_CONDUIT_KEY } from '../constants'
@@ -12,7 +12,7 @@ export const seaportV1_5Orders = JSON.parse(
 export const seaportV1_4Orders = JSON.parse(
   fs.readFileSync('test/integration-tests/shared/orders/SeaportV1_4.json', { encoding: 'utf8' })
 )
-export const seaportInterface = new ethers.utils.Interface(SEAPORT_V1_4_ABI)
+export const seaportInterface = new ethers.utils.Interface(SEAPORT_V1_4_AND_V1_5_ABI)
 // @dev 0 bytes conduit key for an order that was not sent through the OpenSea conduit
 export const ZERO_CONDUIT_KEY = '0x0000000000000000000000000000000000000000000000000000000000000000'
 
