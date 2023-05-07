@@ -28,8 +28,11 @@ abstract contract Permit2Payments is Payments {
         internal
     {
         uint256 batchLength = batchDetails.length;
-        for (uint256 i = 0; i < batchLength; ++i) {
+        for (uint256 i = 0; i < batchLength;) {
             if (batchDetails[i].from != owner) revert FromAddressIsNotOwner();
+            unchecked {
+                ++i;
+            }
         }
         PERMIT2.transferFrom(batchDetails);
     }

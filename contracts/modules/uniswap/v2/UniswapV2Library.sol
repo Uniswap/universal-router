@@ -137,12 +137,14 @@ library UniswapV2Library {
     {
         if (path.length < 2) revert InvalidPath();
         amount = amountOut;
-        for (uint256 i = path.length - 1; i > 0; i--) {
-            uint256 reserveIn;
-            uint256 reserveOut;
+        unchecked {
+            for (uint256 i = path.length - 1; i > 0; --i) {
+                uint256 reserveIn;
+                uint256 reserveOut;
 
-            (pair, reserveIn, reserveOut) = pairAndReservesFor(factory, initCodeHash, path[i - 1], path[i]);
-            amount = getAmountIn(amount, reserveIn, reserveOut);
+                (pair, reserveIn, reserveOut) = pairAndReservesFor(factory, initCodeHash, path[i - 1], path[i]);
+                amount = getAmountIn(amount, reserveIn, reserveOut);
+            }
         }
     }
 }
