@@ -90,16 +90,26 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         while (true) {
             bool hasMultiplePools = path.hasMultiplePools();
 
+            // for intermediate swaps, this contract custodies
+            address _recipient;
+            assembly {
+                // hasMultiplePools ? address(this) : recipient
+                _recipient := xor(recipient, mul(xor(address(), recipient), hasMultiplePools))
+            }
             // the outputs of prior swaps become the inputs to subsequent ones
             (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = _swap(
                 amountIn.toInt256(),
-                hasMultiplePools ? address(this) : recipient, // for intermediate swaps, this contract custodies
+                _recipient,
                 path.getFirstPool(), // only the first pool is needed
                 payer, // for intermediate swaps, this contract custodies
                 true
             );
 
-            amountIn = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
+            // amountIn = uint256(-(zeroForOne ? amount1Delta : amount0Delta))
+            assembly {
+                // no need to check for underflow here as it will be caught in `toInt256()`
+                amountIn := sub(0, xor(amount0Delta, mul(xor(amount1Delta, amount0Delta), zeroForOne)))
+            }
 
             // decide whether to continue or terminate
             if (hasMultiplePools) {
@@ -131,7 +141,12 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
             _swap(-amountOut.toInt256(), recipient, path, payer, false);
 
-        uint256 amountOutReceived = zeroForOne ? uint256(-amount1Delta) : uint256(-amount0Delta);
+        uint256 amountOutReceived;
+        assembly {
+            // amountOutReceived = uint256(-(zeroForOne ? amount1Delta : amount0Delta))
+            // no need to check for underflow
+            amountOutReceived := sub(0, xor(amount0Delta, mul(xor(amount1Delta, amount0Delta), zeroForOne)))
+        }
 
         if (amountOutReceived != amountOut) revert V3InvalidAmountOut();
 
@@ -144,29 +159,45 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         private
         returns (int256 amount0Delta, int256 amount1Delta, bool zeroForOne)
     {
-        (address tokenIn, uint24 fee, address tokenOut) = path.decodeFirstPool();
+        address pool;
+        {
+            (address tokenIn, uint24 fee, address tokenOut) = path.decodeFirstPool();
+            pool = computePoolAddress(tokenIn, tokenOut, fee);
+            // When isExactIn == 1, zeroForOne = tokenIn < tokenOut = !(tokenOut < tokenIn) = 1 ^ (tokenOut < tokenIn)
+            // When isExactIn == 0, zeroForOne = tokenOut < tokenIn = 0 ^ (tokenOut < tokenIn)
+            assembly {
+                zeroForOne := xor(isExactIn, lt(tokenOut, tokenIn))
+            }
+        }
 
-        zeroForOne = isExactIn ? tokenIn < tokenOut : tokenOut < tokenIn;
-
-        (amount0Delta, amount1Delta) = IUniswapV3Pool(computePoolAddress(tokenIn, tokenOut, fee)).swap(
-            recipient,
-            zeroForOne,
-            amount,
-            (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1),
-            abi.encode(path, payer)
-        );
+        uint160 sqrtPriceLimitX96;
+        // Equivalent to `sqrtPriceLimitX96 = zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1`
+        assembly {
+            sqrtPriceLimitX96 :=
+                xor(
+                    0xfffd8963efd1fc6a506488495d951d5263988d25, // MAX_SQRT_RATIO - 1
+                    mul(
+                        0xfffd8963efd1fc6a506488495d951d53639afb81, // MAX_SQRT_RATIO - 1 ^ MIN_SQRT_RATIO + 1
+                        zeroForOne
+                    )
+                )
+        }
+        (amount0Delta, amount1Delta) =
+            IUniswapV3Pool(pool).swap(recipient, zeroForOne, amount, sqrtPriceLimitX96, abi.encode(path, payer));
     }
 
     function computePoolAddress(address tokenA, address tokenB, uint24 fee) private view returns (address pool) {
         address factory = UNISWAP_V3_FACTORY;
         bytes32 initCodeHash = UNISWAP_V3_POOL_INIT_CODE_HASH;
-        if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA);
         assembly ("memory-safe") {
             // Get the free memory pointer.
             let fmp := mload(0x40)
             // Hash the pool key.
-            mstore(fmp, tokenA)
-            mstore(add(fmp, 0x20), tokenB)
+            // Equivalent to `if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA)`
+            let diff := mul(xor(tokenA, tokenB), lt(tokenB, tokenA))
+            // poolHash = abi.encode(tokenA, tokenB, fee)
+            mstore(fmp, xor(tokenA, diff))
+            mstore(add(fmp, 0x20), xor(tokenB, diff))
             mstore(add(fmp, 0x40), fee)
             let poolHash := keccak256(fmp, 0x60)
             // abi.encodePacked(hex'ff', factory, poolHash, initCodeHash)
@@ -176,10 +207,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
             mstore(add(fmp, 0x15), poolHash)
             mstore(add(fmp, 0x35), initCodeHash)
             // Compute the CREATE2 pool address and clean the upper bits.
-            pool := and(
-                keccak256(fmp, 0x55),
-                0xffffffffffffffffffffffffffffffffffffffff
-            )
+            pool := and(keccak256(fmp, 0x55), 0xffffffffffffffffffffffffffffffffffffffff)
         }
     }
 }
