@@ -158,20 +158,28 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
     }
 
     function computePoolAddress(address tokenA, address tokenB, uint24 fee) private view returns (address pool) {
+        address factory = UNISWAP_V3_FACTORY;
+        bytes32 initCodeHash = UNISWAP_V3_POOL_INIT_CODE_HASH;
         if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA);
-        pool = address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            hex'ff',
-                            UNISWAP_V3_FACTORY,
-                            keccak256(abi.encode(tokenA, tokenB, fee)),
-                            UNISWAP_V3_POOL_INIT_CODE_HASH
-                        )
-                    )
-                )
+        assembly ("memory-safe") {
+            // Get the free memory pointer.
+            let fmp := mload(0x40)
+            // Hash the pool key.
+            mstore(fmp, tokenA)
+            mstore(add(fmp, 0x20), tokenB)
+            mstore(add(fmp, 0x40), fee)
+            let poolHash := keccak256(fmp, 0x60)
+            // abi.encodePacked(hex'ff', factory, poolHash, initCodeHash)
+            mstore(fmp, factory)
+            fmp := add(fmp, 0x0b)
+            mstore8(fmp, 0xff)
+            mstore(add(fmp, 0x15), poolHash)
+            mstore(add(fmp, 0x35), initCodeHash)
+            // Compute the CREATE2 pool address and clean the upper bits.
+            pool := and(
+                keccak256(fmp, 0x55),
+                0xffffffffffffffffffffffffffffffffffffffff
             )
-        );
+        }
     }
 }
