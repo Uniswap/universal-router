@@ -39,8 +39,12 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         if (amount0Delta <= 0 && amount1Delta <= 0) revert V3InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
-        (, address payer) = abi.decode(data, (bytes, address));
         bytes calldata path = data.toBytes(0);
+        address payer;
+        assembly {
+            // equivalent: abi.decode(data, (bytes, address))
+            payer := calldataload(add(data.offset, 0x20))
+        }
 
         // because exact output swaps are executed in reverse order, in this case tokenOut is actually tokenIn
         (address tokenIn, uint24 fee, address tokenOut) = path.decodeFirstPool();
