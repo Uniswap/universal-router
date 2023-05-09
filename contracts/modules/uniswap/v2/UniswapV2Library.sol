@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0;
 
 import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
-import {TernaryLib} from './TernaryLib.sol';
+import {TernaryLib} from '../TernaryLib.sol';
 
 /// @title Uniswap v2 Helper Library
 /// @notice Calculates the recipient address for a command
@@ -53,10 +53,12 @@ library UniswapV2Library {
         pure
         returns (address pair)
     {
+        // accomplishes the following:
+        // address(keccak256(abi.encodePacked(hex'ff', factory, keccak256(abi.encodePacked(token0, token1)), initCodeHash)))
         assembly ("memory-safe") {
             // Get the free memory pointer.
             let fmp := mload(0x40)
-            // keccak256(abi.encodePacked(token0, token1))
+            // pairHash = keccak256(abi.encodePacked(token0, token1))
             mstore(add(fmp, 0x14), token1)
             mstore(fmp, token0)
             let pairHash := keccak256(add(fmp, 0x0c), 0x28)
@@ -87,7 +89,7 @@ library UniswapV2Library {
         address token0;
         (pair, token0) = pairAndToken0For(factory, initCodeHash, tokenA, tokenB);
         (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
-        (reserveA, reserveB) = TernaryLib.swapIf(tokenA == token0, reserve1, reserve0);
+        (reserveA, reserveB) = TernaryLib.switchIf(tokenA == token0, reserve1, reserve0);
     }
 
     /// @notice Given an input asset amount returns the maximum output amount of the other asset

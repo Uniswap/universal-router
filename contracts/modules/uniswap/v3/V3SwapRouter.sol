@@ -11,12 +11,14 @@ import {RouterImmutables} from '../../../base/RouterImmutables.sol';
 import {Permit2Payments} from '../../Permit2Payments.sol';
 import {Constants} from '../../../libraries/Constants.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
+import {TernaryLib} from '../TernaryLib.sol';
 
 /// @title Router for Uniswap v3 Trades
 abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3SwapCallback {
     using V3Path for bytes;
     using BytesLib for bytes;
     using SafeCast for uint256;
+    using TernaryLib for bool;
 
     error V3InvalidSwap();
     error V3TooLittleReceived();
@@ -36,6 +38,12 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
 
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
+
+    /// @dev Literal numbers used in sqrtPriceLimitX96 = zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1
+    /// = (MAX_SQRT_RATIO - 1) ^ ((MIN_SQRT_RATIO + 1 ^ MAX_SQRT_RATIO - 1) * zeroForOne)
+    uint160 internal constant MAX_SQRT_RATIO_LESS_ONE = 1461446703485210103287273052203988822378723970341;
+    /// @dev MIN_SQRT_RATIO + 1 ^ MAX_SQRT_RATIO - 1
+    uint160 internal constant XOR_SQRT_RATIO = 1461446703485210103287273052203988822383019096961;
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         if (amount0Delta <= 0 && amount1Delta <= 0) revert V3InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
@@ -90,25 +98,18 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         while (true) {
             bool hasMultiplePools = path.hasMultiplePools();
 
-            // for intermediate swaps, this contract custodies
-            address _recipient;
-            assembly {
-                // hasMultiplePools ? address(this) : recipient
-                _recipient := xor(recipient, mul(xor(address(), recipient), hasMultiplePools))
-            }
             // the outputs of prior swaps become the inputs to subsequent ones
             (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = _swap(
                 amountIn.toInt256(),
-                _recipient,
+                hasMultiplePools.ternary(address(this), recipient), // for intermediate swaps, this contract custodies
                 path.getFirstPool(), // only the first pool is needed
                 payer, // for intermediate swaps, this contract custodies
                 true
             );
 
-            // amountIn = uint256(-(zeroForOne ? amount1Delta : amount0Delta))
-            assembly {
-                // no need to check for underflow here as it will be caught in `toInt256()`
-                amountIn := sub(0, xor(amount0Delta, mul(xor(amount1Delta, amount0Delta), zeroForOne)))
+            unchecked {
+                // no need to check for overflow here as it will be caught in `toInt256()`
+                amountIn = uint256(-zeroForOne.ternary(amount1Delta, amount0Delta));
             }
 
             // decide whether to continue or terminate
@@ -141,14 +142,11 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
             _swap(-amountOut.toInt256(), recipient, path, payer, false);
 
-        uint256 amountOutReceived;
-        assembly {
-            // amountOutReceived = uint256(-(zeroForOne ? amount1Delta : amount0Delta))
-            // no need to check for underflow
-            amountOutReceived := sub(0, xor(amount0Delta, mul(xor(amount1Delta, amount0Delta), zeroForOne)))
+        unchecked {
+            // no need to check for overflow
+            uint256 amountOutReceived = uint256(-zeroForOne.ternary(amount1Delta, amount0Delta));
+            if (amountOutReceived != amountOut) revert V3InvalidAmountOut();
         }
-
-        if (amountOutReceived != amountOut) revert V3InvalidAmountOut();
 
         maxAmountInCached = DEFAULT_MAX_AMOUNT_IN;
     }
@@ -173,14 +171,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         uint160 sqrtPriceLimitX96;
         // Equivalent to `sqrtPriceLimitX96 = zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1`
         assembly {
-            sqrtPriceLimitX96 :=
-                xor(
-                    0xfffd8963efd1fc6a506488495d951d5263988d25, // MAX_SQRT_RATIO - 1
-                    mul(
-                        0xfffd8963efd1fc6a506488495d951d53639afb81, // MAX_SQRT_RATIO - 1 ^ MIN_SQRT_RATIO + 1
-                        zeroForOne
-                    )
-                )
+            sqrtPriceLimitX96 := xor(MAX_SQRT_RATIO_LESS_ONE, mul(XOR_SQRT_RATIO, zeroForOne))
         }
         (amount0Delta, amount1Delta) =
             IUniswapV3Pool(pool).swap(recipient, zeroForOne, amount, sqrtPriceLimitX96, abi.encode(path, payer));
@@ -195,7 +186,7 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
             // Hash the pool key.
             // Equivalent to `if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA)`
             let diff := mul(xor(tokenA, tokenB), lt(tokenB, tokenA))
-            // poolHash = abi.encode(tokenA, tokenB, fee)
+            // poolHash = keccak256(abi.encode(tokenA, tokenB, fee))
             mstore(fmp, xor(tokenA, diff))
             mstore(add(fmp, 0x20), xor(tokenB, diff))
             mstore(add(fmp, 0x40), fee)

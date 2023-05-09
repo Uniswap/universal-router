@@ -8,7 +8,7 @@ import {Payments} from '../../Payments.sol';
 import {Permit2Payments} from '../../Permit2Payments.sol';
 import {Constants} from '../../../libraries/Constants.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
-import {TernaryLib} from './TernaryLib.sol';
+import {TernaryLib} from '../TernaryLib.sol';
 
 /// @title Router for Uniswap v2 Trades
 abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
@@ -31,10 +31,10 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
                 {
                     (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
                     (uint256 reserveInput, uint256 reserveOutput) =
-                        TernaryLib.swapIf(input == token0, reserve1, reserve0);
+                        TernaryLib.switchIf(input == token0, reserve1, reserve0);
                     uint256 amountInput = ERC20(input).balanceOf(pair) - reserveInput;
                     uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
-                    (amount0Out, amount1Out) = TernaryLib.swapIf(input == token0, amountOutput, 0);
+                    (amount0Out, amount1Out) = TernaryLib.switchIf(input == token0, amountOutput, 0);
                 }
                 address nextPair;
                 (nextPair, token0) = i < penultimatePairIndex

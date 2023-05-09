@@ -10,10 +10,18 @@ library TernaryLib {
         }
     }
 
-    /// @notice Sorts two uint256 in ascending order
-    /// @dev Equivalent to: `a < b ? (a, b) : (b, a)`
-    function sort2(uint256 a, uint256 b) internal pure returns (uint256, uint256) {
-        return swapIf(b < a, a, b);
+    /// @notice Equivalent to the ternary operator: `condition ? a : b`
+    function ternary(bool condition, int256 a, int256 b) internal pure returns (int256 res) {
+        assembly {
+            res := xor(b, mul(xor(a, b), condition))
+        }
+    }
+
+    /// @notice Equivalent to the ternary operator: `condition ? a : b`
+    function ternary(bool condition, address a, address b) internal pure returns (address res) {
+        assembly {
+            res := xor(b, mul(xor(a, b), condition))
+        }
     }
 
     /// @notice Sorts two tokens to return token0 and token1
@@ -29,9 +37,9 @@ library TernaryLib {
         }
     }
 
-    /// @notice Swaps two uint256 if `condition` is true
+    /// @notice Switches two uint256 if `condition` is true
     /// @dev Equivalent to: `condition ? (b, a) : (a, b)`
-    function swapIf(bool condition, uint256 a, uint256 b) internal pure returns (uint256, uint256) {
+    function switchIf(bool condition, uint256 a, uint256 b) internal pure returns (uint256, uint256) {
         assembly {
             let diff := mul(xor(a, b), condition)
             a := xor(a, diff)
