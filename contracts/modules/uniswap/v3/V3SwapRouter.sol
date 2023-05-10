@@ -39,12 +39,6 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
 
-    /// @dev Literal numbers used in sqrtPriceLimitX96 = zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1
-    /// = (MAX_SQRT_RATIO - 1) ^ ((MIN_SQRT_RATIO + 1 ^ MAX_SQRT_RATIO - 1) * zeroForOne)
-    uint160 internal constant MAX_SQRT_RATIO_LESS_ONE = 1461446703485210103287273052203988822378723970341;
-    /// @dev MIN_SQRT_RATIO + 1 ^ MAX_SQRT_RATIO - 1
-    uint160 internal constant XOR_SQRT_RATIO = 1461446703485210103287273052203988822383019096961;
-
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         if (amount0Delta <= 0 && amount1Delta <= 0) revert V3InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
         (, address payer) = abi.decode(data, (bytes, address));
@@ -168,18 +162,20 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
             }
         }
 
-        uint160 sqrtPriceLimitX96;
-        // Equivalent to `sqrtPriceLimitX96 = zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1`
-        assembly {
-            sqrtPriceLimitX96 := xor(MAX_SQRT_RATIO_LESS_ONE, mul(XOR_SQRT_RATIO, zeroForOne))
-        }
-        (amount0Delta, amount1Delta) =
-            IUniswapV3Pool(pool).swap(recipient, zeroForOne, amount, sqrtPriceLimitX96, abi.encode(path, payer));
+        (amount0Delta, amount1Delta) = IUniswapV3Pool(pool).swap(
+            recipient,
+            zeroForOne,
+            amount,
+            uint160(zeroForOne.ternary(MIN_SQRT_RATIO + 1, MAX_SQRT_RATIO - 1)),
+            abi.encode(path, payer)
+        );
     }
 
     function computePoolAddress(address tokenA, address tokenB, uint24 fee) private view returns (address pool) {
         address factory = UNISWAP_V3_FACTORY;
         bytes32 initCodeHash = UNISWAP_V3_POOL_INIT_CODE_HASH;
+        // accomplishes the following:
+        // address(keccak256(abi.encodePacked(hex'ff', factory, keccak256(abi.encode(tokenA, tokenB, fee)), initCodeHash)))
         assembly ("memory-safe") {
             // Get the free memory pointer.
             let fmp := mload(0x40)
