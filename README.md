@@ -215,7 +215,7 @@ forge script --broadcast \
 --rpc-url <RPC-URL> \
 --private-key <PRIVATE_KEY> \
 --sig 'run()' \
-script/Deploy<network>.s.sol:Deploy<network>
+script/deployParameters/Deploy<network>.s.sol:Deploy<network>
 ```
 
 ### To Deploy and Verify
@@ -225,7 +225,7 @@ forge script --broadcast \
 --rpc-url <RPC-URL> \
 --private-key <PRIVATE-KEY> \
 --sig 'run()' \
-script/Deploy<network>.s.sol:Deploy<network>
+script/deployParameters/Deploy<network>.s.sol:Deploy<network>
 --etherscan-api-key <ETHERSCAN-API-KEY> \
 --verify
 ```
@@ -239,6 +239,6 @@ forge script --broadcast \
 --rpc-url <RPC-URL> \
 --private-key <PRIVATE_KEY> \
 --sig 'runAndDeployPermit2(string)' \
-script/DeployUniversalRouter.s.sol:DeployUniversalRouter \
+script/deployParameters/DeployUniversalRouter.s.sol:DeployUniversalRouter \
 <pathToJSON>
 ```
