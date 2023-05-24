@@ -3,13 +3,13 @@
 exports[`Seaport v1.4 Gas Tests ERC20 -> NFT gas: fulfillAdvancedOrder 1`] = `
 Object {
   "calldataByteLength": 2532,
-  "gasUsed": 236943,
+  "gasUsed": 237030,
 }
 `;
 
 exports[`Seaport v1.4 Gas Tests ETH -> NFT gas: fulfillAdvancedOrder 1`] = `
 Object {
   "calldataByteLength": 2020,
-  "gasUsed": 182372,
+  "gasUsed": 182393,
 }
 `;

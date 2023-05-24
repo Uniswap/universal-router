@@ -3,34 +3,34 @@
 exports[`Check Ownership Gas gas: balance check ERC20 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 39810,
+  "gasUsed": 39837,
 }
 `;
 
 exports[`Check Ownership Gas gas: checks ownership after a seaport trade, one NFT 1`] = `
 Object {
   "calldataByteLength": 2180,
-  "gasUsed": 185230,
+  "gasUsed": 185269,
 }
 `;
 
 exports[`Check Ownership Gas gas: checks ownership after a seaport trade, two NFTs 1`] = `
 Object {
   "calldataByteLength": 5028,
-  "gasUsed": 294631,
+  "gasUsed": 294687,
 }
 `;
 
 exports[`Check Ownership Gas gas: does not check ownership after a seaport trade, one NFT 1`] = `
 Object {
   "calldataByteLength": 2020,
-  "gasUsed": 182372,
+  "gasUsed": 182393,
 }
 `;
 
 exports[`Check Ownership Gas gas: just ownership check 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 32474,
+  "gasUsed": 32495,
 }
 `;
