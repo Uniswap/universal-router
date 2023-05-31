@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  devcontainer:
+    env_file: dev.env
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ../..:/app:cached
+    command: sleep infinity

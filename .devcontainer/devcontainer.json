@@ -1,0 +1,21 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/javascript-node
+{
+	"name": "Universal Router Dev",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "devcontainer",
+	"workspaceFolder": "/app/${localWorkspaceFolderBasename}",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"GitHub.copilot-chat",
+				"GitHub.copilot-nightly",
+				"eamodio.gitlens",
+				"JuanBlanco.solidity",
+				"tintinweb.solidity-visual-auditor",
+				"tintinweb.vscode-ethover",
+				"github.vscode-github-actions"
+			]
+		}
+	}
+}
