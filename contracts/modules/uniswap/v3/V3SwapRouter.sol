@@ -177,24 +177,25 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         // accomplishes the following:
         // address(keccak256(abi.encodePacked(hex'ff', factory, keccak256(abi.encode(tokenA, tokenB, fee)), initCodeHash)))
         assembly ("memory-safe") {
-            // Get the free memory pointer.
+            // Cache the free memory pointer.
             let fmp := mload(0x40)
             // Hash the pool key.
             // Equivalent to `if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA)`
             let diff := mul(xor(tokenA, tokenB), lt(tokenB, tokenA))
             // poolHash = keccak256(abi.encode(tokenA, tokenB, fee))
-            mstore(fmp, xor(tokenA, diff))
-            mstore(add(fmp, 0x20), xor(tokenB, diff))
-            mstore(add(fmp, 0x40), fee)
-            let poolHash := keccak256(fmp, 0x60)
+            mstore(0, xor(tokenA, diff))
+            mstore(0x20, xor(tokenB, diff))
+            mstore(0x40, fee)
+            let poolHash := keccak256(0, 0x60)
             // abi.encodePacked(hex'ff', factory, poolHash, initCodeHash)
-            mstore(fmp, factory)
-            fmp := add(fmp, 0x0b)
-            mstore8(fmp, 0xff)
-            mstore(add(fmp, 0x15), poolHash)
-            mstore(add(fmp, 0x35), initCodeHash)
+            // Prefix the factory address with 0xff.
+            mstore(0, or(factory, 0xff0000000000000000000000000000000000000000))
+            mstore(0x20, poolHash)
+            mstore(0x40, initCodeHash)
             // Compute the CREATE2 pool address and clean the upper bits.
-            pool := and(keccak256(fmp, 0x55), 0xffffffffffffffffffffffffffffffffffffffff)
+            pool := and(keccak256(0x0b, 0x55), 0xffffffffffffffffffffffffffffffffffffffff)
+            // Restore the free memory pointer.
+            mstore(0x40, fmp)
         }
     }
 }

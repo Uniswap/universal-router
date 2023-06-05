@@ -56,20 +56,21 @@ library UniswapV2Library {
         // accomplishes the following:
         // address(keccak256(abi.encodePacked(hex'ff', factory, keccak256(abi.encodePacked(token0, token1)), initCodeHash)))
         assembly ("memory-safe") {
-            // Get the free memory pointer.
+            // Cache the free memory pointer.
             let fmp := mload(0x40)
             // pairHash = keccak256(abi.encodePacked(token0, token1))
-            mstore(add(fmp, 0x14), token1)
-            mstore(fmp, token0)
-            let pairHash := keccak256(add(fmp, 0x0c), 0x28)
+            mstore(0x14, token1)
+            mstore(0, token0)
+            let pairHash := keccak256(0x0c, 0x28)
             // abi.encodePacked(hex'ff', factory, pairHash, initCodeHash)
-            mstore(fmp, factory)
-            fmp := add(fmp, 0x0b)
-            mstore8(fmp, 0xff)
-            mstore(add(fmp, 0x15), pairHash)
-            mstore(add(fmp, 0x35), initCodeHash)
+            // Prefix the factory address with 0xff.
+            mstore(0, or(factory, 0xff0000000000000000000000000000000000000000))
+            mstore(0x20, pairHash)
+            mstore(0x40, initCodeHash)
             // Compute the CREATE2 pair address and clean the upper bits.
-            pair := and(keccak256(fmp, 0x55), 0xffffffffffffffffffffffffffffffffffffffff)
+            pair := and(keccak256(0x0b, 0x55), 0xffffffffffffffffffffffffffffffffffffffff)
+            // Restore the free memory pointer.
+            mstore(0x40, fmp)
         }
     }
 
