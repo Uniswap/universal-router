@@ -62,6 +62,9 @@ export default {
     polygon: {
       url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
     },
+    base: {
+      url: `https://developer-access-mainnet.base.org`,
+    },
   },
   namedAccounts: {
     deployer: 0,
