@@ -65,6 +65,9 @@ export default {
     base: {
       url: `https://developer-access-mainnet.base.org`,
     },
+    baseGoerli: {
+      url: `https://goerli.base.org`,
+    },
   },
   namedAccounts: {
     deployer: 0,
