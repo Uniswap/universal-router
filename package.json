@@ -31,8 +31,8 @@
     "node": ">=14"
   },
   "dependencies": {
-    "@uniswap/v2-core": "1.0.1",
-    "@uniswap/v3-core": "1.0.0",
+    "@uniswap/v2-core": "^1.0.1",
+    "@uniswap/v3-core": "^1.0.1",
     "@openzeppelin/contracts": "4.7.0"
   },
   "devDependencies": {
