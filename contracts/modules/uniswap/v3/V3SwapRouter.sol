@@ -11,12 +11,14 @@ import {RouterImmutables} from '../../../base/RouterImmutables.sol';
 import {Permit2Payments} from '../../Permit2Payments.sol';
 import {Constants} from '../../../libraries/Constants.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
+import {TernaryLib} from '../TernaryLib.sol';
 
 /// @title Router for Uniswap v3 Trades
 abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3SwapCallback {
     using V3Path for bytes;
     using BytesLib for bytes;
     using SafeCast for uint256;
+    using TernaryLib for bool;
 
     error V3InvalidSwap();
     error V3TooLittleReceived();
@@ -93,13 +95,16 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
             // the outputs of prior swaps become the inputs to subsequent ones
             (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = _swap(
                 amountIn.toInt256(),
-                hasMultiplePools ? address(this) : recipient, // for intermediate swaps, this contract custodies
+                hasMultiplePools.ternary(address(this), recipient), // for intermediate swaps, this contract custodies
                 path.getFirstPool(), // only the first pool is needed
                 payer, // for intermediate swaps, this contract custodies
                 true
             );
 
-            amountIn = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
+            unchecked {
+                // no need to check for overflow here as it will be caught in `toInt256()`
+                amountIn = uint256(-zeroForOne.ternary(amount1Delta, amount0Delta));
+            }
 
             // decide whether to continue or terminate
             if (hasMultiplePools) {
@@ -131,9 +136,11 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
             _swap(-amountOut.toInt256(), recipient, path, payer, false);
 
-        uint256 amountOutReceived = zeroForOne ? uint256(-amount1Delta) : uint256(-amount0Delta);
-
-        if (amountOutReceived != amountOut) revert V3InvalidAmountOut();
+        unchecked {
+            // no need to check for overflow
+            uint256 amountOutReceived = uint256(-zeroForOne.ternary(amount1Delta, amount0Delta));
+            if (amountOutReceived != amountOut) revert V3InvalidAmountOut();
+        }
 
         maxAmountInCached = DEFAULT_MAX_AMOUNT_IN;
     }
@@ -144,34 +151,51 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, IUniswapV3S
         private
         returns (int256 amount0Delta, int256 amount1Delta, bool zeroForOne)
     {
-        (address tokenIn, uint24 fee, address tokenOut) = path.decodeFirstPool();
+        address pool;
+        {
+            (address tokenIn, uint24 fee, address tokenOut) = path.decodeFirstPool();
+            pool = computePoolAddress(tokenIn, tokenOut, fee);
+            // When isExactIn == 1, zeroForOne = tokenIn < tokenOut = !(tokenOut < tokenIn) = 1 ^ (tokenOut < tokenIn)
+            // When isExactIn == 0, zeroForOne = tokenOut < tokenIn = 0 ^ (tokenOut < tokenIn)
+            assembly {
+                zeroForOne := xor(isExactIn, lt(tokenOut, tokenIn))
+            }
+        }
 
-        zeroForOne = isExactIn ? tokenIn < tokenOut : tokenOut < tokenIn;
-
-        (amount0Delta, amount1Delta) = IUniswapV3Pool(computePoolAddress(tokenIn, tokenOut, fee)).swap(
+        (amount0Delta, amount1Delta) = IUniswapV3Pool(pool).swap(
             recipient,
             zeroForOne,
             amount,
-            (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1),
+            uint160(zeroForOne.ternary(MIN_SQRT_RATIO + 1, MAX_SQRT_RATIO - 1)),
             abi.encode(path, payer)
         );
     }
 
     function computePoolAddress(address tokenA, address tokenB, uint24 fee) private view returns (address pool) {
-        if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA);
-        pool = address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            hex'ff',
-                            UNISWAP_V3_FACTORY,
-                            keccak256(abi.encode(tokenA, tokenB, fee)),
-                            UNISWAP_V3_POOL_INIT_CODE_HASH
-                        )
-                    )
-                )
-            )
-        );
+        address factory = UNISWAP_V3_FACTORY;
+        bytes32 initCodeHash = UNISWAP_V3_POOL_INIT_CODE_HASH;
+        // accomplishes the following:
+        // address(keccak256(abi.encodePacked(hex'ff', factory, keccak256(abi.encode(tokenA, tokenB, fee)), initCodeHash)))
+        assembly ("memory-safe") {
+            // Cache the free memory pointer.
+            let fmp := mload(0x40)
+            // Hash the pool key.
+            // Equivalent to `if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA)`
+            let diff := mul(xor(tokenA, tokenB), lt(tokenB, tokenA))
+            // poolHash = keccak256(abi.encode(tokenA, tokenB, fee))
+            mstore(0, xor(tokenA, diff))
+            mstore(0x20, xor(tokenB, diff))
+            mstore(0x40, fee)
+            let poolHash := keccak256(0, 0x60)
+            // abi.encodePacked(hex'ff', factory, poolHash, initCodeHash)
+            // Prefix the factory address with 0xff.
+            mstore(0, or(factory, 0xff0000000000000000000000000000000000000000))
+            mstore(0x20, poolHash)
+            mstore(0x40, initCodeHash)
+            // Compute the CREATE2 pool address and clean the upper bits.
+            pool := and(keccak256(0x0b, 0x55), 0xffffffffffffffffffffffffffffffffffffffff)
+            // Restore the free memory pointer.
+            mstore(0x40, fmp)
+        }
     }
 }

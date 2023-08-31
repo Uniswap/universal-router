@@ -2,6 +2,7 @@
 pragma solidity >=0.8.0;
 
 import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
+import {TernaryLib} from '../TernaryLib.sol';
 
 /// @title Uniswap v2 Helper Library
 /// @notice Calculates the recipient address for a command
@@ -20,7 +21,7 @@ library UniswapV2Library {
         pure
         returns (address pair)
     {
-        (address token0, address token1) = sortTokens(tokenA, tokenB);
+        (address token0, address token1) = TernaryLib.sortTokens(tokenA, tokenB);
         pair = pairForPreSorted(factory, initCodeHash, token0, token1);
     }
 
@@ -37,7 +38,7 @@ library UniswapV2Library {
         returns (address pair, address token0)
     {
         address token1;
-        (token0, token1) = sortTokens(tokenA, tokenB);
+        (token0, token1) = TernaryLib.sortTokens(tokenA, tokenB);
         pair = pairForPreSorted(factory, initCodeHash, token0, token1);
     }
 
@@ -52,15 +53,25 @@ library UniswapV2Library {
         pure
         returns (address pair)
     {
-        pair = address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(hex'ff', factory, keccak256(abi.encodePacked(token0, token1)), initCodeHash)
-                    )
-                )
-            )
-        );
+        // accomplishes the following:
+        // address(keccak256(abi.encodePacked(hex'ff', factory, keccak256(abi.encodePacked(token0, token1)), initCodeHash)))
+        assembly ("memory-safe") {
+            // Cache the free memory pointer.
+            let fmp := mload(0x40)
+            // pairHash = keccak256(abi.encodePacked(token0, token1))
+            mstore(0x14, token1)
+            mstore(0, token0)
+            let pairHash := keccak256(0x0c, 0x28)
+            // abi.encodePacked(hex'ff', factory, pairHash, initCodeHash)
+            // Prefix the factory address with 0xff.
+            mstore(0, or(factory, 0xff0000000000000000000000000000000000000000))
+            mstore(0x20, pairHash)
+            mstore(0x40, initCodeHash)
+            // Compute the CREATE2 pair address and clean the upper bits.
+            pair := and(keccak256(0x0b, 0x55), 0xffffffffffffffffffffffffffffffffffffffff)
+            // Restore the free memory pointer.
+            mstore(0x40, fmp)
+        }
     }
 
     /// @notice Calculates the v2 address for a pair and fetches the reserves for each token
@@ -79,7 +90,7 @@ library UniswapV2Library {
         address token0;
         (pair, token0) = pairAndToken0For(factory, initCodeHash, tokenA, tokenB);
         (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
-        (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+        (reserveA, reserveB) = TernaryLib.switchIf(tokenA == token0, reserve1, reserve0);
     }
 
     /// @notice Given an input asset amount returns the maximum output amount of the other asset
@@ -129,21 +140,14 @@ library UniswapV2Library {
     {
         if (path.length < 2) revert InvalidPath();
         amount = amountOut;
-        for (uint256 i = path.length - 1; i > 0; i--) {
-            uint256 reserveIn;
-            uint256 reserveOut;
+        unchecked {
+            for (uint256 i = path.length - 1; i > 0; --i) {
+                uint256 reserveIn;
+                uint256 reserveOut;
 
-            (pair, reserveIn, reserveOut) = pairAndReservesFor(factory, initCodeHash, path[i - 1], path[i]);
-            amount = getAmountIn(amount, reserveIn, reserveOut);
+                (pair, reserveIn, reserveOut) = pairAndReservesFor(factory, initCodeHash, path[i - 1], path[i]);
+                amount = getAmountIn(amount, reserveIn, reserveOut);
+            }
         }
-    }
-
-    /// @notice Sorts two tokens to return token0 and token1
-    /// @param tokenA The first token to sort
-    /// @param tokenB The other token to sort
-    /// @return token0 The smaller token by address value
-    /// @return token1 The larger token by address value
-    function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
-        (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
     }
 }

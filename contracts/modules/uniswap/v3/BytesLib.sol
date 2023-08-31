@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-
-/// @title Library for Bytes Manipulation
 pragma solidity ^0.8.0;
 
 import {Constants} from '../../../libraries/Constants.sol';
 
+/// @title Library for Bytes Manipulation
 library BytesLib {
     error SliceOutOfBounds();
 
