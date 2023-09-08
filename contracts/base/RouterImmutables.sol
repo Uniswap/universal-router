@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IWETH9} from '../interfaces/external/IWETH9.sol';
+import {UniswapParameters, UniswapImmutables} from '../modules/uniswap/UniswapImmutables.sol';
 
 struct RouterParameters {
     address permit2;
@@ -30,7 +31,7 @@ struct RouterParameters {
 
 /// @title Router Immutable Storage contract
 /// @notice Used along with the `RouterParameters` struct for ease of cross-chain deployment
-contract RouterImmutables {
+contract RouterImmutables is UniswapImmutables {
     /// @dev WETH9 address
     IWETH9 internal immutable WETH9;
 
@@ -79,24 +80,12 @@ contract RouterImmutables {
     /// @dev The address of router rewards distributor
     address internal immutable ROUTER_REWARDS_DISTRIBUTOR;
 
-    /// @dev The address of UniswapV2Factory
-    address internal immutable UNISWAP_V2_FACTORY;
-
-    /// @dev The UniswapV2Pair initcodehash
-    bytes32 internal immutable UNISWAP_V2_PAIR_INIT_CODE_HASH;
-
-    /// @dev The address of UniswapV3Factory
-    address internal immutable UNISWAP_V3_FACTORY;
-
-    /// @dev The UniswapV3Pool initcodehash
-    bytes32 internal immutable UNISWAP_V3_POOL_INIT_CODE_HASH;
-
     enum Spenders {
         OSConduit,
         Sudoswap
     }
 
-    constructor(RouterParameters memory params) {
+    constructor(RouterParameters memory params) UniswapImmutables(UniswapParameters(params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash)) {
         PERMIT2 = IAllowanceTransfer(params.permit2);
         WETH9 = IWETH9(params.weth9);
         SEAPORT_V1_5 = params.seaportV1_5;
@@ -113,9 +102,5 @@ contract RouterImmutables {
         LOOKS_RARE_TOKEN = ERC20(params.looksRareToken);
         LOOKS_RARE_REWARDS_DISTRIBUTOR = params.looksRareRewardsDistributor;
         ROUTER_REWARDS_DISTRIBUTOR = params.routerRewardsDistributor;
-        UNISWAP_V2_FACTORY = params.v2Factory;
-        UNISWAP_V2_PAIR_INIT_CODE_HASH = params.pairInitCodeHash;
-        UNISWAP_V3_FACTORY = params.v3Factory;
-        UNISWAP_V3_POOL_INIT_CODE_HASH = params.poolInitCodeHash;
     }
 }
