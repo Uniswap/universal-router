@@ -17,7 +17,7 @@ import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3SwapCallback {
     using V3Path for bytes;
     using BytesLib for bytes;
-    using SafeCast for uint256; 
+    using SafeCast for uint256;
 
     error V3InvalidSwap();
     error V3TooLittleReceived();

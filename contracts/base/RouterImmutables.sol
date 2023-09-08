@@ -85,7 +85,11 @@ contract RouterImmutables is UniswapImmutables {
         Sudoswap
     }
 
-    constructor(RouterParameters memory params) UniswapImmutables(UniswapParameters(params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash)) {
+    constructor(RouterParameters memory params)
+        UniswapImmutables(
+            UniswapParameters(params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash)
+        )
+    {
         PERMIT2 = IAllowanceTransfer(params.permit2);
         WETH9 = IWETH9(params.weth9);
         SEAPORT_V1_5 = params.seaportV1_5;
