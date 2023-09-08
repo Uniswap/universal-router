@@ -3,14 +3,14 @@ pragma solidity ^0.8.17;
 
 import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import {UniswapV2Library} from './UniswapV2Library.sol';
-import {RouterImmutables} from '../../../base/RouterImmutables.sol';
+import {UniswapImmutables} from '../UniswapImmutables.sol';
 import {Payments} from '../../Payments.sol';
 import {Permit2Payments} from '../../Permit2Payments.sol';
 import {Constants} from '../../../libraries/Constants.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
 /// @title Router for Uniswap v2 Trades
-abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
+abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     error V2TooLittleReceived();
     error V2TooMuchRequested();
     error V2InvalidPath();

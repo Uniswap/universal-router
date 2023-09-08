@@ -8,7 +8,7 @@ import {RouterParameters, RouterImmutables} from './base/RouterImmutables.sol';
 import {Commands} from './libraries/Commands.sol';
 import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
 
-contract UniversalRouter is RouterImmutables, IUniversalRouter, Dispatcher, RewardsCollector {
+contract UniversalRouter is Dispatcher, RouterImmutables, RewardsCollector, IUniversalRouter {
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
