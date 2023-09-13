@@ -18,7 +18,7 @@ interface IWSTETH is IERC20 {
     function stETH() external view returns (address);
 
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-    external;
+        external;
 
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }

@@ -354,16 +354,16 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                 address recipient;
                 uint256 amount;
                 assembly {
-                  recipient := calldataload(inputs.offset)
-                  amount := calldataload(add(inputs.offset, 0x20))
+                    recipient := calldataload(inputs.offset)
+                    amount := calldataload(add(inputs.offset, 0x20))
                 }
                 Payments.wrapSTETH(map(recipient), amount);
             } else if (command == Commands.UNWRAP_STETH) {
                 address recipient;
                 uint256 amountMin;
                 assembly {
-                  recipient := calldataload(inputs.offset)
-                  amountMin := calldataload(add(inputs.offset, 0x20))
+                    recipient := calldataload(inputs.offset)
+                    amountMin := calldataload(add(inputs.offset, 0x20))
                 }
                 Payments.unwrapSTETH(map(recipient), amountMin);
             } else {
