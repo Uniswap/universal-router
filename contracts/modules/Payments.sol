@@ -16,6 +16,7 @@ abstract contract Payments is RouterImmutables {
 
     error InsufficientToken();
     error InsufficientETH();
+    error InsufficientSTETH();
     error InvalidBips();
     error InvalidSpender();
 
@@ -134,6 +135,39 @@ abstract contract Payments is RouterImmutables {
             WETH9.withdraw(value);
             if (recipient != address(this)) {
                 recipient.safeTransferETH(value);
+            }
+        }
+    }
+
+    /// @notice Wrap an amount of stETH into wstETH
+    /// @param recipient The recipient of the stETH
+    /// @param amount The amount of wstETH desired
+    function wrapSTETH(address recipient, uint256 amount) internal {
+        if (amount == Constants.CONTRACT_BALANCE) {
+            amount = STETH.balanceOf(address(this));
+        } else if (amount > STETH.balanceOf(address(this))) {
+            revert InsufficientSTETH();
+        }
+        if (amount > 0) {
+            WSTETH.wrap(amount);
+            if (recipient != address(this)) {
+                WSTETH.transfer(recipient, amount);
+            }
+        }
+    }
+
+    /// @notice Unwraps all of the contract's wstETH into stETH
+    /// @param recipient The recipient of the stETH
+    /// @param amountMinimum The minimum amount of ETH desired
+    function unwrapSTETH(address recipient, uint256 amountMinimum) internal {
+        uint256 amount = WSTETH.balanceOf(address(this));
+        if (amount < amountMinimum) {
+            revert InsufficientSTETH();
+        }
+        if (amount > 0) {
+            WSTETH.unwrap(amount);
+            if (recipient != address(this)) {
+                recipient.safeTransferETH(amount);
             }
         }
     }

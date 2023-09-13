@@ -33,6 +33,8 @@ abstract contract UniswapV2Test is Test {
         RouterParameters memory params = RouterParameters({
             permit2: address(PERMIT2),
             weth9: address(WETH9),
+            steth: address(0),
+            wsteth: address(0),
             seaportV1_5: address(0),
             seaportV1_4: address(0),
             openseaConduit: address(0),
