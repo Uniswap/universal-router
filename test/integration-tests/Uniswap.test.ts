@@ -457,70 +457,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
       }
     }
 
-    describe.only('STETH', () => {
-      const STETH_DUST = 1;
-
-      it('completes a V3 exactIn with STETH --> WETH', async () => {
-        const { stethContract } = await setupStethContext()
-
-        const amountInSTETH: number = expandTo18DecimalsBN(0.1)
-        const amountInWSTETH: number = await stethContract.getSharesByPooledEth(amountInSTETH.sub(STETH_DUST))
-        const amountOutMin: number = expandTo6DecimalsBN(0)
-
-        planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [STETH.address, ADDRESS_THIS, amountInSTETH])
-        planner.addCommand(CommandType.WRAP_STETH, [ADDRESS_THIS, CONTRACT_BALANCE])
-        addV3ExactInTrades(
-          planner,
-          1,
-          amountOutMin,
-          MSG_SENDER,
-          [WSTETH.address, WETH.address],
-          SOURCE_ROUTER,
-          amountInWSTETH
-        )
-
-        const stethBalanceBefore = await stethContract.balanceOf(bob.address)
-        const {
-          wethBalanceBefore,
-          wethBalanceAfter,
-        } = await executeRouter(planner)
-        const stethBalanceAfter = await stethContract.balanceOf(bob.address)
-
-        expect(stethBalanceBefore.sub(stethBalanceAfter)).to.eq(amountInSTETH.sub(STETH_DUST))
-        expect(wethBalanceAfter.sub(wethBalanceBefore).toString()).to.eq('89416039046452189')
-      })
-
-      it('completes a V3 exactIn with WETH --> STETH', async () => {
-        const { stethContract, wstethContract, wethContract } = await setupStethContext()
-
-        const amountInWETH: number = expandTo18DecimalsBN(0.001)
-        const amountOutMin: number = expandTo6DecimalsBN(0)
-
-        addV3ExactInTrades(
-          planner,
-          1,
-          amountOutMin,
-          ADDRESS_THIS,
-          [WETH.address, WSTETH.address],
-          SOURCE_MSG_SENDER,
-          amountInWETH
-        )
-        planner.addCommand(CommandType.UNWRAP_STETH, [MSG_SENDER, 0])
-
-        const wstethBalanceBefore = await wstethContract.balanceOf(bob.address)
-        const stethBalanceBefore = await stethContract.balanceOf(bob.address)
-        const {
-          wethBalanceBefore,
-          wethBalanceAfter,
-        } = await executeRouter(planner)
-        const wstethBalanceAfter = await wstethContract.balanceOf(bob.address)
-        const stethBalanceAfter = await stethContract.balanceOf(bob.address)
-
-        expect(stethBalanceAfter.sub(stethBalanceBefore)).to.eq('825732662352157')
-        expect(wethBalanceBefore.sub(wethBalanceAfter)).to.eq(amountInWETH)
-      })
-    })
-
     describe('ERC20 --> ERC20', () => {
       it('completes a V3 exactIn swap', async () => {
         const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
@@ -651,6 +587,70 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.eq(daiTraded)
         expect(ethBalanceBefore.sub(ethBalanceAfter)).to.eq(wethTraded.add(gasSpent))
+      })
+    })
+
+    describe('STETH', () => {
+      const STETH_DUST = 1;
+
+      it('completes a V3 exactIn with STETH --> WETH', async () => {
+        const { stethContract } = await setupStethContext()
+
+        const amountInSTETH: number = expandTo18DecimalsBN(0.1)
+        const amountInWSTETH: number = await stethContract.getSharesByPooledEth(amountInSTETH.sub(STETH_DUST))
+        const amountOutMin: number = expandTo6DecimalsBN(0)
+
+        planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [STETH.address, ADDRESS_THIS, amountInSTETH])
+        planner.addCommand(CommandType.WRAP_STETH, [ADDRESS_THIS, CONTRACT_BALANCE])
+        addV3ExactInTrades(
+          planner,
+          1,
+          amountOutMin,
+          MSG_SENDER,
+          [WSTETH.address, WETH.address],
+          SOURCE_ROUTER,
+          amountInWSTETH
+        )
+
+        const stethBalanceBefore = await stethContract.balanceOf(bob.address)
+        const {
+          wethBalanceBefore,
+          wethBalanceAfter,
+        } = await executeRouter(planner)
+        const stethBalanceAfter = await stethContract.balanceOf(bob.address)
+
+        expect(stethBalanceBefore.sub(stethBalanceAfter)).to.eq(amountInSTETH.sub(STETH_DUST))
+        expect(wethBalanceAfter.sub(wethBalanceBefore).toString()).to.eq('89416039046452189')
+      })
+
+      it('completes a V3 exactIn with WETH --> STETH', async () => {
+        const { stethContract, wstethContract, wethContract } = await setupStethContext()
+
+        const amountInWETH: number = expandTo18DecimalsBN(0.001)
+        const amountOutMin: number = expandTo6DecimalsBN(0)
+
+        addV3ExactInTrades(
+          planner,
+          1,
+          amountOutMin,
+          ADDRESS_THIS,
+          [WETH.address, WSTETH.address],
+          SOURCE_MSG_SENDER,
+          amountInWETH
+        )
+        planner.addCommand(CommandType.UNWRAP_STETH, [MSG_SENDER, 0])
+
+        const wstethBalanceBefore = await wstethContract.balanceOf(bob.address)
+        const stethBalanceBefore = await stethContract.balanceOf(bob.address)
+        const {
+          wethBalanceBefore,
+          wethBalanceAfter,
+        } = await executeRouter(planner)
+        const wstethBalanceAfter = await wstethContract.balanceOf(bob.address)
+        const stethBalanceAfter = await stethContract.balanceOf(bob.address)
+
+        expect(stethBalanceAfter.sub(stethBalanceBefore)).to.eq('825732662352157')
+        expect(wethBalanceBefore.sub(wethBalanceAfter)).to.eq(amountInWETH)
       })
     })
   })
