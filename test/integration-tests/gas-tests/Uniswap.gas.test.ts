@@ -19,8 +19,17 @@ import {
 import { BigNumber, BigNumberish } from 'ethers'
 import { UniversalRouter, Permit2 } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { abi as  STETH_ABI } from '../../../artifacts/contracts/interfaces/external/ISTETH.sol/ISTETH.json'
-import { approveAndExecuteSwapRouter02, resetFork, WETH, DAI, USDC, USDT, STETH, WSTETH } from '../shared/mainnetForkHelpers'
+import { abi as STETH_ABI } from '../../../artifacts/contracts/interfaces/external/ISTETH.sol/ISTETH.json'
+import {
+  approveAndExecuteSwapRouter02,
+  resetFork,
+  WETH,
+  DAI,
+  USDC,
+  USDT,
+  STETH,
+  WSTETH,
+} from '../shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,
   ALICE_ADDRESS,
@@ -680,7 +689,7 @@ describe('Uniswap Gas Tests', () => {
       })
 
       describe('STETH', () => {
-        const STETH_DUST = 1;
+        const STETH_DUST = 1
 
         it('gas: completes a V3 exactIn with STETH --> WETH', async () => {
           const { stethContract, wstethContract, wethContract } = await setupStethContext()
@@ -1265,7 +1274,6 @@ describe('Uniswap Gas Tests', () => {
     let wstethContract = new ethers.Contract(WSTETH.address, TOKEN_ABI, bob)
     let wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
 
-
     // alice gives bob some tokens
     await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100))
     await stethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(0.3))
@@ -1278,5 +1286,4 @@ describe('Uniswap Gas Tests', () => {
 
     return { stethContract, wstethContract, wethContract }
   }
-
 })

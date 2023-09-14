@@ -8,7 +8,7 @@ import { encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Permit2, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { abi as  STETH_ABI } from '../../artifacts/contracts/interfaces/external/ISTETH.sol/ISTETH.json'
+import { abi as STETH_ABI } from '../../artifacts/contracts/interfaces/external/ISTETH.sol/ISTETH.json'
 import { resetFork, WETH, DAI, USDC, USDT, STETH, WSTETH } from './shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,
@@ -591,7 +591,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     })
 
     describe('STETH', () => {
-      const STETH_DUST = 1;
+      const STETH_DUST = 1
 
       it('completes a V3 exactIn with STETH --> WETH', async () => {
         const { stethContract } = await setupStethContext()
@@ -613,10 +613,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         )
 
         const stethBalanceBefore = await stethContract.balanceOf(bob.address)
-        const {
-          wethBalanceBefore,
-          wethBalanceAfter,
-        } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
         const stethBalanceAfter = await stethContract.balanceOf(bob.address)
 
         expect(stethBalanceBefore.sub(stethBalanceAfter)).to.eq(amountInSTETH.sub(STETH_DUST))
@@ -642,10 +639,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         const wstethBalanceBefore = await wstethContract.balanceOf(bob.address)
         const stethBalanceBefore = await stethContract.balanceOf(bob.address)
-        const {
-          wethBalanceBefore,
-          wethBalanceAfter,
-        } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
         const wstethBalanceAfter = await wstethContract.balanceOf(bob.address)
         const stethBalanceAfter = await stethContract.balanceOf(bob.address)
 
@@ -1344,7 +1338,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
     let stethContract = new ethers.Contract(STETH.address, STETH_ABI, bob)
     let wstethContract = new ethers.Contract(WSTETH.address, TOKEN_ABI, bob)
     let wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
-
 
     // alice gives bob some tokens
     await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100))
