@@ -33,7 +33,6 @@ abstract contract Payments is RouterImmutables {
             if (value == Constants.CONTRACT_BALANCE) {
                 value = ERC20(token).balanceOf(address(this));
             }
-
             ERC20(token).safeTransfer(recipient, value);
         }
     }
@@ -148,8 +147,14 @@ abstract contract Payments is RouterImmutables {
         } else if (amount > STETH.balanceOf(address(this))) {
             revert InsufficientSTETH();
         }
+
         if (amount > 0) {
-            WSTETH.wrap(amount);
+            if (STETH.allowance(address(this), address(WSTETH)) < amount) {
+                STETH.approve(address(WSTETH), type(uint256).max);
+            }
+
+            amount = WSTETH.wrap(amount);
+
             if (recipient != address(this)) {
                 WSTETH.transfer(recipient, amount);
             }
@@ -160,15 +165,17 @@ abstract contract Payments is RouterImmutables {
     /// @param recipient The recipient of the stETH
     /// @param amountMinimum The minimum amount of ETH desired
     function unwrapSTETH(address recipient, uint256 amountMinimum) internal {
-        uint256 amount = WSTETH.balanceOf(address(this));
-        if (amount < amountMinimum) {
-            revert InsufficientSTETH();
-        }
-        if (amount > 0) {
-            WSTETH.unwrap(amount);
-            if (recipient != address(this)) {
-                recipient.safeTransferETH(amount);
-            }
+        uint256 balanceWSTETH = WSTETH.balanceOf(address(this));
+        if (balanceWSTETH > 0) {
+          uint256 amountSTETH = WSTETH.unwrap(balanceWSTETH);
+
+          if (amountSTETH < amountMinimum) {
+              revert InsufficientSTETH();
+          }
+
+          if (recipient != address(this)) {
+              STETH.transfer(recipient, amountSTETH);
+          }
         }
     }
 }
