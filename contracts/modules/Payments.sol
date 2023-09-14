@@ -167,15 +167,15 @@ abstract contract Payments is RouterImmutables {
     function unwrapSTETH(address recipient, uint256 amountMinimum) internal {
         uint256 balanceWSTETH = WSTETH.balanceOf(address(this));
         if (balanceWSTETH > 0) {
-          uint256 amountSTETH = WSTETH.unwrap(balanceWSTETH);
+            uint256 amountSTETH = WSTETH.unwrap(balanceWSTETH);
 
-          if (amountSTETH < amountMinimum) {
-              revert InsufficientSTETH();
-          }
+            if (amountSTETH < amountMinimum) {
+                revert InsufficientSTETH();
+            }
 
-          if (recipient != address(this)) {
-              STETH.transfer(recipient, amountSTETH);
-          }
+            if (recipient != address(this)) {
+                STETH.transfer(recipient, amountSTETH);
+            }
         }
     }
 }
