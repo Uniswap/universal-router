@@ -24,7 +24,7 @@ abstract contract Permit2Payments is Payments {
 
     /// @notice Performs a batch transferFrom on Permit2
     /// @param batchDetails An array detailing each of the transfers that should occur
-    function permit2TransferFrom(IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails, address owner)
+    function permit2TransferFrom(IAllowanceTransfer.AllowanceTransferDetails[] calldata batchDetails, address owner)
         internal
     {
         uint256 batchLength = batchDetails.length;
