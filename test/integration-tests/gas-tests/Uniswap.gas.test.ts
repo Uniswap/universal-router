@@ -529,13 +529,13 @@ describe('Uniswap Gas Tests', () => {
         recipient?: string,
         tokens: string[] = [DAI.address, WETH.address],
         sourceOfTokens: boolean = SOURCE_MSG_SENDER,
-        amountIn: BigNumber = expandTo18DecimalsBN(500)
+        _amountIn?: BigNumber,
       ) => {
         const path = encodePathExactInput(tokens)
         for (let i = 0; i < numTrades; i++) {
           planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
             recipient ?? MSG_SENDER,
-            amountIn,
+            _amountIn ?? amountIn,
             amountOutMin,
             path,
             sourceOfTokens,
