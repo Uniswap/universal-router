@@ -73,5 +73,5 @@ library Commands {
     uint256 constant WRAP_STETH = 0x23;
     uint256 constant UNWRAP_STETH = 0x24;
 
-    // COMMAND_PLACEHOLDER for 0x23 to 0x3f (all unused)
+    // COMMAND_PLACEHOLDER for 0x25 to 0x3f (all unused)
 }

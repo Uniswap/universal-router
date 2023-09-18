@@ -139,7 +139,7 @@ abstract contract Payments is RouterImmutables {
     }
 
     /// @notice Wrap an amount of stETH into wstETH
-    /// @param recipient The recipient of the stETH
+    /// @param recipient The recipient of the wstETH
     /// @param amount The amount of wstETH desired
     function wrapSTETH(address recipient, uint256 amount) internal {
         if (amount == Constants.CONTRACT_BALANCE) {
@@ -163,7 +163,7 @@ abstract contract Payments is RouterImmutables {
 
     /// @notice Unwraps all of the contract's wstETH into stETH
     /// @param recipient The recipient of the stETH
-    /// @param amountMinimum The minimum amount of ETH desired
+    /// @param amountMinimum The minimum amount of stETH desired
     function unwrapSTETH(address recipient, uint256 amountMinimum) internal {
         uint256 balanceWSTETH = WSTETH.balanceOf(address(this));
         if (balanceWSTETH > 0) {
