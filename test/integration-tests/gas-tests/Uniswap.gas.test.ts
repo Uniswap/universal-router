@@ -529,7 +529,7 @@ describe('Uniswap Gas Tests', () => {
         recipient?: string,
         tokens: string[] = [DAI.address, WETH.address],
         sourceOfTokens: boolean = SOURCE_MSG_SENDER,
-        _amountIn?: BigNumber,
+        _amountIn?: BigNumber
       ) => {
         const path = encodePathExactInput(tokens)
         for (let i = 0; i < numTrades; i++) {
