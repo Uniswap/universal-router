@@ -591,6 +591,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     })
 
     describe('STETH', () => {
+      // when transferring STETH, there is always 1 wei dust that does not get tranferred
       const STETH_DUST = 1
 
       it('completes a V3 exactIn with STETH --> WETH', async () => {
