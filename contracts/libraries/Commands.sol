@@ -70,5 +70,8 @@ library Commands {
     uint256 constant SEAPORT_V1_4 = 0x20;
     uint256 constant EXECUTE_SUB_PLAN = 0x21;
     uint256 constant APPROVE_ERC20 = 0x22;
-    // COMMAND_PLACEHOLDER for 0x23 to 0x3f (all unused)
+    uint256 constant WRAP_STETH = 0x23;
+    uint256 constant UNWRAP_STETH = 0x24;
+
+    // COMMAND_PLACEHOLDER for 0x25 to 0x3f (all unused)
 }

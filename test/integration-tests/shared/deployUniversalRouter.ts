@@ -20,6 +20,8 @@ export async function deployRouter(
   const routerParameters = {
     permit2: permit2.address,
     weth9: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+    steth: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
+    wsteth: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
     seaportV1_5: '0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC',
     seaportV1_4: '0x00000000000001ad428e4906aE43D8F9852d0dD6',
     openseaConduit: '0x1E0049783F008A0085193E00003D00cd54003c71',

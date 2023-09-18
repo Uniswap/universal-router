@@ -350,8 +350,24 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                     spender := calldataload(add(inputs.offset, 0x20))
                 }
                 Payments.approveERC20(token, spender);
+            } else if (command == Commands.WRAP_STETH) {
+                address recipient;
+                uint256 amount;
+                assembly {
+                    recipient := calldataload(inputs.offset)
+                    amount := calldataload(add(inputs.offset, 0x20))
+                }
+                Payments.wrapSTETH(map(recipient), amount);
+            } else if (command == Commands.UNWRAP_STETH) {
+                address recipient;
+                uint256 amountMin;
+                assembly {
+                    recipient := calldataload(inputs.offset)
+                    amountMin := calldataload(add(inputs.offset, 0x20))
+                }
+                Payments.unwrapSTETH(map(recipient), amountMin);
             } else {
-                // placeholder area for commands 0x22-0x3f
+                // placeholder area for commands 0x25-0x3f
                 revert InvalidCommandType(command);
             }
         }

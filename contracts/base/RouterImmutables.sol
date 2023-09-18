@@ -4,10 +4,14 @@ pragma solidity ^0.8.17;
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IWETH9} from '../interfaces/external/IWETH9.sol';
+import {ISTETH} from '../interfaces/external/ISTETH.sol';
+import {IWSTETH} from '../interfaces/external/IWSTETH.sol';
 
 struct RouterParameters {
     address permit2;
     address weth9;
+    address steth;
+    address wsteth;
     address seaportV1_5;
     address seaportV1_4;
     address openseaConduit;
@@ -33,6 +37,12 @@ struct RouterParameters {
 contract RouterImmutables {
     /// @dev WETH9 address
     IWETH9 internal immutable WETH9;
+
+    /// @dev STETH address
+    ISTETH internal immutable STETH;
+
+    /// @dev WSTETH address
+    IWSTETH internal immutable WSTETH;
 
     /// @dev Permit2 address
     IAllowanceTransfer internal immutable PERMIT2;
@@ -99,6 +109,8 @@ contract RouterImmutables {
     constructor(RouterParameters memory params) {
         PERMIT2 = IAllowanceTransfer(params.permit2);
         WETH9 = IWETH9(params.weth9);
+        WSTETH = IWSTETH(params.wsteth);
+        STETH = ISTETH(params.steth);
         SEAPORT_V1_5 = params.seaportV1_5;
         SEAPORT_V1_4 = params.seaportV1_4;
         OPENSEA_CONDUIT = params.openseaConduit;
