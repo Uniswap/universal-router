@@ -16,6 +16,7 @@ abstract contract Payments is PaymentsImmutables {
 
     error InsufficientToken();
     error InsufficientETH();
+    error InsufficientSTETH();
     error InvalidBips();
     error InvalidSpender();
 
@@ -32,7 +33,6 @@ abstract contract Payments is PaymentsImmutables {
             if (value == Constants.CONTRACT_BALANCE) {
                 value = ERC20(token).balanceOf(address(this));
             }
-
             ERC20(token).safeTransfer(recipient, value);
         }
     }
@@ -134,6 +134,47 @@ abstract contract Payments is PaymentsImmutables {
             WETH9.withdraw(value);
             if (recipient != address(this)) {
                 recipient.safeTransferETH(value);
+            }
+        }
+    }
+
+    /// @notice Wrap an amount of stETH into wstETH
+    /// @param recipient The recipient of the wstETH
+    /// @param amount The amount of wstETH desired
+    function wrapSTETH(address recipient, uint256 amount) internal {
+        if (amount == Constants.CONTRACT_BALANCE) {
+            amount = STETH.balanceOf(address(this));
+        } else if (amount > STETH.balanceOf(address(this))) {
+            revert InsufficientSTETH();
+        }
+
+        if (amount > 0) {
+            if (STETH.allowance(address(this), address(WSTETH)) < amount) {
+                STETH.approve(address(WSTETH), type(uint256).max);
+            }
+
+            amount = WSTETH.wrap(amount);
+
+            if (recipient != address(this)) {
+                WSTETH.transfer(recipient, amount);
+            }
+        }
+    }
+
+    /// @notice Unwraps all of the contract's wstETH into stETH
+    /// @param recipient The recipient of the stETH
+    /// @param amountMinimum The minimum amount of stETH desired
+    function unwrapSTETH(address recipient, uint256 amountMinimum) internal {
+        uint256 balanceWSTETH = WSTETH.balanceOf(address(this));
+        if (balanceWSTETH > 0) {
+            uint256 amountSTETH = WSTETH.unwrap(balanceWSTETH);
+
+            if (amountSTETH < amountMinimum) {
+                revert InsufficientSTETH();
+            }
+
+            if (recipient != address(this)) {
+                STETH.transfer(recipient, amountSTETH);
             }
         }
     }

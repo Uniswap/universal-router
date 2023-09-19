@@ -8,6 +8,8 @@ import {NFTParameters, NFTImmutables} from '../modules/NFTImmutables.sol';
 struct RouterParameters {
     address permit2;
     address weth9;
+    address steth;
+    address wsteth;
     address seaportV1_5;
     address seaportV1_4;
     address openseaConduit;
