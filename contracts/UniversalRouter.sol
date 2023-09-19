@@ -11,7 +11,7 @@ import {UniswapImmutables, UniswapParameters} from './modules/uniswap/UniswapImm
 import {Commands} from './libraries/Commands.sol';
 import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
 
-contract UniversalRouter is Dispatcher, RewardsCollector, IUniversalRouter {
+contract UniversalRouter is IUniversalRouter, Dispatcher, RewardsCollector {
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
@@ -21,7 +21,11 @@ contract UniversalRouter is Dispatcher, RewardsCollector, IUniversalRouter {
         UniswapImmutables(
             UniswapParameters(params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash)
         )
-        PaymentsImmutables(PaymentsParameters(params.permit2, params.weth9, params.steth, params.wsteth, params.openseaConduit, params.sudoswap))
+        PaymentsImmutables(
+            PaymentsParameters(
+                params.permit2, params.weth9, params.steth, params.wsteth, params.openseaConduit, params.sudoswap
+            )
+        )
         NFTImmutables(
             NFTParameters(
                 params.seaportV1_5,

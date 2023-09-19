@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.17;
 
-import {UniswapParameters, UniswapImmutables} from '../modules/uniswap/UniswapImmutables.sol';
-import {PaymentsParameters, PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
-import {NFTParameters, NFTImmutables} from '../modules/NFTImmutables.sol';
-
 struct RouterParameters {
     address permit2;
     address weth9;
