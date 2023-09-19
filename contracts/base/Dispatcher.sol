@@ -5,7 +5,8 @@ import {V2SwapRouter} from '../modules/uniswap/v2/V2SwapRouter.sol';
 import {V3SwapRouter} from '../modules/uniswap/v3/V3SwapRouter.sol';
 import {BytesLib} from '../modules/uniswap/v3/BytesLib.sol';
 import {Payments} from '../modules/Payments.sol';
-import {RouterImmutables} from '../base/RouterImmutables.sol';
+import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
+import {NFTImmutables} from '../modules/NFTImmutables.sol';
 import {Callbacks} from '../base/Callbacks.sol';
 import {Commands} from '../libraries/Commands.sol';
 import {LockAndMsgSender} from './LockAndMsgSender.sol';
@@ -17,7 +18,7 @@ import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol'
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
-abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks, LockAndMsgSender {
+abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRouter, Callbacks, LockAndMsgSender {
     using BytesLib for bytes;
 
     error InvalidCommandType(uint256 commandType);
@@ -344,7 +345,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                     (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
             } else if (command == Commands.APPROVE_ERC20) {
                 ERC20 token;
-                RouterImmutables.Spenders spender;
+                PaymentsImmutables.Spenders spender;
                 assembly {
                     token := calldataload(inputs.offset)
                     spender := calldataload(add(inputs.offset, 0x20))

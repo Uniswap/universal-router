@@ -4,7 +4,6 @@ import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol'
 import {SafeCast160} from 'permit2/src/libraries/SafeCast160.sol';
 import {Payments} from './Payments.sol';
 import {Constants} from '../libraries/Constants.sol';
-import {RouterImmutables} from '../base/RouterImmutables.sol';
 
 /// @title Payments through Permit2
 /// @notice Performs interactions with Permit2 to transfer tokens
