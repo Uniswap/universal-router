@@ -18,7 +18,7 @@ import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol'
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
-abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, NFTImmutables, Callbacks, LockAndMsgSender {
+abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRouter, Callbacks, LockAndMsgSender {
     using BytesLib for bytes;
 
     error InvalidCommandType(uint256 commandType);

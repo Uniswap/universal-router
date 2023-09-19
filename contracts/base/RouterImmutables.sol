@@ -27,33 +27,3 @@ struct RouterParameters {
     bytes32 pairInitCodeHash;
     bytes32 poolInitCodeHash;
 }
-
-/// @title Router Immutable Storage contract
-/// @notice Used along with the `RouterParameters` struct for ease of cross-chain deployment
-contract RouterImmutables is PaymentsImmutables, UniswapImmutables, NFTImmutables {
-    constructor(RouterParameters memory params)
-        UniswapImmutables(
-            UniswapParameters(params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash)
-        )
-        PaymentsImmutables(
-            PaymentsParameters(params.permit2, params.weth9, params.openseaConduit, params.sudoswap)
-        )
-        NFTImmutables(
-            NFTParameters(
-                params.seaportV1_5,
-                params.seaportV1_4,
-                params.nftxZap,
-                params.x2y2,
-                params.foundation,
-                params.sudoswap,
-                params.elementMarket,
-                params.nft20Zap,
-                params.cryptopunks,
-                params.looksRareV2,
-                params.routerRewardsDistributor,
-                params.looksRareRewardsDistributor,
-                params.looksRareToken
-            )
-        )
-    {}
-}
