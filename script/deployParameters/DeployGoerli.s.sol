@@ -9,8 +9,8 @@ contract DeployGoerli is DeployUniversalRouter {
         params = RouterParameters({
             permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
             weth9: 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6,
-            steth: UNSUPPORTED_PROTOCOL,
-            wsteth: UNSUPPORTED_PROTOCOL,
+            steth: 0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F,
+            wsteth: 0x6320cD32aA674d2898A68ec82e869385Fc5f7E2f,
             seaportV1_5: 0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC,
             seaportV1_4: 0x00000000000001ad428e4906aE43D8F9852d0dD6,
             openseaConduit: 0x1E0049783F008A0085193E00003D00cd54003c71,
