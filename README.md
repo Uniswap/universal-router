@@ -239,7 +239,7 @@ forge script --broadcast \
 --rpc-url <RPC-URL> \
 --private-key <PRIVATE-KEY> \
 --sig 'run()' \
-script/deployParameters/Deploy<network>.s.sol:Deploy<network>
+script/deployParameters/Deploy<network>.s.sol:Deploy<network> \
 --etherscan-api-key <ETHERSCAN-API-KEY> \
 --verify
 ```
