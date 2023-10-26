@@ -29,7 +29,6 @@ library V3Path {
         return path.length >= MULTIPLE_POOLS_MIN_LENGTH;
     }
 
-
     /// @notice Decodes the first pool in path
     /// @param path The bytes encoded swap path
     /// @return tokenA The first token of the given pool
