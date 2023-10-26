@@ -123,10 +123,16 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 shiftRight = 6;
         for (uint i = 0; i < numAddresses; i++)
         {   
-            uint256 shiftLeft = (2 * i) % 4;
-            bytes1 feeByte = fees[i / 4];
-            uint24 tier = _getTier(uint8((feeByte << shiftLeft) >> shiftRight));
-            pathes = abi.encodePacked(pathes, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH], tier);
+            if( i < numAddresses - 1){
+                uint256 shiftLeft = (2 * i) % 4;
+                bytes1 feeByte = fees[i / 4];
+                uint24 tier = _getTier(uint8((feeByte << shiftLeft) >> shiftRight));
+                pathes = abi.encodePacked(pathes, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH], tier);
+            } else {
+                // last one doesn't have a tier
+                pathes = abi.encodePacked(pathes, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH]);
+            }
+
         }
         return pathes;
     }
