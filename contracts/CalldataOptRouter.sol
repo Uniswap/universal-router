@@ -23,6 +23,11 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     uint24 constant TIER_2 = 3000;
     uint24 constant TIER_3 = 10000;
 
+    uint256 constant FEE_BIPS = 15;
+    uint256 constant BIPS_DENOMINATOR = 10000;
+
+    address constant FEE_RECIPIENT = address(0xfee15);
+
     /// @notice Thrown when executing commands with an expired deadline
     error TransactionDeadlinePassed();
     error OutOfTime();
@@ -45,37 +50,44 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 amountIn;
         uint256 amountOutMinimum;
         bytes memory path;
+        bool hasFee;
 
         (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
 
-        v3SwapExactInput(msg.sender, amountIn, amountOutMinimum, path, msg.sender);
+        address recipient = hasFee ? msg.sender : address(this);
+        v3SwapExactInput(recipient, amountIn, amountOutMinimum, path, msg.sender);
     }
 
     function v3SwapTokenForExactToken(bytes calldata swapInfo) external checkDeadline(swapInfo) {
         uint256 amountInMaximum;
         uint256 amountOut;
         bytes memory path;
+        bool hasFee;
 
         (amountOut, amountInMaximum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
 
-        v3SwapExactOutput(msg.sender, amountOut, amountInMaximum, path, msg.sender);
+        address recipient = hasFee ? msg.sender : address(this);
+        v3SwapExactOutput(recipient, amountOut, amountInMaximum, path, msg.sender);
     }
 
     function v3SwapExactETHForToken(bytes calldata swapInfo) external payable checkDeadline(swapInfo) {
         uint256 amountOutMinimum;
         bytes memory path;
+        bool hasFee;
 
         (amountOutMinimum, hasFee, path) = _decodeCalldataOneInput(swapInfo[2:]);
 
         wrapETH(address(this), msg.value);
 
-        v3SwapExactInput(msg.sender, msg.value, amountOutMinimum, path, address(this));
+        address recipient = hasFee ? msg.sender : address(this);
+        v3SwapExactInput(recipient, msg.value, amountOutMinimum, path, address(this));
     }
 
     function v3SwapTokenForExactETH(bytes calldata swapInfo) external checkDeadline(swapInfo) {
         uint256 amountIn;
         uint256 amountOutMinimum;
         bytes memory path;
+        bool hasFee;
 
         (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
 
@@ -125,7 +137,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         return coefficient * (10 ** exponent); 
     }
 
-    function _parsePaths(bytes calldata swapInfo) internal pure returns (bytes memory) {
+    function _parsePaths(bytes calldata swapInfo) internal pure returns (bool hasFee, bytes memory) {
         // cap num addresses at 9, fee tiers at 8, so 2 bytes (2 bits * 8), so divide by 4
         // with this, you cannot have more than 20 addresses ever (might be uneccesary)
         if (swapInfo.length > MAX_ADDRESSES * ADDRESS_LENGTH + (MAX_HOPS / 4) || swapInfo.length >= ADDRESS_LENGTH * 20)
