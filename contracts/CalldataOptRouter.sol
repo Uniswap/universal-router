@@ -104,7 +104,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
             bytes1 feeByte = fees[4/i];
             uint24 tier = _getTier(
                 uint8(
-                    (feeByte >> shiftLeft) << shiftRight
+                    (feeByte << shiftLeft) >> shiftRight
                 )
             );
             pathes = abi.encodePacked(
@@ -114,7 +114,6 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
             );
         }
         return pathes;
-        // abi.encodepacked(arg); -> makes a byte string
     }
     function _getTier(uint8 singleByte) internal pure returns (uint24){
         if (singleByte > 3) {
