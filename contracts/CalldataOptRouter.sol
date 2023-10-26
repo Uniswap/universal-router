@@ -8,10 +8,19 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     error TooLargeOfNumber();
 
     error TooManyHops();
+    error NoFeeData();
+    error NoFeeTier();
 
     uint constant AMOUNT_IN_OFFSET = 2; 
     uint constant MAX_ADDRESSES = 9; 
     uint constant MAX_HOPS = 8;
+    uint constant ADDRESS_LENGTH = 20; 
+    uint constant FEE_BIT_SIZE = 2; 
+
+    uint24 constant TIER_0 = 100; 
+    uint24 constant TIER_1 = 500; 
+    uint24 constant TIER_2 = 3000; 
+    uint24 constant TIER_3 = 10000; 
 
     /// @notice Thrown when executing commands with an expired deadline
     error TransactionDeadlinePassed();
@@ -48,20 +57,58 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         return number;
     }
 
-    function _parseAddresses(bytes calldata swapInfo, uint offset) internal pure returns (bytes memory) 
+    function _parsePathes(bytes calldata swapInfo) internal pure returns (bytes memory) 
     {
-        bytes memory rawBytes  = swapInfo[offset+1:];// from offset to end
-
         // cap num addresses at 9, fee tiers at 8, so 2 bytes (2 bits * 8), so divide by 4
-
-        if(rawBytes.length > MAX_ADDRESSES * 20 + (MAX_HOPS / 4)) revert TooManyHops();
+        // with this, you cannot have more than 20 addresses ever (might be uneccesary)
+        if(swapInfo.length > MAX_ADDRESSES * ADDRESS_LENGTH + (MAX_HOPS / 4) || swapInfo.length >= ADDRESS_LENGTH * 20 ) revert TooManyHops();
 
         // receives 20 bytes repeating followed by sets of 2 bit representing fee tiers followed by padding (will either be 1 or 2 bytes)
         // returns of 20 bytes for each address, followed by 3 bytes for the fee tier, repeat forever as bytes memory
         // edge case, the fee tier last bits are makes divisible by 20 bytes. 
 
+        uint remainder = swapInfo.length % ADDRESS_LENGTH;
+        if(remainder == 0 ) revert NoFeeData();
+        bytes memory fees = swapInfo[swapInfo.length-remainder:]; // TODO check this
+
+        uint numAddresses = (swapInfo.length - remainder) / ADDRESS_LENGTH; 
+
+        bytes memory pathes; 
+        for (uint i = 0; i < numAddresses; i++)
+        {   
+            uint256 shiftRight =  8 - (2 * ((i + 1) % 4));
+            uint256 shiftLeft = (2 * i) % 4;
+            bytes1 feeByte = fees[4/i];
+            uint24 tier = _getTier(
+                uint8(
+                    (feeByte >> shiftLeft) << shiftRight
+                )
+            );
+            pathes = abi.encodePacked(
+                pathes, 
+                swapInfo[ i * ADDRESS_LENGTH : (i + 1) * ADDRESS_LENGTH ],
+                tier
+            );
+        }
+        return pathes;
         // abi.encodepacked(arg); -> makes a byte string
     }
+    function _getTier(uint8 singleByte) internal pure returns (uint24){
+        if (singleByte > 3) {
+            revert NoFeeTier();
+        } else if (singleByte == 0){
+            return TIER_0; 
+        } else if (singleByte == 1) {
+            return TIER_1;
+        } else if (singleByte == 2) {
+            return TIER_2;
+        } else if (singleByte == 3) {
+            return TIER_3;
+        } else {
+            revert NoFeeTier(); // should not be reachable 
+        }
+    }
+
     function _checkDeadline(uint16 deadline) internal {
         if (END_OF_TIME >= block.timestamp) revert OutOfTime();
         if (DEADLINE_OFFSET + (deadline * DEADLINE_GRANULARITY) > block.timestamp) revert TransactionDeadlinePassed();
