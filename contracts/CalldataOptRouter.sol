@@ -13,8 +13,8 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     error IncorrectMsgValue();
 
     uint256 constant AMOUNT_IN_OFFSET = 2;
-    uint256 constant MAX_ADDRESSES = 9;
-    uint256 constant MAX_HOPS = 8;
+    uint256 constant MAX_ADDRESSES = 8;
+    uint256 constant MAX_HOPS = 7;
     uint256 constant ADDRESS_LENGTH = 20;
     uint256 constant FEE_BIT_SIZE = 2;
 
@@ -125,7 +125,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         return coefficient * (10 ** exponent); 
     }
 
-    function _parsePaths(bytes calldata swapInfo) internal pure returns (bytes memory) {
+    function _parsePaths(bytes calldata swapInfo) internal pure returns (bool, bytes memory) {
         // cap num addresses at 9, fee tiers at 8, so 2 bytes (2 bits * 8), so divide by 4
         // with this, you cannot have more than 20 addresses ever (might be uneccesary)
         if (swapInfo.length > MAX_ADDRESSES * ADDRESS_LENGTH + (MAX_HOPS / 4) || swapInfo.length >= ADDRESS_LENGTH * 20)
@@ -136,19 +136,18 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         // receives 20 bytes repeating followed by sets of 2 bit representing fee tiers followed by padding (will either be 1 or 2 bytes)
         // returns of 20 bytes for each address, followed by 3 bytes for the fee tier, repeat forever as bytes memory
         // edge case, the fee tier last bits are makes divisible by 20 bytes.
-
+        uint256 shiftRight = 6;
         uint256 remainder = swapInfo.length % ADDRESS_LENGTH;
         if (remainder == 0) revert NoFeeData();
-        bytes memory fees = swapInfo[swapInfo.length - remainder:]; // TODO check this
-
+        bytes memory fees = swapInfo[swapInfo.length - remainder:]; 
+        bool hasFee = (bytes1(fees[0]) >> 7) != 0;
         uint256 numAddresses = (swapInfo.length - remainder) / ADDRESS_LENGTH;
 
         bytes memory paths;
-        uint256 shiftRight = 6;
         for (uint256 i = 0; i < numAddresses; i++) {
             if (i < numAddresses - 1) {
-                uint256 shiftLeft = 2 * (i % 4);
-                bytes1 feeByte = fees[i / 4];
+                uint256 shiftLeft = 2 * (i + 1 % 4);
+                bytes1 feeByte = fees[(i + 1) / 4];
                 uint24 tier = _getTier(uint8((feeByte << shiftLeft) >> shiftRight));
                 paths = abi.encodePacked(paths, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH], tier);
             } else {
@@ -156,7 +155,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
                 paths = abi.encodePacked(paths, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH]);
             }
         }
-        return paths;
+        return (hasFee, paths);
     }
 
     function _getTier(uint8 singleByte) internal pure returns (uint24) {
