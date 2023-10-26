@@ -7,8 +7,11 @@ import {V3SwapRouter} from './modules/uniswap/v3/V3SwapRouter.sol';
 abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter { 
 
     error TooLargeOfNumber(); 
+    error TooManyHops();
 
     uint constant AMOUNT_IN_OFFSET = 2; 
+    uint constant MAX_ADDRESSES = 9; 
+    uint constant MAX_HOPS = 8;
 
     function v2SwapExactTokenForToken();
     function v2SwapTokenForExactToken();
@@ -33,5 +36,20 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
             number = number + uint(uint8(b[i]))*(2**(8*(b.length-(i+1))));
         }
         return number;
+    }
+
+    function _parseAddresses(bytes calldata swapInfo, uint offset) internal pure returns (bytes memory) 
+    {
+        bytes memory rawBytes  = swapInfo[offset+1:];// from offset to end
+
+        // cap num addresses at 9, fee tiers at 8, so 2 bytes (2 bits * 8), so divide by 4
+
+        if(rawBytes.length > MAX_ADDRESSES * 20 + (MAX_HOPS / 4)) revert TooManyHops();
+
+        // receives 20 bytes repeating followed by sets of 2 bit representing fee tiers followed by padding (will either be 1 or 2 bytes)
+        // returns of 20 bytes for each address, followed by 3 bytes for the fee tier, repeat forever as bytes memory
+        // edge case, the fee tier last bits are makes divisible by 20 bytes. 
+
+        // abi.encodepacked(arg); -> makes a byte string
     }
 }
