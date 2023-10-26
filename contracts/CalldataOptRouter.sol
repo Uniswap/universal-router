@@ -90,7 +90,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
         (amountIn, amountInLength) = _calculateAmount(swapInfo);
         (amountOut, amountOutLength) = _calculateAmount(swapInfo[amountInLength + 1:]);
-        path = _parsePaths(swapInfo[amountInLength + 1 + amountOutLength + 1]);
+        path = _parsePaths(swapInfo[amountInLength + 1 + amountOutLength + 1:]);
     }
 
     function _calculateAmount(bytes calldata swapInfo) internal pure returns (uint256, uint256) {
@@ -101,7 +101,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         return (maskedAmount, amountLength);
     }
 
-    function _parsePathes(bytes calldata swapInfo) internal pure returns (bytes memory) {
+    function _parsePaths(bytes calldata swapInfo) internal pure returns (bytes memory) {
         // cap num addresses at 9, fee tiers at 8, so 2 bytes (2 bits * 8), so divide by 4
         // with this, you cannot have more than 20 addresses ever (might be uneccesary)
         if (swapInfo.length > MAX_ADDRESSES * ADDRESS_LENGTH + (MAX_HOPS / 4) || swapInfo.length >= ADDRESS_LENGTH * 20)
@@ -119,22 +119,20 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
         uint256 numAddresses = (swapInfo.length - remainder) / ADDRESS_LENGTH;
 
-        bytes memory pathes; 
+        bytes memory paths;
         uint256 shiftRight = 6;
-        for (uint i = 0; i < numAddresses; i++)
-        {   
-            if( i < numAddresses - 1){
+        for (uint256 i = 0; i < numAddresses; i++) {
+            if (i < numAddresses - 1) {
                 uint256 shiftLeft = (2 * i) % 4;
                 bytes1 feeByte = fees[i / 4];
                 uint24 tier = _getTier(uint8((feeByte << shiftLeft) >> shiftRight));
-                pathes = abi.encodePacked(pathes, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH], tier);
+                paths = abi.encodePacked(paths, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH], tier);
             } else {
                 // last one doesn't have a tier
-                pathes = abi.encodePacked(pathes, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH]);
+                paths = abi.encodePacked(paths, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH]);
             }
-
         }
-        return pathes;
+        return paths;
     }
 
     function _getTier(uint8 singleByte) internal pure returns (uint24) {
@@ -153,7 +151,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         }
     }
 
-    function _checkDeadline(uint16 deadline) internal pure {
+    function _checkDeadline(uint16 deadline) internal view {
         if (END_OF_TIME >= block.timestamp) revert OutOfTime();
         if (DEADLINE_OFFSET + (deadline * DEADLINE_GRANULARITY) > block.timestamp) revert TransactionDeadlinePassed();
     }
