@@ -3,10 +3,14 @@ pragma solidity ^0.8.17;
 
 import {V2SwapRouter} from './modules/uniswap/v2/V2SwapRouter.sol';
 import {V3SwapRouter} from './modules/uniswap/v3/V3SwapRouter.sol';
+import {V3Path} from './modules/uniswap/v3/V3Path.sol';
+import {Constants} from './libraries/Constants.sol';
+import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
 abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
-    error TooLargeOfNumber();
+    using V3Path for bytes;
 
+    error TooLargeOfNumber();
     error TooManyHops();
     error NoFeeData();
     error NoFeeTier();
@@ -54,8 +58,10 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
         (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
 
-        address recipient = hasFee ? msg.sender : address(this);
+        address recipient = hasFee ? address(this) : msg.sender;
         v3SwapExactInput(recipient, amountIn, amountOutMinimum, path, msg.sender);
+
+        if (hasFee) _takeFee(path);
     }
 
     function v3SwapTokenForExactToken(bytes calldata swapInfo) external checkDeadline(swapInfo) {
@@ -66,8 +72,10 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
         (amountOut, amountInMaximum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
 
-        address recipient = hasFee ? msg.sender : address(this);
+        address recipient = hasFee ? address(this) : msg.sender;
         v3SwapExactOutput(recipient, amountOut, amountInMaximum, path, msg.sender);
+
+        if (hasFee) _takeFee(path);
     }
 
     function v3SwapExactETHForToken(bytes calldata swapInfo) external payable checkDeadline(swapInfo) {
@@ -79,8 +87,10 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
         wrapETH(address(this), msg.value);
 
-        address recipient = hasFee ? msg.sender : address(this);
+        address recipient = hasFee ? address(this) : msg.sender;
         v3SwapExactInput(recipient, msg.value, amountOutMinimum, path, address(this));
+
+        if (hasFee) _takeFee(path);
     }
 
     function v3SwapTokenForExactETH(bytes calldata swapInfo) external checkDeadline(swapInfo) {
@@ -92,6 +102,12 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
 
         v3SwapExactOutput(address(this), amountIn, amountOutMinimum, path, msg.sender);
+
+        if (hasFee) {
+            uint256 totalAmount = WETH9.balanceOf(address(this));
+            uint256 feeAmount = totalAmount * FEE_BIPS / BIPS_DENOMINATOR;
+            pay(address(WETH9), FEE_RECIPIENT, feeAmount);
+        }
 
         unwrapWETH9(msg.sender, amountOutMinimum);
     }
@@ -139,9 +155,17 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         // last 6 bits is the exponent, max 63
         uint256 first = uint256(uint8(firstByte));
         uint8 second = uint8(secondByte);
-        uint256 exponent = uint256((second << 2) >> 2); 
+        uint256 exponent = uint256((second << 2) >> 2);
         uint256 coefficient = (first << 2) + uint256(second >> 6);
-        return coefficient * (10 ** exponent); 
+        return coefficient * (10 ** exponent);
+    }
+
+    function _takeFee(bytes memory path) internal {
+        address token = path.decodeLastToken();
+        uint256 totalAmount = ERC20(token).balanceOf(address(this));
+        uint256 feeAmount = totalAmount * FEE_BIPS / BIPS_DENOMINATOR;
+        pay(token, FEE_RECIPIENT, feeAmount);
+        pay(token, msg.sender, Constants.CONTRACT_BALANCE);
     }
 
     function _parsePaths(bytes calldata swapInfo) internal pure returns (bool, bytes memory) {
@@ -158,7 +182,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 shiftRight = 6;
         uint256 remainder = swapInfo.length % ADDRESS_LENGTH;
         if (remainder == 0) revert NoFeeData();
-        bytes memory fees = swapInfo[swapInfo.length - remainder:]; 
+        bytes memory fees = swapInfo[swapInfo.length - remainder:];
         bool hasFee = (bytes1(fees[0]) >> 7) != 0;
         uint256 numAddresses = (swapInfo.length - remainder) / ADDRESS_LENGTH;
 
