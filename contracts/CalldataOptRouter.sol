@@ -120,7 +120,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 numAddresses = (swapInfo.length - remainder) / ADDRESS_LENGTH;
 
         bytes memory pathes; 
-        uint256 shiftRight =  6;
+        uint256 shiftRight = 6;
         for (uint i = 0; i < numAddresses; i++)
         {   
             uint256 shiftLeft = (2 * i) % 4;
