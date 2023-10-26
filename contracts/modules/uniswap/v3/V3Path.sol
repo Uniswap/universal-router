@@ -52,6 +52,10 @@ library V3Path {
         tokenA = path.toAddress(0, path.length);
     }
 
+    function decodeLastToken(bytes memory path) internal pure returns (address tokenA) {
+        tokenA = path.toAddress(path.length - ADDR_SIZE, path.length);
+    }
+
     /// @notice Skips a token + fee element from the buffer in place
     /// @param path The swap path
     function skipToken(bytes memory path) internal pure {
