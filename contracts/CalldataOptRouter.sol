@@ -118,12 +118,19 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     }
 
     function _calculateAmount(bytes calldata swapInfo) internal pure returns (uint256, uint256) {
-        uint8 amountLength = uint8(bytes1(swapInfo[0]));
+        bool isScientific = (bytes1(swapInfo[0]) >> 7) != 0;
+        uint8 amountLength = uint8((bytes1(swapInfo[0]) << 1) >> 1);
         if (amountLength >= 32) revert TooLargeOfNumber();
-        uint256 amount = uint256(bytes32(swapInfo[1:amountLength + 1]) >> (256 - (8 * amountLength)));
         uint256 mask = (2 ** (amountLength * 8)) - 1;
-        uint256 maskedAmount = mask & amount;
-        return (maskedAmount, amountLength);
+        if (!isScientific){
+            uint256 amount = uint256(bytes32(swapInfo[1:amountLength + 1]) >> (256 - (8 * amountLength)));
+            uint256 maskedAmount = mask & amount;
+            return (maskedAmount, amountLength);
+        } else {
+            uint256 coefficient = mask & uint256(bytes32(swapInfo[1:amountLength + 1]) >> (256 - (8 * amountLength) + 6)); 
+            uint256 exponent = uint256(uint8(bytes1(swapInfo[amountLength]) & 0x3F));
+            return (coefficient * (10 ** exponent), amountLength);
+        }
     }
 
     function _calcuateScientificAmount(bytes1 firstByte, bytes1 secondByte) internal pure returns (uint256) {
