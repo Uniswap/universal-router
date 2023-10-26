@@ -6,13 +6,13 @@ import {V3SwapRouter} from './modules/uniswap/v3/V3SwapRouter.sol';
 
 abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
-    function v2SwapExactTokenForToken();
-    function v2SwapTokenForExactToken();
-    function v2SwapExactETHForToken();
-    function v2SwapTokenForExactETH();
-    function v3SwapExactTokenForToken();
-    function v3SwapTokenForExactToken();
-    function v3SwapExactETHForToken();
-    function v3SwapTokenForExactETH();
+    // function v2SwapExactTokenForToken();
+    // function v2SwapTokenForExactToken();
+    // function v2SwapExactETHForToken();
+    // function v2SwapTokenForExactETH();
+    // function v3SwapExactTokenForToken();
+    // function v3SwapTokenForExactToken();
+    // function v3SwapExactETHForToken();
+    // function v3SwapTokenForExactETH();
     
 }
