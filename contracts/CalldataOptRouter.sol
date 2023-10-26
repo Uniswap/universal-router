@@ -46,7 +46,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 amountOutMinimum;
         bytes memory path;
 
-        (amountIn, amountOutMinimum, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
+        (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
 
         v3SwapExactInput(msg.sender, amountIn, amountOutMinimum, path, msg.sender);
     }
@@ -56,7 +56,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 amountOut;
         bytes memory path;
 
-        (amountOut, amountInMaximum, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
+        (amountOut, amountInMaximum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
 
         v3SwapExactOutput(msg.sender, amountOut, amountInMaximum, path, msg.sender);
     }
@@ -65,7 +65,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 amountOutMinimum;
         bytes memory path;
 
-        (amountOutMinimum, path) = _decodeCalldataOneInput(swapInfo[2:]);
+        (amountOutMinimum, hasFee, path) = _decodeCalldataOneInput(swapInfo[2:]);
 
         wrapETH(address(this), msg.value);
 
@@ -77,7 +77,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 amountOutMinimum;
         bytes memory path;
 
-        (amountIn, amountOutMinimum, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
+        (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
 
         v3SwapExactOutput(address(this), amountIn, amountOutMinimum, path, msg.sender);
 
@@ -87,22 +87,22 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     function _decodeCalldataTwoInputs(bytes calldata swapInfo)
         internal
         pure
-        returns (uint256 preciseAmount, uint256 scientificAmount, bytes memory path)
+        returns (uint256 preciseAmount, uint256 scientificAmount, bool hasFee, bytes memory path)
     {
         uint256 preciseAmountLength;
 
         (preciseAmount, preciseAmountLength) = _calculateAmount(swapInfo);
         // use scientific notation for the limit amount
-        (scientificAmount, path) = _decodeCalldataOneInput(swapInfo[preciseAmountLength + 1:]);
+        (scientificAmount, hasFee, path) = _decodeCalldataOneInput(swapInfo[preciseAmountLength + 1:]);
     }
 
     function _decodeCalldataOneInput(bytes calldata swapInfo)
         internal
         pure
-        returns (uint256 scientificAmount, bytes memory path)
+        returns (uint256 scientificAmount, bool hasFee, bytes memory path)
     {
         scientificAmount = _calcuateScientificAmount(swapInfo[0], swapInfo[1]);
-        path = _parsePaths(swapInfo[2:]);
+        (hasFee, path) = _parsePaths(swapInfo[2:]);
     }
 
     function _calculateAmount(bytes calldata swapInfo) internal pure returns (uint256, uint256) {
