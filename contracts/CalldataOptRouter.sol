@@ -19,7 +19,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     function v3SwapExactETHForToken();
     function v3SwapTokenForExactETH();
 
-    function _amountIn(bytes calldata swapInfo, uint offset) internal pure returns (uint256)
+    function _calcuateAmount(bytes calldata swapInfo, uint offset) internal pure returns (uint256)
     {
         uint8 numBytes = uint8(bytes1(swapInfo[offset]));
         if (numBytes >= 32) revert TooLargeOfNumber();
