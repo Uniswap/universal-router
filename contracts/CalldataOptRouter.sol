@@ -30,22 +30,45 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     function v2SwapTokenForExactToken();
     function v2SwapExactETHForToken();
     function v2SwapTokenForExactETH();
-    function v3SwapExactTokenForToken(bytes calldata swapInfo) external checkDeadline(swapInfo) {}
+
+    // bytes 0-1 deadline
+    // byte 2 length of amountIn
+    function v3SwapExactTokenForToken(bytes calldata swapInfo) external checkDeadline(swapInfo) {
+        // deadline is bytes 
+        // amountIn starts at byte 3
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+        bytes memory path;
+
+        (amountIn, amountOutMinimum, path) = _decodeCalldata(swapInfo[2:])
+
+        v3SwapExactInput(
+            msg.sender,
+            amountIn,
+            amountOutMinimum,
+            path,
+            msg.sender
+        );
+    }
 
     function v3SwapTokenForExactToken();
     function v3SwapExactETHForToken();
     function v3SwapTokenForExactETH();
 
-    function _calcuateAmount(bytes calldata swapInfo, uint256 offset) internal pure returns (uint256) {
-        uint8 numBytes = uint8(bytes1(swapInfo[offset]));
-        if (numBytes >= 32) revert TooLargeOfNumber();
-        bytes memory rawBytes = swapInfo[offset + 1:offset + 1 + numBytes];
-        return _bytesToUint(rawBytes);
+    function _decodeCalldata(bytes calldata swapInfo) internal pure returns (uint256 amountIn, uint256 amountOut, bytes memory path) {
+        uint256 amountInLength;
+        uint256 amountOutLength;
+
+        (amountIn, amountInLength) = _calculateAmount(swapInfo);
+        (amountOutMinimum, amountOutLength) = _calculateAmount(swapInfo[amountInLength+1:]);
+        path = parsePaths(swapInfo[]);
     }
 
-    function _bytesToUint(bytes memory b) internal pure returns (uint256) {
-        uint256 number = uint256(bytes32(b));
-        return number;
+    function _calculateAmount(bytes calldata swapInfo) internal pure returns (uint256, uint256) {
+        uint256 amountLength = uint256(uint8(bytes1(swapInfo[0])));
+        if (amountLength >= 32) revert TooLargeOfNumber();
+        uint256 amount = uint256(bytes32(swapInfo[1:amountLength+1]));
+        return (amount, amountLength);
     }
 
     function _parseAddresses(bytes calldata swapInfo, uint offset) internal pure returns (bytes memory) 
@@ -62,7 +85,8 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
         // abi.encodepacked(arg); -> makes a byte string
     }
-    function _checkDeadline(uint16 deadline) internal {
+
+    function _checkDeadline(uint16 deadline) internal pure {
         if (END_OF_TIME >= block.timestamp) revert OutOfTime();
         if (DEADLINE_OFFSET + (deadline * DEADLINE_GRANULARITY) > block.timestamp) revert TransactionDeadlinePassed();
     }
