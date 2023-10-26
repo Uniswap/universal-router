@@ -101,11 +101,8 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         pure
         returns (uint256 scientificAmount, bytes memory path)
     {
-        uint256 scientificAmountLength;
-
-        // use scientific notation for amount out
-        (scientificAmount, scientificAmountLength) = _calcuateScientificAmount(swapInfo);
-        path = _parsePaths(swapInfo[scientificAmountLength + 1:]);
+        scientificAmount = _calcuateScientificAmount(swapInfo[0], swapInfo[1]);
+        path = _parsePaths(swapInfo[2:]);
     }
 
     function _calculateAmount(bytes calldata swapInfo) internal pure returns (uint256, uint256) {
@@ -117,10 +114,15 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         return (maskedAmount, amountLength);
     }
 
-    function _calcuateScientificAmount(bytes calldata swapInfo) internal pure returns (uint256, uint256) {
-        (uint256 amount, uint256 amountlength) = _calculateAmount(swapInfo);
-        // need to have guards to protect against overflow
-        return (amount * (10 ** uint256(uint8(bytes1(swapInfo[amountlength + 1])))), amountlength + 1);
+    function _calcuateScientificAmount(bytes1 firstByte, bytes1 secondByte) internal pure returns (uint256) {
+        // always 2 bytes
+        // first 10 bits is the coefficient, max 1023
+        // last 6 bits is the exponent, max 63
+        uint256 first = uint256(uint8(firstByte));
+        uint8 second = uint8(secondByte);
+        uint256 exponent = uint256((second << 2) >> 2); 
+        uint256 coefficient = (first << 2) + uint256(second >> 6);
+        return coefficient * (10 ** exponent); 
     }
 
     function _parsePaths(bytes calldata swapInfo) internal pure returns (bytes memory) {
