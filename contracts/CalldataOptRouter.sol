@@ -89,7 +89,9 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 amountOutLength;
 
         (amountIn, amountInLength) = _calculateAmount(swapInfo);
-        (amountOut, amountOutLength) = _calculateAmount(swapInfo[amountInLength + 1:]);
+        // (amountOut, amountOutLength) = _calculateAmount(swapInfo[amountInLength + 1:]);
+        // use scientific notation for amount out
+        (amountOut, amountOutLength) = _calcuateScientificAmount(swapInfo[amountInLength + 1:]); 
         path = _parsePaths(swapInfo[amountInLength + 1 + amountOutLength + 1:]);
     }
 
@@ -99,6 +101,12 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 amount = uint256(bytes32(swapInfo[1:amountLength + 1]));
         uint256 maskedAmount = (2 ** (amountLength * 8)) - 1 & amount;
         return (maskedAmount, amountLength);
+    }
+
+    function _calcuateScientificAmount(bytes calldata swapInfo) internal pure returns (uint256, uint256) {
+        (uint256 amount, uint256 amountlength) = _calculateAmount(swapInfo);
+        // need to have guards to protect against overflow
+        return (amount * (10 ** uint256(uint8(bytes1(swapInfo[amountlength + 1])))) , amountlength+1);
     }
 
     function _parsePaths(bytes calldata swapInfo) internal pure returns (bytes memory) {
