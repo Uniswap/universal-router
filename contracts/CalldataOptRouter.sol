@@ -10,6 +10,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     error TooManyHops();
     error NoFeeData();
     error NoFeeTier();
+    error IncorrectMsgValue();
 
     uint256 constant AMOUNT_IN_OFFSET = 2;
     uint256 constant MAX_ADDRESSES = 9;
@@ -67,6 +68,10 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
         (amountIn, amountOutMinimum, path) = _decodeCalldata(swapInfo[2:]);
 
+        if(msg.value != amountIn) revert IncorrectMsgValue();
+
+        wrapETH(address(this), amountIn);
+
         v3SwapExactInput(msg.sender, amountIn, amountOutMinimum, path, address(this));
     }
 
@@ -78,6 +83,8 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         (amountIn, amountOutMinimum, path) = _decodeCalldata(swapInfo[2:]);
 
         v3SwapExactOutput(address(this), amountIn, amountOutMinimum, path, msg.sender);
+        
+        unwrapWETH9(msg.sender, amountOutMinimum);
     }
 
     function _decodeCalldata(bytes calldata swapInfo)
@@ -96,10 +103,11 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     }
 
     function _calculateAmount(bytes calldata swapInfo) internal pure returns (uint256, uint256) {
-        uint256 amountLength = uint256(uint8(bytes1(swapInfo[0])));
+        uint8 amountLength = uint8(bytes1(swapInfo[0]));
         if (amountLength >= 32) revert TooLargeOfNumber();
-        uint256 amount = uint256(bytes32(swapInfo[1:amountLength + 1]));
-        uint256 maskedAmount = (2 ** (amountLength * 8)) - 1 & amount;
+        uint256 amount = uint256(bytes32(swapInfo[1:amountLength + 1]) >> (256 - (8 * amountLength)));
+        uint256 mask = (2 ** (amountLength * 8)) - 1;
+        uint256 maskedAmount = mask & amount;
         return (maskedAmount, amountLength);
     }
 
@@ -131,7 +139,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 shiftRight = 6;
         for (uint256 i = 0; i < numAddresses; i++) {
             if (i < numAddresses - 1) {
-                uint256 shiftLeft = (2 * i) % 4;
+                uint256 shiftLeft = 2 * (i % 4);
                 bytes1 feeByte = fees[i / 4];
                 uint24 tier = _getTier(uint8((feeByte << shiftLeft) >> shiftRight));
                 paths = abi.encodePacked(paths, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH], tier);
