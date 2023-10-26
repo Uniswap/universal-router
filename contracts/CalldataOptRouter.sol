@@ -14,11 +14,12 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         localUSDC = _USDC;
     }
 
-
+    // can be unsafe if you don't know what you're doing
+    // slippage tolerance set to 2% from the 1 minute average
     function swapETHForUSDCOptimized() public payable {
-        uint24 _feeTier = 5;
+        uint24 _feeTier = 500;
         address _poolAddress = computePoolAddress(address(WETH9), localUSDC, _feeTier);
-        uint32 _period = uint32(block.timestamp - 3 minutes);
+        uint32 _period = uint32(block.timestamp - 1 minutes);
         (int24 arithmeticMeanTick,) = OracleLibrary.consult(_poolAddress, _period);
 
         uint256 _quoteAmount = OracleLibrary.getQuoteAtTick(
@@ -28,16 +29,18 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
             localUSDC
         );
 
-        uint256 _minOutput = _quoteAmount * 19 / 20;
+        uint256 _minOutput = _quoteAmount * 49 / 50;
 
         bytes memory _path = abi.encodePacked(address(WETH9), _feeTier, localUSDC);
+
+        WETH9.deposit{value: msg.value}();
 
         v3SwapExactInput(
             msg.sender,
             msg.value,
             _minOutput,
             _path,
-            msg.sender
+            address(this)
         ); 
     }
 
