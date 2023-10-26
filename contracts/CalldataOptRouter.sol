@@ -99,7 +99,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         bytes memory pathes; 
         for (uint i = 0; i < numAddresses; i++)
         {   
-            uint256 shiftRight =  8 - (2 * ((i + 1) % 4));
+            uint256 shiftRight =  6;
             uint256 shiftLeft = (2 * i) % 4;
             bytes1 feeByte = fees[i/4];
             uint24 tier = _getTier(
