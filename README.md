@@ -165,13 +165,20 @@ Developer documentation to give a detailed explanation of the inputs for every c
 
 ### To Compile and Run Tests
 
-1. Create `.env` file with api key
+1. Clone the repository with all submodules
+
+Clone the repository with:
+```
+git clone --recurse-submodules https://github.com/Uniswap/universal-router.git
+```
+
+2. Create `.env` file with api key
 
 ```
 INFURA_API_KEY='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 ```
 
-2. Run yarn commands to compile and test
+3. Run yarn commands to compile and test
 
 ### To Run Hardhat Tests
 
@@ -180,6 +187,11 @@ yarn install
 yarn symlink
 yarn compile
 yarn test
+```
+
+If you run into an issue on `yarn compile` where it cannot find the dependencies in the lib folder try to clone all the submodules with:
+```
+git submodule update --init --recursive
 ```
 
 #### To Update Hardhat Gas Snapshots
