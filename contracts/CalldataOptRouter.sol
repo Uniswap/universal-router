@@ -46,7 +46,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 amountOutMinimum;
         bytes memory path;
 
-        (amountIn, amountOutMinimum, path) = _decodeCalldata(swapInfo[2:]);
+        (amountIn, amountOutMinimum, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
 
         v3SwapExactInput(msg.sender, amountIn, amountOutMinimum, path, msg.sender);
     }
@@ -56,23 +56,20 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 amountOut;
         bytes memory path;
 
-        (amountInMaximum, amountOut, path) = _decodeCalldata(swapInfo[2:]);
+        (amountOut, amountInMaximum, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
 
         v3SwapExactOutput(msg.sender, amountOut, amountInMaximum, path, msg.sender);
     }
 
     function v3SwapExactETHForToken(bytes calldata swapInfo) external payable checkDeadline(swapInfo) {
-        uint256 amountIn;
         uint256 amountOutMinimum;
         bytes memory path;
 
-        (amountIn, amountOutMinimum, path) = _decodeCalldata(swapInfo[2:]);
+        (amountOutMinimum, path) = _decodeCalldataOneInput(swapInfo[2:]);
 
-        if(msg.value != amountIn) revert IncorrectMsgValue();
+        wrapETH(address(this), msg.value);
 
-        wrapETH(address(this), amountIn);
-
-        v3SwapExactInput(msg.sender, amountIn, amountOutMinimum, path, address(this));
+        v3SwapExactInput(msg.sender, msg.value, amountOutMinimum, path, address(this));
     }
 
     function v3SwapTokenForExactETH(bytes calldata swapInfo) external checkDeadline(swapInfo) {
@@ -80,26 +77,35 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint256 amountOutMinimum;
         bytes memory path;
 
-        (amountIn, amountOutMinimum, path) = _decodeCalldata(swapInfo[2:]);
+        (amountIn, amountOutMinimum, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
 
         v3SwapExactOutput(address(this), amountIn, amountOutMinimum, path, msg.sender);
-        
+
         unwrapWETH9(msg.sender, amountOutMinimum);
     }
 
-    function _decodeCalldata(bytes calldata swapInfo)
+    function _decodeCalldataTwoInputs(bytes calldata swapInfo)
         internal
         pure
-        returns (uint256 amountIn, uint256 amountOut, bytes memory path)
+        returns (uint256 preciseAmount, uint256 scientificAmount, bytes memory path)
     {
-        uint256 amountInLength;
-        uint256 amountOutLength;
+        uint256 preciseAmountLength;
 
-        (amountIn, amountInLength) = _calculateAmount(swapInfo);
-        // (amountOut, amountOutLength) = _calculateAmount(swapInfo[amountInLength + 1:]);
+        (preciseAmount, preciseAmountLength) = _calculateAmount(swapInfo);
+        // use scientific notation for the limit amount
+        (scientificAmount, path) = _decodeCalldataOneInput(swapInfo[preciseAmountLength + 1:]);
+    }
+
+    function _decodeCalldataOneInput(bytes calldata swapInfo)
+        internal
+        pure
+        returns (uint256 scientificAmount, bytes memory path)
+    {
+        uint256 scientificAmountLength;
+
         // use scientific notation for amount out
-        (amountOut, amountOutLength) = _calcuateScientificAmount(swapInfo[amountInLength + 1:]); 
-        path = _parsePaths(swapInfo[amountInLength + 1 + amountOutLength + 1:]);
+        (scientificAmount, scientificAmountLength) = _calcuateScientificAmount(swapInfo);
+        path = _parsePaths(swapInfo[scientificAmountLength + 1:]);
     }
 
     function _calculateAmount(bytes calldata swapInfo) internal pure returns (uint256, uint256) {
@@ -114,7 +120,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     function _calcuateScientificAmount(bytes calldata swapInfo) internal pure returns (uint256, uint256) {
         (uint256 amount, uint256 amountlength) = _calculateAmount(swapInfo);
         // need to have guards to protect against overflow
-        return (amount * (10 ** uint256(uint8(bytes1(swapInfo[amountlength + 1])))) , amountlength+1);
+        return (amount * (10 ** uint256(uint8(bytes1(swapInfo[amountlength + 1])))), amountlength + 1);
     }
 
     function _parsePaths(bytes calldata swapInfo) internal pure returns (bytes memory) {
