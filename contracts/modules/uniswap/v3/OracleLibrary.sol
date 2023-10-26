@@ -2,9 +2,13 @@
 // pragma solidity >=0.5.0 <0.8.0
 pragma solidity ^0.8.17;
 
-import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
-import '@uniswap/v3-core/contracts/libraries/TickMath.sol';
+
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
+import './updated/updatedTickMath.sol';
+import './updated/updatedFullMath.sol';
+
+// import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
+// import {V2SwapRouter} from './modules/uniswap/v2/V2SwapRouter.sol';
 
 /// @title Oracle library
 /// @notice Provides functions to integrate with V3 pool oracle
