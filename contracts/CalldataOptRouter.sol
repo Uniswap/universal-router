@@ -8,7 +8,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
     error TooLargeOfNumber(); 
 
-    uint constant AMOUNT_IN_OFFSET = 2; 
+    uint256 constant AMOUNT_IN_OFFSET = 2; 
 
     function v2SwapExactTokenForToken();
     function v2SwapTokenForExactToken();
@@ -19,7 +19,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     function v3SwapExactETHForToken();
     function v3SwapTokenForExactETH();
 
-    function _calcuateAmount(bytes calldata swapInfo, uint offset) internal pure returns (uint256)
+    function _calcuateAmount(bytes calldata swapInfo, uint256 offset) internal pure returns (uint256)
     {
         uint8 numBytes = uint8(bytes1(swapInfo[offset]));
         if (numBytes >= 32) revert TooLargeOfNumber();
@@ -28,10 +28,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     }
 
     function _bytesToUint(bytes memory b) internal pure returns (uint256){
-        uint256 number;
-        for(uint i=0;i<b.length;i++){
-            number = number + uint(uint8(b[i]))*(2**(8*(b.length-(i+1))));
-        }
+        uint256 number = uint256(bytes32(b));
         return number;
     }
 }
