@@ -20,6 +20,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     error NoFeeTier();
     error IncorrectMsgValue();
     error CannotDoEthToEth();
+    error NotEnoughAddresses();
 
     uint256 constant AMOUNT_IN_OFFSET = 2;
     uint256 constant MAX_ADDRESSES = 8;
@@ -212,23 +213,37 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         // receives 20 bytes repeating followed by sets of 2 bit representing fee tiers followed by padding (will either be 1 or 2 bytes)
         // returns of 20 bytes for each address, followed by 3 bytes for the fee tier, repeat forever as bytes memory
         // edge case, the fee tier last bits are makes divisible by 20 bytes.
-        uint256 shiftRight = 6;
         uint256 remainder = swapInfo.length % ADDRESS_LENGTH;
         if (remainder == 0) revert NoFeeData();
         bytes memory fees = swapInfo[swapInfo.length - remainder:];
         bool hasFee = (bytes1(fees[0]) >> 7) != 0;
-        uint256 numAddresses = (swapInfo.length - remainder) / ADDRESS_LENGTH;
+        uint256 numAddresses = (swapInfo.length - remainder) / ADDRESS_LENGTH ;
+        if(firstETH || lastETH){
+            numAddresses++; 
+        }
+        if(numAddresses < 2){
+            revert NotEnoughAddresses();
+        }
 
         bytes memory paths;
+        uint256 addressLocation = 0; 
         for (uint256 i = 0; i < numAddresses; i++) {
-            if (i < numAddresses - 1) {
+            if (i == 0 || i < numAddresses - 1) {
                 uint256 shiftLeft = 2 * (i + 1 % 4);
                 bytes1 feeByte = fees[(i + 1) / 4];
-                uint24 tier = _getTier(uint8((feeByte << shiftLeft) >> shiftRight));
-                paths = abi.encodePacked(paths, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH], tier);
+                uint24 tier = _getTier(uint8((feeByte << shiftLeft) >> 6));
+                if(firstETH && i == 0) {
+                    paths = abi.encodePacked(paths, WETH_MAINNET, tier);
+                } else {
+                    paths = abi.encodePacked(paths, swapInfo[addressLocation * ADDRESS_LENGTH:(addressLocation + 1) * ADDRESS_LENGTH], tier);
+                    addressLocation++;
+                }
             } else {
-                // last one doesn't have a tier
-                paths = abi.encodePacked(paths, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH]);
+                if (lastETH) {
+                    paths = abi.encodePacked(paths, WETH_MAINNET);
+                } else {
+                    paths = abi.encodePacked(paths, swapInfo[addressLocation * ADDRESS_LENGTH:(addressLocation + 1) * ADDRESS_LENGTH]);
+                }
             }
         }
         return (hasFee, paths);
