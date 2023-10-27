@@ -54,30 +54,29 @@ describe('Uniswap V3 Tests:', () => {
   })
 
   describe('Trade on UniswapV3', () => {
-
     beforeEach(async () => {
       // for these tests Bob gives the router max approval on permit2
       await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
       await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
     })
 
-    it('completes a ETH V3 exactIn swap', async () => {
+    it('completes a ETH to USDC V3 exactIn swap', async () => {
       // ETH for USDC
       // send 1 ETH, receive at least 1000 USDC
       const inputAmount = expandTo18DecimalsBN(1)
-      const deadline = "0002" // 20 mins
-      const minOut = "0049" // 1e9 (1000e6)
+      const deadline = '0002' // 20 mins
+      const minOut = '0049' // 1e9 (1000e6)
       const addresses = WETH.address.slice(2).concat(USDC.address.slice(2))
       // 00 01 00 00
-      const feeTiers = "10"
+      const feeTiers = '10'
 
-      const args = "0x".concat(deadline).concat(minOut).concat(addresses).concat(feeTiers)
+      const args = '0x'.concat(deadline).concat(minOut).concat(addresses).concat(feeTiers)
       console.log(args)
 
       const ethBalanceBefore: BigNumber = await ethers.provider.getBalance(bob.address)
       const usdcBalanceBefore: BigNumber = await usdcContract.balanceOf(bob.address)
 
-      await router.v3SwapExactETHForToken(args, {value: inputAmount})
+      await router.v3SwapExactETHForToken(args, { value: inputAmount })
 
       const ethBalanceAfter: BigNumber = await ethers.provider.getBalance(bob.address)
       const usdcBalanceAfter: BigNumber = await usdcContract.balanceOf(bob.address)
@@ -88,6 +87,32 @@ describe('Uniswap V3 Tests:', () => {
       console.log(usdcBalanceAfter)
     })
 
+    it('test WETH to USDC V3 exactIn swap', async () => {
+      // WETH for USDC
+      // send 1 WETH, receive at least 1000 USDC
+      const deadline = '0002' // 20 mins
+      const inputAmount = '8152' // 1000000101010010
+      const minOut = '0049' // 1e9 (1000e6)
+      const addresses = WETH.address.slice(2).concat(USDC.address.slice(2))
+      // 00 01 00 00
+      const feeTiers = '10'
+
+      const args = '0x'.concat(deadline).concat(inputAmount).concat(minOut).concat(addresses).concat(feeTiers)
+      console.log(args)
+
+      const wethBalanceBefore: BigNumber = await wethContract.balanceOf(bob.address)
+      const usdcBalanceBefore: BigNumber = await usdcContract.balanceOf(bob.address)
+
+      await router.v3SwapExactTokenForToken(args)
+
+      const wethBalanceAfter: BigNumber = await wethContract.balanceOf(bob.address)
+      const usdcBalanceAfter: BigNumber = await usdcContract.balanceOf(bob.address)
+
+      console.log(wethBalanceBefore)
+      console.log(wethBalanceAfter)
+      console.log(usdcBalanceBefore)
+      console.log(usdcBalanceAfter)
+    })
   })
 
   async function deployCalldataOptRouter(permit2: Permit2): Promise<CalldataOptRouter> {
@@ -108,7 +133,7 @@ describe('Uniswap V3 Tests:', () => {
     }
 
     const routerFactory = await ethers.getContractFactory('CalldataOptRouter')
-    const router = (await routerFactory.deploy(uniswapParameters, paymentsParameters)) as unknown as CalldataOptRouter
+    const router = (await routerFactory.deploy(uniswapParameters, paymentsParameters, USDC.address)) as unknown as CalldataOptRouter
     return router
   }
   async function deployPermit2(): Promise<Permit2> {
