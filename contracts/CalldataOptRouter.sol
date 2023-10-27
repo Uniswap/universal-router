@@ -129,7 +129,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         pure
         returns (uint256 scientificAmount, bool hasFee, bytes memory path)
     {
-        scientificAmount = _calcuateScientificAmount(swapInfo[0], swapInfo[1]);
+        scientificAmount = _calculateScientificAmount(swapInfo[0], swapInfo[1]);
         (hasFee, path) = _parsePaths(swapInfo[2:]);
     }
 
@@ -149,7 +149,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         }
     }
 
-    function _calcuateScientificAmount(bytes1 firstByte, bytes1 secondByte) internal pure returns (uint256) {
+    function _calculateScientificAmount(bytes1 firstByte, bytes1 secondByte) internal pure returns (uint256) {
         // always 2 bytes
         // first 10 bits is the coefficient, max 1023
         // last 6 bits is the exponent, max 63
@@ -218,7 +218,7 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     }
 
     function _checkDeadline(uint16 deadline) internal view {
-        if (END_OF_TIME >= block.timestamp) revert OutOfTime();
-        if (DEADLINE_OFFSET + (deadline * DEADLINE_GRANULARITY) > block.timestamp) revert TransactionDeadlinePassed();
+        if (END_OF_TIME <= block.timestamp) revert OutOfTime();
+        if (DEADLINE_OFFSET + (deadline * DEADLINE_GRANULARITY) < block.timestamp) revert TransactionDeadlinePassed();
     }
 }
