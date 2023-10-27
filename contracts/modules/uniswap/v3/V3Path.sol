@@ -29,7 +29,6 @@ library V3Path {
         return path.length >= MULTIPLE_POOLS_MIN_LENGTH;
     }
 
-
     /// @notice Decodes the first pool in path
     /// @param path The bytes encoded swap path
     /// @return tokenA The first token of the given pool
@@ -51,6 +50,10 @@ library V3Path {
 
     function decodeFirstToken(bytes memory path) internal pure returns (address tokenA) {
         tokenA = path.toAddress(0, path.length);
+    }
+
+    function decodeLastToken(bytes memory path) internal pure returns (address tokenA) {
+        tokenA = path.toAddress(path.length - ADDR_SIZE, path.length);
     }
 
     /// @notice Skips a token + fee element from the buffer in place
