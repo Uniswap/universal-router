@@ -133,7 +133,7 @@ describe('Uniswap V3 Tests:', () => {
     }
 
     const routerFactory = await ethers.getContractFactory('CalldataOptRouter')
-    const router = (await routerFactory.deploy(uniswapParameters, paymentsParameters)) as unknown as CalldataOptRouter
+    const router = (await routerFactory.deploy(uniswapParameters, paymentsParameters, USDC.address)) as unknown as CalldataOptRouter
     return router
   }
   async function deployPermit2(): Promise<Permit2> {

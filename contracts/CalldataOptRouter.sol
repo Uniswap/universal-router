@@ -3,6 +3,8 @@ pragma solidity ^0.8.17;
 
 import {V2SwapRouter} from './modules/uniswap/v2/V2SwapRouter.sol';
 import {V3SwapRouter} from './modules/uniswap/v3/V3SwapRouter.sol';
+import {OracleLibrary} from './modules/uniswap/v3/OracleLibrary.sol';
+
 import {UniswapParameters, UniswapImmutables} from './modules/uniswap/UniswapImmutables.sol';
 import {PaymentsParameters, PaymentsImmutables} from './modules/PaymentsImmutables.sol';
 import {V3Path} from './modules/uniswap/v3/V3Path.sol';
@@ -51,12 +53,15 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         UNSUPPORTED_PROTOCOL
     );
 
-    constructor(UniswapParameters memory uniswapParameters, PaymentsParameters memory paymentsParameters)
+    address immutable localUSDC;
+
+    constructor(UniswapParameters memory uniswapParameters, PaymentsParameters memory paymentsParameters, address _USDC)
         UniswapImmutables(uniswapParameters)
         PaymentsImmutables(paymentsParameters)
     {
         DEADLINE_OFFSET = block.timestamp;
         END_OF_TIME = DEADLINE_OFFSET + (DEADLINE_GRANULARITY * type(uint16).max);
+        localUSDC = _USDC;
     }
 
     /// @notice Thrown when executing commands with an expired deadline
@@ -70,6 +75,36 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     modifier checkDeadline(bytes calldata swapInfo) {
         _checkDeadline(uint16(bytes2(swapInfo[:2])));
         _;
+    }
+
+        // can be unsafe if you don't know what you're doing
+    // slippage tolerance set to 2% from the 1 minute average
+    function swapETHForUSDCOptimized() public payable {
+        uint24 _feeTier = 500;
+        address _poolAddress = computePoolAddress(address(WETH9), localUSDC, _feeTier);
+        uint32 _period = uint32(block.timestamp - 1 minutes);
+        (int24 arithmeticMeanTick,) = OracleLibrary.consult(_poolAddress, _period);
+
+        uint256 _quoteAmount = OracleLibrary.getQuoteAtTick(
+            arithmeticMeanTick, 
+            uint128(msg.value), 
+            address(WETH9), 
+            localUSDC
+        );
+
+        uint256 _minOutput = _quoteAmount * 49 / 50;
+
+        bytes memory _path = abi.encodePacked(address(WETH9), _feeTier, localUSDC);
+
+        WETH9.deposit{value: msg.value}();
+
+        v3SwapExactInput(
+            msg.sender,
+            msg.value,
+            _minOutput,
+            _path,
+            address(this)
+        ); 
     }
 
     function v3SwapExactTokenForToken(bytes calldata swapInfo) external checkDeadline(swapInfo) {

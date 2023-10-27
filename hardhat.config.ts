@@ -6,6 +6,12 @@ dotenv.config()
 
 const DEFAULT_COMPILER_SETTINGS = {
   version: '0.8.17',
+  overrides: {
+    "@uniswap/v3-core/contracts": {
+      version: "0.7.6",
+      settings: { }
+    }
+  },
   settings: {
     viaIR: true,
     evmVersion: 'istanbul',

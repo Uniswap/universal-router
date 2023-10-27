@@ -154,7 +154,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
         );
     }
 
-    function computePoolAddress(address tokenA, address tokenB, uint24 fee) private view returns (address pool) {
+    function computePoolAddress(address tokenA, address tokenB, uint24 fee) internal view returns (address pool) {
         if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA);
         pool = address(
             uint160(
