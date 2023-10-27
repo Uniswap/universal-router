@@ -39,6 +39,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     address constant FEE_RECIPIENT = address(0xfee15);
     address constant WETH_MAINNET = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
+
     address immutable localUSDC;
 
     constructor(UniswapParameters memory uniswapParameters, PaymentsParameters memory paymentsParameters, address _USDC)
@@ -203,6 +204,35 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     }
 
     function _parsePaths(bytes calldata swapInfo, bool firstETH, bool lastETH) internal pure returns (bool, bytes memory) {
+        if(firstEth && lastEth){
+            revert CannotDoEthToEth();
+        }
+        // get state
+        (bool hasFee, bool useShortHand) = _getPathState(swapInfo[0]);
+        bytes memory paths;
+        if(useShortHand){
+            // gather which ones use shorthand, only 8 bits allowed 
+            // always assume header is 3 bytes if using shorthand, maybe reduce a byte later
+            // bytes1 shortHandByte = swapInfo[2];
+            // up to 16 possible shorthand addresses (4 bit number)
+            for (uint i = 0; i < MAX_ADDRESSES; i++){
+                if((swapInfo[2] & (0x80 >> i)) != 0){
+                    // use shorthand, 0000 means end transaction
+
+                }  else {
+                    // get 20 bytes for the address
+                    bytes tmpAddress = swapInfo[(3 + (ADDRESS_LENGTH * i)) : (3 + (i * ADDRESS_LENGTH) + ADDRESS_LENGTH)];
+                }
+            }
+        } else {
+            paths = _parsePathsNoShortHand(swapInfo, firstETH, lastETH);
+        }
+
+        return (hasFee, paths);
+    }
+
+    function _parsePathsNoShortHand(bytes calldata swapInfo, bool firstETH, bool lastETH) internal pure returns (bytes memory) {
+
         // cap num addresses at 9, fee tiers at 8, so 2 bytes (2 bits * 8), so divide by 4
         // with this, you cannot have more than 20 addresses ever (might be uneccesary)
         if (swapInfo.length > MAX_ADDRESSES * ADDRESS_LENGTH + (MAX_HOPS / 4) || swapInfo.length >= ADDRESS_LENGTH * 20)
@@ -210,13 +240,12 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
             revert TooManyHops();
         }
 
-        // receives 20 bytes repeating followed by sets of 2 bit representing fee tiers followed by padding (will either be 1 or 2 bytes)
+        // sets of 2 bit representing fee tiers followed by padding (will either be 1 or 2 bytes) before 20 byte addresses 
         // returns of 20 bytes for each address, followed by 3 bytes for the fee tier, repeat forever as bytes memory
         // edge case, the fee tier last bits are makes divisible by 20 bytes.
         uint256 remainder = swapInfo.length % ADDRESS_LENGTH;
         if (remainder == 0) revert NoFeeData();
-        bytes memory fees = swapInfo[swapInfo.length - remainder:];
-        bool hasFee = (bytes1(fees[0]) >> 7) != 0;
+        bytes memory fees = swapInfo[0:remainder];
         uint256 numAddresses = (swapInfo.length - remainder) / ADDRESS_LENGTH ;
         if(firstETH || lastETH){
             numAddresses++; 
@@ -235,18 +264,24 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
                 if(firstETH && i == 0) {
                     paths = abi.encodePacked(paths, WETH_MAINNET, tier);
                 } else {
-                    paths = abi.encodePacked(paths, swapInfo[addressLocation * ADDRESS_LENGTH:(addressLocation + 1) * ADDRESS_LENGTH], tier);
+                    paths = abi.encodePacked(paths, swapInfo[remainder + (addressLocation * ADDRESS_LENGTH:(addressLocation + 1) * ADDRESS_LENGTH)], tier);
                     addressLocation++;
                 }
             } else {
                 if (lastETH) {
                     paths = abi.encodePacked(paths, WETH_MAINNET);
                 } else {
-                    paths = abi.encodePacked(paths, swapInfo[addressLocation * ADDRESS_LENGTH:(addressLocation + 1) * ADDRESS_LENGTH]);
+                    paths = abi.encodePacked(paths, swapInfo[remainder + (addressLocation * ADDRESS_LENGTH:(addressLocation + 1) * ADDRESS_LENGTH)]);
                 }
             }
         }
-        return (hasFee, paths);
+        return paths;
+    }
+
+    function _getPathState(bytes1 theByte) internal pure returns (bool hasFee, bool usesShortHand) {
+        // first two bits determine the state
+        hasFee = (uint8(theByte) & 0x80) != 0; //first bit
+        usesShortHand = (uint8(theByte) & 0x40) != 0; //second bit
     }
 
     function _getTier(uint8 singleByte) internal pure returns (uint24) {
