@@ -19,6 +19,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     error NoFeeData();
     error NoFeeTier();
     error IncorrectMsgValue();
+    error CannotDoEthToEth();
 
     uint256 constant AMOUNT_IN_OFFSET = 2;
     uint256 constant MAX_ADDRESSES = 8;
@@ -114,7 +115,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         bytes memory path;
         bool hasFee;
 
-        (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
+        (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:], false, false);
 
         address recipient = hasFee ? address(this) : msg.sender;
         v3SwapExactInput(recipient, amountIn, amountOutMinimum, path, msg.sender);
@@ -128,7 +129,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         bytes memory path;
         bool hasFee;
 
-        (amountOut, amountInMaximum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
+        (amountOut, amountInMaximum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:], false, false);
 
         address recipient = hasFee ? address(this) : msg.sender;
         v3SwapExactOutput(recipient, amountOut, amountInMaximum, path, msg.sender);
@@ -141,7 +142,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         bytes memory path;
         bool hasFee;
 
-        (amountOutMinimum, hasFee, path) = _decodeCalldataOneInput(swapInfo[2:]);
+        (amountOutMinimum, hasFee, path) = _decodeCalldataOneInput(swapInfo[2:], true, false);
 
         wrapETH(address(this), msg.value);
 
@@ -157,7 +158,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         bytes memory path;
         bool hasFee;
 
-        (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:]);
+        (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:], false, true);
 
         v3SwapExactOutput(address(this), amountIn, amountOutMinimum, path, msg.sender);
 
@@ -170,7 +171,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         unwrapWETH9(msg.sender, amountOutMinimum);
     }
 
-    function _decodeCalldataTwoInputs(bytes calldata swapInfo)
+    function _decodeCalldataTwoInputs(bytes calldata swapInfo, bool firstEth, bool lastEth)
         internal
         pure
         returns (uint256 preciseAmount, uint256 scientificAmount, bool hasFee, bytes memory path)
@@ -179,16 +180,16 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
         (preciseAmount, preciseAmountLength) = _calculateAmount(swapInfo);
         // use scientific notation for the limit amount
-        (scientificAmount, hasFee, path) = _decodeCalldataOneInput(swapInfo[preciseAmountLength + 1:]);
+        (scientificAmount, hasFee, path) = _decodeCalldataOneInput(swapInfo[preciseAmountLength + 1:], firstEth, lastEth);
     }
 
-    function _decodeCalldataOneInput(bytes calldata swapInfo)
+    function _decodeCalldataOneInput(bytes calldata swapInfo, bool firstEth, bool lastEth)
         internal
         pure
         returns (uint256 scientificAmount, bool hasFee, bytes memory path)
     {
         scientificAmount = _calculateScientificAmount(swapInfo[0], swapInfo[1]);
-        (hasFee, path) = _parsePaths(swapInfo[2:]);
+        (hasFee, path) = _parsePaths(swapInfo[2:], firstEth, lastEth);
     }
 
     function _calculateAmount(bytes calldata swapInfo) internal pure returns (uint256, uint256) {
@@ -233,6 +234,10 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         if (swapInfo.length > MAX_ADDRESSES * ADDRESS_LENGTH + (MAX_HOPS / 4) || swapInfo.length >= ADDRESS_LENGTH * 20)
         {
             revert TooManyHops();
+        }
+
+        if (firstETH && lastETH){
+            revert CannotDoEthToEth();
         }
 
         // receives 20 bytes repeating followed by sets of 2 bit representing fee tiers followed by padding (will either be 1 or 2 bytes)
