@@ -113,6 +113,23 @@ describe('Uniswap V3 Tests:', () => {
       console.log(usdcBalanceBefore)
       console.log(usdcBalanceAfter)
     })
+
+    it('test no args swap', async () => {
+      const inputAmount = expandTo18DecimalsBN(1)
+
+      const ethBalanceBefore: BigNumber = await ethers.provider.getBalance(bob.address)
+      const usdcBalanceBefore: BigNumber = await usdcContract.balanceOf(bob.address)
+
+      await router.swapETHForUSDCOptimized({ value: inputAmount })
+
+      const ethBalanceAfter: BigNumber = await ethers.provider.getBalance(bob.address)
+      const usdcBalanceAfter: BigNumber = await usdcContract.balanceOf(bob.address)
+
+      console.log(ethBalanceBefore)
+      console.log(ethBalanceAfter)
+      console.log(usdcBalanceBefore)
+      console.log(usdcBalanceAfter)
+    })
   })
 
   async function deployCalldataOptRouter(permit2: Permit2): Promise<CalldataOptRouter> {
@@ -136,6 +153,7 @@ describe('Uniswap V3 Tests:', () => {
     const router = (await routerFactory.deploy(uniswapParameters, paymentsParameters, USDC.address)) as unknown as CalldataOptRouter
     return router
   }
+
   async function deployPermit2(): Promise<Permit2> {
     const permit2Factory = await ethers.getContractFactory('Permit2')
     const permit2 = (await permit2Factory.deploy()) as unknown as Permit2

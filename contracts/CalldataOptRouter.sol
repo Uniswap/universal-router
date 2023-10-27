@@ -82,7 +82,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     function swapETHForUSDCOptimized() public payable {
         uint24 _feeTier = 500;
         address _poolAddress = computePoolAddress(address(WETH9), localUSDC, _feeTier);
-        uint32 _period = uint32(block.timestamp - 1 minutes);
+        uint32 _period = uint32(1 minutes);
         (int24 arithmeticMeanTick,) = OracleLibrary.consult(_poolAddress, _period);
 
         uint256 _quoteAmount = OracleLibrary.getQuoteAtTick(
