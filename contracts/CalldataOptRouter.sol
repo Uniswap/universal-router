@@ -8,7 +8,6 @@ import {PaymentsParameters, PaymentsImmutables} from './modules/PaymentsImmutabl
 import {V3Path} from './modules/uniswap/v3/V3Path.sol';
 import {Constants} from './libraries/Constants.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
-import "hardhat/console.sol";
 
 contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     using V3Path for bytes;
