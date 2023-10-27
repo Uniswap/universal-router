@@ -9,12 +9,12 @@ import {PaymentsParameters, PaymentsImmutables} from '../contracts/modules/Payme
 
 bytes32 constant SALT = bytes32(uint256(0x00000000000000000000000000000000000000005eb67581652632000a6cbedf));
 
-abstract contract DeployOptRouter is Script {
+contract DeployOptRouter is Script {
     address constant UNSUPPORTED_PROTOCOL = address(0);
     bytes32 constant BYTES32_ZERO = bytes32(0);
 
     // set values for params and unsupported
-    function setUp() public virtual;
+    function setUp() public {}
 
     function run() external returns (CalldataOptRouter router) {
         vm.startBroadcast();
