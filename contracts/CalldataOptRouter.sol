@@ -229,16 +229,6 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         pay(token, msg.sender, Constants.CONTRACT_BALANCE);
     }
 
-    // function _parsePaths(bytes calldata swapInfo, bool firstETH, bool lastETH) internal pure returns (bool, bytes memory) {
-    //     if (firstETH) { 
-    //         bytes memory swapInfo2 = abi.encodePacked(WETH_MAINNET, swapInfo);
-    //         return _parsePathsInternal(swapInfo2, firstETH, lastETH);
-    //     } else {
-    //         return _parsePathsInternal(swapInfo, firstETH, lastETH);
-    //     }
-    // }
-
-
     function _parsePaths(bytes calldata swapInfo, bool firstETH, bool lastETH) internal pure returns (bool, bytes memory) {
         // cap num addresses at 9, fee tiers at 8, so 2 bytes (2 bits * 8), so divide by 4
         // with this, you cannot have more than 20 addresses ever (might be uneccesary)
