@@ -66,8 +66,7 @@ describe('Uniswap V3 Tests:', () => {
       const inputAmount = expandTo18DecimalsBN(1)
       const deadline = '0002' // 20 mins
       const minOut = '0049' // 1e9 (1000e6)
-      // const addresses = WETH.address.slice(2).concat(USDC.address.slice(2))
-      const addresses = USDC.address.slice(2) // only need USDC 
+      const addresses = WETH.address.slice(2).concat(USDC.address.slice(2))
       // 00 01 00 00
       const feeTiers = '10'
 
@@ -151,7 +150,11 @@ describe('Uniswap V3 Tests:', () => {
     }
 
     const routerFactory = await ethers.getContractFactory('CalldataOptRouter')
-    const router = (await routerFactory.deploy(uniswapParameters, paymentsParameters, USDC.address)) as unknown as CalldataOptRouter
+    const router = (await routerFactory.deploy(
+      uniswapParameters,
+      paymentsParameters,
+      USDC.address
+    )) as unknown as CalldataOptRouter
     return router
   }
 
