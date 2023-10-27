@@ -35,6 +35,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
     address constant FEE_RECIPIENT = address(0xfee15);
     address constant UNSUPPORTED_PROTOCOL = address(0);
+    address constant WETH_MAINNET = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     UniswapParameters uniswapParametersArbitrum = UniswapParameters(
         0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f, // V2 Factory Arbitrum
@@ -192,7 +193,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         pay(token, msg.sender, Constants.CONTRACT_BALANCE);
     }
 
-    function _parsePaths(bytes calldata swapInfo) internal pure returns (bool, bytes memory) {
+    function _parsePaths(bytes calldata swapInfo, bool firstETH, bool lastETH) internal pure returns (bool, bytes memory) {
         // cap num addresses at 9, fee tiers at 8, so 2 bytes (2 bits * 8), so divide by 4
         // with this, you cannot have more than 20 addresses ever (might be uneccesary)
         if (swapInfo.length > MAX_ADDRESSES * ADDRESS_LENGTH + (MAX_HOPS / 4) || swapInfo.length >= ADDRESS_LENGTH * 20)
@@ -216,10 +217,18 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
                 uint256 shiftLeft = 2 * (i + 1 % 4);
                 bytes1 feeByte = fees[(i + 1) / 4];
                 uint24 tier = _getTier(uint8((feeByte << shiftLeft) >> shiftRight));
-                paths = abi.encodePacked(paths, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH], tier);
+                if(firstETH) {
+                    paths = abi.encodePacked(paths, WETH_MAINNET, tier);
+                } else {
+                    paths = abi.encodePacked(paths, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH], tier);
+                }
             } else {
                 // last one doesn't have a tier
-                paths = abi.encodePacked(paths, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH]);
+                if (lastETH) {
+                    paths = abi.encodePacked(paths, WETH_MAINNET);
+                } else {
+                    paths = abi.encodePacked(paths, swapInfo[i * ADDRESS_LENGTH:(i + 1) * ADDRESS_LENGTH]);
+                }
             }
         }
         return (hasFee, paths);
