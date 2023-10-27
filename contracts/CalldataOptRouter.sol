@@ -3,11 +3,14 @@ pragma solidity ^0.8.17;
 
 import {V2SwapRouter} from './modules/uniswap/v2/V2SwapRouter.sol';
 import {V3SwapRouter} from './modules/uniswap/v3/V3SwapRouter.sol';
+import {UniswapParameters, UniswapImmutables} from './modules/uniswap/UniswapImmutables.sol';
+import {PaymentsParameters, PaymentsImmutables} from './modules/PaymentsImmutables.sol';
 import {V3Path} from './modules/uniswap/v3/V3Path.sol';
 import {Constants} from './libraries/Constants.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
+import "hardhat/console.sol";
 
-abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
+contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     using V3Path for bytes;
 
     error TooLargeOfNumber();
@@ -31,24 +34,44 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     uint256 constant BIPS_DENOMINATOR = 10000;
 
     address constant FEE_RECIPIENT = address(0xfee15);
+    address constant UNSUPPORTED_PROTOCOL = address(0);
+
+    UniswapParameters uniswapParametersArbitrum = UniswapParameters(
+        0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f, // V2 Factory Arbitrum
+        0x1F98431c8aD98523631AE4a59f267346ea31F984, // V3 Factory Arbitrum
+        0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f, // V2 Pair Initcode Hash
+        0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54 // V3 Pool Initcode Hash
+    );
+
+    PaymentsParameters paymentsParametersArbitrum = PaymentsParameters(
+        0x000000000022D473030F116dDEE9F6B43aC78BA3, // Permit2 Arbitrum
+        0x82aF49447D8a07e3bd95BD0d56f35241523fBab1, // WETH9 Arbitrum
+        UNSUPPORTED_PROTOCOL,
+        UNSUPPORTED_PROTOCOL,
+        UNSUPPORTED_PROTOCOL,
+        UNSUPPORTED_PROTOCOL
+    );
+
+    constructor(UniswapParameters memory uniswapParameters, PaymentsParameters memory paymentsParameters)
+        UniswapImmutables(uniswapParameters)
+        PaymentsImmutables(paymentsParameters)
+    {
+        DEADLINE_OFFSET = block.timestamp;
+        END_OF_TIME = DEADLINE_OFFSET + (DEADLINE_GRANULARITY * type(uint16).max);
+    }
 
     /// @notice Thrown when executing commands with an expired deadline
     error TransactionDeadlinePassed();
     error OutOfTime();
 
-    uint256 constant DEADLINE_OFFSET = 1698337979; // current unix time
+    uint256 immutable DEADLINE_OFFSET; // current unix time
     uint256 constant DEADLINE_GRANULARITY = 600; // 10 min increments
-    uint256 constant END_OF_TIME = DEADLINE_OFFSET + (DEADLINE_GRANULARITY * type(uint16).max);
+    uint256 immutable END_OF_TIME;
 
     modifier checkDeadline(bytes calldata swapInfo) {
         _checkDeadline(uint16(bytes2(swapInfo[:2])));
         _;
     }
-
-    // function v2SwapExactTokenForToken();
-    // function v2SwapTokenForExactToken();
-    // function v2SwapExactETHForToken();
-    // function v2SwapTokenForExactETH();
 
     function v3SwapExactTokenForToken(bytes calldata swapInfo) external checkDeadline(swapInfo) {
         uint256 amountIn;
@@ -138,12 +161,13 @@ abstract contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         uint8 amountLength = uint8((bytes1(swapInfo[0]) << 1) >> 1);
         if (amountLength >= 32) revert TooLargeOfNumber();
         uint256 mask = (2 ** (amountLength * 8)) - 1;
-        if (!isScientific){
+        if (!isScientific) {
             uint256 amount = uint256(bytes32(swapInfo[1:amountLength + 1]) >> (256 - (8 * amountLength)));
             uint256 maskedAmount = mask & amount;
             return (maskedAmount, amountLength);
         } else {
-            uint256 coefficient = mask & uint256(bytes32(swapInfo[1:amountLength + 1]) >> (256 - (8 * amountLength) + 6)); 
+            uint256 coefficient =
+                mask & uint256(bytes32(swapInfo[1:amountLength + 1]) >> (256 - (8 * amountLength) + 6));
             uint256 exponent = uint256(uint8(bytes1(swapInfo[amountLength]) & 0x3F));
             return (coefficient * (10 ** exponent), amountLength);
         }
