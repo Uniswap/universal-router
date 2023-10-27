@@ -39,7 +39,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     address constant FEE_RECIPIENT = address(0xfee15);
     address constant WETH_MAINNET = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
-
+    mapping(uint8 => address) internal shortHandAddresses; 
     address immutable localUSDC;
 
     constructor(UniswapParameters memory uniswapParameters, PaymentsParameters memory paymentsParameters, address _USDC)
@@ -148,7 +148,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
     function _decodeCalldataTwoInputs(bytes calldata swapInfo, bool firstETH, bool lastETH)
         internal
-        pure
+        view
         returns (uint256 preciseAmount, uint256 scientificAmount, bool hasFee, bytes memory path)
     {
         uint256 preciseAmountLength;
@@ -160,7 +160,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
 
     function _decodeCalldataOneInput(bytes calldata swapInfo, bool firstETH, bool lastETH)
         internal
-        pure
+        view
         returns (uint256 scientificAmount, bool hasFee, bytes memory path)
     {
         scientificAmount = _calculateScientificAmount(swapInfo[0], swapInfo[1]);
@@ -203,8 +203,8 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         pay(token, msg.sender, Constants.CONTRACT_BALANCE);
     }
 
-    function _parsePaths(bytes calldata swapInfo, bool firstETH, bool lastETH) internal pure returns (bool, bytes memory) {
-        if(firstEth && lastEth){
+    function _parsePaths(bytes calldata swapInfo, bool firstETH, bool lastETH) internal view returns (bool, bytes memory) {
+        if(firstETH && lastETH){
             revert CannotDoEthToEth();
         }
         // get state
@@ -215,14 +215,42 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
             // always assume header is 3 bytes if using shorthand, maybe reduce a byte later
             // bytes1 shortHandByte = swapInfo[2];
             // up to 16 possible shorthand addresses (4 bit number)
-            for (uint i = 0; i < MAX_ADDRESSES; i++){
-                if((swapInfo[2] & (0x80 >> i)) != 0){
-                    // use shorthand, 0000 means end transaction
+            uint256 byteLocation = 3; 
+            bytes memory fees = swapInfo[0:1];
 
-                }  else {
+            for (uint i = 0; i < MAX_ADDRESSES; i++){
+                bytes memory theAddress; 
+                uint8 shortCode;
+                if(i == 0 && firstETH) {
+                    theAddress = abi.encodePacked(address(WETH9));
+                } else if((bytes1(swapInfo[2]) & (bytes1(0x80) >> i)) != 0){
+                    // use shorthand, 0000 means end transaction
+                    shortCode = uint8(swapInfo[byteLocation]);
+                    if (shortCode == 0){
+                        // last one, end transaction. 
+                    } else {
+                        theAddress = abi.encodePacked(shortHandAddresses[shortCode]);
+                        byteLocation++; 
+                    }
+                } else {
                     // get 20 bytes for the address
-                    bytes tmpAddress = swapInfo[(3 + (ADDRESS_LENGTH * i)) : (3 + (i * ADDRESS_LENGTH) + ADDRESS_LENGTH)];
+                    theAddress = swapInfo[byteLocation : (byteLocation + ADDRESS_LENGTH)];
+                    byteLocation += ADDRESS_LENGTH;
                 }
+
+                if(shortCode == 0 || i == (MAX_ADDRESSES - 1)){
+                    // last step, no fee tier
+                    if(lastETH){
+                        paths = abi.encodePacked(paths, address(WETH9));
+                    }
+                } else {
+                    // add a fee tier
+                    uint256 shiftLeft = 2 * (i + 1 % 4);
+                    bytes1 feeByte = fees[(i + 1) / 4];
+                    uint24 tier = _getTier(uint8((feeByte << shiftLeft) >> 6));
+                    paths = abi.encodePacked(paths, theAddress, tier);
+                }
+
             }
         } else {
             paths = _parsePathsNoShortHand(swapInfo, firstETH, lastETH);
@@ -264,14 +292,14 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
                 if(firstETH && i == 0) {
                     paths = abi.encodePacked(paths, WETH_MAINNET, tier);
                 } else {
-                    paths = abi.encodePacked(paths, swapInfo[remainder + (addressLocation * ADDRESS_LENGTH:(addressLocation + 1) * ADDRESS_LENGTH)], tier);
+                    paths = abi.encodePacked(paths, swapInfo[remainder + (addressLocation * ADDRESS_LENGTH):remainder + (addressLocation + 1) * ADDRESS_LENGTH], tier);
                     addressLocation++;
                 }
             } else {
                 if (lastETH) {
                     paths = abi.encodePacked(paths, WETH_MAINNET);
                 } else {
-                    paths = abi.encodePacked(paths, swapInfo[remainder + (addressLocation * ADDRESS_LENGTH:(addressLocation + 1) * ADDRESS_LENGTH)]);
+                    paths = abi.encodePacked(paths, swapInfo[remainder + (addressLocation * ADDRESS_LENGTH):remainder + ((addressLocation + 1) * ADDRESS_LENGTH)]);
                 }
             }
         }

@@ -70,7 +70,7 @@ describe('Uniswap V3 Tests:', () => {
       // 00 01 00 00
       const feeTiers = '10'
 
-      const args = '0x'.concat(deadline).concat(minOut).concat(addresses).concat(feeTiers)
+      const args = '0x'.concat(deadline).concat(minOut).concat(feeTiers).concat(addresses)
       console.log(args)
 
       const ethBalanceBefore: BigNumber = await ethers.provider.getBalance(bob.address)
@@ -97,7 +97,7 @@ describe('Uniswap V3 Tests:', () => {
       // 00 01 00 00
       const feeTiers = '10'
 
-      const args = '0x'.concat(deadline).concat(inputAmount).concat(minOut).concat(addresses).concat(feeTiers)
+      const args = '0x'.concat(deadline).concat(inputAmount).concat(minOut).concat(feeTiers).concat(addresses)
       console.log(args)
 
       const wethBalanceBefore: BigNumber = await wethContract.balanceOf(bob.address)
