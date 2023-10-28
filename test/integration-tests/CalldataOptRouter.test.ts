@@ -94,8 +94,7 @@ describe('Uniswap V3 Tests:', () => {
       const inputAmount = expandTo18DecimalsBN(1)
       const deadline = '0002' // 20 mins
       const minOut = '0049' // 1e9 (1000e6)
-      // const addresses = '0100' // 1 followed by a 0
-      const addresses = '0200' // 1 followed by a 0
+      const addresses = '0100' // 1 followed by a 0
       // 00 00 00 01, followed by 00 00 00 00
       const feeTiers = 'D000FF'
       // 1 1 -> has fee and uses shorthand, shorthand is the third byte
