@@ -49,6 +49,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         DEADLINE_OFFSET = block.timestamp;
         END_OF_TIME = DEADLINE_OFFSET + (DEADLINE_GRANULARITY * type(uint16).max);
         localUSDC = _USDC;
+        shortHandAddresses[1] = localUSDC;
     }
 
     /// @notice Thrown when executing commands with an expired deadline
@@ -207,6 +208,9 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         if(firstETH && lastETH){
             revert CannotDoEthToEth();
         }
+        if(firstETH || lastETH){
+            // can save a byte 
+        }
         // get state
         (bool hasFee, bool useShortHand) = _getPathState(swapInfo[0]);
         bytes memory paths;
@@ -217,32 +221,40 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
             // up to 16 possible shorthand addresses (4 bit number)
             uint256 byteLocation = 3; 
             bytes memory fees = swapInfo[0:1];
-
+            bytes1 shortCodeByte = bytes1(swapInfo[2]); 
+            bool usingShortCode;
             for (uint i = 0; i < MAX_ADDRESSES; i++){
                 bytes memory theAddress; 
                 uint8 shortCode;
+                usingShortCode = (shortCodeByte & (bytes1(0x80) >> i)) != 0; 
                 if(i == 0 && firstETH) {
                     theAddress = abi.encodePacked(address(WETH9));
-                } else if((bytes1(swapInfo[2]) & (bytes1(0x80) >> i)) != 0){
+                    usingShortCode = false;
+                } else if(usingShortCode){
                     // use shorthand, 0000 means end transaction
                     shortCode = uint8(swapInfo[byteLocation]);
-                    if (shortCode == 0){
-                        // last one, end transaction. 
-                    } else {
-                        theAddress = abi.encodePacked(shortHandAddresses[shortCode]);
+                    if (shortCode != 0){
+                        theAddress = abi.encodePacked(_getAddressFromShortCode(shortCode));
                         byteLocation++; 
+                    } else {
+                        if(lastETH){
+                            paths = abi.encodePacked(paths, address(WETH9));
+                        }
+                        break;
                     }
                 } else {
                     // get 20 bytes for the address
                     theAddress = swapInfo[byteLocation : (byteLocation + ADDRESS_LENGTH)];
                     byteLocation += ADDRESS_LENGTH;
                 }
-
-                if(shortCode == 0 || i == (MAX_ADDRESSES - 1)){
+                if(i == (MAX_ADDRESSES - 1) || byteLocation >= (swapInfo.length - 1) ){ // last address
                     // last step, no fee tier
                     if(lastETH){
                         paths = abi.encodePacked(paths, address(WETH9));
+                    } else {
+                        paths = abi.encodePacked(paths, theAddress);
                     }
+                    break;
                 } else {
                     // add a fee tier
                     uint256 shiftLeft = 2 * (i + 1 % 4);
@@ -250,12 +262,10 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
                     uint24 tier = _getTier(uint8((feeByte << shiftLeft) >> 6));
                     paths = abi.encodePacked(paths, theAddress, tier);
                 }
-
             }
         } else {
             paths = _parsePathsNoShortHand(swapInfo, firstETH, lastETH);
         }
-
         return (hasFee, paths);
     }
 
@@ -325,6 +335,14 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
             return TIER_3;
         } else {
             revert NoFeeTier(); // should not be reachable
+        }
+    }
+
+    function _getAddressFromShortCode(uint8 shortCode) internal view returns (address){
+        if(shortCode == 1){
+            return localUSDC;
+        } else {
+            return localUSDC;
         }
     }
 

@@ -17,6 +17,7 @@ import {
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
+
 const { ethers } = hre
 
 describe('Uniswap V3 Tests:', () => {
@@ -69,6 +70,36 @@ describe('Uniswap V3 Tests:', () => {
       const addresses = USDC.address.slice(2) // only usdc since it knows eth by default 
       // 00 01 00 00
       const feeTiers = '10'
+
+      const args = '0x'.concat(deadline).concat(minOut).concat(feeTiers).concat(addresses)
+      console.log(args)
+
+      const ethBalanceBefore: BigNumber = await ethers.provider.getBalance(bob.address)
+      const usdcBalanceBefore: BigNumber = await usdcContract.balanceOf(bob.address)
+
+      await router.v3SwapExactETHForToken(args, { value: inputAmount })
+
+      const ethBalanceAfter: BigNumber = await ethers.provider.getBalance(bob.address)
+      const usdcBalanceAfter: BigNumber = await usdcContract.balanceOf(bob.address)
+
+      console.log(ethBalanceBefore)
+      console.log(ethBalanceAfter)
+      console.log(usdcBalanceBefore)
+      console.log(usdcBalanceAfter)
+    })
+
+    it('completes a ETH to USDC V3 exactIn swap with shorthand', async () => {
+      // ETH for USDC
+      // send 1 ETH, receive at least 1000 USDC
+      const inputAmount = expandTo18DecimalsBN(1)
+      const deadline = '0002' // 20 mins
+      const minOut = '0049' // 1e9 (1000e6)
+      // const addresses = '0100' // 1 followed by a 0
+      const addresses = '0200' // 1 followed by a 0
+      // 00 00 00 01, followed by 00 00 00 00
+      const feeTiers = 'D000FF'
+      // 1 1 -> has fee and uses shorthand, shorthand is the third byte
+      // 11 00 00 00, 00 00 00 00, 11 11 11 11
 
       const args = '0x'.concat(deadline).concat(minOut).concat(feeTiers).concat(addresses)
       console.log(args)
