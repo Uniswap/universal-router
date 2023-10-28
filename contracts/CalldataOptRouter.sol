@@ -238,7 +238,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
                 if (shortCode != 0){
                     theAddress = abi.encodePacked(_getAddressFromShortCode(shortCode));
                     byteLocation++; 
-                } else {
+                } else { // if the shortcode is 0, then 
                     if(lastETH){
                         paths = abi.encodePacked(paths, address(WETH9));
                     }
@@ -336,6 +336,7 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     }
 
     function _getAddressFromShortCode(uint8 shortCode) internal view returns (address){
+        // NOTE: SHORTCODE OF 0 WILL NOT BE READ, IT'S USED AS A "FINAL SHORTCODE"
         if(shortCode == 1){
             return localUSDC;
         } else {
