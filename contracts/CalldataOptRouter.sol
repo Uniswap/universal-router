@@ -23,9 +23,6 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     error NotEnoughAddresses();
 
     uint256 constant AMOUNT_IN_OFFSET = 2;
-    uint256 constant MAX_ADDRESSES = 8;
-    uint256 constant MAX_HOPS = 7;
-    uint256 constant ADDRESS_LENGTH = 20;
     uint256 constant FEE_BIT_SIZE = 2;
 
     uint24 constant TIER_0 = 100;
@@ -37,9 +34,16 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
     uint256 constant BIPS_DENOMINATOR = 10000;
 
     address constant FEE_RECIPIENT = address(0xfee15);
-    address constant WETH_MAINNET = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
+    uint256 constant SELECTOR_LENGTH = 4;
 
     address immutable localUSDC;
+
+    enum TradeType {
+        TOKEN_FOR_TOKEN,
+        ETH_INPUT,
+        ETH_OUTPUT
+    }
 
     constructor(UniswapParameters memory uniswapParameters, PaymentsParameters memory paymentsParameters, address _USDC)
         UniswapImmutables(uniswapParameters)
@@ -83,13 +87,17 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         v3SwapExactInput(msg.sender, msg.value, _minOutput, _path, address(this));
     }
 
-    function v3SwapExactTokenForToken(bytes calldata swapInfo) external checkDeadline(swapInfo) {
+    function v3SwapExactTokenForToken() external {
+        bytes calldata swapInfo = _getSwapCalldata();
+
+        _checkDeadline(uint16(bytes2(swapInfo[:2])));
+
         uint256 amountIn;
         uint256 amountOutMinimum;
         bytes memory path;
         bool hasFee;
 
-        (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:], false, false);
+        (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:], TradeType.TOKEN_FOR_TOKEN);
 
         address recipient = hasFee ? address(this) : msg.sender;
         v3SwapExactInput(recipient, amountIn, amountOutMinimum, path, msg.sender);
@@ -97,13 +105,17 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         if (hasFee) _takeFee(path);
     }
 
-    function v3SwapTokenForExactToken(bytes calldata swapInfo) external checkDeadline(swapInfo) {
+    function v3SwapTokenForExactToken() external {
+        bytes calldata swapInfo = _getSwapCalldata();
+
+        _checkDeadline(uint16(bytes2(swapInfo[:2])));
+
         uint256 amountInMaximum;
         uint256 amountOut;
         bytes memory path;
         bool hasFee;
 
-        (amountOut, amountInMaximum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:], false, false);
+        (amountOut, amountInMaximum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:], TradeType.TOKEN_FOR_TOKEN);
 
         address recipient = hasFee ? address(this) : msg.sender;
         v3SwapExactOutput(recipient, amountOut, amountInMaximum, path, msg.sender);
@@ -111,12 +123,16 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         if (hasFee) _takeFee(path);
     }
 
-    function v3SwapExactETHForToken(bytes calldata swapInfo) external payable checkDeadline(swapInfo) {
+    function v3SwapExactETHForToken() external payable {
+        bytes calldata swapInfo = _getSwapCalldata();
+
+        _checkDeadline(uint16(bytes2(swapInfo[:2])));
+
         uint256 amountOutMinimum;
         bytes memory path;
         bool hasFee;
 
-        (amountOutMinimum, hasFee, path) = _decodeCalldataOneInput(swapInfo[2:], true, false);
+        (amountOutMinimum, hasFee, path) = _decodeCalldataOneInput(swapInfo[2:], TradeType.ETH_INPUT);
 
         wrapETH(address(this), msg.value);
 
@@ -126,13 +142,17 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         if (hasFee) _takeFee(path);
     }
 
-    function v3SwapTokenForExactETH(bytes calldata swapInfo) external checkDeadline(swapInfo) {
+    function v3SwapTokenForExactETH() external {
+        bytes calldata swapInfo = _getSwapCalldata();
+
+        _checkDeadline(uint16(bytes2(swapInfo[:2])));
+
         uint256 amountIn;
         uint256 amountOutMinimum;
         bytes memory path;
         bool hasFee;
 
-        (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:], false, true);
+        (amountIn, amountOutMinimum, hasFee, path) = _decodeCalldataTwoInputs(swapInfo[2:], TradeType.ETH_OUTPUT);
 
         v3SwapExactOutput(address(this), amountIn, amountOutMinimum, path, msg.sender);
 
@@ -145,25 +165,25 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         unwrapWETH9(msg.sender, amountOutMinimum);
     }
 
-    function _decodeCalldataTwoInputs(bytes calldata swapInfo, bool firstETH, bool lastETH)
+    function _decodeCalldataTwoInputs(bytes calldata swapInfo, TradeType tradeType)
         internal
-        pure
+        view
         returns (uint256 preciseAmount, uint256 scientificAmount, bool hasFee, bytes memory path)
     {
         uint256 preciseAmountLength;
 
         (preciseAmount, preciseAmountLength) = _calculateAmount(swapInfo);
         // use scientific notation for the limit amount
-        (scientificAmount, hasFee, path) = _decodeCalldataOneInput(swapInfo[preciseAmountLength + 1:], firstETH, lastETH);
+        (scientificAmount, hasFee, path) = _decodeCalldataOneInput(swapInfo[preciseAmountLength + 1:], tradeType);
     }
 
-    function _decodeCalldataOneInput(bytes calldata swapInfo, bool firstETH, bool lastETH)
+    function _decodeCalldataOneInput(bytes calldata swapInfo, TradeType tradeType)
         internal
-        pure
+        view
         returns (uint256 scientificAmount, bool hasFee, bytes memory path)
     {
         scientificAmount = _calculateScientificAmount(swapInfo[0], swapInfo[1]);
-        (hasFee, path) = _parsePaths(swapInfo[2:], firstETH, lastETH);
+        (hasFee, path) = _parsePath(swapInfo[2:], tradeType);
     }
 
     function _calculateAmount(bytes calldata swapInfo) internal pure returns (uint256, uint256) {
@@ -202,51 +222,56 @@ contract CalldataOptRouter is V2SwapRouter, V3SwapRouter {
         pay(token, msg.sender, Constants.CONTRACT_BALANCE);
     }
 
-    function _parsePaths(bytes calldata swapInfo, bool firstETH, bool lastETH) internal pure returns (bool, bytes memory) {
-        // cap num addresses at 9, fee tiers at 8, so 2 bytes (2 bits * 8), so divide by 4
-        // with this, you cannot have more than 20 addresses ever (might be uneccesary)
-        if (swapInfo.length > MAX_ADDRESSES * ADDRESS_LENGTH + (MAX_HOPS / 4) || swapInfo.length >= ADDRESS_LENGTH * 20)
-        {
+    function _parsePath(bytes calldata swapInfo, TradeType tradeType) internal view returns (bool, bytes memory) {
+        // we cap the path to 8 addresses (7 hops). This is encoded as 8 * 20 plus 2 bytes of fee tiers.
+        if (swapInfo.length > 162) {
             revert TooManyHops();
         }
 
         // receives 20 bytes repeating followed by sets of 2 bit representing fee tiers followed by padding (will either be 1 or 2 bytes)
         // returns of 20 bytes for each address, followed by 3 bytes for the fee tier, repeat forever as bytes memory
         // edge case, the fee tier last bits are makes divisible by 20 bytes.
-        uint256 remainder = swapInfo.length % ADDRESS_LENGTH;
+        uint256 remainder = swapInfo.length % Constants.ADDR_SIZE;
         if (remainder == 0) revert NoFeeData();
         bytes memory fees = swapInfo[swapInfo.length - remainder:];
         bool hasFee = (bytes1(fees[0]) >> 7) != 0;
-        uint256 numAddresses = (swapInfo.length - remainder) / ADDRESS_LENGTH ;
-        if(firstETH || lastETH){
-            numAddresses++; 
-        }
-        if(numAddresses < 2){
-            revert NotEnoughAddresses();
+
+        uint256 numAddresses = (swapInfo.length - remainder) / Constants.ADDR_SIZE;
+        if (tradeType != TradeType.TOKEN_FOR_TOKEN) {
+            numAddresses++;
         }
 
-        bytes memory paths;
-        uint256 addressLocation = 0; 
-        for (uint256 i = 0; i < numAddresses; i++) {
-            if (i == 0 || i < numAddresses - 1) {
-                uint256 shiftLeft = 2 * (i + 1 % 4);
-                bytes1 feeByte = fees[(i + 1) / 4];
+        if (numAddresses < 2) revert NotEnoughAddresses();
+
+        bytes memory path;
+        uint256 addressLocation = 0;
+        for (uint256 i = 1; i <= numAddresses; i++) {
+            if (i < numAddresses) {
+                uint256 shiftLeft = 2 * (i % 4);
+                bytes1 feeByte = fees[i / 4];
                 uint24 tier = _getTier(uint8((feeByte << shiftLeft) >> 6));
-                if(firstETH && i == 0) {
-                    paths = abi.encodePacked(paths, WETH_MAINNET, tier);
+                if (i == 1 && tradeType == TradeType.ETH_INPUT) {
+                    path = abi.encodePacked(address(WETH9), tier);
                 } else {
-                    paths = abi.encodePacked(paths, swapInfo[addressLocation * ADDRESS_LENGTH:(addressLocation + 1) * ADDRESS_LENGTH], tier);
-                    addressLocation++;
+                    path = abi.encodePacked(path, swapInfo[addressLocation:addressLocation + Constants.ADDR_SIZE], tier);
+                    addressLocation += Constants.ADDR_SIZE;
                 }
             } else {
-                if (lastETH) {
-                    paths = abi.encodePacked(paths, WETH_MAINNET);
+                if (tradeType == TradeType.ETH_OUTPUT) {
+                    path = abi.encodePacked(path, address(WETH9));
                 } else {
-                    paths = abi.encodePacked(paths, swapInfo[addressLocation * ADDRESS_LENGTH:(addressLocation + 1) * ADDRESS_LENGTH]);
+                    path = abi.encodePacked(path, swapInfo[addressLocation:addressLocation + Constants.ADDR_SIZE]);
                 }
             }
         }
-        return (hasFee, paths);
+        return (hasFee, path);
+    }
+
+    function _getSwapCalldata() internal pure returns (bytes calldata swapInfo) {
+        assembly {
+            swapInfo.offset := SELECTOR_LENGTH
+            swapInfo.length := sub(calldatasize(), SELECTOR_LENGTH)
+        }
     }
 
     function _getTier(uint8 singleByte) internal pure returns (uint24) {

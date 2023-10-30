@@ -66,17 +66,28 @@ describe('Uniswap V3 Tests:', () => {
       const inputAmount = expandTo18DecimalsBN(1)
       const deadline = '0002' // 20 mins
       const minOut = '0049' // 1e9 (1000e6)
-      const addresses = USDC.address.slice(2) // only usdc since it knows eth by default 
+      const addresses = USDC.address.slice(2) // only usdc since it knows eth by default
       // 00 01 00 00
       const feeTiers = '10'
+      const selector = '0xb5449ef3'
 
-      const args = '0x'.concat(deadline).concat(minOut).concat(addresses).concat(feeTiers)
-      console.log(args)
+      const calldata = selector.concat(deadline).concat(minOut).concat(addresses).concat(feeTiers)
 
       const ethBalanceBefore: BigNumber = await ethers.provider.getBalance(bob.address)
       const usdcBalanceBefore: BigNumber = await usdcContract.balanceOf(bob.address)
 
-      await router.v3SwapExactETHForToken(args, { value: inputAmount })
+      const transaction = {
+        data: calldata,
+        to: router.address,
+        value: inputAmount,
+        from: bob.address,
+        gasPrice: BigNumber.from(2000000000000),
+        gasLimit: BigNumber.from(30000000),
+        type: 1,
+      }
+
+      const transactionResponse = await bob.sendTransaction(transaction)
+      console.log(transactionResponse.data)
 
       const ethBalanceAfter: BigNumber = await ethers.provider.getBalance(bob.address)
       const usdcBalanceAfter: BigNumber = await usdcContract.balanceOf(bob.address)
@@ -90,20 +101,32 @@ describe('Uniswap V3 Tests:', () => {
     it('test WETH to USDC V3 exactIn swap', async () => {
       // WETH for USDC
       // send 1 WETH, receive at least 1000 USDC
-      const deadline = '0002' // 20 mins
-      const inputAmount = '8152' // 1000000101010010
+      const deadline = '0032'
+      const inputAmount = '8152' // 10000001 01010010
       const minOut = '0049' // 1e9 (1000e6)
       const addresses = WETH.address.slice(2).concat(USDC.address.slice(2))
       // 00 01 00 00
       const feeTiers = '10'
+      const selector = '0xe689ddf1'
 
-      const args = '0x'.concat(deadline).concat(inputAmount).concat(minOut).concat(addresses).concat(feeTiers)
-      console.log(args)
+      const calldata = selector.concat(deadline).concat(inputAmount).concat(minOut).concat(addresses).concat(feeTiers)
 
       const wethBalanceBefore: BigNumber = await wethContract.balanceOf(bob.address)
       const usdcBalanceBefore: BigNumber = await usdcContract.balanceOf(bob.address)
 
-      await router.v3SwapExactTokenForToken(args)
+      const transaction = {
+        data: calldata,
+        to: router.address,
+        value: 0,
+        from: bob.address,
+        gasPrice: BigNumber.from(2000000000000),
+        gasLimit: BigNumber.from(30000000),
+        type: 1,
+      }
+
+      const transactionResponse = await bob.sendTransaction(transaction)
+
+      console.log(transactionResponse.data)
 
       const wethBalanceAfter: BigNumber = await wethContract.balanceOf(bob.address)
       const usdcBalanceAfter: BigNumber = await usdcContract.balanceOf(bob.address)
