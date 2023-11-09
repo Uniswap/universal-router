@@ -31,8 +31,6 @@ contract UniversalRouterTest is Test {
         RouterParameters memory params = RouterParameters({
             permit2: address(0),
             weth9: address(0),
-            steth: address(0),
-            wsteth: address(0),
             seaportV1_5: address(0),
             seaportV1_4: address(0),
             openseaConduit: address(0),

@@ -43,8 +43,6 @@ export enum CommandType {
   SEAPORT_V1_4 = 0x20,
   EXECUTE_SUB_PLAN = 0x21,
   APPROVE_ERC20 = 0x22,
-  WRAP_STETH = 0x23,
-  UNWRAP_STETH = 0x24,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -92,8 +90,6 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   // Token Actions and Checks
   [CommandType.WRAP_ETH]: ['address', 'uint256'],
   [CommandType.UNWRAP_WETH]: ['address', 'uint256'],
-  [CommandType.WRAP_STETH]: ['address', 'uint256'],
-  [CommandType.UNWRAP_STETH]: ['address', 'uint256'],
   [CommandType.SWEEP]: ['address', 'address', 'uint256'],
   [CommandType.SWEEP_ERC721]: ['address', 'address', 'uint256'],
   [CommandType.SWEEP_ERC1155]: ['address', 'address', 'uint256', 'uint256'],
