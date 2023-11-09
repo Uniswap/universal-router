@@ -23,7 +23,7 @@ contract UniversalRouter is IUniversalRouter, Dispatcher, RewardsCollector {
         )
         PaymentsImmutables(
             PaymentsParameters(
-                params.permit2, params.weth9, params.steth, params.wsteth, params.openseaConduit, params.sudoswap
+                params.permit2, params.weth9, params.openseaConduit, params.sudoswap
             )
         )
         NFTImmutables(
