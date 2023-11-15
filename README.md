@@ -116,6 +116,16 @@ Each command is a `bytes1` containing the following 8 bits:
    ├──────┼───────────────────────────────┤
    │ 0x1d │  SWEEP_ERC1155                │
    ├──────┼───────────────────────────────┤
+   │ 0x1e │  ELEMENT_MARKET               │
+   ├──────┼───────────────────────────────┤
+   │ 0x1f │  -------                      │
+   ├──────┼───────────────────────────────┤
+   │ 0x20 │  SEAPORT_V1_4                 │
+   ├──────┼───────────────────────────────┤
+   │ 0x21 │  EXECUTE_SUB_PLAN             │
+   ├──────┼───────────────────────────────┤
+   │ 0x22 │  APPROVE_ERC20                │
+   ├──────┼───────────────────────────────┤
    │ 0x1e-│  -------                      │
    │ 0x3f │                               │
    └──────┴───────────────────────────────┘
@@ -220,7 +230,7 @@ yarn test:gas
 
 ### To Deploy
 
-Fill out parameters in `script/deployParameters/Deploy<network>.s.sol`
+Fill out parameters in `script/deployParameters/Deploy<network>.s.sol` \
 
 ```console
 forge script --broadcast \

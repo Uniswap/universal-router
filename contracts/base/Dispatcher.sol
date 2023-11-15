@@ -352,7 +352,7 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                 }
                 Payments.approveERC20(token, spender);
             } else {
-                // placeholder area for commands 0x22-0x3f
+                // placeholder area for commands 0x23-0x3f
                 revert InvalidCommandType(command);
             }
         }
