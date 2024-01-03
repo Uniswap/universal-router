@@ -126,7 +126,7 @@ Each command is a `bytes1` containing the following 8 bits:
    ├──────┼───────────────────────────────┤
    │ 0x22 │  APPROVE_ERC20                │
    ├──────┼───────────────────────────────┤
-   │ 0x1e-│  -------                      │
+   │ 0x23-│  -------                      │
    │ 0x3f │                               │
    └──────┴───────────────────────────────┘
 ```
@@ -230,7 +230,7 @@ yarn test:gas
 
 ### To Deploy
 
-Fill out parameters in `script/deployParameters/Deploy<network>.s.sol` \
+Fill out parameters in `script/deployParameters/Deploy<network>.s.sol`
 
 ```console
 forge script --broadcast \
@@ -247,7 +247,7 @@ forge script --broadcast \
 --rpc-url <RPC-URL> \
 --private-key <PRIVATE-KEY> \
 --sig 'run()' \
-script/deployParameters/Deploy<network>.s.sol:Deploy<network>
+script/deployParameters/Deploy<network>.s.sol:Deploy<network> \
 --etherscan-api-key <ETHERSCAN-API-KEY> \
 --verify
 ```
