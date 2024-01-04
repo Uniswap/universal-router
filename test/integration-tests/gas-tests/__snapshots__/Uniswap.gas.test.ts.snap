@@ -349,17 +349,3 @@ Object {
   "gasUsed": 129549,
 }
 `;
-
-exports[`Uniswap Gas Tests Trade on UniswapV3 with Universal Router. STETH gas: completes a V3 exactIn with STETH --> WETH 1`] = `
-Object {
-  "calldataByteLength": 804,
-  "gasUsed": 313473,
-}
-`;
-
-exports[`Uniswap Gas Tests Trade on UniswapV3 with Universal Router. STETH gas: completes a V3 exactIn with WETH --> STETH 1`] = `
-Object {
-  "calldataByteLength": 644,
-  "gasUsed": 262236,
-}
-`;

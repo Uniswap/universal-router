@@ -8,8 +8,7 @@ import { encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Permit2, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { abi as STETH_ABI } from '../../artifacts/contracts/interfaces/external/ISTETH.sol/ISTETH.json'
-import { resetFork, WETH, DAI, USDC, USDT, STETH, WSTETH } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,
   ALICE_ADDRESS,
@@ -442,14 +441,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
       amountOutMin: BigNumberish,
       recipient?: string,
       tokens: string[] = [DAI.address, WETH.address],
-      tokenSource: boolean = SOURCE_MSG_SENDER,
-      _amountIn?: BigNumber
+      tokenSource: boolean = SOURCE_MSG_SENDER
     ) => {
       const path = encodePathExactInput(tokens)
       for (let i = 0; i < numTrades; i++) {
         planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
           recipient ?? MSG_SENDER,
-          _amountIn ?? amountIn,
+          amountIn,
           amountOutMin,
           path,
           tokenSource,
@@ -587,65 +585,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.eq(daiTraded)
         expect(ethBalanceBefore.sub(ethBalanceAfter)).to.eq(wethTraded.add(gasSpent))
-      })
-    })
-
-    describe('STETH', () => {
-      // when transferring STETH, there is always 1 wei dust that does not get tranferred
-      const STETH_DUST = 1
-
-      it('completes a V3 exactIn with STETH --> WETH', async () => {
-        const { stethContract } = await setupStethContext()
-
-        const amountInSTETH: number = expandTo18DecimalsBN(0.1)
-        const amountInWSTETH: number = await stethContract.getSharesByPooledEth(amountInSTETH.sub(STETH_DUST))
-        const amountOutMin: number = expandTo6DecimalsBN(0)
-
-        planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [STETH.address, ADDRESS_THIS, amountInSTETH])
-        planner.addCommand(CommandType.WRAP_STETH, [ADDRESS_THIS, CONTRACT_BALANCE])
-        addV3ExactInTrades(
-          planner,
-          1,
-          amountOutMin,
-          MSG_SENDER,
-          [WSTETH.address, WETH.address],
-          SOURCE_ROUTER,
-          amountInWSTETH
-        )
-
-        const stethBalanceBefore = await stethContract.balanceOf(bob.address)
-        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
-        const stethBalanceAfter = await stethContract.balanceOf(bob.address)
-
-        expect(stethBalanceBefore.sub(stethBalanceAfter)).to.eq(amountInSTETH.sub(STETH_DUST))
-        expect(wethBalanceAfter.sub(wethBalanceBefore).toString()).to.eq('89416039046452189')
-      })
-
-      it('completes a V3 exactIn with WETH --> STETH', async () => {
-        const { stethContract, wstethContract, wethContract } = await setupStethContext()
-
-        const amountInWETH: number = expandTo18DecimalsBN(0.001)
-        const amountOutMin: number = expandTo6DecimalsBN(0)
-
-        addV3ExactInTrades(
-          planner,
-          1,
-          amountOutMin,
-          ADDRESS_THIS,
-          [WETH.address, WSTETH.address],
-          SOURCE_MSG_SENDER,
-          amountInWETH
-        )
-        planner.addCommand(CommandType.UNWRAP_STETH, [MSG_SENDER, 0])
-
-        const wstethBalanceBefore = await wstethContract.balanceOf(bob.address)
-        const stethBalanceBefore = await stethContract.balanceOf(bob.address)
-        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
-        const wstethBalanceAfter = await wstethContract.balanceOf(bob.address)
-        const stethBalanceAfter = await stethContract.balanceOf(bob.address)
-
-        expect(stethBalanceAfter.sub(stethBalanceBefore)).to.eq('825732662352157')
-        expect(wethBalanceBefore.sub(wethBalanceAfter)).to.eq(amountInWETH)
       })
     })
   })
@@ -1319,38 +1258,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
       receipt,
       gasSpent,
     }
-  }
-
-  type StethContextParams = {
-    stethContract: Contract
-    wstethContract: Contract
-  }
-
-  async function setupStethContext(): Promise<StethContextParams> {
-    const FORK_WITH_STETH_POOL = 18135610
-    await resetFork(FORK_WITH_STETH_POOL)
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [ALICE_ADDRESS],
-    })
-    permit2 = (await deployPermit2()).connect(bob) as Permit2
-    router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
-
-    let stethContract = new ethers.Contract(STETH.address, STETH_ABI, bob)
-    let wstethContract = new ethers.Contract(WSTETH.address, TOKEN_ABI, bob)
-    let wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
-
-    // alice gives bob some tokens
-    await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100))
-    await stethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(0.3))
-
-    // Bob max-approves the permit2 contract to access his STETH and WETH
-    await wethContract.connect(bob).approve(permit2.address, MAX_UINT)
-    await stethContract.connect(bob).approve(permit2.address, MAX_UINT)
-    await permit2.approve(STETH.address, router.address, MAX_UINT160, DEADLINE)
-    await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
-
-    return { stethContract, wstethContract, wethContract }
   }
 
   function encodePathExactInput(tokens: string[]) {

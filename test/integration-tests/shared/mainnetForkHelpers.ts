@@ -29,8 +29,6 @@ export const DAI = new Token(1, '0x6B175474E89094C44Da98b954EedeAC495271d0F', 18
 export const USDC = new Token(1, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 6, 'USDC', 'USD//C')
 export const USDT = new Token(1, '0xdAC17F958D2ee523a2206206994597C13D831ec7', 6, 'USDT', 'Tether USD')
 export const GALA = new Token(1, '0x15D4c048F83bd7e37d49eA4C83a07267Ec4203dA', 8, 'GALA', 'Gala')
-export const STETH = new Token(1, '0xae7ab96520de3a18e5e111b5eaab095312d7fe84', 18, 'STETH', 'stETH')
-export const WSTETH = new Token(1, '0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0', 18, 'WSTETH', 'wstETH')
 export const SWAP_ROUTER_V2 = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
 export const V2_FACTORY = 0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f
 
