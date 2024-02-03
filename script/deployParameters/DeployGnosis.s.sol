@@ -7,7 +7,7 @@ import {RouterParameters} from 'contracts/base/RouterImmutables.sol';
 contract DeployGnosis is DeployUniversalRouter {
     function setUp() public override {
         params = RouterParameters({
-            permit2: UNSUPPORTED_PROTOCOL,
+            permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
             weth9: 0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d,
             steth: UNSUPPORTED_PROTOCOL,
             wsteth: UNSUPPORTED_PROTOCOL,
@@ -31,6 +31,6 @@ contract DeployGnosis is DeployUniversalRouter {
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54
         });
 
-        unsupported = UNSUPPORTED_PROTOCOL;
+        unsupported = 0xA174C4bb18b36B446C46d41E33a107B83686e92D;
     }
 }
