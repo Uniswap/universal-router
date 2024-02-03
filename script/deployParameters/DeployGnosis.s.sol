@@ -4,7 +4,7 @@ pragma solidity ^0.8.15;
 import {DeployUniversalRouter} from '../DeployUniversalRouter.s.sol';
 import {RouterParameters} from 'contracts/base/RouterImmutables.sol';
 
-contract DeployArbitrum is DeployUniversalRouter {
+contract DeployGnosis is DeployUniversalRouter {
     function setUp() public override {
         params = RouterParameters({
             permit2: UNSUPPORTED_PROTOCOL,
