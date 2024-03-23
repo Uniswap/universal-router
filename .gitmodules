@@ -6,4 +6,4 @@
 	url = https://github.com/transmissions11/solmate
 [submodule "lib/permit2"]
 	path = lib/permit2
-	url = git@github.com:Uniswap/permit2.git
+	url = https://github.com/Uniswap/permit2
