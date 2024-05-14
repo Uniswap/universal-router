@@ -1,5 +1,5 @@
 {
-  "name": "@uniswap/universal-router",
+  "name": "@swapnet/universal-router",
   "description": "Smart contracts for Universal Router",
   "license": "GPL-2.0-or-later",
   "publishConfig": {
@@ -8,13 +8,14 @@
   "version": "1.6.0",
   "keywords": [
     "uniswap",
+    "swapnet",
     "router",
     "universal router",
     "swap router"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Uniswap/universal-router"
+    "url": "https://github.com/swapnet-xyz/universal-router"
   },
   "files": [
     "contracts/base",
