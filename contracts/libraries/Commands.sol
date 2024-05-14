@@ -74,4 +74,5 @@ library Commands {
     // COMMAND_PLACEHOLDER for 0x23 to 0x3f (unused by Uniswap)
     // Added by SwapNet protocol
     uint256 constant CURVE_V1 = 0x23;
+    uint256 constant MAKER_ORDER = 0x24;
 }

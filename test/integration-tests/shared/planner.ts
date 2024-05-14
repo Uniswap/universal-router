@@ -46,6 +46,7 @@ export enum CommandType {
 
   // Added by SwapNet protocol
   CURVE_V1 = 0x23,
+  MAKER_ORDER = 0x24,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -118,6 +119,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
 
   // Added by SwapNet protocol
   [CommandType.CURVE_V1]: ['address', 'address', 'address', 'uint256', 'uint256'],
+  [CommandType.MAKER_ORDER]: ['address', 'uint256', 'bool', 'address', 'address', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
 }
 
 export class RoutePlanner {

@@ -31,6 +31,9 @@ export default {
         url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
         blockNumber: 15360000,
       },
+      accounts: {
+          count: 10
+      }
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
