@@ -43,6 +43,9 @@ export enum CommandType {
   SEAPORT_V1_4 = 0x20,
   EXECUTE_SUB_PLAN = 0x21,
   APPROVE_ERC20 = 0x22,
+
+  // Added by SwapNet protocol
+  CURVE_V1 = 0x23,
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -112,6 +115,9 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.NFT20]: ['uint256', 'bytes'],
   [CommandType.CRYPTOPUNKS]: ['uint256', 'address', 'uint256'],
   [CommandType.ELEMENT_MARKET]: ['uint256', 'bytes'],
+
+  // Added by SwapNet protocol
+  [CommandType.CURVE_V1]: ['address', 'address', 'address', 'uint256', 'uint256'],
 }
 
 export class RoutePlanner {
@@ -150,3 +156,6 @@ export function createCommand(type: CommandType, parameters: any[]): RouterComma
   const encodedInput = defaultAbiCoder.encode(ABI_DEFINITION[type], parameters)
   return { type, encodedInput }
 }
+
+export const SENDER_AS_RECIPIENT = '0x0000000000000000000000000000000000000001'
+export const ROUTER_AS_RECIPIENT = '0x0000000000000000000000000000000000000002'
