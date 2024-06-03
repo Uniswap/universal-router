@@ -49,7 +49,7 @@
     "bignumber.js": "^9.0.0",
     "chai": "^4.3.4",
     "ethers": "^5.7.2",
-    "hardhat": "2.12.2",
+    "hardhat": "2.22.5",
     "hardhat-typechain": "^0.3.5",
     "mocha-chai-jest-snapshot": "^1.1.0",
     "prettier": "^2.0.5",
