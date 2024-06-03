@@ -1,12 +1,12 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
-import { UniversalRouter, Permit2 } from '../../../typechain'
+import { UniversalRouter } from '../../../typechain'
 import { resetFork } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, ZERO_ADDRESS } from './../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 const { ethers } = hre
-import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
+import deployUniversalRouter from '../shared/deployUniversalRouter'
 import {
   LRV2APIOrder,
   createLooksRareV2Order,
@@ -18,7 +18,6 @@ import {
 describe('LooksRareV2 Gas Test', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
   let planner: RoutePlanner
   let order: LRV2APIOrder
   let order2: LRV2APIOrder
@@ -33,8 +32,7 @@ describe('LooksRareV2 Gas Test', () => {
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
 
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
     })
 
@@ -66,8 +64,7 @@ describe('LooksRareV2 Gas Test', () => {
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
 
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
     })
 

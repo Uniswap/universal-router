@@ -1,6 +1,6 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
-import { ERC1155, ERC721, Permit2, UniversalRouter } from '../../typechain'
+import { ERC1155, ERC721, UniversalRouter } from '../../typechain'
 import {
   seaportV1_4Orders,
   seaportInterface,
@@ -12,7 +12,7 @@ import { resetFork, COVEN_721, USDC, TOWNSTAR_1155 } from './shared/mainnetForkH
 import { ALICE_ADDRESS, COVEN_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY, TOWNSTAR_ADDRESS } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
+import deployUniversalRouter from './shared/deployUniversalRouter'
 import { findCustomErrorSelector } from './shared/parseEvents'
 import { BigNumber, Contract } from 'ethers'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
@@ -21,7 +21,6 @@ const { ethers } = hre
 describe('Check Ownership', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
   let planner: RoutePlanner
   let cryptoCovens: ERC721
   let townStarNFT: ERC1155
@@ -34,8 +33,7 @@ describe('Check Ownership', () => {
         params: [ALICE_ADDRESS],
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
       cryptoCovens = COVEN_721.connect(alice) as ERC721
     })
@@ -113,8 +111,7 @@ describe('Check Ownership', () => {
         params: [ALICE_ADDRESS],
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
       townStarNFT = TOWNSTAR_1155.connect(alice) as ERC1155
       ;({ calldata, advancedOrder0, advancedOrder1, value } = purchaseDataForTwoTownstarsSeaport(alice.address))
@@ -197,8 +194,7 @@ describe('Check Ownership', () => {
         params: [ALICE_ADDRESS],
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
       usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
       aliceUSDCBalance = await usdcContract.balanceOf(ALICE_ADDRESS)
       planner = new RoutePlanner()

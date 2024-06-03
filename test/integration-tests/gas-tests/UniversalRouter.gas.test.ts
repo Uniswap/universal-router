@@ -1,4 +1,4 @@
-import { UniversalRouter, Permit2, IWETH9, ERC20 } from '../../../typechain'
+import { UniversalRouter, IWETH9, ERC20, IPermit2 } from '../../../typechain'
 import { expect } from '../shared/expect'
 import {
   ALICE_ADDRESS,
@@ -12,7 +12,7 @@ import {
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { abi as WETH_ABI } from '../../../artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
-import { resetFork, WETH, DAI } from '../shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, PERMIT2 } from '../shared/mainnetForkHelpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { expandTo18DecimalsBN } from '../shared/helpers'
@@ -22,7 +22,7 @@ import {
   getAdvancedOrderParams,
   AdvancedOrder,
 } from '../shared/protocolHelpers/seaport'
-import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
+import deployUniversalRouter from '../shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from '../shared/planner'
 import { BigNumber } from 'ethers'
 
@@ -32,7 +32,6 @@ describe('UniversalRouter Gas Tests', () => {
   let alice: SignerWithAddress
   let planner: RoutePlanner
   let router: UniversalRouter
-  let permit2: Permit2
   let daiContract: ERC20
   let wethContract: IWETH9
 
@@ -45,8 +44,7 @@ describe('UniversalRouter Gas Tests', () => {
     })
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
     wethContract = new ethers.Contract(WETH.address, WETH_ABI, alice) as IWETH9
-    permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+    router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
   })
 
@@ -60,6 +58,7 @@ describe('UniversalRouter Gas Tests', () => {
 
     beforeEach(async () => {
       ;({ advancedOrder, value } = getAdvancedOrderParams(seaportV1_5Orders[0]))
+      const permit2 = PERMIT2.connect(alice) as IPermit2
       await daiContract.approve(permit2.address, MAX_UINT)
       await wethContract.approve(permit2.address, MAX_UINT)
       await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)

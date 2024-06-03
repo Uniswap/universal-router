@@ -1,11 +1,11 @@
 import {
   UniversalRouter,
-  Permit2,
   ERC20,
   IWETH9,
   MockLooksRareRewardsDistributor,
   ERC721,
   ERC1155,
+  IPermit2,
 } from '../../typechain'
 import { BigNumber, BigNumberish } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
@@ -15,7 +15,7 @@ import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/E
 import { abi as WETH_ABI } from '../../artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
 
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
-import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
+import deployUniversalRouter from './shared/deployUniversalRouter'
 import {
   ADDRESS_THIS,
   ALICE_ADDRESS,
@@ -36,7 +36,7 @@ import {
   seaportV1_4Orders,
   seaportV1_5Orders,
 } from './shared/protocolHelpers/seaport'
-import { resetFork, WETH, DAI, MILADY_721, TOWNSTAR_1155 } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, MILADY_721, TOWNSTAR_1155, PERMIT2 } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
 import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -51,7 +51,7 @@ const routerInterface = new ethers.utils.Interface(ROUTER_ABI)
 describe('UniversalRouter', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
+  let permit2: IPermit2
   let daiContract: ERC20
   let wethContract: IWETH9
   let mockLooksRareToken: ERC20
@@ -77,10 +77,10 @@ describe('UniversalRouter', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
     wethContract = new ethers.Contract(WETH.address, WETH_ABI, alice) as IWETH9
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
-    permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (
-      await deployUniversalRouter(permit2, mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)
-    ).connect(alice) as UniversalRouter
+    permit2 = PERMIT2.connect(alice) as IPermit2
+    router = (await deployUniversalRouter(mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)).connect(
+      alice
+    ) as UniversalRouter
   })
 
   describe('#execute', () => {
@@ -153,7 +153,6 @@ describe('UniversalRouter', () => {
 
       router = (
         await deployUniversalRouter(
-          permit2,
           mockLooksRareRewardsDistributor.address,
           mockLooksRareToken.address,
           reentrantProtocol.address
@@ -199,7 +198,7 @@ describe('UniversalRouter', () => {
 describe('UniversalRouter', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
+  let permit2: IPermit2
   let mockLooksRareToken: ERC20
   let mockLooksRareRewardsDistributor: MockLooksRareRewardsDistributor
   let daiContract: ERC20
@@ -226,8 +225,8 @@ describe('UniversalRouter', () => {
         })
         daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
         wethContract = new ethers.Contract(WETH.address, WETH_ABI, alice) as IWETH9
-        permit2 = (await deployPermit2()).connect(alice) as Permit2
-        router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+        permit2 = PERMIT2.connect(alice) as IPermit2
+        router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
         townStarNFT = TOWNSTAR_1155.connect(alice) as ERC1155
         ;({ advancedOrder, value } = getAdvancedOrderParams(seaportV1_5Orders[0]))
         await daiContract.approve(permit2.address, MAX_UINT)
@@ -316,9 +315,8 @@ describe('UniversalRouter', () => {
           ROUTER_REWARDS_DISTRIBUTOR,
           mockLooksRareToken.address
         )) as MockLooksRareRewardsDistributor
-        permit2 = (await deployPermit2()).connect(alice) as Permit2
         router = (
-          await deployUniversalRouter(permit2, mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)
+          await deployUniversalRouter(mockLooksRareRewardsDistributor.address, mockLooksRareToken.address)
         ).connect(alice) as UniversalRouter
 
         miladyContract = MILADY_721.connect(alice) as ERC721

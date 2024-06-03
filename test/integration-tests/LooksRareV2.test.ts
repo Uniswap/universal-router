@@ -1,8 +1,8 @@
 import { CommandType, RoutePlanner } from './shared/planner'
-import { UniversalRouter, Permit2, ERC721 } from '../../typechain'
+import { UniversalRouter, ERC721 } from '../../typechain'
 import { resetFork, DRAGON_721 } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, ZERO_ADDRESS } from './shared/constants'
-import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
+import deployUniversalRouter from './shared/deployUniversalRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { expect } from 'chai'
@@ -18,7 +18,6 @@ import {
 describe('LooksRareV2', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
   let planner: RoutePlanner
   let dragonNFT: ERC721
   let order: LRV2APIOrder
@@ -35,8 +34,7 @@ describe('LooksRareV2', () => {
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
 
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
     })
 
@@ -73,8 +71,7 @@ describe('LooksRareV2', () => {
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
 
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
     })
 

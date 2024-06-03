@@ -1,12 +1,12 @@
 import { CommandType, RoutePlanner } from '../shared/planner'
-import { UniversalRouter, Permit2 } from '../../../typechain'
+import { IPermit2, UniversalRouter } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { seaportV1_4Orders, seaportInterface, getAdvancedOrderParams } from '../shared/protocolHelpers/seaport'
-import { GALA, resetFork } from '../shared/mainnetForkHelpers'
+import { GALA, PERMIT2, resetFork } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
+import deployUniversalRouter from '../shared/deployUniversalRouter'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { Contract } from 'ethers'
 import { getPermitSignature } from '../shared/protocolHelpers/permit2'
@@ -16,7 +16,7 @@ describe('Seaport v1.4 Gas Tests', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
+  let permit2: IPermit2
   let planner: RoutePlanner
   let galaContract: Contract
 
@@ -28,8 +28,8 @@ describe('Seaport v1.4 Gas Tests', () => {
         params: [ALICE_ADDRESS],
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      permit2 = PERMIT2.connect(bob) as IPermit2
+      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
     })
 
@@ -61,8 +61,8 @@ describe('Seaport v1.4 Gas Tests', () => {
 
       // alice can't sign permits as we don;t have her private key. Instead bob is used
       bob = (await ethers.getSigners())[1]
-      permit2 = (await deployPermit2()).connect(bob) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
+      permit2 = PERMIT2.connect(bob) as IPermit2
+      router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
       planner = new RoutePlanner()
       await galaContract.connect(bob).approve(permit2.address, ethers.constants.MaxUint256)
 

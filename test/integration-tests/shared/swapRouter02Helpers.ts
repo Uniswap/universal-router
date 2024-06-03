@@ -6,20 +6,19 @@ import { encodeSqrtRatioX96, FeeAmount, nearestUsableTick, Pool, TickMath, TICK_
 import { getV2PoolReserves, WETH, DAI, USDC, USDT } from './mainnetForkHelpers'
 import { BigNumber } from 'ethers'
 
-const feeAmount = FeeAmount.MEDIUM
 const sqrtRatioX96 = encodeSqrtRatioX96(1, 1)
 const liquidity = 1_000_000
 
 // v3
-export const makePool = (token0: Token, token1: Token, liquidity: number) => {
-  return new Pool(token0, token1, feeAmount, sqrtRatioX96, liquidity, TickMath.getTickAtSqrtRatio(sqrtRatioX96), [
+export const makePool = (token0: Token, token1: Token, liquidity: number, feeTier: FeeAmount = FeeAmount.MEDIUM) => {
+  return new Pool(token0, token1, feeTier, sqrtRatioX96, liquidity, TickMath.getTickAtSqrtRatio(sqrtRatioX96), [
     {
-      index: nearestUsableTick(TickMath.MIN_TICK, TICK_SPACINGS[feeAmount]),
+      index: nearestUsableTick(TickMath.MIN_TICK, TICK_SPACINGS[feeTier]),
       liquidityNet: liquidity,
       liquidityGross: liquidity,
     },
     {
-      index: nearestUsableTick(TickMath.MAX_TICK, TICK_SPACINGS[feeAmount]),
+      index: nearestUsableTick(TickMath.MAX_TICK, TICK_SPACINGS[feeTier]),
       liquidityNet: -liquidity,
       liquidityGross: liquidity,
     },
@@ -27,9 +26,9 @@ export const makePool = (token0: Token, token1: Token, liquidity: number) => {
 }
 
 export const pool_DAI_WETH = makePool(DAI, WETH, liquidity)
-export const pool_DAI_USDC = makePool(USDC, DAI, liquidity)
+export const pool_DAI_USDC = makePool(USDC, DAI, liquidity, FeeAmount.LOW)
 export const pool_USDC_WETH = makePool(USDC, WETH, liquidity)
-export const pool_USDC_USDT = makePool(USDC, USDT, liquidity)
+export const pool_USDC_USDT = makePool(USDC, USDT, liquidity, FeeAmount.LOW)
 export const pool_WETH_USDT = makePool(USDT, WETH, liquidity)
 
 // v2

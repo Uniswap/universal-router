@@ -1,7 +1,7 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
 import { BigNumber, Contract } from 'ethers'
-import { UniversalRouter, Permit2, ERC721, ERC1155 } from '../../typechain'
+import { UniversalRouter, ERC721, ERC1155, IPermit2 } from '../../typechain'
 import {
   seaportV1_5Orders,
   seaportInterface,
@@ -9,8 +9,8 @@ import {
   seaportV1_4Orders,
   purchaseDataForTwoTownstarsSeaport,
 } from './shared/protocolHelpers/seaport'
-import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
-import { COVEN_721, resetFork, TOWNSTAR_1155, GALA } from './shared/mainnetForkHelpers'
+import deployUniversalRouter from './shared/deployUniversalRouter'
+import { COVEN_721, resetFork, TOWNSTAR_1155, GALA, PERMIT2 } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, OPENSEA_CONDUIT_KEY } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
@@ -21,7 +21,6 @@ const { ethers } = hre
 
 describe('Seaport v1.5', () => {
   let router: UniversalRouter
-  let permit2: Permit2
   let planner: RoutePlanner
   let townStarNFT: ERC1155
   let alice: SignerWithAddress
@@ -34,8 +33,7 @@ describe('Seaport v1.5', () => {
         params: [ALICE_ADDRESS],
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
       townStarNFT = TOWNSTAR_1155.connect(alice) as ERC1155
     })
@@ -144,7 +142,7 @@ describe('Seaport v1.4', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
+  let permit2: IPermit2
   let planner: RoutePlanner
   let cryptoCovens: ERC721
   let galaContract: Contract
@@ -162,8 +160,8 @@ describe('Seaport v1.4', () => {
 
       // alice can't sign permits as we don't have her private key. Instead bob is used
       bob = (await ethers.getSigners())[1]
-      permit2 = (await deployPermit2()).connect(bob) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
+      permit2 = PERMIT2.connect(alice) as IPermit2
+      router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
       planner = new RoutePlanner()
       townStarNFT = TOWNSTAR_1155.connect(bob) as ERC1155
       await galaContract.connect(bob).approve(permit2.address, ethers.constants.MaxUint256)
@@ -222,8 +220,7 @@ describe('Seaport v1.4', () => {
         params: [ALICE_ADDRESS],
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
       cryptoCovens = COVEN_721.connect(alice) as ERC721
     })

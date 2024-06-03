@@ -1,5 +1,5 @@
 import { CommandType, RoutePlanner } from '../shared/planner'
-import { UniversalRouter, Permit2 } from '../../../typechain'
+import { UniversalRouter } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import {
   seaportV1_5Orders,
@@ -11,12 +11,11 @@ import { resetFork } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, OPENSEA_CONDUIT_KEY } from '../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
+import deployUniversalRouter from '../shared/deployUniversalRouter'
 const { ethers } = hre
 
 describe('Seaport v1.5 Gas Tests', () => {
   let router: UniversalRouter
-  let permit2: Permit2
   let planner: RoutePlanner
 
   describe('ETH -> NFT', () => {
@@ -28,8 +27,7 @@ describe('Seaport v1.5 Gas Tests', () => {
         params: [ALICE_ADDRESS],
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
-      permit2 = (await deployPermit2()).connect(alice) as Permit2
-      router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
       planner = new RoutePlanner()
     })
 

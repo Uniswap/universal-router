@@ -1,13 +1,13 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import NFT20_ABI from './shared/abis/NFT20.json'
-import { UniversalRouter, Permit2, ERC721 } from '../../typechain'
+import { UniversalRouter, ERC721 } from '../../typechain'
 import { ALPHABETTIES_721, resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, ALPHABETTIES_ADDRESS, DEADLINE } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
 import { expect } from 'chai'
-import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
+import deployUniversalRouter from './shared/deployUniversalRouter'
 const { ethers } = hre
 
 const NFT20_INTERFACE = new ethers.utils.Interface(NFT20_ABI)
@@ -15,7 +15,6 @@ const NFT20_INTERFACE = new ethers.utils.Interface(NFT20_ABI)
 describe('NFT20', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
   let planner: RoutePlanner
   let alphabetties: ERC721
 
@@ -28,8 +27,7 @@ describe('NFT20', () => {
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
     })
-    permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+    router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
     alphabetties = ALPHABETTIES_721.connect(alice) as ERC721
   })
 

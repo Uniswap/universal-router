@@ -6,7 +6,6 @@ import 'forge-std/Script.sol';
 import {RouterParameters} from 'contracts/base/RouterImmutables.sol';
 import {UnsupportedProtocol} from 'contracts/deploy/UnsupportedProtocol.sol';
 import {UniversalRouter} from 'contracts/UniversalRouter.sol';
-import {Permit2} from 'permit2/src/Permit2.sol';
 
 bytes32 constant SALT = bytes32(uint256(0x00000000000000000000000000000000000000005eb67581652632000a6cbedf));
 
@@ -17,6 +16,8 @@ abstract contract DeployUniversalRouter is Script {
     address constant UNSUPPORTED_PROTOCOL = address(0);
     bytes32 constant BYTES32_ZERO = bytes32(0);
 
+    error Permit2NotDeployed();
+
     // set values for params and unsupported
     function setUp() public virtual;
 
@@ -24,11 +25,7 @@ abstract contract DeployUniversalRouter is Script {
         vm.startBroadcast();
 
         // deploy permit2 if it isnt yet deployed
-        if (params.permit2 == address(0)) {
-            address permit2 = address(new Permit2{salt: SALT}());
-            params.permit2 = permit2;
-            console2.log('Permit2 Deployed:', address(permit2));
-        }
+        if (params.permit2 == address(0)) revert Permit2NotDeployed();
 
         // only deploy unsupported if this chain doesn't already have one
         if (unsupported == address(0)) {

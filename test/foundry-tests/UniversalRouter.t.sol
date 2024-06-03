@@ -18,7 +18,7 @@ import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
 import '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';
 
 contract UniversalRouterTest is Test {
-    address constant RECIPIENT = address(10);
+    address constant RECIPIENT = address(1234);
     uint256 constant AMOUNT = 10 ** 18;
 
     UniversalRouter router;

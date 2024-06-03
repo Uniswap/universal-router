@@ -2,7 +2,7 @@
 pragma solidity ^0.8.15;
 
 import 'forge-std/Test.sol';
-import {Permit2} from 'permit2/src/Permit2.sol';
+import {IPermit2} from 'permit2/src/interfaces/IPermit2.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IUniswapV2Factory} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
@@ -21,13 +21,13 @@ abstract contract UniswapV2Test is Test {
     uint256 constant BALANCE = 100000 ether;
     IUniswapV2Factory constant FACTORY = IUniswapV2Factory(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f);
     ERC20 constant WETH9 = ERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-    Permit2 constant PERMIT2 = Permit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
+    IPermit2 constant PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
     address constant FROM = address(1234);
 
     UniversalRouter router;
 
     function setUp() public virtual {
-        vm.createSelectFork(vm.envString('FORK_URL'), 16000000);
+        vm.createSelectFork(vm.envString('FORK_URL'), 20010000);
         setUpTokens();
 
         RouterParameters memory params = RouterParameters({

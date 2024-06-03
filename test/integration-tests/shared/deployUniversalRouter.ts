@@ -1,6 +1,6 @@
 import hre from 'hardhat'
 const { ethers } = hre
-import { UniversalRouter, Permit2 } from '../../../typechain'
+import { UniversalRouter } from '../../../typechain'
 import {
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
@@ -9,16 +9,16 @@ import {
   ROUTER_REWARDS_DISTRIBUTOR,
   LOOKSRARE_REWARDS_DISTRIBUTOR,
   LOOKSRARE_TOKEN,
+  PERMIT2_ADDRESS,
 } from './constants'
 
 export async function deployRouter(
-  permit2: Permit2,
   mockLooksRareRewardsDistributor?: string,
   mockLooksRareToken?: string,
   mockReentrantProtocol?: string
 ): Promise<UniversalRouter> {
   const routerParameters = {
-    permit2: permit2.address,
+    permit2: PERMIT2_ADDRESS,
     weth9: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     seaportV1_5: '0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC',
     seaportV1_4: '0x00000000000001ad428e4906aE43D8F9852d0dD6',
@@ -46,18 +46,3 @@ export async function deployRouter(
 }
 
 export default deployRouter
-
-export async function deployPermit2(): Promise<Permit2> {
-  const permit2Factory = await ethers.getContractFactory('Permit2')
-  const permit2 = (await permit2Factory.deploy()) as unknown as Permit2
-  return permit2
-}
-
-export async function deployRouterAndPermit2(
-  mockLooksRareRewardsDistributor?: string,
-  mockLooksRareToken?: string
-): Promise<[UniversalRouter, Permit2]> {
-  const permit2 = await deployPermit2()
-  const router = await deployRouter(permit2, mockLooksRareRewardsDistributor, mockLooksRareToken)
-  return [router, permit2]
-}

@@ -1,9 +1,9 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import SUDOSWAP_ABI from './shared/abis/Sudoswap.json'
-import { ERC721, UniversalRouter, Permit2, ERC20 } from '../../typechain'
+import { ERC721, UniversalRouter, ERC20 } from '../../typechain'
 import { resetFork } from './shared/mainnetForkHelpers'
 import { DEADLINE } from './shared/constants'
-import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
+import deployUniversalRouter from './shared/deployUniversalRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
@@ -22,15 +22,13 @@ export const FRAX_ADDRESS = '0x853d955acef822db058eb8505911ed77f175b99e'
 describe('Sudoswap', () => {
   let bob: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
   let planner: RoutePlanner
 
   beforeEach(async () => {
     await resetFork(16643381) // use recent block
     planner = new RoutePlanner()
     bob = (await ethers.getSigners())[1]
-    permit2 = (await deployPermit2()).connect(bob) as Permit2
-    router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
+    router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
   })
 
   describe('Buy with ETH', () => {

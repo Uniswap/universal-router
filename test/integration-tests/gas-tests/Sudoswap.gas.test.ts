@@ -1,14 +1,14 @@
 import { CommandType, RoutePlanner } from '../shared/planner'
 import SUDOSWAP_ABI from '../shared/abis/Sudoswap.json'
 import { abi as ERC20_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { UniversalRouter, Permit2, ERC20 } from '../../../typechain'
-import { resetFork } from '../shared/mainnetForkHelpers'
+import { UniversalRouter, ERC20, IPermit2 } from '../../../typechain'
+import { PERMIT2, resetFork } from '../shared/mainnetForkHelpers'
 import { DEADLINE } from '../shared/constants'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
-import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
+import deployUniversalRouter from '../shared/deployUniversalRouter'
 import { FRAX_ADDRESS } from '../Sudoswap.test'
 import { getPermitSignature } from '../shared/protocolHelpers/permit2'
 const { ethers } = hre
@@ -18,15 +18,15 @@ const SUDOSWAP_INTERFACE = new ethers.utils.Interface(SUDOSWAP_ABI)
 describe('Sudoswap Gas Tests', () => {
   let bob: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
+  let permit2: IPermit2
   let planner: RoutePlanner
 
   beforeEach(async () => {
     await resetFork(16643381) // use recent block
     planner = new RoutePlanner()
     bob = (await ethers.getSigners())[1]
-    permit2 = (await deployPermit2()).connect(bob) as Permit2
-    router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
+    permit2 = PERMIT2.connect(bob) as IPermit2
+    router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
   })
 
   // In this test we will buy token ids 173, 239, 240 of Sudolets (0xfa9937555dc20a020a161232de4d2b109c62aa9c),

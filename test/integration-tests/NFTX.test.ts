@@ -1,7 +1,7 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
-import { UniversalRouter, Permit2, ERC721, ERC1155 } from '../../typechain'
-import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
+import { UniversalRouter, ERC721, ERC1155 } from '../../typechain'
+import deployUniversalRouter from './shared/deployUniversalRouter'
 import { parseEvents } from './shared/parseEvents'
 import NFTX_ZAP_ABI from './shared/abis/NFTXZap.json'
 import { TWERKY_1155, resetFork, MILADY_721 } from './shared/mainnetForkHelpers'
@@ -17,7 +17,6 @@ const nftxZapInterface = new ethers.utils.Interface(NFTX_ZAP_ABI)
 describe('NFTX', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
   let miladyContract: ERC721
   let twerkyContract: ERC1155
   let planner: RoutePlanner
@@ -31,8 +30,7 @@ describe('NFTX', () => {
     alice = await ethers.getSigner(ALICE_ADDRESS)
     miladyContract = MILADY_721.connect(alice)
     twerkyContract = TWERKY_1155.connect(alice)
-    permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+    router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
   })
 

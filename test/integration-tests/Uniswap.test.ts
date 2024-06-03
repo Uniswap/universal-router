@@ -4,11 +4,10 @@ import { Pair } from '@uniswap/v2-sdk'
 import { FeeAmount } from '@uniswap/v3-sdk'
 import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
-import { encodePath } from './shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
-import { Permit2, UniversalRouter } from '../../typechain'
+import { IPermit2, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { resetFork, WETH, DAI, USDC, USDT } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, USDC, USDT, PERMIT2 } from './shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,
   ALICE_ADDRESS,
@@ -22,9 +21,14 @@ import {
   SOURCE_MSG_SENDER,
   SOURCE_ROUTER,
 } from './shared/constants'
-import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
+import {
+  encodePathExactInput,
+  encodePathExactOutput,
+  expandTo18DecimalsBN,
+  expandTo6DecimalsBN,
+} from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
+import deployUniversalRouter from './shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 import { getPermitSignature, getPermitBatchSignature, PermitSingle } from './shared/protocolHelpers/permit2'
@@ -34,7 +38,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
+  let permit2: IPermit2
   let daiContract: Contract
   let wethContract: Contract
   let usdcContract: Contract
@@ -51,8 +55,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
-    permit2 = (await deployPermit2()).connect(bob) as Permit2
-    router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
+    permit2 = PERMIT2.connect(bob) as IPermit2
+    router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
     planner = new RoutePlanner()
 
     // alice gives bob some tokens
@@ -72,7 +76,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       it('V2 exactIn, permiting the exact amount', async () => {
         const amountInDAI = expandTo18DecimalsBN(100)
-        const minAmountOutWETH = expandTo18DecimalsBN(0.03)
+        const minAmountOutWETH = expandTo18DecimalsBN(0.02)
 
         // second bob signs a permit to allow the router to access his DAI
         permit = {
@@ -102,7 +106,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       it('V2 exactOut, permiting the maxAmountIn', async () => {
-        const maxAmountInDAI = expandTo18DecimalsBN(3000)
+        const maxAmountInDAI = expandTo18DecimalsBN(4000)
         const amountOutWETH = expandTo18DecimalsBN(1)
 
         // second bob signs a permit to allow the router to access his DAI
@@ -165,7 +169,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       it('V3 exactIn, permiting the exact amount', async () => {
         const amountInDAI = expandTo18DecimalsBN(100)
-        const minAmountOutWETH = expandTo18DecimalsBN(0.03)
+        const minAmountOutWETH = expandTo18DecimalsBN(0.02)
 
         // first bob approves permit2 to access his DAI
         await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
@@ -200,7 +204,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
 
       it('V3 exactOut, permiting the exact amount', async () => {
-        const maxAmountInDAI = expandTo18DecimalsBN(3000)
+        const maxAmountInDAI = expandTo18DecimalsBN(4000)
         const amountOutWETH = expandTo18DecimalsBN(1)
 
         // first bob approves permit2 to access his DAI
@@ -426,7 +430,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
   describe('Trade on UniswapV3', () => {
     const amountIn: BigNumber = expandTo18DecimalsBN(500)
-    const amountInMax: BigNumber = expandTo18DecimalsBN(2000)
+    const amountInMax: BigNumber = expandTo18DecimalsBN(5000)
     const amountOut: BigNumber = expandTo18DecimalsBN(1)
 
     beforeEach(async () => {
@@ -507,9 +511,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       it('completes a V3 exactOut swap with longer path', async () => {
         // trade DAI in for WETH out
         const tokens = [DAI.address, USDC.address, WETH.address]
-        const path = encodePathExactOutput(tokens)
-        // for these tests Bob gives the router max approval on permit2
-        // await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
+        const path = encodePathExactOutput(tokens, FeeAmount.LOW)
 
         planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [MSG_SENDER, amountOut, amountInMax, path, SOURCE_MSG_SENDER])
         const { commands, inputs } = planner
@@ -1258,13 +1260,5 @@ describe('Uniswap V2 and V3 Tests:', () => {
       receipt,
       gasSpent,
     }
-  }
-
-  function encodePathExactInput(tokens: string[]) {
-    return encodePath(tokens, new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
-  }
-
-  function encodePathExactOutput(tokens: string[]) {
-    return encodePath(tokens.slice().reverse(), new Array(tokens.length - 1).fill(FeeAmount.MEDIUM))
   }
 })

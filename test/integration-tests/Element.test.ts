@@ -1,9 +1,9 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import ELEMENT_ABI from './shared/abis/Element.json'
-import { ERC721, UniversalRouter, Permit2 } from '../../typechain'
+import { ERC721, UniversalRouter } from '../../typechain'
 import { resetFork } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
-import deployUniversalRouter, { deployPermit2 } from './shared/deployUniversalRouter'
+import deployUniversalRouter from './shared/deployUniversalRouter'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { BigNumber } from 'ethers'
@@ -18,7 +18,6 @@ const ELEMENT_721_INTERFACE = new ethers.utils.Interface(ELEMENT_ABI)
 describe('Element Market', () => {
   let alice: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
   let planner: RoutePlanner
   let testNFTContract: ERC721
 
@@ -36,8 +35,7 @@ describe('Element Market', () => {
       params: [ALICE_ADDRESS],
     })
 
-    permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+    router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
     testNFTContract = new ethers.Contract(nftContractAddress, ERC721_ABI).connect(alice) as ERC721
   })
 
