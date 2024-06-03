@@ -1,6 +1,7 @@
 import 'hardhat-typechain'
 import '@nomiclabs/hardhat-ethers'
 import '@nomicfoundation/hardhat-chai-matchers'
+import '@nomicfoundation/hardhat-foundry'
 import dotenv from 'dotenv'
 dotenv.config()
 

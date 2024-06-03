@@ -180,7 +180,6 @@ INFURA_API_KEY='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 
 ```console
 yarn install
-yarn symlink
 yarn compile
 yarn test
 ```
