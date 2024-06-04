@@ -1,4 +1,4 @@
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.24;
 
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
 
