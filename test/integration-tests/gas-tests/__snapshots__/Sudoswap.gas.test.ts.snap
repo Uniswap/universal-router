@@ -3,20 +3,20 @@
 exports[`Sudoswap Gas Tests ERC20 -> NFT gas: purchases NFTs with FRAX ERC20 token already approved 1`] = `
 Object {
   "calldataByteLength": 1380,
-  "gasUsed": 289932,
+  "gasUsed": 289868,
 }
 `;
 
 exports[`Sudoswap Gas Tests ERC20 -> NFT gas: purchases tokens 2402, 2509 of Based Ghoul with FRAX ERC20 token 1`] = `
 Object {
   "calldataByteLength": 1508,
-  "gasUsed": 311561,
+  "gasUsed": 311394,
 }
 `;
 
 exports[`Sudoswap Gas Tests ETH -> NFT gas: purchases token ids 173, 239, 240 of Sudolets 1`] = `
 Object {
   "calldataByteLength": 836,
-  "gasUsed": 201657,
+  "gasUsed": 201585,
 }
 `;
