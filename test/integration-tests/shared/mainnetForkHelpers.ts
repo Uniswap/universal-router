@@ -1,21 +1,6 @@
-import { ERC721, ERC1155, ERC20, ERC20__factory, IPermit2 } from '../../../typechain'
-import { abi as ERC721_ABI } from '../../../artifacts/solmate/src/tokens/ERC721.sol/ERC721.json'
-import { abi as ERC1155_ABI } from '../../../artifacts/solmate/src/tokens/ERC1155.sol/ERC1155.json'
+import { ERC20, ERC20__factory, IPermit2 } from '../../../typechain'
 import { abi as PERMIT2_ABI } from '../../../artifacts/permit2/src/interfaces/IPermit2.sol/IPermit2.json'
-import CRYPTOPUNKS_ABI from './abis/Cryptopunks.json'
-import {
-  ALPHABETTIES_ADDRESS,
-  CAMEO_ADDRESS,
-  COVEN_ADDRESS,
-  ENS_NFT_ADDRESS,
-  MENTAL_WORLDS_ADDRESS,
-  TWERKY_ADDRESS,
-  CRYPTOPUNKS_MARKET_ADDRESS,
-  DECENTRA_DRAGON_ADDRESS,
-  TOWNSTAR_ADDRESS,
-  MILADY_ADDRESS,
-  PERMIT2_ADDRESS,
-} from './constants'
+import { PERMIT2_ADDRESS } from './constants'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
 import { TransactionResponse } from '@ethersproject/abstract-provider'
@@ -111,21 +96,11 @@ export const resetFork = async (block: number = 20010000) => {
       {
         forking: {
           jsonRpcUrl: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-          blockNumber: 20010000,
+          blockNumber: block,
         },
       },
     ],
   })
 }
 
-export const COVEN_721 = new ethers.Contract(COVEN_ADDRESS, ERC721_ABI) as ERC721
-export const DRAGON_721 = new ethers.Contract(DECENTRA_DRAGON_ADDRESS, ERC721_ABI) as ERC721
-export const MILADY_721 = new ethers.Contract(MILADY_ADDRESS, ERC721_ABI) as ERC721
-export const ENS_721 = new ethers.Contract(ENS_NFT_ADDRESS, ERC721_ABI) as ERC721
-export const MENTAL_WORLDS_721 = new ethers.Contract(MENTAL_WORLDS_ADDRESS, ERC721_ABI) as ERC721
-export const ALPHABETTIES_721 = new ethers.Contract(ALPHABETTIES_ADDRESS, ERC721_ABI) as ERC721
-export const TWERKY_1155 = new ethers.Contract(TWERKY_ADDRESS, ERC1155_ABI) as ERC1155
-export const CAMEO_1155 = new ethers.Contract(CAMEO_ADDRESS, ERC1155_ABI) as ERC1155
-export const TOWNSTAR_1155 = new ethers.Contract(TOWNSTAR_ADDRESS, ERC1155_ABI) as ERC1155
-export const CRYPTOPUNKS_MARKET = new ethers.Contract(CRYPTOPUNKS_MARKET_ADDRESS, CRYPTOPUNKS_ABI)
 export const PERMIT2 = new ethers.Contract(PERMIT2_ADDRESS, PERMIT2_ABI) as IPermit2

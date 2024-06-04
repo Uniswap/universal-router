@@ -37,21 +37,6 @@ abstract contract Payments is PaymentsImmutables {
         }
     }
 
-    /// @notice Approves a protocol to spend ERC20s in the router
-    /// @param token The token to approve
-    /// @param spender Which protocol to approve
-    function approveERC20(ERC20 token, Spenders spender) internal {
-        // check spender is one of our approved spenders
-        address spenderAddress;
-        /// @dev use 0 = Opensea Conduit for both Seaport v1.4 and v1.5
-        if (spender == Spenders.OSConduit) spenderAddress = OPENSEA_CONDUIT;
-        else if (spender == Spenders.Sudoswap) spenderAddress = SUDOSWAP;
-        else revert InvalidSpender();
-
-        // set approval
-        token.safeApprove(spenderAddress, type(uint256).max);
-    }
-
     /// @notice Pays a proportion of the contract's ETH or ERC20 to a recipient
     /// @param token The token to pay (can be ETH using Constants.ETH)
     /// @param recipient The address that will receive payment
@@ -84,25 +69,6 @@ abstract contract Payments is PaymentsImmutables {
             if (balance < amountMinimum) revert InsufficientToken();
             if (balance > 0) ERC20(token).safeTransfer(recipient, balance);
         }
-    }
-
-    /// @notice Sweeps an ERC721 to a recipient from the contract
-    /// @param token The ERC721 token to sweep
-    /// @param recipient The address that will receive payment
-    /// @param id The ID of the ERC721 to sweep
-    function sweepERC721(address token, address recipient, uint256 id) internal {
-        ERC721(token).safeTransferFrom(address(this), recipient, id);
-    }
-
-    /// @notice Sweeps all of the contract's ERC1155 to an address
-    /// @param token The ERC1155 token to sweep
-    /// @param recipient The address that will receive payment
-    /// @param id The ID of the ERC1155 to sweep
-    /// @param amountMinimum The minimum desired amount
-    function sweepERC1155(address token, address recipient, uint256 id, uint256 amountMinimum) internal {
-        uint256 balance = ERC1155(token).balanceOf(address(this), id);
-        if (balance < amountMinimum) revert InsufficientToken();
-        ERC1155(token).safeTransferFrom(address(this), recipient, id, balance, bytes(''));
     }
 
     /// @notice Wraps an amount of ETH into WETH

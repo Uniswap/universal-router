@@ -3,15 +3,13 @@ pragma solidity ^0.8.24;
 
 // Command implementations
 import {Dispatcher} from './base/Dispatcher.sol';
-import {RewardsCollector} from './base/RewardsCollector.sol';
 import {RouterParameters} from './base/RouterImmutables.sol';
 import {PaymentsImmutables, PaymentsParameters} from './modules/PaymentsImmutables.sol';
-import {NFTImmutables, NFTParameters} from './modules/NFTImmutables.sol';
 import {UniswapImmutables, UniswapParameters} from './modules/uniswap/UniswapImmutables.sol';
 import {Commands} from './libraries/Commands.sol';
 import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
 
-contract UniversalRouter is IUniversalRouter, Dispatcher, RewardsCollector {
+contract UniversalRouter is IUniversalRouter, Dispatcher {
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
         _;
@@ -21,24 +19,7 @@ contract UniversalRouter is IUniversalRouter, Dispatcher, RewardsCollector {
         UniswapImmutables(
             UniswapParameters(params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash)
         )
-        PaymentsImmutables(PaymentsParameters(params.permit2, params.weth9, params.openseaConduit, params.sudoswap))
-        NFTImmutables(
-            NFTParameters(
-                params.seaportV1_5,
-                params.seaportV1_4,
-                params.nftxZap,
-                params.x2y2,
-                params.foundation,
-                params.sudoswap,
-                params.elementMarket,
-                params.nft20Zap,
-                params.cryptopunks,
-                params.looksRareV2,
-                params.routerRewardsDistributor,
-                params.looksRareRewardsDistributor,
-                params.looksRareToken
-            )
-        )
+        PaymentsImmutables(PaymentsParameters(params.permit2, params.weth9))
     {}
 
     /// @inheritdoc IUniversalRouter
