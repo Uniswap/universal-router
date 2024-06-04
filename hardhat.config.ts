@@ -6,6 +6,21 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 const DEFAULT_COMPILER_SETTINGS = {
+  version: '0.8.26',
+  settings: {
+    viaIR: true,
+    evmVersion: 'cancun',
+    optimizer: {
+      enabled: true,
+      runs: 1_000_000,
+    },
+    metadata: {
+      bytecodeHash: 'none',
+    },
+  },
+}
+
+const PERMIT2_COMPILER_SETTINGS = {
   version: '0.8.17',
   settings: {
     viaIR: true,
@@ -74,7 +89,7 @@ export default {
     deployer: 0,
   },
   solidity: {
-    compilers: [DEFAULT_COMPILER_SETTINGS],
+    compilers: [DEFAULT_COMPILER_SETTINGS, PERMIT2_COMPILER_SETTINGS],
   },
   mocha: {
     timeout: 60000,
