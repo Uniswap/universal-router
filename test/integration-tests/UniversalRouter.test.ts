@@ -117,27 +117,24 @@ describe('UniversalRouter', () => {
     })
 
     it('reverts if a malicious contract tries to reenter', async () => {
-      const reentrantProtocol = await (await ethers.getContractFactory('ReenteringProtocol')).deploy()
-
-      router = (await deployUniversalRouter(reentrantProtocol.address)).connect(alice) as UniversalRouter
-
+      // create malicious calldata to sweep ETH out of the router
       planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])
       let { commands, inputs } = planner
-
       const sweepCalldata = routerInterface.encodeFunctionData('execute(bytes,bytes[])', [commands, inputs])
-      const reentrantCalldata = reentrantProtocol.interface.encodeFunctionData('callAndReenter', [
-        router.address,
-        sweepCalldata,
-      ])
+
+      const reentrantWETH = await (await ethers.getContractFactory('ReenteringWETH')).deploy()
+      router = (await deployUniversalRouter(reentrantWETH.address)).connect(alice) as UniversalRouter
+      await reentrantWETH.setParameters(router.address, sweepCalldata)
 
       planner = new RoutePlanner()
-      planner.addCommand(CommandType.NFTX, [0, reentrantCalldata])
+      const value = expandTo18DecimalsBN(1)
+      planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, value])
       ;({ commands, inputs } = planner)
 
-      const customErrorSelector = findCustomErrorSelector(reentrantProtocol.interface, 'NotAllowedReenter')
-      await expect(router['execute(bytes,bytes[])'](commands, inputs))
-        .to.be.revertedWithCustomError(router, 'ExecutionFailed')
-        .withArgs(0, customErrorSelector)
+      await expect(router['execute(bytes,bytes[])'](commands, inputs, { value: value })).to.be.revertedWithCustomError(
+        reentrantWETH,
+        'NotAllowedReenter'
+      )
     })
   })
 })
