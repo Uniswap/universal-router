@@ -36,20 +36,6 @@ abstract contract DeployUniversalRouter is Script {
         params = RouterParameters({
             permit2: mapUnsupported(params.permit2),
             weth9: mapUnsupported(params.weth9),
-            seaportV1_5: mapUnsupported(params.seaportV1_5),
-            seaportV1_4: mapUnsupported(params.seaportV1_4),
-            openseaConduit: mapUnsupported(params.openseaConduit),
-            nftxZap: mapUnsupported(params.nftxZap),
-            x2y2: mapUnsupported(params.x2y2),
-            foundation: mapUnsupported(params.foundation),
-            sudoswap: mapUnsupported(params.sudoswap),
-            elementMarket: mapUnsupported(params.elementMarket),
-            nft20Zap: mapUnsupported(params.nft20Zap),
-            cryptopunks: mapUnsupported(params.cryptopunks),
-            looksRareV2: mapUnsupported(params.looksRareV2),
-            routerRewardsDistributor: mapUnsupported(params.routerRewardsDistributor),
-            looksRareRewardsDistributor: mapUnsupported(params.looksRareRewardsDistributor),
-            looksRareToken: mapUnsupported(params.looksRareToken),
             v2Factory: mapUnsupported(params.v2Factory),
             v3Factory: mapUnsupported(params.v3Factory),
             pairInitCodeHash: params.pairInitCodeHash,
@@ -66,20 +52,6 @@ abstract contract DeployUniversalRouter is Script {
     function logParams() internal view {
         console2.log('permit2:', params.permit2);
         console2.log('weth9:', params.weth9);
-        console2.log('seaportV1_5:', params.seaportV1_5);
-        console2.log('seaportV1_4:', params.seaportV1_4);
-        console2.log('openseaConduit:', params.openseaConduit);
-        console2.log('nftxZap:', params.nftxZap);
-        console2.log('x2y2:', params.x2y2);
-        console2.log('foundation:', params.foundation);
-        console2.log('sudoswap:', params.sudoswap);
-        console2.log('elementMarket:', params.elementMarket);
-        console2.log('nft20Zap:', params.nft20Zap);
-        console2.log('cryptopunks:', params.cryptopunks);
-        console2.log('looksRareV2:', params.looksRareV2);
-        console2.log('routerRewardsDistributor:', params.routerRewardsDistributor);
-        console2.log('looksRareRewardsDistributor:', params.looksRareRewardsDistributor);
-        console2.log('looksRareToken:', params.looksRareToken);
         console2.log('v2Factory:', params.v2Factory);
         console2.log('v3Factory:', params.v3Factory);
     }

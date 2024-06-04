@@ -60,6 +60,6 @@ contract UniversalRouter is IUniversalRouter, Dispatcher {
         return command & Commands.FLAG_ALLOW_REVERT == 0;
     }
 
-    /// @notice To receive ETH from WETH and NFT protocols
+    /// @notice To receive ETH from WETH protocols
     receive() external payable {}
 }
