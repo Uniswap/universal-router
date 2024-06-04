@@ -27,7 +27,7 @@ import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { IRoute, Trade } from '@uniswap/router-sdk'
 const { ethers } = hre
 
-describe.only('Uniswap UX Tests gas:', () => {
+describe('Uniswap UX Tests gas:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: UniversalRouter
@@ -76,8 +76,8 @@ describe.only('Uniswap UX Tests gas:', () => {
     }
 
     const sqrtRatioX96 = encodeSqrtRatioX96(1, 1)
-    const USDC_WETH = createPool(USDC, WETH, FeeAmount.HIGH)
-    const DAI_WETH = createPool(DAI, WETH, FeeAmount.HIGH)
+    const USDC_WETH = createPool(USDC, WETH, FeeAmount.MEDIUM)
+    const DAI_WETH = createPool(DAI, WETH, FeeAmount.MEDIUM)
     const USDC_USDT = createPool(USDC, USDT, FeeAmount.LOWEST)
     const USDT_DAI = createPool(DAI, USDT, FeeAmount.LOWEST)
 

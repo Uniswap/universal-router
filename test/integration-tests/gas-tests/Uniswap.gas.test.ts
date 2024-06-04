@@ -310,7 +310,7 @@ describe('Uniswap Gas Tests', () => {
         })
       })
 
-      describe.only('ERC20 --> ETH', () => {
+      describe('ERC20 --> ETH', () => {
         it('gas: exactIn, one trade, one hop', async () => {
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
             router.address,
