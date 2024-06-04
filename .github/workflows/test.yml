@@ -18,8 +18,11 @@ jobs:
 
       - uses: actions/setup-node@v1
         with:
-          node-version: 16.x
+          node-version: 18.x
           registry-url: https://registry.npmjs.org
+
+      - name: Install Yarn
+        run: npm install -g yarn
 
       - id: yarn-cache
         run: echo "::set-output name=dir::$(yarn cache dir)"
