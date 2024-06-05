@@ -75,4 +75,6 @@ library Commands {
     // Added by SwapNet protocol
     uint256 constant CURVE_V1 = 0x23;
     uint256 constant MAKER_ORDER = 0x24;
+    uint256 constant WRAP_UNWRAP_FEW_TOKEN = 0x27;
+    // COMMAND_PLACEHOLDER for 0x28 to 0x3f (all unused)
 }

@@ -15,7 +15,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     error V2TooMuchRequested();
     error V2InvalidPath();
 
-    function _v2Swap(address[] calldata path, address recipient, address pair) private {
+    function _v2Swap(address factory, bytes32 initCode, address[] calldata path, address recipient, address pair) private {
         unchecked {
             if (path.length < 2) revert V2InvalidPath();
 
@@ -35,7 +35,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                 address nextPair;
                 (nextPair, token0) = i < penultimatePairIndex
                     ? UniswapV2Library.pairAndToken0For(
-                        UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, output, path[i + 2]
+                        factory, initCode, output, path[i + 2]
                     )
                     : (recipient, address(0));
                 IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
@@ -45,20 +45,23 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     }
 
     /// @notice Performs a Uniswap v2 exact input swap
+    /// @param v2ForkName The name of UniswapV2 fork
     /// @param recipient The recipient of the output tokens
     /// @param amountIn The amount of input tokens for the trade
     /// @param amountOutMinimum The minimum desired amount of output tokens
     /// @param path The path of the trade as an array of token addresses
     /// @param payer The address that will be paying the input
     function v2SwapExactInput(
+        UniswapV2ForkNames v2ForkName,
         address recipient,
         uint256 amountIn,
         uint256 amountOutMinimum,
         address[] calldata path,
         address payer
     ) internal {
+        (address factory, bytes32 initCode) = getV2Immutables(v2ForkName);
         address firstPair =
-            UniswapV2Library.pairFor(UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, path[0], path[1]);
+            UniswapV2Library.pairFor(factory, initCode, path[0], path[1]);
         if (
             amountIn != Constants.ALREADY_PAID // amountIn of 0 to signal that the pair already has the tokens
         ) {
@@ -68,30 +71,33 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         ERC20 tokenOut = ERC20(path[path.length - 1]);
         uint256 balanceBefore = tokenOut.balanceOf(recipient);
 
-        _v2Swap(path, recipient, firstPair);
+        _v2Swap(factory, initCode, path, recipient, firstPair);
 
         uint256 amountOut = tokenOut.balanceOf(recipient) - balanceBefore;
         if (amountOut < amountOutMinimum) revert V2TooLittleReceived();
     }
 
     /// @notice Performs a Uniswap v2 exact output swap
+    /// @param v2ForkName The name of UniswapV2 fork
     /// @param recipient The recipient of the output tokens
     /// @param amountOut The amount of output tokens to receive for the trade
     /// @param amountInMaximum The maximum desired amount of input tokens
     /// @param path The path of the trade as an array of token addresses
     /// @param payer The address that will be paying the input
     function v2SwapExactOutput(
+        UniswapV2ForkNames v2ForkName,
         address recipient,
         uint256 amountOut,
         uint256 amountInMaximum,
         address[] calldata path,
         address payer
     ) internal {
+        (address factory, bytes32 initCode) = getV2Immutables(v2ForkName);
         (uint256 amountIn, address firstPair) =
-            UniswapV2Library.getAmountInMultihop(UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, amountOut, path);
+            UniswapV2Library.getAmountInMultihop(factory, initCode, amountOut, path);
         if (amountIn > amountInMaximum) revert V2TooMuchRequested();
 
         payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
-        _v2Swap(path, recipient, firstPair);
+        _v2Swap(factory, initCode, path, recipient, firstPair);
     }
 }

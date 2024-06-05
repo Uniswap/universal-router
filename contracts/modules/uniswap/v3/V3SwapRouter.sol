@@ -23,6 +23,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
     error V3TooMuchRequested();
     error V3InvalidAmountOut();
     error V3InvalidCaller();
+    error MultiHopsIsNotSupported();
 
     /// @dev Used as the placeholder value for maxAmountIn, because the computed amount in for an exact output swap
     /// can never actually be this value
@@ -56,9 +57,10 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
         } else {
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
-                // this is an intermediate step so the payer is actually this contract
-                path = path.skipToken();
-                _swap(-amountToPay.toInt256(), msg.sender, path, payer, false);
+                // // this is an intermediate step so the payer is actually this contract
+                // path = path.skipToken();
+                // _swap(v3ForkName, -amountToPay.toInt256(), msg.sender, path, payer, false);
+                revert MultiHopsIsNotSupported();
             } else {
                 if (amountToPay > maxAmountInCached) revert V3TooMuchRequested();
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
@@ -68,12 +70,14 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
     }
 
     /// @notice Performs a Uniswap v3 exact input swap
+    /// @param v3ForkName The name of UniswapV3 fork
     /// @param recipient The recipient of the output tokens
     /// @param amountIn The amount of input tokens for the trade
     /// @param amountOutMinimum The minimum desired amount of output tokens
     /// @param path The path of the trade as a bytes string
     /// @param payer The address that will be paying the input
     function v3SwapExactInput(
+        UniswapV3ForkNames v3ForkName,
         address recipient,
         uint256 amountIn,
         uint256 amountOutMinimum,
@@ -92,6 +96,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
 
             // the outputs of prior swaps become the inputs to subsequent ones
             (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = _swap(
+                v3ForkName,
                 amountIn.toInt256(),
                 hasMultiplePools ? address(this) : recipient, // for intermediate swaps, this contract custodies
                 path.getFirstPool(), // only the first pool is needed
@@ -115,12 +120,14 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
     }
 
     /// @notice Performs a Uniswap v3 exact output swap
+    /// @param v3ForkName The name of UniswapV3 fork
     /// @param recipient The recipient of the output tokens
     /// @param amountOut The amount of output tokens to receive for the trade
     /// @param amountInMaximum The maximum desired amount of input tokens
     /// @param path The path of the trade as a bytes string
     /// @param payer The address that will be paying the input
     function v3SwapExactOutput(
+        UniswapV3ForkNames v3ForkName,
         address recipient,
         uint256 amountOut,
         uint256 amountInMaximum,
@@ -129,7 +136,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
     ) internal {
         maxAmountInCached = amountInMaximum;
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
-            _swap(-amountOut.toInt256(), recipient, path, payer, false);
+            _swap(v3ForkName, -amountOut.toInt256(), recipient, path, payer, false);
 
         uint256 amountOutReceived = zeroForOne ? uint256(-amount1Delta) : uint256(-amount0Delta);
 
@@ -140,7 +147,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
 
     /// @dev Performs a single swap for both exactIn and exactOut
     /// For exactIn, `amount` is `amountIn`. For exactOut, `amount` is `-amountOut`
-    function _swap(int256 amount, address recipient, bytes calldata path, address payer, bool isExactIn)
+    function _swap(UniswapV3ForkNames v3ForkName, int256 amount, address recipient, bytes calldata path, address payer, bool isExactIn)
         private
         returns (int256 amount0Delta, int256 amount1Delta, bool zeroForOne)
     {
@@ -148,7 +155,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
 
         zeroForOne = isExactIn ? tokenIn < tokenOut : tokenOut < tokenIn;
 
-        (amount0Delta, amount1Delta) = IUniswapV3Pool(computePoolAddress(tokenIn, tokenOut, fee)).swap(
+        (amount0Delta, amount1Delta) = IUniswapV3Pool(computePoolAddress(v3ForkName, tokenIn, tokenOut, fee)).swap(
             recipient,
             zeroForOne,
             amount,
@@ -157,7 +164,9 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
         );
     }
 
-    function computePoolAddress(address tokenA, address tokenB, uint24 fee) private view returns (address pool) {
+    function computePoolAddress(UniswapV3ForkNames v3ForkName, address tokenA, address tokenB, uint24 fee) private view returns (address pool) {
+        (address factory, bytes32 initCode) = getV3Immutables(v3ForkName);
+
         if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA);
         pool = address(
             uint160(
@@ -165,9 +174,9 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
                     keccak256(
                         abi.encodePacked(
                             hex'ff',
-                            UNISWAP_V3_FACTORY,
+                            factory,
                             keccak256(abi.encode(tokenA, tokenB, fee)),
-                            UNISWAP_V3_POOL_INIT_CODE_HASH
+                            initCode
                         )
                     )
                 )

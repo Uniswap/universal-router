@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 struct RouterParameters {
     address permit2;
     address weth9;
+    address fewFactory;
     address seaportV1_5;
     address seaportV1_4;
     address openseaConduit;
@@ -18,8 +19,16 @@ struct RouterParameters {
     address routerRewardsDistributor;
     address looksRareRewardsDistributor;
     address looksRareToken;
+
     address v2Factory;
     address v3Factory;
     bytes32 pairInitCodeHash;
     bytes32 poolInitCodeHash;
+
+    address v2Thruster3kFactory;
+    address v2Thruster10kFactory;
+    address v3ThrusterFactory;
+    bytes32 v2Thruster3kPairInitCodeHash;
+    bytes32 v2Thruster10kPairInitCodeHash;
+    bytes32 v3ThrusterPoolInitCodeHash;
 }

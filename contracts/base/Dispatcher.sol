@@ -45,37 +45,41 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                 // 0x00 <= command < 0x08
                 if (command < Commands.FIRST_IF_BOUNDARY) {
                     if (command == Commands.V3_SWAP_EXACT_IN) {
-                        // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
+                        // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool, bytes32, address))
                         address recipient;
                         uint256 amountIn;
                         uint256 amountOutMin;
                         bool payerIsUser;
+                        UniswapV3ForkNames v3ForkName;
                         assembly {
                             recipient := calldataload(inputs.offset)
                             amountIn := calldataload(add(inputs.offset, 0x20))
                             amountOutMin := calldataload(add(inputs.offset, 0x40))
                             // 0x60 offset is the path, decoded below
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
+                            v3ForkName := calldataload(add(inputs.offset, 0xa0))
                         }
                         bytes calldata path = inputs.toBytes(3);
                         address payer = payerIsUser ? lockedBy : address(this);
-                        v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
+                        v3SwapExactInput(v3ForkName, map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
-                        // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
+                        // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool, bytes32, address))
                         address recipient;
                         uint256 amountOut;
                         uint256 amountInMax;
                         bool payerIsUser;
+                        UniswapV3ForkNames v3ForkName;
                         assembly {
                             recipient := calldataload(inputs.offset)
                             amountOut := calldataload(add(inputs.offset, 0x20))
                             amountInMax := calldataload(add(inputs.offset, 0x40))
                             // 0x60 offset is the path, decoded below
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
+                            v3ForkName := calldataload(add(inputs.offset, 0xa0))
                         }
                         bytes calldata path = inputs.toBytes(3);
                         address payer = payerIsUser ? lockedBy : address(this);
-                        v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
+                        v3SwapExactOutput(v3ForkName, map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
                         // equivalent: abi.decode(inputs, (address, address, uint160))
                         address token;
@@ -132,37 +136,41 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                     // 0x08 <= command < 0x10
                 } else {
                     if (command == Commands.V2_SWAP_EXACT_IN) {
-                        // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
+                        // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool, bytes32, address))
                         address recipient;
                         uint256 amountIn;
                         uint256 amountOutMin;
                         bool payerIsUser;
+                        UniswapV2ForkNames v2ForkName;
                         assembly {
                             recipient := calldataload(inputs.offset)
                             amountIn := calldataload(add(inputs.offset, 0x20))
                             amountOutMin := calldataload(add(inputs.offset, 0x40))
                             // 0x60 offset is the path, decoded below
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
+                            v2ForkName := calldataload(add(inputs.offset, 0xa0))
                         }
                         address[] calldata path = inputs.toAddressArray(3);
                         address payer = payerIsUser ? lockedBy : address(this);
-                        v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
+                        v2SwapExactInput(v2ForkName, map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
-                        // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
+                        // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool, bytes32, address))
                         address recipient;
                         uint256 amountOut;
                         uint256 amountInMax;
                         bool payerIsUser;
+                        UniswapV2ForkNames v2ForkName;
                         assembly {
                             recipient := calldataload(inputs.offset)
                             amountOut := calldataload(add(inputs.offset, 0x20))
                             amountInMax := calldataload(add(inputs.offset, 0x40))
                             // 0x60 offset is the path, decoded below
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
+                            v2ForkName := calldataload(add(inputs.offset, 0xa0))
                         }
                         address[] calldata path = inputs.toAddressArray(3);
                         address payer = payerIsUser ? lockedBy : address(this);
-                        v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
+                        v2SwapExactOutput(v2ForkName, map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_PERMIT) {
                         // equivalent: abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes))
                         IAllowanceTransfer.PermitSingle calldata permitSingle;
@@ -354,60 +362,77 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                 }
                 Payments.approveERC20(token, spender);
             } else if (command == Commands.CURVE_V1) {
-                    // equivalent: abi.decode(inputs, (address, address, address, uint256, uint256))
-                    address poolAddress;
-                    address inputTokenAddress;
-                    address outputTokenAddress;
-                    uint256 amountIn;
-                    uint256 amountOutMin;
-                    assembly {
-                        poolAddress := calldataload(inputs.offset)
-                        inputTokenAddress := calldataload(add(inputs.offset, 0x20))
-                        outputTokenAddress := calldataload(add(inputs.offset, 0x40))
-                        amountIn := calldataload(add(inputs.offset, 0x60))
-                        amountOutMin := calldataload(add(inputs.offset, 0x80))
-                    }
-                    curveV1Exchange(poolAddress, inputTokenAddress, outputTokenAddress, amountIn, amountOutMin);
+                // equivalent: abi.decode(inputs, (address, address, address, uint256, uint256))
+                address poolAddress;
+                address inputTokenAddress;
+                address outputTokenAddress;
+                uint256 amountIn;
+                uint256 amountOutMin;
+                assembly {
+                    poolAddress := calldataload(inputs.offset)
+                    inputTokenAddress := calldataload(add(inputs.offset, 0x20))
+                    outputTokenAddress := calldataload(add(inputs.offset, 0x40))
+                    amountIn := calldataload(add(inputs.offset, 0x60))
+                    amountOutMin := calldataload(add(inputs.offset, 0x80))
+                }
+                curveV1Exchange(poolAddress, inputTokenAddress, outputTokenAddress, amountIn, amountOutMin);
             } else if (command == Commands.MAKER_ORDER) {
-                    address recipient;
-                    uint256 amountIn;
-                    bool payerIsUser;
-                    address makerToken;
-                    address takerToken;
-                    address maker;
-                    uint256 makerAmount;
-                    uint256 takerAmount;
-                    uint256 nonce;
-                    uint256 deadline;
-                    assembly {
-                        recipient := calldataload(inputs.offset)
-                        amountIn := calldataload(add(inputs.offset, 0x20))
-                        payerIsUser := calldataload(add(inputs.offset, 0x40))
-                        makerToken := calldataload(add(inputs.offset, 0x60))
-                        takerToken := calldataload(add(inputs.offset, 0x80))
-                        maker := calldataload(add(inputs.offset, 0xa0))
-                        makerAmount := calldataload(add(inputs.offset, 0xc0))
-                        takerAmount := calldataload(add(inputs.offset, 0xe0))
-                        nonce := calldataload(add(inputs.offset, 0x100))
-                        deadline := calldataload(add(inputs.offset, 0x120))
-                    }
-                    address payer = payerIsUser ? lockedBy : address(this);
-                    bytes calldata signature = inputs.toBytes(10);
-                    fill(
-                        payer,
-                        map(recipient),
-                        amountIn,
-                        MakerOrder({
-                            makerToken: makerToken,
-                            takerToken: takerToken,
-                            maker: maker,
-                            makerAmount: makerAmount,
-                            takerAmount: takerAmount,
-                            nonce: nonce,
-                            deadline: deadline
-                        }),
-                        signature
-                    );
+                address recipient;
+                uint256 amountIn;
+                bool payerIsUser;
+                address makerToken;
+                address takerToken;
+                address maker;
+                uint256 makerAmount;
+                uint256 takerAmount;
+                uint256 nonce;
+                uint256 deadline;
+                assembly {
+                    recipient := calldataload(inputs.offset)
+                    amountIn := calldataload(add(inputs.offset, 0x20))
+                    payerIsUser := calldataload(add(inputs.offset, 0x40))
+                    makerToken := calldataload(add(inputs.offset, 0x60))
+                    takerToken := calldataload(add(inputs.offset, 0x80))
+                    maker := calldataload(add(inputs.offset, 0xa0))
+                    makerAmount := calldataload(add(inputs.offset, 0xc0))
+                    takerAmount := calldataload(add(inputs.offset, 0xe0))
+                    nonce := calldataload(add(inputs.offset, 0x100))
+                    deadline := calldataload(add(inputs.offset, 0x120))
+                }
+                address payer = payerIsUser ? lockedBy : address(this);
+                bytes calldata signature = inputs.toBytes(10);
+                fill(
+                    payer,
+                    map(recipient),
+                    amountIn,
+                    MakerOrder({
+                        makerToken: makerToken,
+                        takerToken: takerToken,
+                        maker: maker,
+                        makerAmount: makerAmount,
+                        takerAmount: takerAmount,
+                        nonce: nonce,
+                        deadline: deadline
+                    }),
+                    signature
+                );
+            } else if (command == Commands.WRAP_UNWRAP_FEW_TOKEN) {
+                address token;
+                address recipient;
+                uint256 amount;
+                bool isWrap;
+                assembly {
+                    token := calldataload(inputs.offset)
+                    recipient := calldataload(add(inputs.offset, 0x20))
+                    amount := calldataload(add(inputs.offset, 0x40))
+                    isWrap := calldataload(add(inputs.offset, 0x60))
+                }
+                if (isWrap) {
+                    Payments.wrapFewToken(token, map(recipient), amount);
+                }
+                else {
+                    Payments.unwrapFewToken(token, map(recipient), amount);
+                }
             } else {
                 // placeholder area for commands 0x25-0x3f
                 revert InvalidCommandType(command);

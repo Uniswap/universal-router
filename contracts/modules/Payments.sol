@@ -7,6 +7,7 @@ import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
+import {IFewWrappedToken} from '../interfaces/external/IFewWrappedToken.sol';
 
 /// @title Payments contract
 /// @notice Performs various operations around the payment of ETH and tokens
@@ -16,6 +17,7 @@ abstract contract Payments is PaymentsImmutables {
 
     error InsufficientToken();
     error InsufficientETH();
+    error InssuficientFewToken();
     error InvalidBips();
     error InvalidSpender();
 
@@ -134,6 +136,55 @@ abstract contract Payments is PaymentsImmutables {
             WETH9.withdraw(value);
             if (recipient != address(this)) {
                 recipient.safeTransferETH(value);
+            }
+        }
+    }
+
+    /// @notice Wrap an amount of token into few wrapped token
+    /// @param token The address of the token to wrap
+    /// @param recipient The recipient of the few wrapped token
+    /// @param amount The amount of token desired
+    function wrapFewToken(address token, address recipient, uint256 amount) internal {
+        if (amount == Constants.CONTRACT_BALANCE) {
+            amount = ERC20(token).balanceOf(address(this));
+        } else if (amount > ERC20(token).balanceOf(address(this))) {
+            revert InsufficientToken();
+        }
+
+        // create the wrapped token if it doesn't exist yet
+        if (FewFactory.getWrappedToken(token) == address(0)) {
+            FewFactory.createToken(token);
+        }
+        address wrappedToken = FewFactory.getWrappedToken(token);
+
+        if (amount > 0) {
+            if (ERC20(token).allowance(address(this), wrappedToken) < amount) {
+                ERC20(token).approve(wrappedToken, type(uint256).max);
+            }
+
+            amount = IFewWrappedToken(wrappedToken).wrap(amount);
+
+            if (recipient != address(this)) {
+                ERC20(wrappedToken).transfer(recipient, amount);
+            }
+        }
+    }
+
+    /// @notice Unwraps all of the contract's few wrapped token into original token
+    /// @param wrappedToken The address of the few wrapped token to unwrap
+    /// @param recipient The recipient of the original token
+    /// @param amountMinimum The minimum amount of original token desired
+    function unwrapFewToken(address wrappedToken, address recipient, uint256 amountMinimum) internal {
+        uint256 balanceWrappedToken = ERC20(wrappedToken).balanceOf(address(this));
+        if (balanceWrappedToken > 0) {
+            uint256 amountToken = IFewWrappedToken(wrappedToken).unwrap(balanceWrappedToken);
+
+            if (amountToken < amountMinimum) {
+                revert InssuficientFewToken();
+            }
+
+            if (recipient != address(this)) {
+                ERC20(IFewWrappedToken(wrappedToken).token()).transfer(recipient, amountToken);
             }
         }
     }

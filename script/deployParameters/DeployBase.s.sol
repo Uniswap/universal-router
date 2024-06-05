@@ -9,6 +9,7 @@ contract DeployBase is DeployUniversalRouter {
         params = RouterParameters({
             permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
             weth9: 0x4200000000000000000000000000000000000006,
+            fewFactory: UNSUPPORTED_PROTOCOL,
             seaportV1_5: 0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC,
             seaportV1_4: 0x00000000000001ad428e4906aE43D8F9852d0dD6,
             openseaConduit: 0x1E0049783F008A0085193E00003D00cd54003c71,

@@ -19,9 +19,20 @@ contract UniversalRouter is IUniversalRouter, Dispatcher, RewardsCollector {
 
     constructor(RouterParameters memory params)
         UniswapImmutables(
-            UniswapParameters(params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash)
+            UniswapParameters(
+                params.v2Factory,
+                params.v3Factory,
+                params.pairInitCodeHash,
+                params.poolInitCodeHash,
+                params.v2Thruster3kFactory,
+                params.v2Thruster10kFactory,
+                params.v3ThrusterFactory,
+                params.v2Thruster3kPairInitCodeHash,
+                params.v2Thruster10kPairInitCodeHash,
+                params.v3ThrusterPoolInitCodeHash
+            )
         )
-        PaymentsImmutables(PaymentsParameters(params.permit2, params.weth9, params.openseaConduit, params.sudoswap))
+        PaymentsImmutables(PaymentsParameters(params.permit2, params.weth9, params.fewFactory, params.openseaConduit, params.sudoswap))
         NFTImmutables(
             NFTParameters(
                 params.seaportV1_5,

@@ -39,6 +39,7 @@ abstract contract DeployUniversalRouter is Script {
         params = RouterParameters({
             permit2: mapUnsupported(params.permit2),
             weth9: mapUnsupported(params.weth9),
+            fewFactory: mapUnsupported(params.fewFactory),
             seaportV1_5: mapUnsupported(params.seaportV1_5),
             seaportV1_4: mapUnsupported(params.seaportV1_4),
             openseaConduit: mapUnsupported(params.openseaConduit),
@@ -69,6 +70,7 @@ abstract contract DeployUniversalRouter is Script {
     function logParams() internal view {
         console2.log('permit2:', params.permit2);
         console2.log('weth9:', params.weth9);
+        console2.log('fewFactory:', params.fewFactory);
         console2.log('seaportV1_5:', params.seaportV1_5);
         console2.log('seaportV1_4:', params.seaportV1_4);
         console2.log('openseaConduit:', params.openseaConduit);

@@ -2,11 +2,13 @@
 pragma solidity ^0.8.17;
 
 import {IWETH9} from '../interfaces/external/IWETH9.sol';
+import {IFewFactory} from '../interfaces/external/IFewFactory.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 
 struct PaymentsParameters {
     address permit2;
     address weth9;
+    address fewFactory;
     address openseaConduit;
     address sudoswap;
 }
@@ -14,6 +16,9 @@ struct PaymentsParameters {
 contract PaymentsImmutables {
     /// @dev WETH9 address
     IWETH9 internal immutable WETH9;
+
+    /// @dev Few factory address
+    IFewFactory internal immutable FewFactory;
 
     /// @dev Permit2 address
     IAllowanceTransfer internal immutable PERMIT2;
@@ -31,6 +36,7 @@ contract PaymentsImmutables {
 
     constructor(PaymentsParameters memory params) {
         WETH9 = IWETH9(params.weth9);
+        FewFactory = IFewFactory(params.fewFactory);
         PERMIT2 = IAllowanceTransfer(params.permit2);
         OPENSEA_CONDUIT = params.openseaConduit;
         SUDOSWAP = params.sudoswap;
