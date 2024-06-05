@@ -1,6 +1,6 @@
 import { Deployer, Reporter } from '@solarity/hardhat-migrate'
 
-import { UniversalRouter__factory } from '../typechain'
+import { Permit2__factory, UniversalRouter__factory } from '../typechain'
 
 import config from './default.config.json'
 
@@ -35,7 +35,22 @@ export = async (deployer: Deployer) => {
   exportedConfig.weth9 = process.env.WETH9_ADDRESS!
   exportedConfig.v3Factory = process.env.V3_FACTORY_ADDRESS!
 
+  if (!await isContract(deployer, exportedConfig.permit2)) {
+    const permit = await deployer.deploy(Permit2__factory)
+    exportedConfig.permit2 = permit.address
+
+    console.log(`Permit2 deployed at ${permit.address}`)
+  }
+
   const universalRouter = await deployer.deploy(UniversalRouter__factory, [exportedConfig])
 
   Reporter.reportContracts(['UniversalRouter', universalRouter.address])
+}
+
+async function isContract(deployer: Deployer, address: string) {
+  const signer = await deployer.getSigner()
+
+  const code = await signer.provider!.getCode(address)
+
+  return code !== '0x'
 }
