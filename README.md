@@ -10,7 +10,7 @@ In order to run tests, first of all you need to install dependencies:
 yarn install && forge install
 ```
 
-If you do not have `yarn` installed, you can install it by running, please refer to the [yarn documentation](https://classic.yarnpkg.com/en/docs/install):
+If you do not have `yarn` installed, you can install it by running, please refer to the [yarn documentation](https://classic.yarnpkg.com/en/docs/install).
 
 Also, if you do not have `forge` installed, please refer to the [foundry documentation](https://book.getfoundry.sh/getting-started/installation).
 
