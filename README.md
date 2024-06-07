@@ -2,7 +2,61 @@
 
 Please read the [Contributions](https://github.com/Uniswap/universal-router#contributions) section before submitting a Pull Request.
 
-To see the commit of the smart contracts that was used in the latest deployment, see branch `deployed-commit`. To see the addresses of this latest deployment on each network, see folder `deploy-addresses`.
+## Usage of Forked Repository
+
+In order to run tests, first of all you need to install dependencies:
+
+```bash
+yarn install && forge install
+```
+
+If you do not have `yarn` installed, you can install it by running, please refer to the [yarn documentation](https://classic.yarnpkg.com/en/docs/install):
+
+Also, if you do not have `forge` installed, please refer to the [foundry documentation](https://book.getfoundry.sh/getting-started/installation).
+
+The next step is to create a `.env` file in the root directory of the repository. You can use the `.env.example` file as a template.
+
+### Environment Variables for Uniswap EVM Contract Deployment
+
+Here's a general explanation of the environment variables used for deploying Uniswap EVM contracts:
+
+#### Deployer Private Keys
+- `PRIVATE_KEY`: The private key of the account that will be used to deploy the contracts on the Ethereum network.
+  (**Must have sufficient balance to cover transaction fees**; Must be in Hexadecimal format, e.g: `1234567890abcdef...`)
+
+#### RPC Configuration
+- `INFURA_API_KEY`: This variable should hold your Infura project ID. You need to sign up for an Infura account and create a project to obtain the project ID.
+- `FORK_URL`: This variable should hold the URL of the Ethereum network. This is mandatory for testing.
+
+#### Etherscan Configuration
+- `ETHERSCAN_API_KEY`: The Etherscan API key is used to verify deployed contracts on Etherscan.
+
+#### Uniswap Contract Configuration
+- `V3_FACTORY_ADDRESS`: This variable specifies the address of the Uniswap V3 Factory contract, which can be obtained from previous Uniswap V3 core deployment.
+- `WETH9_ADDRESS`: This variable specifies the address of the WETH9 contract (Wrapped Ether). Basically this contract, MUST represent the ERC20 wrapped version of the native currency of the network..
+
+### Testing
+
+Then you can run tests:
+
+```bash
+yarn test && forge test
+```
+
+### Deployment
+
+> For seamless and full Uniswap V3 deployment, please refer to the [Uniswap V3 deployment scripts](https://github.com/micro-capital/deploy-v3).
+> Below is a general guide on how to deploy ONLY the Uniswap Universal Router contracts.
+
+To deploy the Uniswap Universal Router contracts, you can use the deployment scripts in the `scripts` directory.
+
+### Deployment Script
+
+After the `.env` file is created, you can run the deployment script for the network you want to deploy to, for example:
+
+```bash
+yarn hardhat migrate --network sepolia --verify
+```
 
 ## High-Level Overview
 

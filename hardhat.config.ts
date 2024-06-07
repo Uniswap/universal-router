@@ -47,11 +47,11 @@ const config: HardhatUserConfig = {
     hardhat: {
       allowUnlimitedContractSize: false,
       // Comment out for tests
-      // chainId: 1,
-      // forking: {
-      //   url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      //   blockNumber: 15360000,
-      // },
+      chainId: 1,
+      forking: {
+        url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+        blockNumber: 15360000,
+      },
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
