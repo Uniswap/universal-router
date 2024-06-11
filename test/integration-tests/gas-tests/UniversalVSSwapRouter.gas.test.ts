@@ -1,16 +1,21 @@
-import { encodeSqrtRatioX96, FeeAmount, Pool, TickMath } from '@uniswap/v3-sdk'
+import { Pool } from '@uniswap/v3-sdk'
 import { Pair, Route as V2RouteSDK } from '@uniswap/v2-sdk'
 import { Route as V3RouteSDK } from '@uniswap/v3-sdk'
-import { encodePath, expandTo18Decimals } from '../shared/swapRouter02Helpers'
+import {
+  encodePath,
+  expandTo18Decimals,
+  pool_DAI_USDT,
+  pool_DAI_WETH,
+  pool_USDC_USDT,
+  pool_USDC_WETH,
+} from '../shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
 import { SwapRouter } from '@uniswap/router-sdk'
 import {
   executeSwapRouter02Swap,
   resetFork,
-  WETH,
   DAI,
   USDC,
-  USDT,
   approveSwapRouter02,
   PERMIT2,
 } from '../shared/mainnetForkHelpers'
@@ -71,16 +76,6 @@ describe('Uniswap UX Tests gas:', () => {
       3000 USDC —V2—> DAI
     */
 
-    const createPool = (tokenA: Token, tokenB: Token, fee: FeeAmount) => {
-      return new Pool(tokenA, tokenB, fee, sqrtRatioX96, 1_000_000, TickMath.getTickAtSqrtRatio(sqrtRatioX96))
-    }
-
-    const sqrtRatioX96 = encodeSqrtRatioX96(1, 1)
-    const USDC_WETH = createPool(USDC, WETH, FeeAmount.MEDIUM)
-    const DAI_WETH = createPool(DAI, WETH, FeeAmount.MEDIUM)
-    const USDC_USDT = createPool(USDC, USDT, FeeAmount.LOWEST)
-    const USDT_DAI = createPool(DAI, USDT, FeeAmount.LOWEST)
-
     const USDC_DAI_V2 = new Pair(
       CurrencyAmount.fromRawAmount(USDC, 10000000),
       CurrencyAmount.fromRawAmount(DAI, 10000000)
@@ -94,7 +89,7 @@ describe('Uniswap UX Tests gas:', () => {
     SIMPLE_SWAP = new Trade({
       v3Routes: [
         {
-          routev3: new V3RouteSDK([USDC_WETH, DAI_WETH], USDC, DAI),
+          routev3: new V3RouteSDK([pool_USDC_WETH, pool_DAI_WETH], USDC, DAI),
           inputAmount: simpleSwapAmountInUSDC,
           outputAmount: CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(1000)),
         },
@@ -106,12 +101,12 @@ describe('Uniswap UX Tests gas:', () => {
     COMPLEX_SWAP = new Trade({
       v3Routes: [
         {
-          routev3: new V3RouteSDK([USDC_WETH, DAI_WETH], USDC, DAI),
+          routev3: new V3RouteSDK([pool_USDC_WETH, pool_DAI_WETH], USDC, DAI),
           inputAmount: complexSwapAmountInSplit1,
           outputAmount: CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(3000)),
         },
         {
-          routev3: new V3RouteSDK([USDC_USDT, USDT_DAI], USDC, DAI),
+          routev3: new V3RouteSDK([pool_USDC_USDT, pool_DAI_USDT], USDC, DAI),
           inputAmount: complexSwapAmountInSplit2,
           outputAmount: CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(4000)),
         },
@@ -588,12 +583,7 @@ describe('Uniswap UX Tests gas:', () => {
   })
 
   function encodePathExactInput(route: IRoute<Token, Token, Pool | Pair>) {
-    const addresses = routeToAddresses(route)
-    const feeTiers = new Array(addresses.length - 1)
-    for (let i = 0; i < feeTiers.length; i++) {
-      feeTiers[i] = addresses[i] == WETH.address || addresses[i + 1] == WETH.address ? FeeAmount.HIGH : FeeAmount.LOWEST
-    }
-    return encodePath(addresses, feeTiers)
+    return encodePath(routeToAddresses(route))
   }
 
   function routeToAddresses(route: IRoute<Token, Token, Pool | Pair>) {
