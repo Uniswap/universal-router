@@ -19,7 +19,7 @@ describe('UniversalRouter Gas Tests', () => {
   let wethContract: IWETH9
 
   beforeEach(async () => {
-    await resetFork(17179617)
+    await resetFork()
     alice = await ethers.getSigner(ALICE_ADDRESS)
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',

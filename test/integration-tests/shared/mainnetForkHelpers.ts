@@ -89,14 +89,14 @@ export const executeSwapRouter02Swap = async (
   return transactionResponse
 }
 
-export const resetFork = async (block: number = 20010000) => {
+export const resetFork = async () => {
   await hre.network.provider.request({
     method: 'hardhat_reset',
     params: [
       {
         forking: {
           jsonRpcUrl: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-          blockNumber: block,
+          blockNumber: 20010000,
         },
       },
     ],

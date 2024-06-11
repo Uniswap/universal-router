@@ -1,7 +1,6 @@
 import type { Contract } from '@ethersproject/contracts'
 import { TransactionReceipt } from '@ethersproject/abstract-provider'
 import { Pair } from '@uniswap/v2-sdk'
-import { FeeAmount } from '@uniswap/v3-sdk'
 import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
 import { BigNumber, BigNumberish } from 'ethers'
@@ -21,17 +20,13 @@ import {
   SOURCE_MSG_SENDER,
   SOURCE_ROUTER,
 } from './shared/constants'
-import {
-  encodePathExactInput,
-  encodePathExactOutput,
-  expandTo18DecimalsBN,
-  expandTo6DecimalsBN,
-} from './shared/helpers'
+import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 import { getPermitSignature, getPermitBatchSignature, PermitSingle } from './shared/protocolHelpers/permit2'
+import { encodePathExactInput, encodePathExactOutput } from './shared/swapRouter02Helpers'
 const { ethers } = hre
 
 describe('Uniswap V2 and V3 Tests:', () => {
@@ -511,7 +506,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       it('completes a V3 exactOut swap with longer path', async () => {
         // trade DAI in for WETH out
         const tokens = [DAI.address, USDC.address, WETH.address]
-        const path = encodePathExactOutput(tokens, FeeAmount.LOW)
+        const path = encodePathExactOutput(tokens)
 
         planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [MSG_SENDER, amountOut, amountInMax, path, SOURCE_MSG_SENDER])
         const { commands, inputs } = planner

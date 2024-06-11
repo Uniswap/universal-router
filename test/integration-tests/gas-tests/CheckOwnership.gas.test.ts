@@ -15,7 +15,7 @@ describe('Check Ownership Gas', () => {
   let planner: RoutePlanner
 
   beforeEach(async () => {
-    await resetFork(16784175)
+    await resetFork()
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],

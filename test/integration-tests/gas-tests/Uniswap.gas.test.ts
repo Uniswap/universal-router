@@ -1,7 +1,7 @@
 import type { Contract } from '@ethersproject/contracts'
 import { CurrencyAmount, Ether, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import { Route as V2RouteSDK, Pair } from '@uniswap/v2-sdk'
-import { Route as V3RouteSDK, FeeAmount } from '@uniswap/v3-sdk'
+import { Route as V3RouteSDK } from '@uniswap/v3-sdk'
 import { SwapRouter, Trade } from '@uniswap/router-sdk'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import deployUniversalRouter from '../shared/deployUniversalRouter'
@@ -14,6 +14,8 @@ import {
   pool_USDC_WETH,
   pool_USDC_USDT,
   pool_WETH_USDT,
+  encodePathExactOutput,
+  encodePathExactInput,
 } from '../shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
 import { IPermit2, UniversalRouter } from '../../../typechain'
@@ -32,12 +34,7 @@ import {
   SOURCE_MSG_SENDER,
   SOURCE_ROUTER,
 } from '../shared/constants'
-import {
-  encodePathExactInput,
-  encodePathExactOutput,
-  expandTo18DecimalsBN,
-  expandTo6DecimalsBN,
-} from '../shared/helpers'
+import { expandTo18DecimalsBN, expandTo6DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { RoutePlanner, CommandType } from '../shared/planner'
@@ -584,7 +581,7 @@ describe('Uniswap Gas Tests', () => {
         it('gas: exactOut, one trade, two hops', async () => {
           // trade DAI in for WETH out
           const tokens = [DAI.address, USDC.address, WETH.address]
-          const path = encodePathExactOutput(tokens, FeeAmount.LOW)
+          const path = encodePathExactOutput(tokens)
 
           planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
             MSG_SENDER,
@@ -601,7 +598,7 @@ describe('Uniswap Gas Tests', () => {
         it('gas: exactOut, one trade, three hops', async () => {
           // trade DAI in for WETH out
           const tokens = [DAI.address, USDC.address, USDT.address, WETH.address]
-          const path = encodePathExactOutput(tokens, FeeAmount.LOW)
+          const path = encodePathExactOutput(tokens)
 
           planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
             MSG_SENDER,
