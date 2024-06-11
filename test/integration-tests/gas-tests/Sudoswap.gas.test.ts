@@ -22,7 +22,7 @@ describe('Sudoswap Gas Tests', () => {
   let planner: RoutePlanner
 
   beforeEach(async () => {
-    await resetFork(16643381) // use recent block
+    await resetFork()
     planner = new RoutePlanner()
     bob = (await ethers.getSigners())[1]
     permit2 = PERMIT2.connect(bob) as IPermit2

@@ -27,7 +27,7 @@ describe('Foundation', () => {
   // which costs 0.01 ETH
   describe('Buy a mental worlds NFT from Foundation', () => {
     beforeEach(async () => {
-      await resetFork(15725945)
+      await resetFork()
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],

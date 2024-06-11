@@ -217,7 +217,7 @@ describe('UniversalRouter', () => {
       let value: BigNumber
 
       beforeEach(async () => {
-        await resetFork(17179617)
+        await resetFork()
         alice = await ethers.getSigner(ALICE_ADDRESS)
         await hre.network.provider.request({
           method: 'hardhat_impersonateAccount',
@@ -300,7 +300,7 @@ describe('UniversalRouter', () => {
       let miladyContract: ERC721
 
       beforeEach(async () => {
-        await resetFork(17029001) // 17029002 - 1
+        await resetFork()
         alice = await ethers.getSigner(ALICE_ADDRESS)
         await hre.network.provider.request({
           method: 'hardhat_impersonateAccount',

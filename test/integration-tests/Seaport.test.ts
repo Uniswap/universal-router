@@ -27,7 +27,7 @@ describe('Seaport v1.5', () => {
 
   describe('ETH -> NFT', () => {
     beforeEach(async () => {
-      await resetFork(17179617)
+      await resetFork()
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
@@ -150,7 +150,7 @@ describe('Seaport v1.4', () => {
 
   describe('ERC20 -> NFT', () => {
     beforeEach(async () => {
-      await resetFork(16784348 - 1) // 1 block before the order was created
+      await resetFork()
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
@@ -214,7 +214,7 @@ describe('Seaport v1.4', () => {
 
   describe('ETH -> NFT', () => {
     beforeEach(async () => {
-      await resetFork(16784176 - 1) // 1 block before the order was created
+      await resetFork()
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],

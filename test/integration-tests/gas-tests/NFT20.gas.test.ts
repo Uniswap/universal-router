@@ -21,7 +21,7 @@ describe('NFT20', () => {
     planner = new RoutePlanner()
     alice = await ethers.getSigner(ALICE_ADDRESS)
 
-    await resetFork(15770228)
+    await resetFork()
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],

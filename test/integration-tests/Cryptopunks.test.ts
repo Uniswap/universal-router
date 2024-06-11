@@ -20,7 +20,7 @@ describe('Cryptopunks', () => {
     planner = new RoutePlanner()
     alice = await ethers.getSigner(ALICE_ADDRESS)
 
-    await resetFork(15848050)
+    await resetFork()
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],

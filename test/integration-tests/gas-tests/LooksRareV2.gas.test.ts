@@ -24,7 +24,7 @@ describe('LooksRareV2 Gas Test', () => {
 
   describe('Single Buy', () => {
     beforeEach(async () => {
-      await resetFork(17030829)
+      await resetFork()
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
@@ -56,7 +56,7 @@ describe('LooksRareV2 Gas Test', () => {
 
   describe('Bulk Buy', () => {
     beforeEach(async () => {
-      await resetFork(17037139)
+      await resetFork()
 
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',

@@ -24,7 +24,7 @@ describe('Element Market gas tests', () => {
 
   beforeEach(async () => {
     // txn is at block 16627214
-    await resetFork(16627214 - 1)
+    await resetFork()
     planner = new RoutePlanner()
     alice = await ethers.getSigner(ALICE_ADDRESS)
     await hre.network.provider.request({

@@ -21,7 +21,7 @@ describe('Seaport v1.5 Gas Tests', () => {
   describe('ETH -> NFT', () => {
     let alice: SignerWithAddress
     beforeEach(async () => {
-      await resetFork(17179617)
+      await resetFork()
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],

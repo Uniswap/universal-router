@@ -104,7 +104,7 @@ export const executeSwapRouter02Swap = async (
   return transactionResponse
 }
 
-export const resetFork = async (block: number = 20010000) => {
+export const resetFork = async () => {
   await hre.network.provider.request({
     method: 'hardhat_reset',
     params: [

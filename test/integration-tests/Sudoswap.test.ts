@@ -25,7 +25,7 @@ describe('Sudoswap', () => {
   let planner: RoutePlanner
 
   beforeEach(async () => {
-    await resetFork(16643381) // use recent block
+    await resetFork() // use recent block
     planner = new RoutePlanner()
     bob = (await ethers.getSigners())[1]
     router = (await deployUniversalRouter()).connect(bob) as UniversalRouter

@@ -22,7 +22,7 @@ describe('NFTX', () => {
   let planner: RoutePlanner
 
   beforeEach(async () => {
-    await resetFork(17029001) // 17029002 - 1
+    await resetFork()
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],

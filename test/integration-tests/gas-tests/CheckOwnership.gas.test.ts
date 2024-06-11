@@ -21,7 +21,7 @@ describe('Check Ownership Gas', () => {
   let planner: RoutePlanner
 
   beforeEach(async () => {
-    await resetFork(16784175)
+    await resetFork()
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
@@ -68,7 +68,7 @@ describe('Check Ownership Gas', () => {
   })
 
   it('gas: checks ownership after a seaport trade, two NFTs', async () => {
-    await resetFork(17179617)
+    await resetFork()
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],

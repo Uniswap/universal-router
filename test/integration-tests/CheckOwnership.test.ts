@@ -27,7 +27,7 @@ describe('Check Ownership', () => {
 
   describe('checks ownership ERC721', () => {
     beforeEach(async () => {
-      await resetFork(16784175)
+      await resetFork()
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
@@ -105,7 +105,7 @@ describe('Check Ownership', () => {
     let value: BigNumber
 
     beforeEach(async () => {
-      await resetFork(17179617)
+      await resetFork()
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],

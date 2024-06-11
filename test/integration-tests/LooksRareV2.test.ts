@@ -25,7 +25,7 @@ describe('LooksRareV2', () => {
 
   describe('Single Buy', () => {
     beforeEach(async () => {
-      await resetFork(17030829)
+      await resetFork()
       dragonNFT = DRAGON_721.connect(alice)
 
       await hre.network.provider.request({
@@ -62,7 +62,7 @@ describe('LooksRareV2', () => {
 
   describe('Bulk Buy', () => {
     beforeEach(async () => {
-      await resetFork(17037139)
+      await resetFork()
       dragonNFT = DRAGON_721.connect(alice)
 
       await hre.network.provider.request({

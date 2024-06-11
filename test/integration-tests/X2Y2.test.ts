@@ -69,7 +69,7 @@ describe('X2Y2', () => {
     let erc1155Order: X2Y2Order
 
     beforeEach(async () => {
-      await resetFork(15650000)
+      await resetFork()
       await hre.network.provider.request({
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
