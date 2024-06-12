@@ -14,6 +14,9 @@ interface IUniversalRouter {
     /// @notice Thrown when attempting to execute commands and an incorrect number of inputs are provided
     error LengthMismatch();
 
+    // @notice Thrown when an address that isnt WETH tries to send ETH to the router without calldata
+    error InvalidEthSender();
+
     /// @notice Executes encoded commands along with provided inputs. Reverts if deadline has expired.
     /// @param commands A set of concatenated commands, each 1 byte in length
     /// @param inputs An array of byte strings containing abi encoded inputs for each command
