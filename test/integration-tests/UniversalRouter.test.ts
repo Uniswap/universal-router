@@ -147,6 +147,7 @@ describe('UniversalRouter', () => {
       planner = new RoutePlanner()
     })
 
+    // TODO need to rewrite these tests for non-NFT commands
     it('reverts if no commands are allowed to revert')
     it('does not revert if failed command allowed to fail')
   })
