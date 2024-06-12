@@ -12,9 +12,6 @@ import {Constants} from '../../contracts/libraries/Constants.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
 
-import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
-import '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';
-
 abstract contract UniswapV2Test is Test {
     address constant RECIPIENT = address(10);
     uint256 constant AMOUNT = 1 ether;
@@ -33,20 +30,6 @@ abstract contract UniswapV2Test is Test {
         RouterParameters memory params = RouterParameters({
             permit2: address(PERMIT2),
             weth9: address(WETH9),
-            seaportV1_5: address(0),
-            seaportV1_4: address(0),
-            openseaConduit: address(0),
-            nftxZap: address(0),
-            x2y2: address(0),
-            foundation: address(0),
-            sudoswap: address(0),
-            elementMarket: address(0),
-            nft20Zap: address(0),
-            cryptopunks: address(0),
-            looksRareV2: address(0),
-            routerRewardsDistributor: address(0),
-            looksRareRewardsDistributor: address(0),
-            looksRareToken: address(0),
             v2Factory: address(FACTORY),
             v3Factory: address(0),
             pairInitCodeHash: bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f),

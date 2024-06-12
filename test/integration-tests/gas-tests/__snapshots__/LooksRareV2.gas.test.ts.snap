@@ -1,8 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`LooksRareV2 Gas Test Bulk Buy Buys 2 721s 1`] = `
-Object {
-  "calldataByteLength": 2884,
-  "gasUsed": 117221,
-}
-`;

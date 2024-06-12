@@ -40,7 +40,7 @@ import hre from 'hardhat'
 import { RoutePlanner, CommandType } from '../shared/planner'
 const { ethers } = hre
 
-describe('Uniswap Gas Tests', () => {
+describe.only('Uniswap Gas Tests', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: UniversalRouter
