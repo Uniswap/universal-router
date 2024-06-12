@@ -20,21 +20,6 @@ const DEFAULT_COMPILER_SETTINGS = {
   },
 }
 
-const PERMIT2_COMPILER_SETTINGS = {
-  version: '0.8.17',
-  settings: {
-    viaIR: true,
-    evmVersion: 'istanbul',
-    optimizer: {
-      enabled: true,
-      runs: 1_000_000,
-    },
-    metadata: {
-      bytecodeHash: 'none',
-    },
-  },
-}
-
 export default {
   paths: {
     sources: './contracts',
@@ -45,7 +30,7 @@ export default {
       chainId: 1,
       forking: {
         url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-        blockNumber: 15360000,
+        blockNumber: 20010000,
       },
     },
     mainnet: {
@@ -89,7 +74,7 @@ export default {
     deployer: 0,
   },
   solidity: {
-    compilers: [DEFAULT_COMPILER_SETTINGS, PERMIT2_COMPILER_SETTINGS],
+    compilers: [DEFAULT_COMPILER_SETTINGS],
   },
   mocha: {
     timeout: 60000,
