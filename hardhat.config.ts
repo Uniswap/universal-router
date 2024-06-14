@@ -84,10 +84,10 @@ const config: HardhatUserConfig = {
     // Obtain one at https://etherscan.io/
     // Or at https://polygonscan.com/
     apiKey: {
-      sepolia: `${process.env.ETHERSCAN_KEY}`,
-      mainnet: `${process.env.ETHERSCAN_KEY}`,
-      polygonAmoy: `${process.env.POLYGONSCAN_KEY}`,
-      polygon: `${process.env.POLYGONSCAN_KEY}`,
+      sepolia: `${process.env.ETHERSCAN_API_KEY}`,
+      mainnet: `${process.env.ETHERSCAN_API_KEY}`,
+      polygonAmoy: `${process.env.POLYGONSCAN_API_KEY}`,
+      polygon: `${process.env.POLYGONSCAN_API_KEY}`,
     },
   },
   namedAccounts: {
