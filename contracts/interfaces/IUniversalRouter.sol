@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.24;
 
-import {IERC721Receiver} from '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
-import {IERC1155Receiver} from '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';
-import {IRewardsCollector} from './IRewardsCollector.sol';
-
-interface IUniversalRouter is IRewardsCollector, IERC721Receiver, IERC1155Receiver {
+interface IUniversalRouter {
     /// @notice Thrown when a required command has failed
     error ExecutionFailed(uint256 commandIndex, bytes message);
 
@@ -17,6 +13,9 @@ interface IUniversalRouter is IRewardsCollector, IERC721Receiver, IERC1155Receiv
 
     /// @notice Thrown when attempting to execute commands and an incorrect number of inputs are provided
     error LengthMismatch();
+
+    // @notice Thrown when an address that isnt WETH tries to send ETH to the router without calldata
+    error InvalidEthSender();
 
     /// @notice Executes encoded commands along with provided inputs. Reverts if deadline has expired.
     /// @param commands A set of concatenated commands, each 1 byte in length

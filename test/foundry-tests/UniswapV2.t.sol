@@ -2,7 +2,7 @@
 pragma solidity ^0.8.15;
 
 import 'forge-std/Test.sol';
-import {Permit2} from 'permit2/src/Permit2.sol';
+import {IPermit2} from 'permit2/src/interfaces/IPermit2.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IUniswapV2Factory} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
@@ -12,41 +12,24 @@ import {Constants} from '../../contracts/libraries/Constants.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
 
-import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
-import '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';
-
 abstract contract UniswapV2Test is Test {
     address constant RECIPIENT = address(10);
     uint256 constant AMOUNT = 1 ether;
     uint256 constant BALANCE = 100000 ether;
     IUniswapV2Factory constant FACTORY = IUniswapV2Factory(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f);
     ERC20 constant WETH9 = ERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-    Permit2 constant PERMIT2 = Permit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
+    IPermit2 constant PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
     address constant FROM = address(1234);
 
     UniversalRouter router;
 
     function setUp() public virtual {
-        vm.createSelectFork(vm.envString('FORK_URL'), 16000000);
+        vm.createSelectFork(vm.envString('FORK_URL'), 20010000);
         setUpTokens();
 
         RouterParameters memory params = RouterParameters({
             permit2: address(PERMIT2),
             weth9: address(WETH9),
-            seaportV1_5: address(0),
-            seaportV1_4: address(0),
-            openseaConduit: address(0),
-            nftxZap: address(0),
-            x2y2: address(0),
-            foundation: address(0),
-            sudoswap: address(0),
-            elementMarket: address(0),
-            nft20Zap: address(0),
-            cryptopunks: address(0),
-            looksRareV2: address(0),
-            routerRewardsDistributor: address(0),
-            looksRareRewardsDistributor: address(0),
-            looksRareToken: address(0),
             v2Factory: address(FACTORY),
             v3Factory: address(0),
             pairInitCodeHash: bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f),

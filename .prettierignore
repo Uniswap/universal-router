@@ -7,3 +7,4 @@ out
 openzeppelin-contracts
 permit2
 solmate
+cache_hardhat

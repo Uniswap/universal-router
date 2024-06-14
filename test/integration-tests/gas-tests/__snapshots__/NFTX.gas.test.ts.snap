@@ -1,8 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`NFTX Gas Tests gas: buyAndRedeem w/ specific selection 1`] = `
-Object {
-  "calldataByteLength": 964,
-  "gasUsed": 574873,
-}
-`;

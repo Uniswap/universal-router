@@ -3,9 +3,16 @@ src = 'contracts'
 out = 'out'
 libs = ['lib']
 via_ir = true
-solc_version = '0.8.17'
+solc_version = '0.8.26'
+evm_version = "cancun"
+
 optimizer_runs = 1_000_000
 fs_permissions = [{ access = "read", path = "./script/deployParameters/"}]
+
+remappings = [
+    "solmate/=lib/solmate/",
+    "permit2/=lib/permit2/",
+]
 
 [fmt]
 line_length = 120

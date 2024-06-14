@@ -1,25 +1,31 @@
-import { encodeSqrtRatioX96, FeeAmount, Pool, TickMath } from '@uniswap/v3-sdk'
+import { Pool } from '@uniswap/v3-sdk'
 import { Pair, Route as V2RouteSDK } from '@uniswap/v2-sdk'
 import { Route as V3RouteSDK } from '@uniswap/v3-sdk'
-import { encodePath, expandTo18Decimals } from '../shared/swapRouter02Helpers'
+import {
+  encodePath,
+  expandTo18Decimals,
+  pool_DAI_USDT,
+  pool_DAI_WETH,
+  pool_USDC_USDT,
+  pool_USDC_WETH,
+} from '../shared/swapRouter02Helpers'
 import { BigNumber } from 'ethers'
 import { SwapRouter } from '@uniswap/router-sdk'
 import {
   executeSwapRouter02Swap,
   resetFork,
-  WETH,
   DAI,
   USDC,
-  USDT,
   approveSwapRouter02,
+  PERMIT2,
 } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, MAX_UINT, MAX_UINT160, SOURCE_MSG_SENDER } from '../shared/constants'
 import { expandTo6DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
+import deployUniversalRouter from '../shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from '../shared/planner'
 import hre from 'hardhat'
-import { UniversalRouter, Permit2, ERC20__factory, ERC20 } from '../../../typechain'
+import { UniversalRouter, ERC20__factory, ERC20, IPermit2 } from '../../../typechain'
 import { getPermitSignature, PermitSingle } from '../shared/protocolHelpers/permit2'
 import { CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
@@ -31,7 +37,7 @@ describe('Uniswap UX Tests gas:', () => {
   let bob: SignerWithAddress
   let router: UniversalRouter
 
-  let permit2: Permit2
+  let permit2: IPermit2
   let usdcContract: ERC20
   let planner: RoutePlanner
 
@@ -52,8 +58,8 @@ describe('Uniswap UX Tests gas:', () => {
 
     usdcContract = ERC20__factory.connect(USDC.address, alice)
 
-    permit2 = (await deployPermit2()).connect(bob) as Permit2
-    router = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
+    permit2 = PERMIT2.connect(alice) as IPermit2
+    router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
 
     planner = new RoutePlanner()
 
@@ -70,16 +76,6 @@ describe('Uniswap UX Tests gas:', () => {
       3000 USDC —V2—> DAI
     */
 
-    const createPool = (tokenA: Token, tokenB: Token, fee: FeeAmount) => {
-      return new Pool(tokenA, tokenB, fee, sqrtRatioX96, 1_000_000, TickMath.getTickAtSqrtRatio(sqrtRatioX96))
-    }
-
-    const sqrtRatioX96 = encodeSqrtRatioX96(1, 1)
-    const USDC_WETH = createPool(USDC, WETH, FeeAmount.HIGH)
-    const DAI_WETH = createPool(DAI, WETH, FeeAmount.HIGH)
-    const USDC_USDT = createPool(USDC, USDT, FeeAmount.LOWEST)
-    const USDT_DAI = createPool(DAI, USDT, FeeAmount.LOWEST)
-
     const USDC_DAI_V2 = new Pair(
       CurrencyAmount.fromRawAmount(USDC, 10000000),
       CurrencyAmount.fromRawAmount(DAI, 10000000)
@@ -93,7 +89,7 @@ describe('Uniswap UX Tests gas:', () => {
     SIMPLE_SWAP = new Trade({
       v3Routes: [
         {
-          routev3: new V3RouteSDK([USDC_WETH, DAI_WETH], USDC, DAI),
+          routev3: new V3RouteSDK([pool_USDC_WETH, pool_DAI_WETH], USDC, DAI),
           inputAmount: simpleSwapAmountInUSDC,
           outputAmount: CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(1000)),
         },
@@ -105,12 +101,12 @@ describe('Uniswap UX Tests gas:', () => {
     COMPLEX_SWAP = new Trade({
       v3Routes: [
         {
-          routev3: new V3RouteSDK([USDC_WETH, DAI_WETH], USDC, DAI),
+          routev3: new V3RouteSDK([pool_USDC_WETH, pool_DAI_WETH], USDC, DAI),
           inputAmount: complexSwapAmountInSplit1,
           outputAmount: CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(3000)),
         },
         {
-          routev3: new V3RouteSDK([USDC_USDT, USDT_DAI], USDC, DAI),
+          routev3: new V3RouteSDK([pool_USDC_USDT, pool_DAI_USDT], USDC, DAI),
           inputAmount: complexSwapAmountInSplit2,
           outputAmount: CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(4000)),
         },
@@ -191,7 +187,7 @@ describe('Uniswap UX Tests gas:', () => {
   describe('Approvals', async () => {
     it('Cost for infinite approval of permit2/swaprouter02 contract', async () => {
       // Bob max-approves the permit2 contract to access his DAI and WETH
-      await snapshotGasCost(await usdcContract.approve(permit2.address, MAX_UINT))
+      await snapshotGasCost(await usdcContract.approve(PERMIT2.address, MAX_UINT))
     })
   })
 
@@ -202,7 +198,8 @@ describe('Uniswap UX Tests gas:', () => {
     beforeEach(async () => {
       // bob has already given his infinite approval of USDC to permit2
       const permitApprovalTx = await usdcContract.connect(bob).approve(permit2.address, MAX_UINT)
-      approvePermit2Gas = (await permitApprovalTx.wait()).gasUsed
+      const receipt = await permitApprovalTx.wait()
+      approvePermit2Gas = receipt.gasUsed
 
       const swapRouter02ApprovalTx = (await approveSwapRouter02(bob, USDC))!
       approveSwapRouter02Gas = swapRouter02ApprovalTx.gasUsed
@@ -469,7 +466,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch SwapRouter03
-        const router2 = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
+        const router2 = (await deployUniversalRouter()).connect(bob) as UniversalRouter
         const router2ApprovalTx = (await approveSwapRouter02(bob, USDC, router2.address))!
         totalGas = totalGas.add(router2ApprovalTx.gasUsed)
 
@@ -480,7 +477,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch SwapRouter04
-        const router3 = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
+        const router3 = (await deployUniversalRouter()).connect(bob) as UniversalRouter
         const router3ApprovalTx = (await approveSwapRouter02(bob, USDC, router3.address))!
         totalGas = totalGas.add(router3ApprovalTx.gasUsed)
 
@@ -509,7 +506,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch Universal Router v2
-        const router2 = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
+        const router2 = (await deployUniversalRouter()).connect(bob) as UniversalRouter
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
@@ -523,7 +520,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch Universal Router v3
-        const router3 = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
+        const router3 = (await deployUniversalRouter()).connect(bob) as UniversalRouter
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
@@ -555,7 +552,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch Universal Router v2
-        const router2 = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
+        const router2 = (await deployUniversalRouter()).connect(bob) as UniversalRouter
         MAX_PERMIT.spender = router2.address
         let calldata2 = await getPermitSignature(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata2])
@@ -568,7 +565,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch Universal Router v3
-        const router3 = (await deployUniversalRouter(permit2)).connect(bob) as UniversalRouter
+        const router3 = (await deployUniversalRouter()).connect(bob) as UniversalRouter
         MAX_PERMIT.spender = router3.address
         let calldata3 = await getPermitSignature(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata3])
@@ -586,12 +583,7 @@ describe('Uniswap UX Tests gas:', () => {
   })
 
   function encodePathExactInput(route: IRoute<Token, Token, Pool | Pair>) {
-    const addresses = routeToAddresses(route)
-    const feeTiers = new Array(addresses.length - 1)
-    for (let i = 0; i < feeTiers.length; i++) {
-      feeTiers[i] = addresses[i] == WETH.address || addresses[i + 1] == WETH.address ? FeeAmount.HIGH : FeeAmount.LOWEST
-    }
-    return encodePath(addresses, feeTiers)
+    return encodePath(routeToAddresses(route))
   }
 
   function routeToAddresses(route: IRoute<Token, Token, Pool | Pair>) {
