@@ -89,6 +89,16 @@ const config: HardhatUserConfig = {
       polygonAmoy: `${process.env.POLYGONSCAN_API_KEY}`,
       polygon: `${process.env.POLYGONSCAN_API_KEY}`,
     },
+    customChains: [
+      {
+        network: "polygonAmoy",
+        chainId: 80002,
+        urls: {
+          apiURL: "https://api-amoy.polygonscan.com/api",
+          browserURL: "https://amoy.polygonscan.com",
+        },
+      },
+    ]
   },
   namedAccounts: {
     deployer: 0,
