@@ -6,7 +6,7 @@ import {UniswapImmutables} from '../UniswapImmutables.sol';
 
 abstract contract Migrator is UniswapImmutables {
 
-    function erc721Permit(uint256 tokenId, address spender, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external override {
+    function erc721Permit(address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s) internal {
         INonfungiblePositionManager(UNISWAP_V3_NFT_POSITION_MANAGER).permit(spender, tokenId, deadline, v, r, s);
     }
 }

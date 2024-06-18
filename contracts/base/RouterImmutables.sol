@@ -8,4 +8,5 @@ struct RouterParameters {
     address v3Factory;
     bytes32 pairInitCodeHash;
     bytes32 poolInitCodeHash;
+    address v3NFTPositionManager;
 }

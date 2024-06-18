@@ -11,10 +11,11 @@ import {Commands} from '../libraries/Commands.sol';
 import {LockAndMsgSender} from './LockAndMsgSender.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
+import {Migrator} from '../modules/uniswap/migrator/Migrator.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
-abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks, LockAndMsgSender {
+abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, Callbacks, LockAndMsgSender {
     using BytesLib for bytes;
 
     error InvalidCommandType(uint256 commandType);
@@ -217,11 +218,11 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Callbacks,
                         tokenId := calldataload(add(inputs.offset, 0x20))
                         deadline := calldataload(add(inputs.offset, 0x40))
                         v := calldataload(add(inputs.offset, 0x60))
-                        r := calldataload(add(inputs.offset, 0x80))
-                        s := calldataload(add(inputs.offset, 0xa0))
+                        r := calldataload(add(inputs.offset, 0x68))
+                        s := calldataload(add(inputs.offset, 0x88))
                     }
 
-                    migrator.erc721Permit(spender, tokenId, deadline, v, r, s);
+                    Migrator.erc721Permit(spender, tokenId, deadline, v, r, s);
 
                 } else if (command == Commands.V3_REMOVE_LIQUIDITY) {
 
