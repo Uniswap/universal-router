@@ -222,10 +222,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                         s := calldataload(add(inputs.offset, 0x88))
                     }
 
-                    Migrator.erc721Permit(spender, tokenId, deadline, v, r, s);
-
-                } else if (command == Commands.V3_REMOVE_LIQUIDITY) {
-
+                    erc721Permit(spender, tokenId, deadline, v, r, s);
                 }
             }
         } else {
