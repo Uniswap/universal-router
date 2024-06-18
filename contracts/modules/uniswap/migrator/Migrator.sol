@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
-import {UniswapImmutables} from './UniswapImmutables.sol';
+import {UniswapImmutables} from '../UniswapImmutables.sol';
 
 abstract contract Migrator is UniswapImmutables {
 

@@ -1,6 +1,6 @@
 solmate/=lib/solmate/
 permit2/=lib/permit2/
 forge-std/=lib/forge-std/src/
-@openzeppelin/=node_modules/@openzeppelin
+@openzeppelin/contracts/token/ERC721/=lib/ERC721
+@openzeppelin/contracts-v4=node_modules/@openzeppelin/contracts-v4
 @uniswap=node_modules/@uniswap
-contracts/modules/uniswap/migrator/:@openzeppelin/contracts/=@openzeppelin/contracts-0.7/
