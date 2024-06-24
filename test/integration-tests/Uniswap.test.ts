@@ -4,9 +4,9 @@ import { Pair } from '@uniswap/v2-sdk'
 import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
 import { BigNumber, BigNumberish } from 'ethers'
-import { IPermit2, UniversalRouter } from '../../typechain'
+import { IPermit2, UniversalRouter, INonfungiblePositionManager } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { resetFork, WETH, DAI, USDC, USDT, PERMIT2 } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, USDC, USDT, PERMIT2, V3_NFT_POSITION_MANAGER } from './shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,
   ALICE_ADDRESS,
@@ -27,6 +27,8 @@ import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 import { getPermitSignature, getPermitBatchSignature, PermitSingle } from './shared/protocolHelpers/permit2'
 import { encodePathExactInput, encodePathExactOutput } from './shared/swapRouter02Helpers'
+import getPermitNFTSignature from './shared/getPermitNFTSignature'
+import { FeeAmount } from '@uniswap/v3-sdk'
 const { ethers } = hre
 
 describe('Uniswap V2 and V3 Tests:', () => {
@@ -38,6 +40,9 @@ describe('Uniswap V2 and V3 Tests:', () => {
   let wethContract: Contract
   let usdcContract: Contract
   let planner: RoutePlanner
+  let v3NFTPositionManager: INonfungiblePositionManager
+
+  let tokenId: BigNumber
 
   beforeEach(async () => {
     await resetFork()
@@ -51,6 +56,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
+    v3NFTPositionManager = V3_NFT_POSITION_MANAGER.connect(bob) as INonfungiblePositionManager
     router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
     planner = new RoutePlanner()
 
@@ -63,6 +69,10 @@ describe('Uniswap V2 and V3 Tests:', () => {
     await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
     await wethContract.connect(bob).approve(permit2.address, MAX_UINT)
     await usdcContract.connect(bob).approve(permit2.address, MAX_UINT)
+
+    // Bob max-approves the router to access his DAI and WETH
+    await daiContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+    await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
   })
 
   describe('Trade on Uniswap with Permit2, giving approval every time', () => {
@@ -1193,6 +1203,81 @@ describe('Uniswap V2 and V3 Tests:', () => {
           expect(usdcBalanceBefore).to.eq(usdcBalanceAfter)
         })
       })
+    })
+  })
+
+  describe.only('Migrator', () => {
+    beforeEach(async () => {
+      // need to mint the nft to bob
+      const tx = await v3NFTPositionManager.mint({
+        token0: USDC.address,
+        token1: WETH.address,
+        fee: FeeAmount.MEDIUM,
+        tickLower: 0,
+        tickUpper: 60,
+        amount0Desired: 15,
+        amount1Desired: 15,
+        amount0Min: 0,
+        amount1Min: 0,
+        recipient: bob.address,
+        deadline: MAX_UINT,
+      })
+
+      const receipt = await tx.wait()
+
+      const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
+
+      if (transferEvent && transferEvent.args) {
+        tokenId = transferEvent.args.tokenId
+      }
+    })
+    it('erc721 permit', async () => {
+      const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+
+      planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+
+      // bob permits the router to authorize token
+      await executeRouter(planner)
+
+      expect((await v3NFTPositionManager.positions(tokenId)).nonce).to.eq(1)
+      expect((await v3NFTPositionManager.positions(tokenId)).operator).to.eq(router.address)
+    })
+    it('decrease liquidity', async () => {
+      // first we need to permit the router to spend the nft
+      const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+      planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+
+      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, 5, 0, 0, MAX_UINT])
+
+      await executeRouter(planner)
+    })
+
+    it('collect', async () => {
+      // first we need to permit the router to spend the nft
+      const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+      planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+
+      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, 5, 0, 0, MAX_UINT])
+
+      planner.addCommand(CommandType.V3_COLLECT, [tokenId, bob.address, 5, 5])
+
+      await executeRouter(planner)
+    })
+
+    it('burn', async () => {
+      // first we need to permit the router to spend the nft
+      const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+      planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+
+      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, 15, 0, 0, MAX_UINT])
+
+      planner.addCommand(CommandType.V3_COLLECT, [tokenId, bob.address, 15, 15])
+
+      // planner.addCommand(CommandType.V3_BURN, [
+      //   tokenId
+      // ])
+
+      await executeRouter(planner)
     })
   })
 

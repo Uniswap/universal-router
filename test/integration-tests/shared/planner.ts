@@ -22,6 +22,11 @@ export enum CommandType {
   PERMIT2_TRANSFER_FROM_BATCH = 0x0d,
   BALANCE_CHECK_ERC20 = 0x0e,
 
+  ERC721_PERMIT = 0x10,
+  V3_DECREASE_LIQUIDITY = 0x11,
+  V3_COLLECT = 0x12,
+  V3_BURN = 0x13,
+
   EXECUTE_SUB_PLAN = 0x21,
 }
 
@@ -61,6 +66,11 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.TRANSFER]: ['address', 'address', 'uint256'],
   [CommandType.PAY_PORTION]: ['address', 'address', 'uint256'],
   [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
+
+  [CommandType.ERC721_PERMIT]: ['address', 'uint256', 'uint256', 'uint8', 'bytes32', 'bytes32'],
+  [CommandType.V3_DECREASE_LIQUIDITY]: ['uint256', 'uint128', 'uint256', 'uint256', 'uint256'],
+  [CommandType.V3_COLLECT]: ['uint256', 'address', 'uint128', 'uint128'],
+  [CommandType.V3_BURN]: ['uint256'],
 }
 
 export class RoutePlanner {

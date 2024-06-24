@@ -11,7 +11,7 @@ import {Commands} from '../libraries/Commands.sol';
 import {LockAndMsgSender} from './LockAndMsgSender.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
-import {Migrator} from '../modules/uniswap/migrator/Migrator.sol';
+import {Migrator} from '../modules/Migrator.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
@@ -218,11 +218,43 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                         tokenId := calldataload(add(inputs.offset, 0x20))
                         deadline := calldataload(add(inputs.offset, 0x40))
                         v := calldataload(add(inputs.offset, 0x60))
-                        r := calldataload(add(inputs.offset, 0x68))
-                        s := calldataload(add(inputs.offset, 0x88))
+                        r := calldataload(add(inputs.offset, 0x80))
+                        s := calldataload(add(inputs.offset, 0xA0))
                     }
 
                     erc721Permit(spender, tokenId, deadline, v, r, s);
+                } else if (command == Commands.V3_DECREASE_LIQUIDITY) {
+                    uint256 tokenId;
+                    uint128 liquidity;
+                    uint256 amount0Min;
+                    uint256 amount1Min;
+                    uint256 deadline;
+                    assembly {
+                        tokenId := calldataload(inputs.offset)
+                        liquidity := calldataload(add(inputs.offset, 0x20))
+                        amount0Min := calldataload(add(inputs.offset, 0x40))
+                        amount1Min := calldataload(add(inputs.offset, 0x60))
+                        deadline := calldataload(add(inputs.offset, 0x80))
+                    }
+                    decreaseLiquidity(tokenId, liquidity, amount0Min, amount1Min, deadline);
+                } else if (command == Commands.V3_COLLECT) {
+                    uint256 tokenId;
+                    address recipient;
+                    uint128 amount0Max;
+                    uint128 amount1Max;
+                    assembly {
+                        tokenId := calldataload(inputs.offset)
+                        recipient := calldataload(add(inputs.offset, 0x20))
+                        amount0Max := calldataload(add(inputs.offset, 0x40))
+                        amount1Max := calldataload(add(inputs.offset, 0x60))
+                    }
+                    collect(tokenId, recipient, amount0Max, amount1Max);
+                } else if (command == Commands.V3_BURN) {
+                    uint256 tokenId;
+                    assembly {
+                        tokenId := calldataload(inputs.offset)
+                    }
+                    burn(tokenId);
                 }
             }
         } else {

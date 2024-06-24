@@ -8,6 +8,7 @@ import {PaymentsImmutables, PaymentsParameters} from './modules/PaymentsImmutabl
 import {UniswapImmutables, UniswapParameters} from './modules/uniswap/UniswapImmutables.sol';
 import {Commands} from './libraries/Commands.sol';
 import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
+import {MigratorImmutables, MigratorParameters} from './modules/MigratorImmutables.sol';
 
 contract UniversalRouter is IUniversalRouter, Dispatcher {
     modifier checkDeadline(uint256 deadline) {
@@ -21,11 +22,11 @@ contract UniversalRouter is IUniversalRouter, Dispatcher {
                 params.v2Factory,
                 params.v3Factory,
                 params.pairInitCodeHash,
-                params.poolInitCodeHash,
-                params.v3NFTPositionManager
+                params.poolInitCodeHash
             )
         )
         PaymentsImmutables(PaymentsParameters(params.permit2, params.weth9))
+        MigratorImmutables(MigratorParameters(params.v3NFTPositionManager))
     {}
 
     /// @inheritdoc IUniversalRouter
