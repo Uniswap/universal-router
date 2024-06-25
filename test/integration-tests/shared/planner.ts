@@ -45,6 +45,14 @@ const PERMIT_BATCH_STRUCT =
 const PERMIT2_TRANSFER_FROM_STRUCT = '(address from,address to,uint160 amount,address token)'
 const PERMIT2_TRANSFER_FROM_BATCH_STRUCT = PERMIT2_TRANSFER_FROM_STRUCT + '[]'
 
+const DECREASE_LIQUIDITY_STRUCT =
+  '(uint256 tokenId,uint128 liquidity,uint256 amount0Min,uint256 amount1Min,uint256 deadline)'
+const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint128 amount0Max,uint128 amount1Max)'
+const MINT_STRUCT =
+  '(address token0,address token1,uint24 fee,int24 tickLower,int24 tickUpper,uint256 amount0Desired,uint256 amount1Desired,uint256 amount0Min,uint256 amount1Min,address recipient,uint256 deadline)'
+const INCREASE_LIQUIDITY_STRUCT =
+  '(uint256 tokenId,uint256 amount0Desired,uint256 amount1Desired,uint256 amount0Min,uint256 amount1Min,uint256 deadline)'
+
 const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   // Batch Reverts
   [CommandType.EXECUTE_SUB_PLAN]: ['bytes', 'bytes[]'],
@@ -70,11 +78,11 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
 
   [CommandType.ERC721_PERMIT]: ['address', 'uint256', 'uint256', 'uint8', 'bytes32', 'bytes32'],
-  [CommandType.V3_DECREASE_LIQUIDITY]: ['uint256', 'uint128', 'uint256', 'uint256', 'uint256'],
-  [CommandType.V3_COLLECT]: ['uint256', 'address', 'uint128', 'uint128'],
+  [CommandType.V3_DECREASE_LIQUIDITY]: [DECREASE_LIQUIDITY_STRUCT],
+  [CommandType.V3_COLLECT]: [COLLECT_STRUCT],
   [CommandType.V3_BURN]: ['uint256'],
-  [CommandType.V3_MINT]: ['address', 'address', 'uint24', 'int24', 'int24', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
-  [CommandType.V3_INCREASE_LIQUIDITY]: ['address', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
+  [CommandType.V3_MINT]: [MINT_STRUCT],
+  [CommandType.V3_INCREASE_LIQUIDITY]: [INCREASE_LIQUIDITY_STRUCT, 'address', 'address'],
 }
 
 export class RoutePlanner {

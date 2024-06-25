@@ -1250,7 +1250,10 @@ describe('Uniswap V2 and V3 Tests:', () => {
       let position = await v3NFTPositionManager.positions(tokenId)
       let liquidity = position.liquidity
 
-      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, liquidity, 0, 0, MAX_UINT])
+      const params = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
+
+      //planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, liquidity, 0, 0, MAX_UINT])
+      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [params])
 
       await executeRouter(planner)
 
@@ -1268,7 +1271,15 @@ describe('Uniswap V2 and V3 Tests:', () => {
       let position = await v3NFTPositionManager.positions(tokenId)
       let liquidity = position.liquidity
 
-      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, liquidity, 0, 0, MAX_UINT])
+      const decreaseParams = {
+        tokenId: tokenId,
+        liquidity: liquidity,
+        amount0Min: 0,
+        amount1Min: 0,
+        deadline: MAX_UINT,
+      }
+
+      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [decreaseParams])
 
       await executeRouter(planner)
 
@@ -1277,14 +1288,16 @@ describe('Uniswap V2 and V3 Tests:', () => {
       let owed0 = position.tokensOwed0
       let owed1 = position.tokensOwed1
 
-      console.log(owed0.toString(), owed1.toString())
+      //console.log(owed0.toString(), owed1.toString())
 
       planner = new RoutePlanner()
 
       let bobBalanceBeforeToken0 = await usdcContract.balanceOf(bob.address)
       let bobBalanceBeforeToken1 = await wethContract.balanceOf(bob.address)
 
-      planner.addCommand(CommandType.V3_COLLECT, [tokenId, bob.address, owed0, owed1])
+      const collectParams = { tokenId: tokenId, recipient: bob.address, amount0Max: owed0, amount1Max: owed1 }
+
+      planner.addCommand(CommandType.V3_COLLECT, [collectParams])
 
       await executeRouter(planner)
 
@@ -1300,7 +1313,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       expect(owed0).to.eq(0)
       expect(owed1).to.eq(0)
- 
     })
 
     it('burn', async () => {
@@ -1311,7 +1323,15 @@ describe('Uniswap V2 and V3 Tests:', () => {
       let position = await v3NFTPositionManager.positions(tokenId)
       let liquidity = position.liquidity
 
-      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, liquidity, 0, 0, MAX_UINT])
+      const decreaseParams = {
+        tokenId: tokenId,
+        liquidity: liquidity,
+        amount0Min: 0,
+        amount1Min: 0,
+        deadline: MAX_UINT,
+      }
+
+      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [decreaseParams])
 
       await executeRouter(planner)
 
@@ -1322,13 +1342,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       planner = new RoutePlanner()
 
-      planner.addCommand(CommandType.V3_COLLECT, [tokenId, bob.address, owed0, owed1])
+      const collectParams = { tokenId: tokenId, recipient: bob.address, amount0Max: owed0, amount1Max: owed1 }
+
+      planner.addCommand(CommandType.V3_COLLECT, [collectParams])
       planner.addCommand(CommandType.V3_BURN, [tokenId])
 
       await executeRouter(planner)
 
       expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
-
     })
 
     it('mint', async () => {
@@ -1336,22 +1357,33 @@ describe('Uniswap V2 and V3 Tests:', () => {
       // user first needs to tranfer the tokens to the router
       await usdcContract.connect(bob).transfer(router.address, expandTo6DecimalsBN(10000))
       await wethContract.connect(bob).transfer(router.address, expandTo18DecimalsBN(10))
-      
-      planner.addCommand(CommandType.V3_MINT, [
-        USDC.address,
-        WETH.address,
-        FeeAmount.MEDIUM,
-        60,
-        120,
-        5,
-        5,
-        0,
-        0,
-        bob.address,
-        MAX_UINT,
-      ])
+
+      expect(await usdcContract.balanceOf(router.address)).to.eq(expandTo6DecimalsBN(10000))
+      expect(await wethContract.balanceOf(router.address)).to.eq(expandTo18DecimalsBN(10))
+
+      const params = {
+        token0: USDC.address,
+        token1: WETH.address,
+        fee: FeeAmount.MEDIUM,
+        tickLower: 60,
+        tickUpper: 120,
+        amount0Desired: 5,
+        amount1Desired: 5,
+        amount0Min: 0,
+        amount1Min: 0,
+        recipient: bob.address,
+        deadline: MAX_UINT,
+      }
+
+      planner.addCommand(CommandType.V3_MINT, [params])
+
+      planner.addCommand(CommandType.SWEEP, [USDC.address, bob.address, 0])
+      planner.addCommand(CommandType.SWEEP, [WETH.address, bob.address, 0])
 
       await executeRouter(planner)
+
+      expect(await usdcContract.balanceOf(router.address)).to.eq(0)
+      expect(await wethContract.balanceOf(router.address)).to.eq(0)
 
       expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(2)
     })
@@ -1363,7 +1395,16 @@ describe('Uniswap V2 and V3 Tests:', () => {
       await usdcContract.connect(bob).transfer(router.address, expandTo6DecimalsBN(10000))
       await wethContract.connect(bob).transfer(router.address, expandTo18DecimalsBN(10))
 
-      planner.addCommand(CommandType.V3_INCREASE_LIQUIDITY, [usdcContract.address, wethContract.address, tokenId, 1, 1, 0, 0, MAX_UINT])
+      const params = {
+        tokenId: tokenId,
+        amount0Desired: 1,
+        amount1Desired: 1,
+        amount0Min: 0,
+        amount1Min: 0,
+        deadline: MAX_UINT,
+      }
+
+      planner.addCommand(CommandType.V3_INCREASE_LIQUIDITY, [params, usdcContract.address, wethContract.address])
 
       await executeRouter(planner)
 

@@ -18,12 +18,7 @@ contract UniversalRouter is IUniversalRouter, Dispatcher {
 
     constructor(RouterParameters memory params)
         UniswapImmutables(
-            UniswapParameters(
-                params.v2Factory,
-                params.v3Factory,
-                params.pairInitCodeHash,
-                params.poolInitCodeHash
-            )
+            UniswapParameters(params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash)
         )
         PaymentsImmutables(PaymentsParameters(params.permit2, params.weth9))
         MigratorImmutables(MigratorParameters(params.v3NFTPositionManager))

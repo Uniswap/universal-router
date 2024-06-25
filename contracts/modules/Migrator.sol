@@ -10,26 +10,11 @@ abstract contract Migrator is MigratorImmutables {
         V3POSITIONMANGER.permit(spender, tokenId, deadline, v, r, s);
     }
 
-    function decreaseLiquidity(uint256 tokenId, uint128 liquidity, uint256 amount0Min, uint256 amount1Min, uint256 deadline) internal {
-        INonfungiblePositionManager.DecreaseLiquidityParams memory params = INonfungiblePositionManager.DecreaseLiquidityParams({
-            tokenId: tokenId,
-            liquidity: liquidity,
-            amount0Min: amount0Min,
-            amount1Min: amount1Min,
-            deadline: deadline
-        });
-
+    function decreaseLiquidity(INonfungiblePositionManager.DecreaseLiquidityParams memory params) internal {
         V3POSITIONMANGER.decreaseLiquidity(params);
     }
 
-    function collect(uint256 tokenId, address recipient, uint128 amount0Max, uint128 amount1Max) internal {
-        INonfungiblePositionManager.CollectParams memory params = INonfungiblePositionManager.CollectParams({
-            tokenId: tokenId,
-            recipient: recipient,
-            amount0Max: amount0Max,
-            amount1Max: amount1Max
-        });
-
+    function collect(INonfungiblePositionManager.CollectParams memory params) internal {
         V3POSITIONMANGER.collect(params);
     }
 
@@ -37,39 +22,20 @@ abstract contract Migrator is MigratorImmutables {
         V3POSITIONMANGER.burn(tokenId);
     }
 
-    function mint(address token0, address token1, uint24 fee, int24 tickLower, int24 tickUpper, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address recipient, uint256 deadline) internal {
-        INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
-            token0: token0,
-            token1: token1,
-            fee: fee,
-            tickLower: tickLower,
-            tickUpper: tickUpper,
-            amount0Desired: amount0Desired,
-            amount1Desired: amount1Desired,
-            amount0Min: amount0Min,
-            amount1Min: amount1Min,
-            recipient: recipient,
-            deadline: deadline
-        });
-
-        IERC20(token0).approve(address(V3POSITIONMANGER), amount0Desired);
-        IERC20(token1).approve(address(V3POSITIONMANGER), amount1Desired);
+    function mint(INonfungiblePositionManager.MintParams memory params) internal {
+        IERC20(params.token0).approve(address(V3POSITIONMANGER), params.amount0Desired);
+        IERC20(params.token1).approve(address(V3POSITIONMANGER), params.amount1Desired);
 
         V3POSITIONMANGER.mint(params);
     }
 
-    function increaseLiquidity(address token0, address token1, uint256 tokenId, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, uint256 deadline) internal {
-        INonfungiblePositionManager.IncreaseLiquidityParams memory params = INonfungiblePositionManager.IncreaseLiquidityParams({
-            tokenId: tokenId,
-            amount0Desired: amount0Desired,
-            amount1Desired: amount1Desired,
-            amount0Min: amount0Min,
-            amount1Min: amount1Min,
-            deadline: deadline
-        });
-
-        IERC20(token0).approve(address(V3POSITIONMANGER), amount0Desired);
-        IERC20(token1).approve(address(V3POSITIONMANGER), amount1Desired);
+    function increaseLiquidity(
+        INonfungiblePositionManager.IncreaseLiquidityParams memory params,
+        address token0,
+        address token1
+    ) internal {
+        IERC20(token0).approve(address(V3POSITIONMANGER), params.amount0Desired);
+        IERC20(token1).approve(address(V3POSITIONMANGER), params.amount1Desired);
 
         V3POSITIONMANGER.increaseLiquidity(params);
     }

@@ -12,6 +12,7 @@ import {LockAndMsgSender} from './LockAndMsgSender.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {Migrator} from '../modules/Migrator.sol';
+import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
@@ -224,31 +225,13 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
 
                     erc721Permit(spender, tokenId, deadline, v, r, s);
                 } else if (command == Commands.V3_DECREASE_LIQUIDITY) {
-                    uint256 tokenId;
-                    uint128 liquidity;
-                    uint256 amount0Min;
-                    uint256 amount1Min;
-                    uint256 deadline;
-                    assembly {
-                        tokenId := calldataload(inputs.offset)
-                        liquidity := calldataload(add(inputs.offset, 0x20))
-                        amount0Min := calldataload(add(inputs.offset, 0x40))
-                        amount1Min := calldataload(add(inputs.offset, 0x60))
-                        deadline := calldataload(add(inputs.offset, 0x80))
-                    }
-                    decreaseLiquidity(tokenId, liquidity, amount0Min, amount1Min, deadline);
+                    (INonfungiblePositionManager.DecreaseLiquidityParams memory params) =
+                        abi.decode(inputs, (INonfungiblePositionManager.DecreaseLiquidityParams));
+                    decreaseLiquidity(params);
                 } else if (command == Commands.V3_COLLECT) {
-                    uint256 tokenId;
-                    address recipient;
-                    uint128 amount0Max;
-                    uint128 amount1Max;
-                    assembly {
-                        tokenId := calldataload(inputs.offset)
-                        recipient := calldataload(add(inputs.offset, 0x20))
-                        amount0Max := calldataload(add(inputs.offset, 0x40))
-                        amount1Max := calldataload(add(inputs.offset, 0x60))
-                    }
-                    collect(tokenId, recipient, amount0Max, amount1Max);
+                    (INonfungiblePositionManager.CollectParams memory params) =
+                        abi.decode(inputs, (INonfungiblePositionManager.CollectParams));
+                    collect(params);
                 } else if (command == Commands.V3_BURN) {
                     uint256 tokenId;
                     assembly {
@@ -256,51 +239,13 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                     }
                     burn(tokenId);
                 } else if (command == Commands.V3_MINT) {
-                    address token0;
-                    address token1;
-                    uint24 fee;
-                    int24 tickLower;
-                    int24 tickUpper;
-                    uint256 amount0Desired;
-                    uint256 amount1Desired;
-                    uint256 amount0Min;
-                    uint256 amount1Min;
-                    address recipient;
-                    uint256 deadline;
-                    assembly {
-                        token0 := calldataload(inputs.offset)
-                        token1 := calldataload(add(inputs.offset, 0x20))
-                        fee := calldataload(add(inputs.offset, 0x40))
-                        tickLower := calldataload(add(inputs.offset, 0x60))
-                        tickUpper := calldataload(add(inputs.offset, 0x80))
-                        amount0Desired := calldataload(add(inputs.offset, 0xA0))
-                        amount1Desired := calldataload(add(inputs.offset, 0xC0))
-                        amount0Min := calldataload(add(inputs.offset, 0xE0))
-                        amount1Min := calldataload(add(inputs.offset, 0x100))
-                        recipient := calldataload(add(inputs.offset, 0x120))
-                        deadline := calldataload(add(inputs.offset, 0x140))
-                    }
-                    mint(token0, token1, fee, tickLower, tickUpper, amount0Desired, amount1Desired, amount0Min, amount1Min, recipient, deadline);
+                    (INonfungiblePositionManager.MintParams memory params) =
+                        abi.decode(inputs, (INonfungiblePositionManager.MintParams));
+                    mint(params);
                 } else if (command == Commands.V3_INCREASE_LIQUIDITY) {
-                    address token0;
-                    address token1;
-                    uint256 tokenId;
-                    uint256 amount0Desired;
-                    uint256 amount1Desired;
-                    uint256 amount0Min;
-                    uint256 amount1Min;
-                    uint256 deadline;
-                    assembly {
-                        token0 := calldataload(inputs.offset)
-                        token1 := calldataload(add(inputs.offset, 0x20))
-                        tokenId := calldataload(add(inputs.offset, 0x40))
-                        amount0Desired := calldataload(add(inputs.offset, 0x60))
-                        amount1Desired := calldataload(add(inputs.offset, 0x80))
-                        amount0Min := calldataload(add(inputs.offset, 0xA0))
-                        amount1Min := calldataload(add(inputs.offset, 0xC0))
-                        deadline := calldataload(add(inputs.offset, 0xE0))
-                    }
-                    increaseLiquidity(token0, token1, tokenId, amount0Desired, amount1Desired, amount0Min, amount1Min, deadline);
+                    (INonfungiblePositionManager.IncreaseLiquidityParams memory params, address token0, address token1)
+                    = abi.decode(inputs, (INonfungiblePositionManager.IncreaseLiquidityParams, address, address));
+                    increaseLiquidity(params, token0, token1);
                 } else {
                     // placeholder area for command
                 }
