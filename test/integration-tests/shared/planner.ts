@@ -26,8 +26,6 @@ export enum CommandType {
   V3_DECREASE_LIQUIDITY = 0x11,
   V3_COLLECT = 0x12,
   V3_BURN = 0x13,
-  V3_MINT = 0x14,
-  V3_INCREASE_LIQUIDITY = 0x15,
 
   EXECUTE_SUB_PLAN = 0x21,
 }
@@ -48,10 +46,6 @@ const PERMIT2_TRANSFER_FROM_BATCH_STRUCT = PERMIT2_TRANSFER_FROM_STRUCT + '[]'
 const DECREASE_LIQUIDITY_STRUCT =
   '(uint256 tokenId,uint128 liquidity,uint256 amount0Min,uint256 amount1Min,uint256 deadline)'
 const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint128 amount0Max,uint128 amount1Max)'
-const MINT_STRUCT =
-  '(address token0,address token1,uint24 fee,int24 tickLower,int24 tickUpper,uint256 amount0Desired,uint256 amount1Desired,uint256 amount0Min,uint256 amount1Min,address recipient,uint256 deadline)'
-const INCREASE_LIQUIDITY_STRUCT =
-  '(uint256 tokenId,uint256 amount0Desired,uint256 amount1Desired,uint256 amount0Min,uint256 amount1Min,uint256 deadline)'
 
 const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   // Batch Reverts
@@ -81,8 +75,6 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.V3_DECREASE_LIQUIDITY]: [DECREASE_LIQUIDITY_STRUCT],
   [CommandType.V3_COLLECT]: [COLLECT_STRUCT],
   [CommandType.V3_BURN]: ['uint256'],
-  [CommandType.V3_MINT]: [MINT_STRUCT],
-  [CommandType.V3_INCREASE_LIQUIDITY]: [INCREASE_LIQUIDITY_STRUCT, 'address', 'address'],
 }
 
 export class RoutePlanner {

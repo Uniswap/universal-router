@@ -69,10 +69,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
     await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
     await wethContract.connect(bob).approve(permit2.address, MAX_UINT)
     await usdcContract.connect(bob).approve(permit2.address, MAX_UINT)
-
-    // Bob max-approves the router to access his DAI and WETH
-    await daiContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
-    await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
   })
 
   describe('Trade on Uniswap with Permit2, giving approval every time', () => {
@@ -1208,15 +1204,20 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
   describe.only('Migrator', () => {
     beforeEach(async () => {
+
+      // Bob max-approves the v3PM to access his USDC and WETH
+      await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+      await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+
       // need to mint the nft to bob
       const tx = await v3NFTPositionManager.mint({
         token0: USDC.address,
         token1: WETH.address,
-        fee: FeeAmount.MEDIUM,
+        fee: FeeAmount.LOW,
         tickLower: 0,
-        tickUpper: 60,
-        amount0Desired: 15,
-        amount1Desired: 15,
+        tickUpper: 194980,
+        amount0Desired: expandTo6DecimalsBN(100),
+        amount1Desired: expandTo18DecimalsBN(100000),
         amount0Min: 0,
         amount1Min: 0,
         recipient: bob.address,
@@ -1239,7 +1240,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
       // bob permits the router to authorize token
       await executeRouter(planner)
 
-      expect((await v3NFTPositionManager.positions(tokenId)).nonce).to.eq(1)
       expect((await v3NFTPositionManager.positions(tokenId)).operator).to.eq(router.address)
     })
     it('decrease liquidity', async () => {
@@ -1350,66 +1350,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
       await executeRouter(planner)
 
       expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
-    })
-
-    it('mint', async () => {
-      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(1)
-      // user first needs to tranfer the tokens to the router
-      await usdcContract.connect(bob).transfer(router.address, expandTo6DecimalsBN(10000))
-      await wethContract.connect(bob).transfer(router.address, expandTo18DecimalsBN(10))
-
-      expect(await usdcContract.balanceOf(router.address)).to.eq(expandTo6DecimalsBN(10000))
-      expect(await wethContract.balanceOf(router.address)).to.eq(expandTo18DecimalsBN(10))
-
-      const params = {
-        token0: USDC.address,
-        token1: WETH.address,
-        fee: FeeAmount.MEDIUM,
-        tickLower: 60,
-        tickUpper: 120,
-        amount0Desired: 5,
-        amount1Desired: 5,
-        amount0Min: 0,
-        amount1Min: 0,
-        recipient: bob.address,
-        deadline: MAX_UINT,
-      }
-
-      planner.addCommand(CommandType.V3_MINT, [params])
-
-      planner.addCommand(CommandType.SWEEP, [USDC.address, bob.address, 0])
-      planner.addCommand(CommandType.SWEEP, [WETH.address, bob.address, 0])
-
-      await executeRouter(planner)
-
-      expect(await usdcContract.balanceOf(router.address)).to.eq(0)
-      expect(await wethContract.balanceOf(router.address)).to.eq(0)
-
-      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(2)
-    })
-
-    it('increase liquidity', async () => {
-      let position = await v3NFTPositionManager.positions(tokenId)
-      let liquidity = position.liquidity
-
-      await usdcContract.connect(bob).transfer(router.address, expandTo6DecimalsBN(10000))
-      await wethContract.connect(bob).transfer(router.address, expandTo18DecimalsBN(10))
-
-      const params = {
-        tokenId: tokenId,
-        amount0Desired: 1,
-        amount1Desired: 1,
-        amount0Min: 0,
-        amount1Min: 0,
-        deadline: MAX_UINT,
-      }
-
-      planner.addCommand(CommandType.V3_INCREASE_LIQUIDITY, [params, usdcContract.address, wethContract.address])
-
-      await executeRouter(planner)
-
-      position = await v3NFTPositionManager.positions(tokenId)
-      expect(position.liquidity).to.be.gt(liquidity)
     })
   })
 

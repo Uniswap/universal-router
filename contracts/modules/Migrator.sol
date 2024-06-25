@@ -21,22 +21,4 @@ abstract contract Migrator is MigratorImmutables {
     function burn(uint256 tokenId) internal {
         V3POSITIONMANGER.burn(tokenId);
     }
-
-    function mint(INonfungiblePositionManager.MintParams memory params) internal {
-        IERC20(params.token0).approve(address(V3POSITIONMANGER), params.amount0Desired);
-        IERC20(params.token1).approve(address(V3POSITIONMANGER), params.amount1Desired);
-
-        V3POSITIONMANGER.mint(params);
-    }
-
-    function increaseLiquidity(
-        INonfungiblePositionManager.IncreaseLiquidityParams memory params,
-        address token0,
-        address token1
-    ) internal {
-        IERC20(token0).approve(address(V3POSITIONMANGER), params.amount0Desired);
-        IERC20(token1).approve(address(V3POSITIONMANGER), params.amount1Desired);
-
-        V3POSITIONMANGER.increaseLiquidity(params);
-    }
 }

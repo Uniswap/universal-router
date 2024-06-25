@@ -42,8 +42,8 @@ library Commands {
     uint256 constant V3_DECREASE_LIQUIDITY = 0x11;
     uint256 constant V3_COLLECT = 0x12;
     uint256 constant V3_BURN = 0x13;
-    uint256 constant V3_MINT = 0x14;
-    uint256 constant V3_INCREASE_LIQUIDITY = 0x15;
+
+    //COMMAND_PLACEHOLDER = 0x17;
 
     // The commands are executed in nested if blocks to minimise gas consumption
     // The following constant defines one of the boundaries where the if blocks split commands

@@ -238,16 +238,9 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                         tokenId := calldataload(inputs.offset)
                     }
                     burn(tokenId);
-                } else if (command == Commands.V3_MINT) {
-                    (INonfungiblePositionManager.MintParams memory params) =
-                        abi.decode(inputs, (INonfungiblePositionManager.MintParams));
-                    mint(params);
-                } else if (command == Commands.V3_INCREASE_LIQUIDITY) {
-                    (INonfungiblePositionManager.IncreaseLiquidityParams memory params, address token0, address token1)
-                    = abi.decode(inputs, (INonfungiblePositionManager.IncreaseLiquidityParams, address, address));
-                    increaseLiquidity(params, token0, token1);
                 } else {
                     // placeholder area for command
+                    revert InvalidCommandType(command);
                 }
             }
         } else {
