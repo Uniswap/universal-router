@@ -255,6 +255,54 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                         tokenId := calldataload(inputs.offset)
                     }
                     burn(tokenId);
+                } else if (command == Commands.V3_MINT) {
+                    address token0;
+                    address token1;
+                    uint24 fee;
+                    int24 tickLower;
+                    int24 tickUpper;
+                    uint256 amount0Desired;
+                    uint256 amount1Desired;
+                    uint256 amount0Min;
+                    uint256 amount1Min;
+                    address recipient;
+                    uint256 deadline;
+                    assembly {
+                        token0 := calldataload(inputs.offset)
+                        token1 := calldataload(add(inputs.offset, 0x20))
+                        fee := calldataload(add(inputs.offset, 0x40))
+                        tickLower := calldataload(add(inputs.offset, 0x60))
+                        tickUpper := calldataload(add(inputs.offset, 0x80))
+                        amount0Desired := calldataload(add(inputs.offset, 0xA0))
+                        amount1Desired := calldataload(add(inputs.offset, 0xC0))
+                        amount0Min := calldataload(add(inputs.offset, 0xE0))
+                        amount1Min := calldataload(add(inputs.offset, 0x100))
+                        recipient := calldataload(add(inputs.offset, 0x120))
+                        deadline := calldataload(add(inputs.offset, 0x140))
+                    }
+                    mint(token0, token1, fee, tickLower, tickUpper, amount0Desired, amount1Desired, amount0Min, amount1Min, recipient, deadline);
+                } else if (command == Commands.V3_INCREASE_LIQUIDITY) {
+                    address token0;
+                    address token1;
+                    uint256 tokenId;
+                    uint256 amount0Desired;
+                    uint256 amount1Desired;
+                    uint256 amount0Min;
+                    uint256 amount1Min;
+                    uint256 deadline;
+                    assembly {
+                        token0 := calldataload(inputs.offset)
+                        token1 := calldataload(add(inputs.offset, 0x20))
+                        tokenId := calldataload(add(inputs.offset, 0x40))
+                        amount0Desired := calldataload(add(inputs.offset, 0x60))
+                        amount1Desired := calldataload(add(inputs.offset, 0x80))
+                        amount0Min := calldataload(add(inputs.offset, 0xA0))
+                        amount1Min := calldataload(add(inputs.offset, 0xC0))
+                        deadline := calldataload(add(inputs.offset, 0xE0))
+                    }
+                    increaseLiquidity(token0, token1, tokenId, amount0Desired, amount1Desired, amount0Min, amount1Min, deadline);
+                } else {
+                    // placeholder area for command
                 }
             }
         } else {

@@ -1247,37 +1247,128 @@ describe('Uniswap V2 and V3 Tests:', () => {
       const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
       planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
 
-      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, 5, 0, 0, MAX_UINT])
+      let position = await v3NFTPositionManager.positions(tokenId)
+      let liquidity = position.liquidity
+
+      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, liquidity, 0, 0, MAX_UINT])
 
       await executeRouter(planner)
+
+      position = await v3NFTPositionManager.positions(tokenId)
+      liquidity = position.liquidity
+
+      expect(liquidity).to.eq(0)
     })
 
     it('collect', async () => {
       // first we need to permit the router to spend the nft
-      const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+      let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
       planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
 
-      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, 5, 0, 0, MAX_UINT])
+      let position = await v3NFTPositionManager.positions(tokenId)
+      let liquidity = position.liquidity
 
-      planner.addCommand(CommandType.V3_COLLECT, [tokenId, bob.address, 5, 5])
+      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, liquidity, 0, 0, MAX_UINT])
 
       await executeRouter(planner)
+
+      position = await v3NFTPositionManager.positions(tokenId)
+
+      let owed0 = position.tokensOwed0
+      let owed1 = position.tokensOwed1
+
+      console.log(owed0.toString(), owed1.toString())
+
+      planner = new RoutePlanner()
+
+      let bobBalanceBeforeToken0 = await usdcContract.balanceOf(bob.address)
+      let bobBalanceBeforeToken1 = await wethContract.balanceOf(bob.address)
+
+      planner.addCommand(CommandType.V3_COLLECT, [tokenId, bob.address, owed0, owed1])
+
+      await executeRouter(planner)
+
+      let bobBalanceAfterToken0 = await usdcContract.balanceOf(bob.address)
+      let bobBalanceAfterToken1 = await wethContract.balanceOf(bob.address)
+
+      expect(bobBalanceAfterToken0.sub(bobBalanceBeforeToken0)).to.eq(owed0)
+      expect(bobBalanceAfterToken1.sub(bobBalanceBeforeToken1)).to.eq(owed1)
+
+      position = await v3NFTPositionManager.positions(tokenId)
+      owed0 = position.tokensOwed0
+      owed1 = position.tokensOwed1
+
+      expect(owed0).to.eq(0)
+      expect(owed1).to.eq(0)
+ 
     })
 
     it('burn', async () => {
       // first we need to permit the router to spend the nft
-      const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+      let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
       planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
 
-      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, 15, 0, 0, MAX_UINT])
+      let position = await v3NFTPositionManager.positions(tokenId)
+      let liquidity = position.liquidity
 
-      planner.addCommand(CommandType.V3_COLLECT, [tokenId, bob.address, 15, 15])
-
-      // planner.addCommand(CommandType.V3_BURN, [
-      //   tokenId
-      // ])
+      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, liquidity, 0, 0, MAX_UINT])
 
       await executeRouter(planner)
+
+      position = await v3NFTPositionManager.positions(tokenId)
+
+      let owed0 = position.tokensOwed0
+      let owed1 = position.tokensOwed1
+
+      planner = new RoutePlanner()
+
+      planner.addCommand(CommandType.V3_COLLECT, [tokenId, bob.address, owed0, owed1])
+      planner.addCommand(CommandType.V3_BURN, [tokenId])
+
+      await executeRouter(planner)
+
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
+
+    })
+
+    it('mint', async () => {
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(1)
+      // user first needs to tranfer the tokens to the router
+      await usdcContract.connect(bob).transfer(router.address, expandTo6DecimalsBN(10000))
+      await wethContract.connect(bob).transfer(router.address, expandTo18DecimalsBN(10))
+      
+      planner.addCommand(CommandType.V3_MINT, [
+        USDC.address,
+        WETH.address,
+        FeeAmount.MEDIUM,
+        60,
+        120,
+        5,
+        5,
+        0,
+        0,
+        bob.address,
+        MAX_UINT,
+      ])
+
+      await executeRouter(planner)
+
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(2)
+    })
+
+    it('increase liquidity', async () => {
+      let position = await v3NFTPositionManager.positions(tokenId)
+      let liquidity = position.liquidity
+
+      await usdcContract.connect(bob).transfer(router.address, expandTo6DecimalsBN(10000))
+      await wethContract.connect(bob).transfer(router.address, expandTo18DecimalsBN(10))
+
+      planner.addCommand(CommandType.V3_INCREASE_LIQUIDITY, [usdcContract.address, wethContract.address, tokenId, 1, 1, 0, 0, MAX_UINT])
+
+      await executeRouter(planner)
+
+      position = await v3NFTPositionManager.positions(tokenId)
+      expect(position.liquidity).to.be.gt(liquidity)
     })
   })
 

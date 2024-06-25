@@ -26,6 +26,8 @@ export enum CommandType {
   V3_DECREASE_LIQUIDITY = 0x11,
   V3_COLLECT = 0x12,
   V3_BURN = 0x13,
+  V3_MINT = 0x14,
+  V3_INCREASE_LIQUIDITY = 0x15,
 
   EXECUTE_SUB_PLAN = 0x21,
 }
@@ -71,6 +73,8 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.V3_DECREASE_LIQUIDITY]: ['uint256', 'uint128', 'uint256', 'uint256', 'uint256'],
   [CommandType.V3_COLLECT]: ['uint256', 'address', 'uint128', 'uint128'],
   [CommandType.V3_BURN]: ['uint256'],
+  [CommandType.V3_MINT]: ['address', 'address', 'uint24', 'int24', 'int24', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
+  [CommandType.V3_INCREASE_LIQUIDITY]: ['address', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
 }
 
 export class RoutePlanner {
