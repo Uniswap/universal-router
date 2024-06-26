@@ -1209,6 +1209,9 @@ describe('Uniswap V2 and V3 Tests:', () => {
       await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
       await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
 
+      let bobUSDCBalanceBefore = await usdcContract.balanceOf(bob.address)
+      let bobWETHBalanceBefore = await wethContract.balanceOf(bob.address)
+
       // need to mint the nft to bob
       const tx = await v3NFTPositionManager.mint({
         token0: USDC.address,
@@ -1216,13 +1219,23 @@ describe('Uniswap V2 and V3 Tests:', () => {
         fee: FeeAmount.LOW,
         tickLower: 0,
         tickUpper: 194980,
-        amount0Desired: expandTo6DecimalsBN(100),
-        amount1Desired: expandTo18DecimalsBN(100000),
+        amount0Desired: expandTo6DecimalsBN(2500),
+        amount1Desired: expandTo18DecimalsBN(1),
         amount0Min: 0,
         amount1Min: 0,
         recipient: bob.address,
         deadline: MAX_UINT,
       })
+
+      let bobUSDCBalanceAfter = await usdcContract.balanceOf(bob.address)
+      let bobWETHBalanceAfter = await wethContract.balanceOf(bob.address)
+
+      let usdcSpent = bobUSDCBalanceBefore.sub(bobUSDCBalanceAfter)
+      let wethSpent = bobWETHBalanceBefore.sub(bobWETHBalanceAfter)
+
+      // check that the USDC and WETH were spent
+      expect(usdcSpent).to.be.gte(0)
+      expect(wethSpent).to.be.gte(0)
 
       const receipt = await tx.wait()
 
@@ -1252,7 +1265,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       const params = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
 
-      //planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [tokenId, liquidity, 0, 0, MAX_UINT])
       planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [params])
 
       await executeRouter(planner)
@@ -1287,8 +1299,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       let owed0 = position.tokensOwed0
       let owed1 = position.tokensOwed1
-
-      //console.log(owed0.toString(), owed1.toString())
 
       planner = new RoutePlanner()
 
