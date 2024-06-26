@@ -3,6 +3,7 @@ const { ethers } = hre
 
 // Router Helpers
 export const MAX_UINT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+export const MAX_UINT128 = '0xffffffffffffffffffffffffffffffff'
 export const MAX_UINT160 = '0xffffffffffffffffffffffffffffffffffffffff'
 export const DEADLINE = 2000000000
 export const CONTRACT_BALANCE = '0x8000000000000000000000000000000000000000000000000000000000000000'

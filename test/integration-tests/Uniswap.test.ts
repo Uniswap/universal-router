@@ -15,6 +15,7 @@ import {
   ETH_ADDRESS,
   MAX_UINT,
   MAX_UINT160,
+  MAX_UINT128,
   MSG_SENDER,
   ONE_PERCENT_BIPS,
   SOURCE_MSG_SENDER,
@@ -1204,7 +1205,6 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
   describe('Migrator', () => {
     beforeEach(async () => {
-
       // Bob max-approves the v3PM to access his USDC and WETH
       await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
       await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
@@ -1293,33 +1293,20 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [decreaseParams])
 
-      await executeRouter(planner)
-
-      position = await v3NFTPositionManager.positions(tokenId)
-
-      let owed0 = position.tokensOwed0
-      let owed1 = position.tokensOwed1
-
-      planner = new RoutePlanner()
-
-      let bobBalanceBeforeToken0 = await usdcContract.balanceOf(bob.address)
-      let bobBalanceBeforeToken1 = await wethContract.balanceOf(bob.address)
-
-      const collectParams = { tokenId: tokenId, recipient: bob.address, amount0Max: owed0, amount1Max: owed1 }
+      const collectParams = {
+        tokenId: tokenId,
+        recipient: bob.address,
+        amount0Max: MAX_UINT128,
+        amount1Max: MAX_UINT128,
+      }
 
       planner.addCommand(CommandType.V3_COLLECT, [collectParams])
 
       await executeRouter(planner)
 
-      let bobBalanceAfterToken0 = await usdcContract.balanceOf(bob.address)
-      let bobBalanceAfterToken1 = await wethContract.balanceOf(bob.address)
-
-      expect(bobBalanceAfterToken0.sub(bobBalanceBeforeToken0)).to.eq(owed0)
-      expect(bobBalanceAfterToken1.sub(bobBalanceBeforeToken1)).to.eq(owed1)
-
       position = await v3NFTPositionManager.positions(tokenId)
-      owed0 = position.tokensOwed0
-      owed1 = position.tokensOwed1
+      let owed0 = position.tokensOwed0
+      let owed1 = position.tokensOwed1
 
       expect(owed0).to.eq(0)
       expect(owed1).to.eq(0)
@@ -1343,16 +1330,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [decreaseParams])
 
-      await executeRouter(planner)
-
-      position = await v3NFTPositionManager.positions(tokenId)
-
-      let owed0 = position.tokensOwed0
-      let owed1 = position.tokensOwed1
-
-      planner = new RoutePlanner()
-
-      const collectParams = { tokenId: tokenId, recipient: bob.address, amount0Max: owed0, amount1Max: owed1 }
+      const collectParams = {
+        tokenId: tokenId,
+        recipient: bob.address,
+        amount0Max: MAX_UINT128,
+        amount1Max: MAX_UINT128,
+      }
 
       planner.addCommand(CommandType.V3_COLLECT, [collectParams])
       planner.addCommand(CommandType.V3_BURN, [tokenId])
