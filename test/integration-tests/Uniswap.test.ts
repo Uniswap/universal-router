@@ -1202,7 +1202,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     })
   })
 
-  describe.only('Migrator', () => {
+  describe('Migrator', () => {
     beforeEach(async () => {
 
       // Bob max-approves the v3PM to access his USDC and WETH

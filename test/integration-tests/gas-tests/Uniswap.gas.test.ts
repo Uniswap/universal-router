@@ -96,7 +96,7 @@ describe('Uniswap Gas Tests', () => {
         amountOut = CurrencyAmount.fromRawAmount(DAI, expandTo18Decimals(5))
       })
 
-      it.only('gas: ERC20 --> ERC20 exactIn, one trade, one hop', async () => {
+      it('gas: ERC20 --> ERC20 exactIn, one trade, one hop', async () => {
         v2TradeExactIn = await Trade.fromRoute(
           new V2RouteSDK([pair_DAI_WETH], DAI, WETH),
           amountInDAI,
