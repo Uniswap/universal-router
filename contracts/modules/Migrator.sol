@@ -7,18 +7,18 @@ import {IERC20} from '@openzeppelin/contracts-v4/token/ERC20/IERC20.sol';
 
 abstract contract Migrator is MigratorImmutables {
     function erc721Permit(address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s) internal {
-        V3POSITIONMANGER.permit(spender, tokenId, deadline, v, r, s);
+        V3_POSITION_MANGER.permit(spender, tokenId, deadline, v, r, s);
     }
 
     function decreaseLiquidity(INonfungiblePositionManager.DecreaseLiquidityParams memory params) internal {
-        V3POSITIONMANGER.decreaseLiquidity(params);
+        V3_POSITION_MANGER.decreaseLiquidity(params);
     }
 
     function collect(INonfungiblePositionManager.CollectParams memory params) internal {
-        V3POSITIONMANGER.collect(params);
+        V3_POSITION_MANGER.collect(params);
     }
 
     function burn(uint256 tokenId) internal {
-        V3POSITIONMANGER.burn(tokenId);
+        V3_POSITION_MANGER.burn(tokenId);
     }
 }
