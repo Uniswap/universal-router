@@ -39,7 +39,8 @@ abstract contract DeployUniversalRouter is Script {
             v2Factory: mapUnsupported(params.v2Factory),
             v3Factory: mapUnsupported(params.v3Factory),
             pairInitCodeHash: params.pairInitCodeHash,
-            poolInitCodeHash: params.poolInitCodeHash
+            poolInitCodeHash: params.poolInitCodeHash,
+            v3NFTPositionManager: mapUnsupported(params.v3NFTPositionManager)
         });
 
         logParams();

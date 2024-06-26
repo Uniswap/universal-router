@@ -11,6 +11,7 @@ import {Payments} from '../../contracts/modules/Payments.sol';
 import {Constants} from '../../contracts/libraries/Constants.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
+import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
 
 abstract contract UniswapV2Test is Test {
     address constant RECIPIENT = address(10);
@@ -20,6 +21,8 @@ abstract contract UniswapV2Test is Test {
     ERC20 constant WETH9 = ERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     IPermit2 constant PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
     address constant FROM = address(1234);
+    INonfungiblePositionManager constant V3_POSITION_MANAGER =
+        INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
 
     UniversalRouter router;
 
@@ -33,7 +36,8 @@ abstract contract UniswapV2Test is Test {
             v2Factory: address(FACTORY),
             v3Factory: address(0),
             pairInitCodeHash: bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f),
-            poolInitCodeHash: bytes32(0)
+            poolInitCodeHash: bytes32(0),
+            v3NFTPositionManager: address(V3_POSITION_MANAGER)
         });
         router = new UniversalRouter(params);
 
