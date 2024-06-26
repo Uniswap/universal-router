@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// taken from openzepplin@3.4.2 and updated the solidity version to fix remapping issues due to different location of the file
+// taken from openzeppelin@3.4.2 and updated the solidity version to fix remapping issues due to different location of the file
 
 pragma solidity ^0.8.0;
 
