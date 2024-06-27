@@ -1211,7 +1211,7 @@ describe('Uniswap Gas Tests', () => {
     })
   })
 
-  describe.only('Migrator', () => {
+  describe('Migrator', () => {
     beforeEach(async () => {
       planner = new RoutePlanner()
       // Bob max-approves the v3PM to access his USDC and WETH
