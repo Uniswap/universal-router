@@ -3,10 +3,15 @@ pragma solidity ^0.8.24;
 
 import {MigratorImmutables} from '../modules/MigratorImmutables.sol';
 import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
+import {TokenAuthorized} from '../libraries/TokenAuthorized.sol';
 
 abstract contract Migrator is MigratorImmutables {
+    using TokenAuthorized for address;
+
+    error NotAuthorized();
+
     modifier isAuthorizedForToken(uint256 tokenId) {
-        require(_isApprovedOrOwner(msg.sender, tokenId), 'Not approved');
+        if (!_isApprovedOrOwner(msg.sender, tokenId)) revert NotAuthorized();
         _;
     }
 
@@ -32,11 +37,17 @@ abstract contract Migrator is MigratorImmutables {
         V3_POSITION_MANGER.burn(tokenId);
     }
 
-    function _isApprovedOrOwner(address spender, uint256 tokenId) internal view virtual returns (bool) {
-        address owner = V3_POSITION_MANGER.ownerOf(tokenId);
-        return (
-            spender == owner || V3_POSITION_MANGER.getApproved(tokenId) == spender
-                || V3_POSITION_MANGER.isApprovedForAll(owner, spender)
-        );
+    function _isApprovedOrOwner(address spender, uint256 tokenId) internal returns (bool authorized) {
+        if (spender.getAuthorized(tokenId)) {
+            return true;
+        } else {
+            address owner = V3_POSITION_MANGER.ownerOf(tokenId);
+            authorized = spender == owner || V3_POSITION_MANGER.getApproved(tokenId) == spender
+                || V3_POSITION_MANGER.isApprovedForAll(owner, spender);
+            if (authorized) {
+                spender.setAuthorized(tokenId);
+            }
+            return authorized;
+        }
     }
 }

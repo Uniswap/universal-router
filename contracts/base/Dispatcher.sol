@@ -6,12 +6,12 @@ import {V3SwapRouter} from '../modules/uniswap/v3/V3SwapRouter.sol';
 import {BytesLib} from '../modules/uniswap/v3/BytesLib.sol';
 import {Payments} from '../modules/Payments.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
+import {Migrator} from '../modules/Migrator.sol';
 import {Callbacks} from '../base/Callbacks.sol';
 import {Commands} from '../libraries/Commands.sol';
 import {LockAndMsgSender} from './LockAndMsgSender.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
-import {Migrator} from '../modules/Migrator.sol';
 import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
 
 /// @title Decodes and Executes Commands
