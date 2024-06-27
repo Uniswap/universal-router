@@ -14,11 +14,17 @@ abstract contract Migrator is MigratorImmutables {
         V3_POSITION_MANGER.permit(spender, tokenId, deadline, v, r, s);
     }
 
-    function decreaseLiquidity(INonfungiblePositionManager.DecreaseLiquidityParams memory params) internal isAuthorizedForToken(params.tokenId) {
+    function decreaseLiquidity(INonfungiblePositionManager.DecreaseLiquidityParams memory params)
+        internal
+        isAuthorizedForToken(params.tokenId)
+    {
         V3_POSITION_MANGER.decreaseLiquidity(params);
     }
 
-    function collect(INonfungiblePositionManager.CollectParams memory params) internal isAuthorizedForToken(params.tokenId) {
+    function collect(INonfungiblePositionManager.CollectParams memory params)
+        internal
+        isAuthorizedForToken(params.tokenId)
+    {
         V3_POSITION_MANGER.collect(params);
     }
 
@@ -28,6 +34,9 @@ abstract contract Migrator is MigratorImmutables {
 
     function _isApprovedOrOwner(address spender, uint256 tokenId) internal view virtual returns (bool) {
         address owner = V3_POSITION_MANGER.ownerOf(tokenId);
-        return (spender == owner || V3_POSITION_MANGER.getApproved(tokenId) == spender || V3_POSITION_MANGER.isApprovedForAll(owner, spender));
+        return (
+            spender == owner || V3_POSITION_MANGER.getApproved(tokenId) == spender
+                || V3_POSITION_MANGER.isApprovedForAll(owner, spender)
+        );
     }
 }
