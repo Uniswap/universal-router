@@ -35,6 +35,7 @@ const { ethers } = hre
 describe('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
+  let eve: SignerWithAddress
   let router: UniversalRouter
   let permit2: IPermit2
   let daiContract: Contract
@@ -53,6 +54,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     bob = (await ethers.getSigners())[1]
+    eve = (await ethers.getSigners())[2]
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
@@ -1245,34 +1247,66 @@ describe('Uniswap V2 and V3 Tests:', () => {
         tokenId = transferEvent.args.tokenId
       }
     })
-    it('erc721 permit', async () => {
-      const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+    describe('erc721permit', () => {
+      it('erc721 permit', async () => {
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
 
-      planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
 
-      // bob permits the router to authorize token
-      await executeRouter(planner)
+        // bob permits the router to authorize token
+        await executeRouter(planner)
 
-      expect((await v3NFTPositionManager.positions(tokenId)).operator).to.eq(router.address)
+        expect((await v3NFTPositionManager.positions(tokenId)).operator).to.eq(router.address)
+      })
+      it('only owner of the token can permit another address', async () => {
+        const { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+
+        // bob is trying to permit the router using alice's signature
+        await expect(executeRouter(planner)).to.be.revertedWith('Unauthorized');
+      })
     })
-    it('decrease liquidity', async () => {
-      // first we need to permit the router to spend the nft
-      const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
-      planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+    describe('decrease liquidity', () => {
+      it('decrease liquidity', async () => {
+        // first we need to permit the router to spend the nft
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
 
-      let position = await v3NFTPositionManager.positions(tokenId)
-      let liquidity = position.liquidity
+        let position = await v3NFTPositionManager.positions(tokenId)
+        let liquidity = position.liquidity
 
-      const params = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
+        const params = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
 
-      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [params])
+        planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [params])
 
-      await executeRouter(planner)
+        await executeRouter(planner)
 
-      position = await v3NFTPositionManager.positions(tokenId)
-      liquidity = position.liquidity
+        position = await v3NFTPositionManager.positions(tokenId)
+        liquidity = position.liquidity
 
-      expect(liquidity).to.eq(0)
+        expect(liquidity).to.eq(0)
+      })
+      it('cannot call decrease liquidity if not approved', async () => {
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+
+        await executeRouter(planner)
+
+        planner = new RoutePlanner()
+
+        // transfer the token to eve
+        await v3NFTPositionManager.transferFrom(bob.address, eve.address, tokenId)
+
+        let position = await v3NFTPositionManager.positions(tokenId)
+        let liquidity = position.liquidity
+
+        const params = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
+
+        planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [params])
+
+        // bob is trying to use the token that is now owned by eve. he is not authorized to do so
+        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'NotAuthorized');
+      })
     })
 
     it('collect', async () => {
