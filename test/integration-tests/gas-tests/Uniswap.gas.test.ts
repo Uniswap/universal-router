@@ -50,6 +50,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { RoutePlanner, CommandType } from '../shared/planner'
 import { FeeAmount } from '@uniswap/v3-sdk'
+import { encodeDecreaseLiquidity, encodeCollect, encodeBurn } from '../shared/encodeCall'
 const { ethers } = hre
 
 describe('Uniswap Gas Tests', () => {
@@ -1260,19 +1261,17 @@ describe('Uniswap Gas Tests', () => {
         let position = await v3NFTPositionManager.positions(tokenId)
         let liquidity = position.liquidity
 
-        const DECREASE_LIQUIDITY_STRUCT =
-          '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+        const decreaseParams = {
+          tokenId: tokenId,
+          liquidity: liquidity,
+          amount0Min: 0,
+          amount1Min: 0,
+          deadline: MAX_UINT,
+        }
 
-        const params = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
+        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
 
-        const abi = new ethers.utils.AbiCoder()
-        const encodedParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [params])
-        const functionSignature = ethers.utils
-          .id('decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))')
-          .substring(0, 10)
-        const encodedCall = functionSignature + encodedParams.substring(2)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCall])
+        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
 
         const { commands, inputs } = planner
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -1287,8 +1286,6 @@ describe('Uniswap Gas Tests', () => {
         let position = await v3NFTPositionManager.positions(tokenId)
         let liquidity = position.liquidity
 
-        const DECREASE_LIQUIDITY_STRUCT =
-          '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
         const decreaseParams = {
           tokenId: tokenId,
           liquidity: liquidity,
@@ -1297,14 +1294,8 @@ describe('Uniswap Gas Tests', () => {
           deadline: MAX_UINT,
         }
 
-        const abi = new ethers.utils.AbiCoder()
-        const encodedDecreaseParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [decreaseParams])
-        const functionSignatureDecrease = ethers.utils
-          .id('decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))')
-          .substring(0, 10)
-        const encodedDecreaseCall = functionSignatureDecrease + encodedDecreaseParams.substring(2)
+        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
 
-        const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint256 amount0Max,uint256 amount1Max)'
         const collectParams = {
           tokenId: tokenId,
           recipient: bob.address,
@@ -1312,9 +1303,7 @@ describe('Uniswap Gas Tests', () => {
           amount1Max: MAX_UINT128,
         }
 
-        const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
-        const functionSignatureCollect = ethers.utils.id('collect((uint256,address,uint128,uint128))').substring(0, 10)
-        const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
+        const encodedCollectCall = encodeCollect(collectParams)
 
         planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
         planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
@@ -1333,8 +1322,6 @@ describe('Uniswap Gas Tests', () => {
         let position = await v3NFTPositionManager.positions(tokenId)
         let liquidity = position.liquidity
 
-        const DECREASE_LIQUIDITY_STRUCT =
-          '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
         const decreaseParams = {
           tokenId: tokenId,
           liquidity: liquidity,
@@ -1343,14 +1330,8 @@ describe('Uniswap Gas Tests', () => {
           deadline: MAX_UINT,
         }
 
-        const abi = new ethers.utils.AbiCoder()
-        const encodedDecreaseParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [decreaseParams])
-        const functionSignatureDecrease = ethers.utils
-          .id('decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))')
-          .substring(0, 10)
-        const encodedDecreaseCall = functionSignatureDecrease + encodedDecreaseParams.substring(2)
+        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
 
-        const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint128 amount0Max,uint128 amount1Max)'
         const collectParams = {
           tokenId: tokenId,
           recipient: bob.address,
@@ -1358,13 +1339,9 @@ describe('Uniswap Gas Tests', () => {
           amount1Max: MAX_UINT128,
         }
 
-        const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
-        const functionSignatureCollect = ethers.utils.id('collect((uint256,address,uint128,uint128))').substring(0, 10)
-        const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
+        const encodedCollectCall = encodeCollect(collectParams)
 
-        const encodedBurnParams = abi.encode(['uint256'], [tokenId])
-        const functionSignatureBurn = ethers.utils.id('burn(uint256)').substring(0, 10)
-        const encodedBurnCall = functionSignatureBurn + encodedBurnParams.substring(2)
+        const encodedBurnCall = encodeBurn(tokenId)
 
         planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
         planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
