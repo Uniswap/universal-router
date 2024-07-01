@@ -102,6 +102,10 @@ export type RouterCommand = {
 }
 
 export function createCommand(type: CommandType, parameters: any[]): RouterCommand {
-  const encodedInput = defaultAbiCoder.encode(ABI_DEFINITION[type], parameters)
-  return { type, encodedInput }
+  if (type === CommandType.V3_POSM_CALL) {
+    return { type, encodedInput: parameters[0] }
+  } else {
+    const encodedInput = defaultAbiCoder.encode(ABI_DEFINITION[type], parameters)
+    return { type, encodedInput }
+  }
 }

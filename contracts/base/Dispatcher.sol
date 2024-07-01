@@ -13,6 +13,8 @@ import {LockAndMsgSender} from './LockAndMsgSender.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 
+import "forge-std/console2.sol";
+
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
 abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, Callbacks, LockAndMsgSender {
@@ -227,12 +229,11 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
 
                     erc721Permit(spender, tokenId, deadline, v, r, s);
                 } else if (command == Commands.V3_POSM_CALL) {
-                    bytes calldata callToMake = inputs.toBytes(0);
                     bytes4 selector;
                     uint256 tokenId;
                     assembly {
-                        selector := calldataload(callToMake.offset)
-                        tokenId := calldataload(add(callToMake.offset, 0x04))
+                        selector := calldataload(inputs.offset)
+                        tokenId := calldataload(add(inputs.offset, 0x04))
                     }
 
                     if (!isValidV3Action(selector)) {
@@ -242,7 +243,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                         revert NotAuthorizedForToken(tokenId);
                     }
 
-                    (success, output) = address(V3_POSITION_MANGER).call(callToMake);
+                    (success, output) = address(V3_POSITION_MANGER).call(inputs);
                     if (!success) {
                         revert CallToV3PositionManagerFailed(output);
                     }
