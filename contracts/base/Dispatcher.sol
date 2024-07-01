@@ -226,42 +226,25 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                     }
 
                     erc721Permit(spender, tokenId, deadline, v, r, s);
-                } else if (command == Commands.V3_POSM_MULTICALL) {
-                    bytes[] calldata callsToMake = inputs.toBytesArray(0);
+                } else if (command == Commands.V3_POSM_CALL) {
+                    bytes calldata callToMake = inputs.toBytes(0);
+                    bytes4 selector;
                     uint256 tokenId;
-                    uint256 newTokenId;
-                    for (uint256 i = 0; i < callsToMake.length; i++) {
-                        bytes calldata data = callsToMake[i];
-                        bytes4 selector;
-                        assembly {
-                            selector := calldataload(data.offset)
-                        }
-                        if (!isValidV3Action(selector)) {
-                            revert InvalidV3Action(selector);
-                        }
-                        if (i == 0) {
-                            assembly {
-                                tokenId := calldataload(add(data.offset, 0x04))
-                            }
-                            if (!isAuthorizedForToken(msg.sender, tokenId)) {
-                                revert NotAuthorizedForToken(tokenId);
-                            }
-                        } else {
-                            assembly {
-                                newTokenId := calldataload(add(data.offset, 0x04))
-                            }
-                            if (tokenId != newTokenId) {
-                                if (!isAuthorizedForToken(msg.sender, newTokenId)) {
-                                    revert NotAuthorizedForToken(newTokenId);
-                                }
-                                tokenId = newTokenId;
-                            }
-                        }
+                    assembly {
+                        selector := calldataload(callToMake.offset)
+                        tokenId := calldataload(add(callToMake.offset, 0x04))
+                    }
 
-                        (bool success, bytes memory returnData) = address(V3_POSITION_MANGER).call(data);
-                        if (!success) {
-                            revert CallToV3PositionManagerFailed(returnData);
-                        }
+                    if (!isValidV3Action(selector)) {
+                        revert InvalidV3Action(selector);
+                    }
+                    if (!isAuthorizedForToken(msg.sender, tokenId)) {
+                        revert NotAuthorizedForToken(tokenId);
+                    }
+
+                    (success, output) = address(V3_POSITION_MANGER).call(callToMake);
+                    if (!success) {
+                        revert CallToV3PositionManagerFailed(output);
                     }
                 } else {
                     // placeholder area for command

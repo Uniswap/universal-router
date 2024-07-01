@@ -39,7 +39,7 @@ library Commands {
     uint256 constant SECOND_IF_BOUNDARY = 0x10;
 
     uint256 constant ERC721_PERMIT = 0x10;
-    uint256 constant V3_POSM_MULTICALL = 0x11;
+    uint256 constant V3_POSM_CALL = 0x11;
 
     //COMMAND_PLACEHOLDER = 0x17;
 

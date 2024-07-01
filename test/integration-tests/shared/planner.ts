@@ -23,7 +23,7 @@ export enum CommandType {
   BALANCE_CHECK_ERC20 = 0x0e,
 
   ERC721_PERMIT = 0x10,
-  V3_POSM_MULTICALL = 0x11,
+  V3_POSM_CALL = 0x11,
 
   EXECUTE_SUB_PLAN = 0x21,
 }
@@ -66,7 +66,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
 
   [CommandType.ERC721_PERMIT]: ['address', 'uint256', 'uint256', 'uint8', 'bytes32', 'bytes32'],
-  [CommandType.V3_POSM_MULTICALL]: ['bytes[]']
+  [CommandType.V3_POSM_CALL]: ['bytes'],
 }
 
 export class RoutePlanner {
