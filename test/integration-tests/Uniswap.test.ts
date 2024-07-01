@@ -1267,7 +1267,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
     })
     describe('decrease liquidity', () => {
-      it('decrease liquidity', async () => {
+      it('decrease liquidity succeeds', async () => {
         // first we need to permit the router to spend the nft
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
         planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
@@ -1275,10 +1275,16 @@ describe('Uniswap V2 and V3 Tests:', () => {
         let position = await v3NFTPositionManager.positions(tokenId)
         let liquidity = position.liquidity
 
+        const DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+
         const params = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
 
-        planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [params])
+        const abi = new ethers.utils.AbiCoder();
+        const encodedParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [params])
+        const functionSignature = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))").substring(0, 10)
+        const encodedCall = functionSignature + encodedParams.substring(2)
 
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedCall]])
         await executeRouter(planner)
 
         position = await v3NFTPositionManager.positions(tokenId)
@@ -1286,7 +1292,49 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         expect(liquidity).to.eq(0)
       })
+      it('cannot call decrease liquidity with improper signature', async () => {
+        // first we need to permit the router to spend the nft
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+
+        let position = await v3NFTPositionManager.positions(tokenId)
+        let liquidity = position.liquidity
+
+        const BAD_DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min,uint256 deadline)'
+
+        const params = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT}
+
+        const abi = new ethers.utils.AbiCoder();
+        const encodedParams = abi.encode([BAD_DECREASE_LIQUIDITY_STRUCT], [params])
+        const functionSignature = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256))").substring(0, 10)
+        const encodedCall = functionSignature + encodedParams.substring(2)
+
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedCall]])
+        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'InvalidV3Action');
+      })
+      it('fails if decrease liquidity call fails', async () => {
+        // first we need to permit the router to spend the nft
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+
+        let position = await v3NFTPositionManager.positions(tokenId)
+        let liquidity = position.liquidity
+
+        const DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+
+        const params = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: 0 }
+
+        const abi = new ethers.utils.AbiCoder();
+        const encodedParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [params])
+        const functionSignature = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))").substring(0, 10)
+        const encodedCall = functionSignature + encodedParams.substring(2)
+
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedCall]])
+        
+        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'CallToV3PositionManagerFailed');
+      })
       it('cannot call decrease liquidity if not approved', async () => {
+        // bob creates a signature for the router to spend the token
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
         planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
 
@@ -1300,84 +1348,211 @@ describe('Uniswap V2 and V3 Tests:', () => {
         let position = await v3NFTPositionManager.positions(tokenId)
         let liquidity = position.liquidity
 
+        const DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+
         const params = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
 
-        planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [params])
+        const abi = new ethers.utils.AbiCoder();
+        const encodedParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [params])
+        const functionSignature = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))").substring(0, 10)
+        const encodedCall = functionSignature + encodedParams.substring(2)
+
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedCall]])
 
         // bob is trying to use the token that is now owned by eve. he is not authorized to do so
-        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'NotAuthorized');
+        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'NotAuthorizedForToken');
+      })
+      it('bob is permitted over the nft so he can call decrease even though he is not the owner', async () => {
+        // transfer the token to eve
+        await v3NFTPositionManager.transferFrom(bob.address, eve.address, tokenId);
+
+        // eve permits bob to spend the token
+        await v3NFTPositionManager.connect(eve).setApprovalForAll(bob.address, true)
+
+        // eve creates a signature for the router to spend the token
+        let { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+
+        await executeRouter(planner)
+        planner = new RoutePlanner()
+
+        let position = await v3NFTPositionManager.positions(tokenId)
+        let liquidity = position.liquidity
+
+        const DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+
+        const params = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
+
+        const abi = new ethers.utils.AbiCoder();
+        const encodedParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [params])
+        const functionSignature = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))").substring(0, 10)
+        const encodedCall = functionSignature + encodedParams.substring(2)
+
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedCall]])
+
+        await executeRouter(planner)
       })
     })
 
-    it('collect', async () => {
-      // first we need to permit the router to spend the nft
-      let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
-      planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+    describe('collect liquidity', () => {
+      it('collect succeeds', async () => {
+        // first we need to permit the router to spend the nft
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+  
+        let position = await v3NFTPositionManager.positions(tokenId)
+        let liquidity = position.liquidity
+  
+        const DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+        const decreaseParams = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
+  
+        const abi = new ethers.utils.AbiCoder();
+        const encodedDecreaseParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [decreaseParams])
+        const functionSignatureDecrease = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))").substring(0, 10)
+        const encodedDecreaseCall = functionSignatureDecrease + encodedDecreaseParams.substring(2)
+  
+        const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint256 amount0Max,uint256 amount1Max)'
+        const collectParams = { tokenId: tokenId, recipient: bob.address, amount0Max: MAX_UINT128, amount1Max: MAX_UINT128 }
+  
+        const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
+        const functionSignatureCollect = ethers.utils.id("collect((uint256,address,uint128,uint128))").substring(0, 10)
+        const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
+  
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedDecreaseCall, encodedCollectCall]])
+  
+        await executeRouter(planner)
+  
+        position = await v3NFTPositionManager.positions(tokenId)
+        let owed0 = position.tokensOwed0
+        let owed1 = position.tokensOwed1
+  
+        expect(owed0).to.eq(0)
+        expect(owed1).to.eq(0)
+      })
+      it('cannot call collect with improper signature', async () => {
+        // first we need to permit the router to spend the nft
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+  
+        let position = await v3NFTPositionManager.positions(tokenId)
+        let liquidity = position.liquidity
+  
+        const DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+        const decreaseParams = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
+  
+        const abi = new ethers.utils.AbiCoder();
+        const encodedDecreaseParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [decreaseParams])
+        const functionSignatureDecrease = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))").substring(0, 10)
+        const encodedDecreaseCall = functionSignatureDecrease + encodedDecreaseParams.substring(2)
+  
+        const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint256 amount0Max,uint256 amount1Max)'
+        const collectParams = { tokenId: tokenId, recipient: bob.address, amount0Max: MAX_UINT128, amount1Max: MAX_UINT128 }
+  
+        const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
+        const functionSignatureCollect = ethers.utils.id("collect((uint256,address,uint128))").substring(0, 10)
+        const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
+  
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedDecreaseCall, encodedCollectCall]])
+  
+        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'InvalidV3Action');
+      })
+      it('cannot call collect with improper params', async () => {
+        // first we need to permit the router to spend the nft
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+  
+        let position = await v3NFTPositionManager.positions(tokenId)
+        let liquidity = position.liquidity
+  
+        const DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+        const decreaseParams = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
+  
+        const abi = new ethers.utils.AbiCoder();
+        const encodedDecreaseParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [decreaseParams])
+        const functionSignatureDecrease = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))").substring(0, 10)
+        const encodedDecreaseCall = functionSignatureDecrease + encodedDecreaseParams.substring(2)
+  
+        const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint256 amount0Max)'
+        const collectParams = { tokenId: tokenId, recipient: bob.address, amount0Max: MAX_UINT128 }
+  
+        const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
+        const functionSignatureCollect = ethers.utils.id("collect((uint256,address,uint128,uint128))").substring(0, 10)
+        const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
+  
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedDecreaseCall, encodedCollectCall]])
+  
+        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'CallToV3PositionManagerFailed');
+      })
+      it('cannot call collect if not approved', async () => {
+        // first we need to permit the router to spend the nft
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
 
-      let position = await v3NFTPositionManager.positions(tokenId)
-      let liquidity = position.liquidity
-
-      const decreaseParams = {
-        tokenId: tokenId,
-        liquidity: liquidity,
-        amount0Min: 0,
-        amount1Min: 0,
-        deadline: MAX_UINT,
-      }
-
-      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [decreaseParams])
-
-      const collectParams = {
-        tokenId: tokenId,
-        recipient: bob.address,
-        amount0Max: MAX_UINT128,
-        amount1Max: MAX_UINT128,
-      }
-
-      planner.addCommand(CommandType.V3_COLLECT, [collectParams])
-
-      await executeRouter(planner)
-
-      position = await v3NFTPositionManager.positions(tokenId)
-      let owed0 = position.tokensOwed0
-      let owed1 = position.tokensOwed1
-
-      expect(owed0).to.eq(0)
-      expect(owed1).to.eq(0)
+        await executeRouter(planner)
+        planner = new RoutePlanner()
+  
+        let position = await v3NFTPositionManager.positions(tokenId)
+        let liquidity = position.liquidity
+  
+        // approved on the decrease call
+        const DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+        const decreaseParams = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
+  
+        const abi = new ethers.utils.AbiCoder();
+        const encodedDecreaseParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [decreaseParams])
+        const functionSignatureDecrease = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))").substring(0, 10)
+        const encodedDecreaseCall = functionSignatureDecrease + encodedDecreaseParams.substring(2)
+  
+        // not approved on the collect call
+        const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint128 amount0Max,uint128 amount1Max)'
+        const collectParams = { tokenId: 1, recipient: bob.address, amount0Max: MAX_UINT128, amount1Max: MAX_UINT128}
+  
+        const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
+        const functionSignatureCollect = ethers.utils.id("collect((uint256,address,uint128,uint128))").substring(0, 10)
+        const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
+  
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedDecreaseCall, encodedCollectCall]])
+  
+        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'NotAuthorizedForToken');
+      })
     })
 
-    it('burn', async () => {
-      // first we need to permit the router to spend the nft
-      let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
-      planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+    describe('burn liquidity', () => {
+      it('burn succeeds', async () => {
+        // first we need to permit the router to spend the nft
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
 
-      let position = await v3NFTPositionManager.positions(tokenId)
-      let liquidity = position.liquidity
+        let position = await v3NFTPositionManager.positions(tokenId)
+        let liquidity = position.liquidity
 
-      const decreaseParams = {
-        tokenId: tokenId,
-        liquidity: liquidity,
-        amount0Min: 0,
-        amount1Min: 0,
-        deadline: MAX_UINT,
-      }
+        const DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+        const decreaseParams = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
 
-      planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [decreaseParams])
+        const abi = new ethers.utils.AbiCoder();
+        const encodedDecreaseParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [decreaseParams])
+        const functionSignatureDecrease = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))").substring(0, 10)
+        const encodedDecreaseCall = functionSignatureDecrease + encodedDecreaseParams.substring(2)
 
-      const collectParams = {
-        tokenId: tokenId,
-        recipient: bob.address,
-        amount0Max: MAX_UINT128,
-        amount1Max: MAX_UINT128,
-      }
+        const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint128 amount0Max,uint128 amount1Max)'
+        const collectParams = { tokenId: tokenId, recipient: bob.address, amount0Max: MAX_UINT128, amount1Max: MAX_UINT128 }
+  
+        const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
+        const functionSignatureCollect = ethers.utils.id("collect((uint256,address,uint128,uint128))").substring(0, 10)
+        const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
 
-      planner.addCommand(CommandType.V3_COLLECT, [collectParams])
-      planner.addCommand(CommandType.V3_BURN, [tokenId])
+        const encodedBurnParams = abi.encode(['uint256'], [tokenId])
+        const functionSignatureBurn = ethers.utils.id("burn(uint256)").substring(0, 10)
+        const encodedBurnCall = functionSignatureBurn + encodedBurnParams.substring(2)
 
-      await executeRouter(planner)
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedDecreaseCall, encodedCollectCall, encodedBurnCall]])
 
-      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
+        await executeRouter(planner)
+
+        expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
+      })
     })
+
   })
 
   type V2SwapEventArgs = {

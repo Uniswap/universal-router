@@ -12,7 +12,6 @@ import {Commands} from '../libraries/Commands.sol';
 import {LockAndMsgSender} from './LockAndMsgSender.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
-import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
@@ -20,6 +19,9 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
     using BytesLib for bytes;
 
     error InvalidCommandType(uint256 commandType);
+    error InvalidV3Action(bytes4 action);
+    error CallToV3PositionManagerFailed(bytes returnData);
+    error NotAuthorizedForToken(uint256 tokenId);
     error BalanceTooLow();
 
     /// @notice Decodes and executes the given command with the given inputs
@@ -224,20 +226,43 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                     }
 
                     erc721Permit(spender, tokenId, deadline, v, r, s);
-                } else if (command == Commands.V3_DECREASE_LIQUIDITY) {
-                    (INonfungiblePositionManager.DecreaseLiquidityParams memory params) =
-                        abi.decode(inputs, (INonfungiblePositionManager.DecreaseLiquidityParams));
-                    decreaseLiquidity(params);
-                } else if (command == Commands.V3_COLLECT) {
-                    (INonfungiblePositionManager.CollectParams memory params) =
-                        abi.decode(inputs, (INonfungiblePositionManager.CollectParams));
-                    collect(params);
-                } else if (command == Commands.V3_BURN) {
+                } else if (command == Commands.V3_POSM_MULTICALL) {
+                    bytes[] calldata callsToMake = inputs.toBytesArray(0);
                     uint256 tokenId;
-                    assembly {
-                        tokenId := calldataload(inputs.offset)
+                    uint256 newTokenId;
+                    for (uint256 i = 0; i < callsToMake.length; i++) {
+                        bytes calldata data = callsToMake[i];
+                        bytes4 selector;
+                        assembly {
+                            selector := calldataload(data.offset)
+                        }
+                        if (!isValidV3Action(selector)) {
+                            revert InvalidV3Action(selector);
+                        }
+                        if (i == 0) {
+                            assembly {
+                                tokenId := calldataload(add(data.offset, 0x04))
+                            }
+                            if (!isAuthorizedForToken(msg.sender, tokenId)) {
+                                revert NotAuthorizedForToken(tokenId);
+                            }
+                        } else {
+                            assembly {
+                                newTokenId := calldataload(add(data.offset, 0x04))
+                            }
+                            if (tokenId != newTokenId) {
+                                if (!isAuthorizedForToken(msg.sender, newTokenId)) {
+                                    revert NotAuthorizedForToken(newTokenId);
+                                }
+                                tokenId = newTokenId;
+                            }
+                        }
+
+                        (bool success, bytes memory returnData) = address(V3_POSITION_MANGER).call(data);
+                        if (!success) {
+                            revert CallToV3PositionManagerFailed(returnData);
+                        }
                     }
-                    burn(tokenId);
                 } else {
                     // placeholder area for command
                     revert InvalidCommandType(command);

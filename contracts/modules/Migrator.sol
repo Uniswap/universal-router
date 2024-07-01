@@ -2,52 +2,21 @@
 pragma solidity ^0.8.24;
 
 import {MigratorImmutables} from '../modules/MigratorImmutables.sol';
-import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
-import {TokenAuthorized} from '../libraries/TokenAuthorized.sol';
 
 abstract contract Migrator is MigratorImmutables {
-    using TokenAuthorized for address;
-
-    error NotAuthorized();
-
-    modifier isAuthorizedForToken(uint256 tokenId) {
-        if (!_isApprovedOrOwner(msg.sender, tokenId)) revert NotAuthorized();
-        _;
-    }
-
     function erc721Permit(address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s) internal {
         V3_POSITION_MANGER.permit(spender, tokenId, deadline, v, r, s);
     }
 
-    function decreaseLiquidity(INonfungiblePositionManager.DecreaseLiquidityParams memory params)
-        internal
-        isAuthorizedForToken(params.tokenId)
-    {
-        V3_POSITION_MANGER.decreaseLiquidity(params);
+    function isValidV3Action(bytes4 selector) internal pure returns (bool) {
+        return selector == bytes4(keccak256('decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))'))
+            || selector == bytes4(keccak256('collect((uint256,address,uint128,uint128))'))
+            || selector == bytes4(keccak256('burn(uint256)'));
     }
 
-    function collect(INonfungiblePositionManager.CollectParams memory params)
-        internal
-        isAuthorizedForToken(params.tokenId)
-    {
-        V3_POSITION_MANGER.collect(params);
-    }
-
-    function burn(uint256 tokenId) internal isAuthorizedForToken(tokenId) {
-        V3_POSITION_MANGER.burn(tokenId);
-    }
-
-    function _isApprovedOrOwner(address spender, uint256 tokenId) internal returns (bool authorized) {
-        if (spender.getAuthorized(tokenId)) {
-            return true;
-        } else {
-            address owner = V3_POSITION_MANGER.ownerOf(tokenId);
-            authorized = spender == owner || V3_POSITION_MANGER.getApproved(tokenId) == spender
-                || V3_POSITION_MANGER.isApprovedForAll(owner, spender);
-            if (authorized) {
-                spender.setAuthorized(tokenId);
-            }
-            return authorized;
-        }
+    function isAuthorizedForToken(address spender, uint256 tokenId) internal view returns (bool authorized) {
+        address owner = V3_POSITION_MANGER.ownerOf(tokenId);
+        return spender == owner || V3_POSITION_MANGER.getApproved(tokenId) == spender
+            || V3_POSITION_MANGER.isApprovedForAll(owner, spender);
     }
 }

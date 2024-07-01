@@ -1253,15 +1253,23 @@ describe('Uniswap Gas Tests', () => {
     })
     describe('decrease liquidity', () => {
       it('gas: erc721permit + decreaseLiquidity', async () => {
+        // first we need to permit the router to spend the nft
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
         planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
 
         let position = await v3NFTPositionManager.positions(tokenId)
         let liquidity = position.liquidity
 
+        const DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+
         const params = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
 
-        planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [params])
+        const abi = new ethers.utils.AbiCoder();
+        const encodedParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [params])
+        const functionSignature = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))").substring(0, 10)
+        const encodedCall = functionSignature + encodedParams.substring(2)
+
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedCall]])
 
         const { commands, inputs } = planner
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -1272,28 +1280,26 @@ describe('Uniswap Gas Tests', () => {
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
         planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
-
+  
         let position = await v3NFTPositionManager.positions(tokenId)
         let liquidity = position.liquidity
-
-        const decreaseParams = {
-          tokenId: tokenId,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [decreaseParams])
-
-        const collectParams = {
-          tokenId: tokenId,
-          recipient: bob.address,
-          amount0Max: MAX_UINT128,
-          amount1Max: MAX_UINT128,
-        }
-
-        planner.addCommand(CommandType.V3_COLLECT, [collectParams])
+  
+        const DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+        const decreaseParams = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
+  
+        const abi = new ethers.utils.AbiCoder();
+        const encodedDecreaseParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [decreaseParams])
+        const functionSignatureDecrease = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))").substring(0, 10)
+        const encodedDecreaseCall = functionSignatureDecrease + encodedDecreaseParams.substring(2)
+  
+        const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint256 amount0Max,uint256 amount1Max)'
+        const collectParams = { tokenId: tokenId, recipient: bob.address, amount0Max: MAX_UINT128, amount1Max: MAX_UINT128 }
+  
+        const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
+        const functionSignatureCollect = ethers.utils.id("collect((uint256,address,uint128,uint128))").substring(0, 10)
+        const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
+  
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedDecreaseCall, encodedCollectCall]])
 
         const { commands, inputs } = planner
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -1309,28 +1315,30 @@ describe('Uniswap Gas Tests', () => {
         let position = await v3NFTPositionManager.positions(tokenId)
         let liquidity = position.liquidity
 
-        const decreaseParams = {
-          tokenId: tokenId,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
+        const DECREASE_LIQUIDITY_STRUCT = '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+        const decreaseParams = { tokenId: tokenId, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
 
-        planner.addCommand(CommandType.V3_DECREASE_LIQUIDITY, [decreaseParams])
+        const abi = new ethers.utils.AbiCoder();
+        const encodedDecreaseParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [decreaseParams])
+        const functionSignatureDecrease = ethers.utils.id("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))").substring(0, 10)
+        const encodedDecreaseCall = functionSignatureDecrease + encodedDecreaseParams.substring(2)
 
-        const collectParams = {
-          tokenId: tokenId,
-          recipient: bob.address,
-          amount0Max: MAX_UINT128,
-          amount1Max: MAX_UINT128,
-        }
+        const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint128 amount0Max,uint128 amount1Max)'
+        const collectParams = { tokenId: tokenId, recipient: bob.address, amount0Max: MAX_UINT128, amount1Max: MAX_UINT128 }
+  
+        const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
+        const functionSignatureCollect = ethers.utils.id("collect((uint256,address,uint128,uint128))").substring(0, 10)
+        const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
 
-        planner.addCommand(CommandType.V3_COLLECT, [collectParams])
-        planner.addCommand(CommandType.V3_BURN, [tokenId])
+        const encodedBurnParams = abi.encode(['uint256'], [tokenId])
+        const functionSignatureBurn = ethers.utils.id("burn(uint256)").substring(0, 10)
+        const encodedBurnCall = functionSignatureBurn + encodedBurnParams.substring(2)
+
+        planner.addCommand(CommandType.V3_POSM_MULTICALL, [[encodedDecreaseCall, encodedCollectCall, encodedBurnCall]])
 
         const { commands, inputs } = planner
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+
       })
     })
   })

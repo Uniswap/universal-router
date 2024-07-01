@@ -23,9 +23,7 @@ export enum CommandType {
   BALANCE_CHECK_ERC20 = 0x0e,
 
   ERC721_PERMIT = 0x10,
-  V3_DECREASE_LIQUIDITY = 0x11,
-  V3_COLLECT = 0x12,
-  V3_BURN = 0x13,
+  V3_POSM_MULTICALL = 0x11,
 
   EXECUTE_SUB_PLAN = 0x21,
 }
@@ -42,10 +40,6 @@ const PERMIT_BATCH_STRUCT =
 
 const PERMIT2_TRANSFER_FROM_STRUCT = '(address from,address to,uint160 amount,address token)'
 const PERMIT2_TRANSFER_FROM_BATCH_STRUCT = PERMIT2_TRANSFER_FROM_STRUCT + '[]'
-
-const DECREASE_LIQUIDITY_STRUCT =
-  '(uint256 tokenId,uint128 liquidity,uint256 amount0Min,uint256 amount1Min,uint256 deadline)'
-const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint128 amount0Max,uint128 amount1Max)'
 
 const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   // Batch Reverts
@@ -72,9 +66,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
 
   [CommandType.ERC721_PERMIT]: ['address', 'uint256', 'uint256', 'uint8', 'bytes32', 'bytes32'],
-  [CommandType.V3_DECREASE_LIQUIDITY]: [DECREASE_LIQUIDITY_STRUCT],
-  [CommandType.V3_COLLECT]: [COLLECT_STRUCT],
-  [CommandType.V3_BURN]: ['uint256'],
+  [CommandType.V3_POSM_MULTICALL]: ['bytes[]']
 }
 
 export class RoutePlanner {
