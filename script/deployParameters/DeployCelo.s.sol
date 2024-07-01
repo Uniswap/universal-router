@@ -12,7 +12,8 @@ contract DeployCelo is DeployUniversalRouter {
             v2Factory: 0x79a530c8e2fA8748B7B40dd3629C0520c2cCf03f,
             v3Factory: 0xAfE208a311B21f13EF87E33A90049fC17A7acDEc,
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
-            poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54
+            poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
+            v3NFTPositionManager: 0xC36442b4a4522E871399CD717aBDD847Ab11FE88
         });
 
         unsupported = 0x5Dc88340E1c5c6366864Ee415d6034cadd1A9897;

@@ -9,11 +9,6 @@ evm_version = "cancun"
 optimizer_runs = 1_000_000
 fs_permissions = [{ access = "read", path = "./script/deployParameters/"}]
 
-remappings = [
-    "solmate/=lib/solmate/",
-    "permit2/=lib/permit2/",
-]
-
 [fmt]
 line_length = 120
 quote_style = 'single'

@@ -7,6 +7,7 @@ import {
   V2_INIT_CODE_HASH_MAINNET,
   V3_INIT_CODE_HASH_MAINNET,
   PERMIT2_ADDRESS,
+  V3_NFT_POSITION_MANAGER_MAINNET,
 } from './constants'
 
 export async function deployRouter(mockReentrantWETH?: string): Promise<UniversalRouter> {
@@ -17,6 +18,7 @@ export async function deployRouter(mockReentrantWETH?: string): Promise<Universa
     v3Factory: V3_FACTORY_MAINNET,
     pairInitCodeHash: V2_INIT_CODE_HASH_MAINNET,
     poolInitCodeHash: V3_INIT_CODE_HASH_MAINNET,
+    v3NFTPositionManager: V3_NFT_POSITION_MANAGER_MAINNET,
   }
 
   const routerFactory = await ethers.getContractFactory('UniversalRouter')

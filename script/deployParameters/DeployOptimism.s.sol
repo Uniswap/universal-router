@@ -12,7 +12,8 @@ contract DeployOptimism is DeployUniversalRouter {
             v2Factory: 0x0c3c1c532F1e39EdF36BE9Fe0bE1410313E074Bf,
             v3Factory: 0x1F98431c8aD98523631AE4a59f267346ea31F984,
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
-            poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54
+            poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
+            v3NFTPositionManager: 0xC36442b4a4522E871399CD717aBDD847Ab11FE88
         });
 
         unsupported = 0x40d51104Da22E3e77b683894E7e3E12e8FC61E65;

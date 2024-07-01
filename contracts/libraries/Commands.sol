@@ -38,6 +38,11 @@ library Commands {
     // The following constant defines one of the boundaries where the if blocks split commands
     uint256 constant SECOND_IF_BOUNDARY = 0x10;
 
+    uint256 constant ERC721_PERMIT = 0x10;
+    uint256 constant V3_POSM_CALL = 0x11;
+
+    //COMMAND_PLACEHOLDER = 0x17;
+
     // The commands are executed in nested if blocks to minimise gas consumption
     // The following constant defines one of the boundaries where the if blocks split commands
     uint256 constant THIRD_IF_BOUNDARY = 0x18;
