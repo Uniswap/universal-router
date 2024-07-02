@@ -11,6 +11,7 @@ contract DeployBaseGoerli is DeployUniversalRouter {
             weth9: 0x44D627f900da8AdaC7561bD73aA745F132450798,
             v2Factory: UNSUPPORTED_PROTOCOL,
             v3Factory: 0x9323c1d6D800ed51Bd7C6B216cfBec678B7d0BC2,
+            v4PoolManager: address(0),
             pairInitCodeHash: BYTES32_ZERO,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54
         });

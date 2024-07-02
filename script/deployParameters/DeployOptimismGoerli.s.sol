@@ -11,6 +11,7 @@ contract DeployOptimismGoerli is DeployUniversalRouter {
             weth9: 0x4200000000000000000000000000000000000006,
             v2Factory: UNSUPPORTED_PROTOCOL,
             v3Factory: 0xB656dA17129e7EB733A557f4EBc57B76CFbB5d10,
+            v4PoolManager: UNSUPPORTED_PROTOCOL,
             pairInitCodeHash: BYTES32_ZERO,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54
         });

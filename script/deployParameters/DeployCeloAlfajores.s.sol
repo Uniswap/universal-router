@@ -11,6 +11,7 @@ contract DeployCeloAlfajores is DeployUniversalRouter {
             weth9: UNSUPPORTED_PROTOCOL,
             v2Factory: UNSUPPORTED_PROTOCOL,
             v3Factory: 0xAfE208a311B21f13EF87E33A90049fC17A7acDEc,
+            v4PoolManager: UNSUPPORTED_PROTOCOL,
             pairInitCodeHash: BYTES32_ZERO,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54
         });

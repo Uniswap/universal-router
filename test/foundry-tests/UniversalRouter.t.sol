@@ -29,6 +29,7 @@ contract UniversalRouterTest is Test {
             weth9: address(0),
             v2Factory: address(0),
             v3Factory: address(0),
+            v4PoolManager: address(0),
             pairInitCodeHash: bytes32(0),
             poolInitCodeHash: bytes32(0)
         });

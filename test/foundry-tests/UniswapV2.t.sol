@@ -32,6 +32,7 @@ abstract contract UniswapV2Test is Test {
             weth9: address(WETH9),
             v2Factory: address(FACTORY),
             v3Factory: address(0),
+            v4PoolManager: address(0),
             pairInitCodeHash: bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f),
             poolInitCodeHash: bytes32(0)
         });

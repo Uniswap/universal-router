@@ -11,6 +11,7 @@ contract DeployPolygonMumbai is DeployUniversalRouter {
             weth9: 0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889,
             v2Factory: UNSUPPORTED_PROTOCOL,
             v3Factory: 0x1F98431c8aD98523631AE4a59f267346ea31F984,
+            v4PoolManager: UNSUPPORTED_PROTOCOL,
             pairInitCodeHash: BYTES32_ZERO,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54
         });

@@ -6,6 +6,7 @@ struct RouterParameters {
     address weth9;
     address v2Factory;
     address v3Factory;
+    address v4PoolManager;
     bytes32 pairInitCodeHash;
     bytes32 poolInitCodeHash;
 }

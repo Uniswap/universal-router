@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 // Command implementations
 import {Dispatcher} from './base/Dispatcher.sol';
 import {RouterParameters} from './base/RouterImmutables.sol';
+import {V4SwapRouter} from './modules/uniswap/v4/V4SwapRouter.sol';
 import {PaymentsImmutables, PaymentsParameters} from './modules/PaymentsImmutables.sol';
 import {UniswapImmutables, UniswapParameters} from './modules/uniswap/UniswapImmutables.sol';
 import {Commands} from './libraries/Commands.sol';
@@ -20,6 +21,7 @@ contract UniversalRouter is IUniversalRouter, Dispatcher {
             UniswapParameters(params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash)
         )
         PaymentsImmutables(PaymentsParameters(params.permit2, params.weth9))
+        V4SwapRouter(params.v4PoolManager)
     {}
 
     /// @inheritdoc IUniversalRouter
