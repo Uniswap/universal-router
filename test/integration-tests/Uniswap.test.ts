@@ -1248,6 +1248,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         tokenId = transferEvent.args.tokenId
       }
     })
+
     describe('erc721permit', () => {
       it('erc721 permit', async () => {
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
@@ -1259,6 +1260,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         expect((await v3NFTPositionManager.positions(tokenId)).operator).to.eq(router.address)
       })
+
       it('only owner of the token can permit another address', async () => {
         const { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
         planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
@@ -1267,6 +1269,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         await expect(executeRouter(planner)).to.be.revertedWith('Unauthorized')
       })
     })
+
     describe('decrease liquidity', () => {
       it('decrease liquidity succeeds', async () => {
         // first we need to permit the router to spend the nft
@@ -1294,6 +1297,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         expect(liquidity).to.eq(0)
       })
+
       it('cannot call decrease liquidity with improper signature', async () => {
         // first we need to permit the router to spend the nft
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
@@ -1323,6 +1327,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.V3_POSM_CALL, [encodedCall])
         await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'InvalidV3Action')
       })
+
       it('fails if decrease liquidity call fails', async () => {
         // first we need to permit the router to spend the nft
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
@@ -1339,6 +1344,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'CallToV3PositionManagerFailed')
       })
+
       it('cannot call decrease liquidity if not approved', async () => {
         // bob creates a signature for the router to spend the token
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
@@ -1369,6 +1375,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // bob is trying to use the token that is now owned by eve. he is not authorized to do so
         await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'NotAuthorizedForToken')
       })
+
       it('bob is permitted over the nft so he can call decrease even though he is not the owner', async () => {
         // transfer the token to eve
         await v3NFTPositionManager.transferFrom(bob.address, eve.address, tokenId)
@@ -1398,6 +1405,10 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
     describe('collect liquidity', () => {
       it('collect succeeds', async () => {
+
+        let bobToken0BalanceBefore = await usdcContract.balanceOf(bob.address)
+        let bobToken1BalanceBefore = await wethContract.balanceOf(bob.address)
+
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
         planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
@@ -1435,7 +1446,64 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         expect(owed0).to.eq(0)
         expect(owed1).to.eq(0)
+
+        let bobToken0BalanceAfter = await usdcContract.balanceOf(bob.address)
+        let bobToken1BalanceAfter = await wethContract.balanceOf(bob.address)
+
+        // bob is the recipient - he should have received the owed tokens
+        expect(bobToken0BalanceAfter).to.be.gt(bobToken0BalanceBefore)
+        expect(bobToken1BalanceAfter).to.be.gt(bobToken1BalanceBefore)
       })
+
+      it('collect succeeds with router as recipient', async () => {
+
+        let routerToken0BalanceBefore = await usdcContract.balanceOf(router.address)
+        let routerToken1BalanceBefore = await wethContract.balanceOf(router.address)
+
+        // router should have no balance of the tokens
+        expect(routerToken0BalanceBefore).to.be.eq(0)
+        expect(routerToken1BalanceBefore).to.be.eq(0)
+
+        // first we need to permit the router to spend the nft
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
+        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
+
+        let position = await v3NFTPositionManager.positions(tokenId)
+        let liquidity = position.liquidity
+
+        const decreaseParams = {
+          tokenId: tokenId,
+          liquidity: liquidity,
+          amount0Min: 0,
+          amount1Min: 0,
+          deadline: MAX_UINT,
+        }
+
+        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
+
+        const collectParams = {
+          tokenId: tokenId,
+          recipient: router.address,
+          amount0Max: MAX_UINT128,
+          amount1Max: MAX_UINT128,
+        }
+
+        const encodedCollectCall = encodeCollect(collectParams)
+
+        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
+
+        await executeRouter(planner)
+
+        let routerToken0BalanceAfter = await usdcContract.balanceOf(router.address)
+        let routerToken1BalanceAfter = await wethContract.balanceOf(router.address)
+
+        // router is the recipient - router should have received the owed tokens
+        // (there is sweep function if necessary)
+        expect(routerToken0BalanceAfter).to.be.gt(routerToken0BalanceBefore)
+        expect(routerToken1BalanceAfter).to.be.gt(routerToken1BalanceBefore)
+      })
+
       it('cannot call collect with improper signature', async () => {
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
@@ -1472,6 +1540,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'InvalidV3Action')
       })
+
       it('cannot call collect with improper params', async () => {
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
@@ -1503,6 +1572,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'CallToV3PositionManagerFailed')
       })
+
       it('cannot call collect if not approved', async () => {
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)

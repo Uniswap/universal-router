@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 library TokenAuthorized {
     function _computeSlot(address spender, uint256 tokenId) internal pure returns (bytes32 hashSlot) {

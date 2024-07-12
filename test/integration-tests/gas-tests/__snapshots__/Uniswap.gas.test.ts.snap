@@ -3,14 +3,14 @@
 exports[`Uniswap Gas Tests Migrator burn gas: erc721permit + decreaseLiquidity + collect + burn 1`] = `
 Object {
   "calldataByteLength": 1060,
-  "gasUsed": 257806,
+  "gasUsed": 257811,
 }
 `;
 
 exports[`Uniswap Gas Tests Migrator collect gas: erc721permit + decreaseLiquidity + collect 1`] = `
 Object {
   "calldataByteLength": 932,
-  "gasUsed": 224644,
+  "gasUsed": 224647,
 }
 `;
 

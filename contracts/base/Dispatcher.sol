@@ -13,8 +13,6 @@ import {LockAndMsgSender} from './LockAndMsgSender.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 
-import "forge-std/console2.sol";
-
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
 abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, Callbacks, LockAndMsgSender {

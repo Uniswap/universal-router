@@ -28,7 +28,6 @@ abstract contract Migrator is MigratorImmutables {
             if (authorized) {
                 spender.setAuthorized(tokenId);
             }
-            return authorized;
         }
     }
 }

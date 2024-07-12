@@ -13,7 +13,6 @@ import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {IERC165} from '@openzeppelin/contracts-v4/utils/introspection/IERC165.sol';
-import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
 
 contract UniversalRouterTest is Test {
     address constant RECIPIENT = address(1234);
