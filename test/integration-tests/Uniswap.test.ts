@@ -1250,12 +1250,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
     })
 
     describe('erc721permit', () => {
-      it('erc721 permit', async () => {
+      it('erc721 permit succeeds', async () => {
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
 
         planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
 
-        // bob permits the router to authorize token
+        // bob permits the router to spend token
         await executeRouter(planner)
 
         expect((await v3NFTPositionManager.positions(tokenId)).operator).to.eq(router.address)
@@ -1298,7 +1298,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(liquidity).to.eq(0)
       })
 
-      it('cannot call decrease liquidity with improper signature', async () => {
+      it('cannot call decrease liquidity with improper function selector', async () => {
         // first we need to permit the router to spend the nft
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
         planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
