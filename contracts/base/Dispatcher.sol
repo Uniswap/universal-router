@@ -225,19 +225,20 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                         s := calldataload(add(inputs.offset, 0xA0))
                     }
 
-                    erc721Permit(spender, tokenId, deadline, v, r, s);
+                    erc721Permit(map(spender), tokenId, deadline, v, r, s);
                 } else if (command == Commands.V3_POSM_CALL) {
                     bytes4 selector;
                     uint256 tokenId;
                     assembly {
                         selector := calldataload(inputs.offset)
+                        // tokenId is always the first parameter in the valid actions
                         tokenId := calldataload(add(inputs.offset, 0x04))
                     }
 
                     if (!isValidV3Action(selector)) {
                         revert InvalidV3Action(selector);
                     }
-                    if (!isAuthorizedForToken(msg.sender, tokenId)) {
+                    if (!isAuthorizedForToken(lockedBy, tokenId)) {
                         revert NotAuthorizedForToken(tokenId);
                     }
 

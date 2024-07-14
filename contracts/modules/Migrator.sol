@@ -3,10 +3,10 @@ pragma solidity ^0.8.24;
 
 import {MigratorImmutables} from '../modules/MigratorImmutables.sol';
 import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
-import {TokenAuthorized} from '../libraries/TokenAuthorized.sol';
+import {TokenAuthorizationCache} from '../libraries/TokenAuthorizationCache.sol';
 
 abstract contract Migrator is MigratorImmutables {
-    using TokenAuthorized for address;
+    using TokenAuthorizationCache for address;
 
     function erc721Permit(address spender, uint256 tokenId, uint256 deadline, uint8 v, bytes32 r, bytes32 s) internal {
         V3_POSITION_MANGER.permit(spender, tokenId, deadline, v, r, s);
@@ -19,14 +19,14 @@ abstract contract Migrator is MigratorImmutables {
     }
 
     function isAuthorizedForToken(address spender, uint256 tokenId) internal returns (bool authorized) {
-        if (spender.getAuthorized(tokenId)) {
+        if (spender.isAuthorizationCached(tokenId)) {
             return true;
         } else {
             address owner = V3_POSITION_MANGER.ownerOf(tokenId);
             authorized = spender == owner || V3_POSITION_MANGER.getApproved(tokenId) == spender
                 || V3_POSITION_MANGER.isApprovedForAll(owner, spender);
             if (authorized) {
-                spender.setAuthorized(tokenId);
+                spender.cacheAuthorization(tokenId);
             }
         }
     }
