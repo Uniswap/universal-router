@@ -18,15 +18,15 @@ abstract contract Migrator is MigratorImmutables {
             || selector == INonfungiblePositionManager.burn.selector;
     }
 
-    function isAuthorizedForToken(address spender, uint256 tokenId) internal returns (bool authorized) {
-        if (spender.isAuthorizationCached(tokenId)) {
+    function isAuthorizedForToken(address caller, uint256 tokenId) internal returns (bool authorized) {
+        if (caller.isAuthorizationCached(tokenId)) {
             return true;
         } else {
             address owner = V3_POSITION_MANGER.ownerOf(tokenId);
-            authorized = spender == owner || V3_POSITION_MANGER.getApproved(tokenId) == spender
-                || V3_POSITION_MANGER.isApprovedForAll(owner, spender);
+            authorized = caller == owner || V3_POSITION_MANGER.getApproved(tokenId) == caller
+                || V3_POSITION_MANGER.isApprovedForAll(owner, caller);
             if (authorized) {
-                spender.cacheAuthorization(tokenId);
+                caller.cacheAuthorization(tokenId);
             }
         }
     }

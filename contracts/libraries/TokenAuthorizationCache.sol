@@ -7,7 +7,7 @@ library TokenAuthorizationCache {
     /// @notice calculates which storage slot a boolean should be stored in for a given spender and tokenId
     function _computeSlot(address spender, uint256 tokenId) internal pure returns (bytes32 hashSlot) {
         assembly ("memory-safe") {
-            mstore(0, spender)
+            mstore(0, and(spender, 0xffffffffffffffffffffffffffffffffffffffff))
             mstore(32, tokenId)
             hashSlot := keccak256(0, 64)
         }

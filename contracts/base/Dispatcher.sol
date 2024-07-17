@@ -226,7 +226,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                     }
 
                     erc721Permit(map(spender), tokenId, deadline, v, r, s);
-                } else if (command == Commands.V3_POSM_CALL) {
+                } else if (command == Commands.V3_POSITION_MANAGER_CALL) {
                     bytes4 selector;
                     uint256 tokenId;
                     assembly {
