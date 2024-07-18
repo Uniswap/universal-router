@@ -6,4 +6,4 @@ forge-std/=lib/forge-std/src/
 @openzeppelin/contracts-v4=node_modules/@openzeppelin/contracts-v4
 @uniswap/v3-core/=node_modules/@uniswap/v3-core/
 @uniswap/v2-core/=node_modules/@uniswap/v2-core/
-
+@uniswap/v3-periphery/=node_modules/@uniswap/v3-periphery/
