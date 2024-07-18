@@ -18,6 +18,7 @@ library Commands {
     uint256 constant SWEEP = 0x04;
     uint256 constant TRANSFER = 0x05;
     uint256 constant PAY_PORTION = 0x06;
+    // COMMAND_PLACEHOLDER = 0x07;
 
     // The commands are executed in nested if blocks to minimise gas consumption
     // The following constant defines one of the boundaries where the if blocks split commands
@@ -39,8 +40,6 @@ library Commands {
 
     uint256 constant ERC721_PERMIT = 0x10;
     uint256 constant V3_POSITION_MANAGER_CALL = 0x11;
-
-    //COMMAND_PLACEHOLDER = 0x17;
 
     // The commands are executed in nested if blocks to minimise gas consumption
     // The following constant defines one of the boundaries where the if blocks split commands
