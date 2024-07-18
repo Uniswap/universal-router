@@ -1,22 +1,18 @@
 import type { Contract } from '@ethersproject/contracts'
-import { TransactionReceipt } from '@ethersproject/abstract-provider'
 import { Pair } from '@uniswap/v2-sdk'
-import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
 import { BigNumber, BigNumberish } from 'ethers'
-import { IPermit2, UniversalRouter, INonfungiblePositionManager } from '../../typechain'
+import { IPermit2, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { resetFork, WETH, DAI, USDC, USDT, PERMIT2, V3_NFT_POSITION_MANAGER } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, USDC, USDT, PERMIT2 } from './shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,
-  ZERO_ADDRESS,
   ALICE_ADDRESS,
   CONTRACT_BALANCE,
   DEADLINE,
   ETH_ADDRESS,
   MAX_UINT,
   MAX_UINT160,
-  MAX_UINT128,
   MSG_SENDER,
   ONE_PERCENT_BIPS,
   SOURCE_MSG_SENDER,
@@ -29,24 +25,18 @@ import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 import { getPermitSignature, getPermitBatchSignature, PermitSingle } from './shared/protocolHelpers/permit2'
 import { encodePathExactInput, encodePathExactOutput } from './shared/swapRouter02Helpers'
-import getPermitNFTSignature from './shared/getPermitNFTSignature'
-import { FeeAmount } from '@uniswap/v3-sdk'
-import { encodeDecreaseLiquidity, encodeCollect, encodeBurn } from './shared/encodeCall'
+import { executeRouter } from './shared/executeRouter'
 const { ethers } = hre
 
 describe('Uniswap V2 and V3 Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
-  let eve: SignerWithAddress
   let router: UniversalRouter
   let permit2: IPermit2
   let daiContract: Contract
   let wethContract: Contract
   let usdcContract: Contract
   let planner: RoutePlanner
-  let v3NFTPositionManager: INonfungiblePositionManager
-
-  let tokenIdv3: BigNumber
 
   beforeEach(async () => {
     await resetFork()
@@ -56,13 +46,11 @@ describe('Uniswap V2 and V3 Tests:', () => {
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
     bob = (await ethers.getSigners())[1]
-    eve = (await ethers.getSigners())[2]
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
-    v3NFTPositionManager = V3_NFT_POSITION_MANAGER.connect(bob) as INonfungiblePositionManager
-    router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
+    router = (await deployUniversalRouter()) as UniversalRouter
     planner = new RoutePlanner()
 
     // alice gives bob some tokens
@@ -106,7 +94,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           [DAI.address, WETH.address],
           SOURCE_MSG_SENDER,
         ])
-        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
       })
@@ -137,7 +132,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           [DAI.address, WETH.address],
           SOURCE_MSG_SENDER,
         ])
-        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
       })
@@ -170,7 +172,9 @@ describe('Uniswap V2 and V3 Tests:', () => {
         ])
 
         const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
-        await expect(executeRouter(planner)).to.be.revertedWithCustomError(testCustomErrors, 'UnsafeCast')
+        await expect(
+          executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+        ).to.be.revertedWithCustomError(testCustomErrors, 'UnsafeCast')
       })
 
       it('V3 exactIn, permiting the exact amount', async () => {
@@ -204,7 +208,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           path,
           SOURCE_MSG_SENDER,
         ])
-        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
       })
@@ -240,7 +251,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           path,
           SOURCE_MSG_SENDER,
         ])
-        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
       })
@@ -265,7 +283,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           [DAI.address, WETH.address],
           SOURCE_MSG_SENDER,
         ])
-        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gt(minAmountOut)
       })
 
@@ -279,7 +304,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
         planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
-        const { daiBalanceBefore, daiBalanceAfter } = await executeRouter(planner)
+        const { daiBalanceBefore, daiBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.gt(amountOut)
       })
 
@@ -299,7 +331,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
         const wethBalanceBeforeBob = await wethContract.balanceOf(bob.address)
 
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        await router.connect(bob)['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
 
         const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
         const wethBalanceAfterBob = await wethContract.balanceOf(bob.address)
@@ -324,7 +356,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
 
-        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gt(minAmountOut)
       })
     })
@@ -340,7 +379,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         ])
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
 
-        const { gasSpent, ethBalanceBefore, ethBalanceAfter, v2SwapEventArgs } = await executeRouter(planner)
+        const { gasSpent, ethBalanceBefore, ethBalanceAfter, v2SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1Out: wethTraded } = v2SwapEventArgs!
 
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(wethTraded.sub(gasSpent))
@@ -358,7 +404,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, amountOut])
         planner.addCommand(CommandType.SWEEP, [DAI.address, MSG_SENDER, 0])
 
-        const { gasSpent, ethBalanceBefore, ethBalanceAfter, v2SwapEventArgs } = await executeRouter(planner)
+        const { gasSpent, ethBalanceBefore, ethBalanceAfter, v2SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1Out: wethTraded } = v2SwapEventArgs!
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(amountOut.sub(gasSpent))
         expect(wethTraded).to.eq(amountOut)
@@ -382,10 +435,9 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         const { commands, inputs } = planner
 
-        await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.changeEtherBalances(
-          [alice, bob],
-          [totalPortion, actualAmountOut]
-        )
+        await expect(
+          router.connect(bob)['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        ).to.changeEtherBalances([alice, bob], [totalPortion, actualAmountOut])
       })
     })
 
@@ -403,7 +455,15 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
 
-        const { daiBalanceBefore, daiBalanceAfter, v2SwapEventArgs } = await executeRouter(planner, amountIn)
+        const { daiBalanceBefore, daiBalanceAfter, v2SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract,
+          amountIn
+        )
         const { amount0Out: daiTraded } = v2SwapEventArgs!
 
         expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.gt(minAmountOut)
@@ -425,7 +485,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
 
         const { ethBalanceBefore, ethBalanceAfter, daiBalanceBefore, daiBalanceAfter, v2SwapEventArgs, gasSpent } =
-          await executeRouter(planner, value)
+          await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract, value)
         const { amount0Out: daiTraded, amount1In: wethTraded } = v2SwapEventArgs!
         expect(daiBalanceAfter.sub(daiBalanceBefore)).gt(amountOut) // rounding
         expect(daiBalanceAfter.sub(daiBalanceBefore)).eq(daiTraded)
@@ -470,7 +530,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
         addV3ExactInTrades(planner, 1, amountOutMin)
 
-        const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1: wethTraded } = v3SwapEventArgs!
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(amountOutMin)
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethTraded.mul(-1))
@@ -494,7 +561,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           wethBalanceAfter,
           usdcBalanceBefore,
           usdcBalanceAfter,
-        } = await executeRouter(planner)
+        } = await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
         expect(daiBalanceBefore.sub(amountIn)).to.eq(daiBalanceAfter)
         expect(wethBalanceAfter).to.eq(wethBalanceBefore)
@@ -508,7 +575,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [MSG_SENDER, amountOut, amountInMax, path, SOURCE_MSG_SENDER])
 
-        const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount0: daiTraded } = v3SwapEventArgs!
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(amountOut)
         expect(daiTraded).to.be.lt(amountInMax)
@@ -523,7 +597,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, inputs } = planner
 
         const balanceWethBefore = await wethContract.balanceOf(bob.address)
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        await router.connect(bob)['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
         const balanceWethAfter = await wethContract.balanceOf(bob.address)
         expect(balanceWethAfter.sub(balanceWethBefore)).to.eq(amountOut)
       })
@@ -535,7 +609,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         addV3ExactInTrades(planner, 1, amountOutMin, ADDRESS_THIS)
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
 
-        const { ethBalanceBefore, ethBalanceAfter, v3SwapEventArgs, gasSpent } = await executeRouter(planner)
+        const { ethBalanceBefore, ethBalanceAfter, v3SwapEventArgs, gasSpent } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1: wethTraded } = v3SwapEventArgs!
 
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.gte(amountOutMin.sub(gasSpent))
@@ -556,7 +637,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         ])
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, amountOut])
 
-        const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(planner)
+        const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
 
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(amountOut.sub(gasSpent))
       })
@@ -572,6 +660,11 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         const { ethBalanceBefore, ethBalanceAfter, daiBalanceBefore, daiBalanceAfter, gasSpent } = await executeRouter(
           planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract,
           amountIn
         )
 
@@ -588,7 +681,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
 
         const { ethBalanceBefore, ethBalanceAfter, daiBalanceBefore, daiBalanceAfter, gasSpent, v3SwapEventArgs } =
-          await executeRouter(planner, amountInMax)
+          await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract, amountInMax)
         const { amount0: daiTraded, amount1: wethTraded } = v3SwapEventArgs!
 
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.eq(daiTraded)
@@ -623,7 +716,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // amountIn of 0 because the USDC is already in the pair
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, v2AmountOutMin, v2Tokens, SOURCE_MSG_SENDER])
 
-        const { wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1Out: wethTraded } = v2SwapEventArgs!
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethTraded)
       })
@@ -650,7 +750,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_ROUTER,
         ])
 
-        const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1: wethTraded } = v3SwapEventArgs!
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethTraded.mul(-1))
       })
@@ -674,7 +781,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // 3) trade route2 and return tokens to bob
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, minAmountOut2, route2, SOURCE_MSG_SENDER])
 
-        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
       })
 
@@ -709,7 +823,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // 3) trade route2 and return tokens to bob
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, minAmountOut2, route2, SOURCE_MSG_SENDER])
 
-        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
       })
 
@@ -738,7 +859,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
 
-        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
       })
 
@@ -791,7 +919,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
 
-        const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(planner)
+        const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
       })
 
@@ -865,7 +1000,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_ROUTER,
         ])
 
-        const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(planner)
+        const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOut1USDC.add(minAmountOut2USDC))
       })
 
@@ -888,7 +1030,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // aggregate slippage check
         planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, minAmountOut])
 
-        const { wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs, v3SwapEventArgs } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs, v3SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1Out: wethOutV2 } = v2SwapEventArgs!
         let { amount1: wethOutV3 } = v3SwapEventArgs!
 
@@ -916,6 +1065,11 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         const { usdcBalanceBefore, usdcBalanceAfter, v2SwapEventArgs, v3SwapEventArgs } = await executeRouter(
           planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract,
           value
         )
         const { amount0Out: usdcOutV2 } = v2SwapEventArgs!
@@ -941,7 +1095,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, expandTo18DecimalsBN(0.0005)])
 
         const { ethBalanceBefore, ethBalanceAfter, gasSpent, v2SwapEventArgs, v3SwapEventArgs } = await executeRouter(
-          planner
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
         )
         const { amount1Out: wethOutV2 } = v2SwapEventArgs!
         let { amount1: wethOutV3 } = v3SwapEventArgs!
@@ -975,7 +1134,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // aggregate slippage check
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, fullAmountOut])
 
-        const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(planner)
+        const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
 
         // TODO: permit2 test alice doesn't send more than maxAmountIn DAI
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(fullAmountOut.sub(gasSpent))
@@ -1036,7 +1202,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
           planner.addSubPlan(subplan)
 
           const { usdcBalanceBefore, usdcBalanceAfter, daiBalanceBefore, daiBalanceAfter } = await executeRouter(
-            planner
+            planner,
+            bob,
+            router,
+            wethContract,
+            daiContract,
+            usdcContract
           )
 
           expect(daiBalanceBefore.sub(daiBalanceAfter)).to.eq(planOneV2AmountIn.add(planOneV3AmountIn))
@@ -1087,7 +1258,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
           planner.addSubPlan(subplan)
 
           const { usdcBalanceBefore, usdcBalanceAfter, daiBalanceBefore, daiBalanceAfter } = await executeRouter(
-            planner
+            planner,
+            bob,
+            router,
+            wethContract,
+            daiContract,
+            usdcContract
           )
 
           // dai balance should be unchanged as the weth sweep failed
@@ -1142,7 +1318,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
           planner.addSubPlan(subplan)
 
           const { usdcBalanceBefore, usdcBalanceAfter, daiBalanceBefore, daiBalanceAfter } = await executeRouter(
-            planner
+            planner,
+            bob,
+            router,
+            wethContract,
+            daiContract,
+            usdcContract
           )
 
           // dai and usdc balances both unchanged because both trades failed
@@ -1194,7 +1375,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
           planner.addSubPlan(subplan)
 
           const { usdcBalanceBefore, usdcBalanceAfter, daiBalanceBefore, daiBalanceAfter } = await executeRouter(
-            planner
+            planner,
+            bob,
+            router,
+            wethContract,
+            daiContract,
+            usdcContract
           )
 
           // dai balance has changed as this trade should succeed
@@ -1206,541 +1392,4 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
     })
   })
-
-  describe('Migrator', () => {
-    beforeEach(async () => {
-      // Bob max-approves the v3PM to access his USDC and WETH
-      await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
-      await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
-
-      let bobUSDCBalanceBefore = await usdcContract.balanceOf(bob.address)
-      let bobWETHBalanceBefore = await wethContract.balanceOf(bob.address)
-
-      // need to mint the nft to bob
-      const tx = await v3NFTPositionManager.mint({
-        token0: USDC.address,
-        token1: WETH.address,
-        fee: FeeAmount.LOW,
-        tickLower: 0,
-        tickUpper: 194980,
-        amount0Desired: expandTo6DecimalsBN(2500),
-        amount1Desired: expandTo18DecimalsBN(1),
-        amount0Min: 0,
-        amount1Min: 0,
-        recipient: bob.address,
-        deadline: MAX_UINT,
-      })
-
-      let bobUSDCBalanceAfter = await usdcContract.balanceOf(bob.address)
-      let bobWETHBalanceAfter = await wethContract.balanceOf(bob.address)
-
-      let usdcSpent = bobUSDCBalanceBefore.sub(bobUSDCBalanceAfter)
-      let wethSpent = bobWETHBalanceBefore.sub(bobWETHBalanceAfter)
-
-      // check that the USDC and WETH were spent
-      expect(usdcSpent > 0 || wethSpent > 0)
-      const receipt = await tx.wait()
-
-      const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
-
-      tokenIdv3 = transferEvent?.args?.tokenId
-    })
-
-    describe('erc721permit', () => {
-      it('erc721 permit succeeds when passing in ADDRESS_THIS for router', async () => {
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(ZERO_ADDRESS)
-
-        // bob permits the router to spend token
-        await executeRouter(planner)
-
-        expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(router.address)
-      })
-
-      it('erc721 permit also succeeds when passing in actual address', async () => {
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-
-        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenIdv3, MAX_UINT, v, r, s])
-
-        expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(ZERO_ADDRESS)
-
-        // bob permits the router to spend token
-        await executeRouter(planner)
-
-        expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(router.address)
-      })
-
-      it('only owner of the token can permit another address', async () => {
-        const { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        // bob is trying to permit the router using eve's signature
-        await expect(executeRouter(planner)).to.be.revertedWith('Unauthorized')
-      })
-    })
-
-    describe('decrease liquidity', () => {
-      it('decrease liquidity succeeds', async () => {
-        // first we need to permit the router to spend the nft
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        let position = await v3NFTPositionManager.positions(tokenIdv3)
-        let liquidity = position.liquidity
-
-        const decreaseParams = {
-          tokenId: tokenIdv3,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        await executeRouter(planner)
-
-        position = await v3NFTPositionManager.positions(tokenIdv3)
-        liquidity = position.liquidity
-
-        expect(liquidity).to.eq(0)
-      })
-
-      it('cannot decrease liquidity without permiting the router', async () => {
-        let position = await v3NFTPositionManager.positions(tokenIdv3)
-        let liquidity = position.liquidity
-
-        const decreaseParams = {
-          tokenId: tokenIdv3,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'CallToV3PositionManagerFailed')
-      })
-
-      it('cannot call decrease liquidity with improper function selector', async () => {
-        // first we need to permit the router to spend the nft
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        let position = await v3NFTPositionManager.positions(tokenIdv3)
-        let liquidity = position.liquidity
-
-        const BAD_DECREASE_LIQUIDITY_STRUCT =
-          '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min,uint256 deadline)'
-
-        const decreaseParams = {
-          tokenId: tokenIdv3,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const abi = new ethers.utils.AbiCoder()
-        const encodedParams = abi.encode([BAD_DECREASE_LIQUIDITY_STRUCT], [decreaseParams])
-        const functionSignature = ethers.utils
-          .id('decreaseLiquidity((uint256,uint128,uint256,uint256))')
-          .substring(0, 10)
-        const encodedCall = functionSignature + encodedParams.substring(2)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCall])
-        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'InvalidV3Action')
-      })
-
-      it('fails if decrease liquidity call fails', async () => {
-        // first we need to permit the router to spend the nft
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        let position = await v3NFTPositionManager.positions(tokenIdv3)
-        let liquidity = position.liquidity
-
-        // set the deadline to 0
-        const decreaseParams = { tokenId: tokenIdv3, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: '0' }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-
-        // call to decrease liquidity fails since the deadline is set to 0
-        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'CallToV3PositionManagerFailed')
-      })
-
-      it('cannot call decrease liquidity if not authorized', async () => {
-        // bob creates a signature for the router to spend the token
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        await executeRouter(planner)
-
-        planner = new RoutePlanner()
-
-        // transfer the token to eve
-        await v3NFTPositionManager.transferFrom(bob.address, eve.address, tokenIdv3)
-
-        let position = await v3NFTPositionManager.positions(tokenIdv3)
-        let liquidity = position.liquidity
-
-        const decreaseParams = {
-          tokenId: tokenIdv3,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-
-        // bob is trying to use the token that is now owned by eve. he is not authorized to do so
-        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'NotAuthorizedForToken')
-      })
-
-      it('bob is permitted over the nft so he can call decrease even though he is not the owner', async () => {
-        // transfer the token to eve
-        await v3NFTPositionManager.transferFrom(bob.address, eve.address, tokenIdv3)
-
-        // eve permits bob to spend the token
-        await v3NFTPositionManager.connect(eve).setApprovalForAll(bob.address, true)
-
-        // eve creates a signature for the router to spend the token
-        let { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        await executeRouter(planner)
-        planner = new RoutePlanner()
-
-        let position = await v3NFTPositionManager.positions(tokenIdv3)
-        let liquidity = position.liquidity
-
-        const params = { tokenId: tokenIdv3, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(params)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-
-        await executeRouter(planner)
-      })
-    })
-
-    describe('collect liquidity', () => {
-      it('collect succeeds', async () => {
-        let bobToken0BalanceBefore = await usdcContract.balanceOf(bob.address)
-        let bobToken1BalanceBefore = await wethContract.balanceOf(bob.address)
-
-        // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        let position = await v3NFTPositionManager.positions(tokenIdv3)
-        let liquidity = position.liquidity
-
-        const decreaseParams = {
-          tokenId: tokenIdv3,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        const collectParams = {
-          tokenId: tokenIdv3,
-          recipient: bob.address,
-          amount0Max: MAX_UINT128,
-          amount1Max: MAX_UINT128,
-        }
-
-        const encodedCollectCall = encodeCollect(collectParams)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
-
-        await executeRouter(planner)
-
-        position = await v3NFTPositionManager.positions(tokenIdv3)
-        let owed0 = position.tokensOwed0
-        let owed1 = position.tokensOwed1
-
-        expect(owed0).to.eq(0)
-        expect(owed1).to.eq(0)
-
-        let bobToken0BalanceAfter = await usdcContract.balanceOf(bob.address)
-        let bobToken1BalanceAfter = await wethContract.balanceOf(bob.address)
-
-        // bob is the recipient - he should have received the owed tokens
-        expect(bobToken0BalanceAfter).to.be.gt(bobToken0BalanceBefore)
-        expect(bobToken1BalanceAfter).to.be.gt(bobToken1BalanceBefore)
-      })
-
-      it('collect succeeds with router as recipient', async () => {
-        let routerToken0BalanceBefore = await usdcContract.balanceOf(router.address)
-        let routerToken1BalanceBefore = await wethContract.balanceOf(router.address)
-
-        // router should have no balance of the tokens
-        expect(routerToken0BalanceBefore).to.be.eq(0)
-        expect(routerToken1BalanceBefore).to.be.eq(0)
-
-        // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        let position = await v3NFTPositionManager.positions(tokenIdv3)
-        let liquidity = position.liquidity
-
-        const decreaseParams = {
-          tokenId: tokenIdv3,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        const collectParams = {
-          tokenId: tokenIdv3,
-          recipient: router.address,
-          amount0Max: MAX_UINT128,
-          amount1Max: MAX_UINT128,
-        }
-
-        const encodedCollectCall = encodeCollect(collectParams)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
-
-        await executeRouter(planner)
-
-        let routerToken0BalanceAfter = await usdcContract.balanceOf(router.address)
-        let routerToken1BalanceAfter = await wethContract.balanceOf(router.address)
-
-        // router is the recipient - router should have received the owed tokens
-        // (there is sweep function if necessary)
-        expect(routerToken0BalanceAfter).to.be.gt(routerToken0BalanceBefore)
-        expect(routerToken1BalanceAfter).to.be.gt(routerToken1BalanceBefore)
-      })
-
-      it('cannot call collect with improper signature', async () => {
-        // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        let position = await v3NFTPositionManager.positions(tokenIdv3)
-        let liquidity = position.liquidity
-
-        const decreaseParams = {
-          tokenId: tokenIdv3,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint256 amount0Max,uint256 amount1Max)'
-        const collectParams = {
-          tokenId: tokenIdv3,
-          recipient: bob.address,
-          amount0Max: MAX_UINT128,
-          amount1Max: MAX_UINT128,
-        }
-
-        const abi = new ethers.utils.AbiCoder()
-        const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
-        const functionSignatureCollect = ethers.utils.id('collect((uint256,address,uint128))').substring(0, 10)
-        const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
-
-        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'InvalidV3Action')
-      })
-
-      it('cannot call collect with improper params', async () => {
-        // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        let position = await v3NFTPositionManager.positions(tokenIdv3)
-        let liquidity = position.liquidity
-
-        const decreaseParams = {
-          tokenId: tokenIdv3,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint256 amount0Max)'
-        const collectParams = { tokenId: tokenIdv3, recipient: bob.address, amount0Max: MAX_UINT128 }
-
-        const abi = new ethers.utils.AbiCoder()
-        const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
-        const functionSignatureCollect = ethers.utils.id('collect((uint256,address,uint128,uint128))').substring(0, 10)
-        const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
-
-        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'CallToV3PositionManagerFailed')
-      })
-
-      it('cannot call collect if the router is not approved', async () => {
-        // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        await executeRouter(planner)
-        planner = new RoutePlanner()
-
-        let position = await v3NFTPositionManager.positions(tokenIdv3)
-        let liquidity = position.liquidity
-
-        // approved on the decrease call
-        const decreaseParams = {
-          tokenId: tokenIdv3,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        // not approved on the collect call
-        const collectParams = {
-          tokenId: BigNumber.from(1),
-          recipient: bob.address,
-          amount0Max: MAX_UINT128,
-          amount1Max: MAX_UINT128,
-        }
-
-        const encodedCollectCall = encodeCollect(collectParams)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
-
-        await expect(executeRouter(planner)).to.be.revertedWithCustomError(router, 'NotAuthorizedForToken')
-      })
-    })
-
-    describe('burn liquidity', () => {
-      it('burn succeeds', async () => {
-        // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
-
-        let position = await v3NFTPositionManager.positions(tokenIdv3)
-        let liquidity = position.liquidity
-
-        const decreaseParams = {
-          tokenId: tokenIdv3,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        const collectParams = {
-          tokenId: tokenIdv3,
-          recipient: bob.address,
-          amount0Max: MAX_UINT128,
-          amount1Max: MAX_UINT128,
-        }
-
-        const encodedCollectCall = encodeCollect(collectParams)
-
-        const encodedBurnCall = encodeBurn(tokenIdv3)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedBurnCall])
-
-        await executeRouter(planner)
-
-        expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
-      })
-    })
-  })
-
-  type V2SwapEventArgs = {
-    amount0In: BigNumber
-    amount0Out: BigNumber
-    amount1In: BigNumber
-    amount1Out: BigNumber
-  }
-
-  type V3SwapEventArgs = {
-    amount0: BigNumber
-    amount1: BigNumber
-  }
-
-  type ExecutionParams = {
-    wethBalanceBefore: BigNumber
-    wethBalanceAfter: BigNumber
-    daiBalanceBefore: BigNumber
-    daiBalanceAfter: BigNumber
-    usdcBalanceBefore: BigNumber
-    usdcBalanceAfter: BigNumber
-    ethBalanceBefore: BigNumber
-    ethBalanceAfter: BigNumber
-    v2SwapEventArgs: V2SwapEventArgs | undefined
-    v3SwapEventArgs: V3SwapEventArgs | undefined
-    receipt: TransactionReceipt
-    gasSpent: BigNumber
-  }
-
-  async function executeRouter(planner: RoutePlanner, value?: BigNumberish): Promise<ExecutionParams> {
-    const ethBalanceBefore: BigNumber = await ethers.provider.getBalance(bob.address)
-    const wethBalanceBefore: BigNumber = await wethContract.balanceOf(bob.address)
-    const daiBalanceBefore: BigNumber = await daiContract.balanceOf(bob.address)
-    const usdcBalanceBefore: BigNumber = await usdcContract.balanceOf(bob.address)
-
-    const { commands, inputs } = planner
-
-    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
-    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-    const v2SwapEventArgs = parseEvents(V2_EVENTS, receipt)[0]?.args as unknown as V2SwapEventArgs
-    const v3SwapEventArgs = parseEvents(V3_EVENTS, receipt)[0]?.args as unknown as V3SwapEventArgs
-
-    const ethBalanceAfter: BigNumber = await ethers.provider.getBalance(bob.address)
-    const wethBalanceAfter: BigNumber = await wethContract.balanceOf(bob.address)
-    const daiBalanceAfter: BigNumber = await daiContract.balanceOf(bob.address)
-    const usdcBalanceAfter: BigNumber = await usdcContract.balanceOf(bob.address)
-
-    return {
-      wethBalanceBefore,
-      wethBalanceAfter,
-      daiBalanceBefore,
-      daiBalanceAfter,
-      usdcBalanceBefore,
-      usdcBalanceAfter,
-      ethBalanceBefore,
-      ethBalanceAfter,
-      v2SwapEventArgs,
-      v3SwapEventArgs,
-      receipt,
-      gasSpent,
-    }
-  }
 })
