@@ -366,7 +366,7 @@ describe('Migration Tests:', () => {
         expect(bobToken1BalanceAfter).to.be.gt(bobToken1BalanceBefore)
       })
 
-      it.only('collecting the correct amount', async () => {
+      it('collecting the correct amount', async () => {
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
         planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
@@ -388,11 +388,8 @@ describe('Migration Tests:', () => {
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
-        let bobToken0BalanceBefore = await usdcContract.balanceOf(bob.address)
-        let bobToken1BalanceBefore = await wethContract.balanceOf(bob.address)
-
-        console.log(bobToken0BalanceBefore)
-        console.log(bobToken1BalanceBefore)
+        let bobToken0BalanceBefore: BigNumber = await usdcContract.balanceOf(bob.address)
+        let bobToken1BalanceBefore: BigNumber = await wethContract.balanceOf(bob.address)
 
         position = await v3NFTPositionManager.positions(tokenIdv3)
         let owed0Before = position.tokensOwed0
@@ -425,16 +422,12 @@ describe('Migration Tests:', () => {
         expect(owed0After).to.eq(0)
         expect(owed1After).to.eq(0)
 
-        let bobToken0BalanceAfter = await usdcContract.balanceOf(bob.address)
-        let bobToken1BalanceAfter = await wethContract.balanceOf(bob.address)
+        let bobToken0BalanceAfter: BigNumber = await usdcContract.balanceOf(bob.address)
+        let bobToken1BalanceAfter: BigNumber = await wethContract.balanceOf(bob.address)
 
         // bob is the recipient - he should have received the owed tokens
-        expect(bobToken0BalanceAfter - bobToken0BalanceBefore).to.be.eq(owed0Before)
-        console.log(bobToken0BalanceAfter - bobToken0BalanceBefore)
-        console.log(owed0Before)
-        console.log(bobToken1BalanceAfter - bobToken1BalanceBefore)
-        console.log(owed1Before)
-        expect(bobToken1BalanceAfter - bobToken1BalanceBefore).to.be.eq(owed1Before)
+        expect(bobToken0BalanceAfter.sub(bobToken0BalanceBefore)).to.be.eq(owed0Before)
+        expect(bobToken1BalanceAfter.sub(bobToken1BalanceBefore)).to.be.eq(owed1Before)
       })
 
       it('collect succeeds with router as recipient', async () => {
