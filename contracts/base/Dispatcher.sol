@@ -215,8 +215,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                     if (!success) {
                         revert ERC721PermitFailed(output);
                     }
-                } 
-                else if (command == Commands.V3_POSITION_MANAGER_CALL) {
+                } else if (command == Commands.V3_POSITION_MANAGER_CALL) {
                     bytes4 selector;
                     uint256 tokenId;
                     assembly {
