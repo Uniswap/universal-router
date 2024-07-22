@@ -15,7 +15,7 @@ import { FeeAmount } from '@uniswap/v3-sdk'
 import { encodeERC721Permit, encodeDecreaseLiquidity, encodeCollect, encodeBurn } from '../shared/encodeCall'
 const { ethers } = hre
 
-describe('Migrator Gas Tests', () => {
+describe('V3 to V4 Migration Gas Tests', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: UniversalRouter

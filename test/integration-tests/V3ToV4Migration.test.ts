@@ -16,7 +16,7 @@ import { encodeERC721Permit, encodeDecreaseLiquidity, encodeCollect, encodeBurn 
 import { executeRouter } from './shared/executeRouter'
 const { ethers } = hre
 
-describe('Migration Tests:', () => {
+describe('V3 to V4 Migration Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let eve: SignerWithAddress
@@ -113,6 +113,28 @@ describe('Migration Tests:', () => {
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
         expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(router.address)
+      })
+
+      it('need to call permit when executing erc721_permit command', async () => {
+        let position = await v3NFTPositionManager.positions(tokenIdv3)
+        let liquidity = position.liquidity
+
+        const decreaseParams = {
+          tokenId: tokenIdv3,
+          liquidity: liquidity,
+          amount0Min: 0,
+          amount1Min: 0,
+          deadline: MAX_UINT,
+        }
+
+        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedDecreaseCall])
+
+        // trying to execute the permit commmand by calling decrease liquidity
+        await expect(
+          executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+        ).to.be.revertedWithCustomError(router, 'InvalidAction')
       })
 
       it('only owner of the token can generate a signature to permit another address', async () => {
@@ -267,7 +289,7 @@ describe('Migration Tests:', () => {
         planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCall])
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
-        ).to.be.revertedWithCustomError(router, 'InvalidV3Action')
+        ).to.be.revertedWithCustomError(router, 'InvalidAction')
       })
 
       it('fails if decrease liquidity call fails', async () => {
@@ -627,7 +649,7 @@ describe('Migration Tests:', () => {
 
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
-        ).to.be.revertedWithCustomError(router, 'InvalidV3Action')
+        ).to.be.revertedWithCustomError(router, 'InvalidAction')
       })
 
       it('cannot call collect with improper params', async () => {
