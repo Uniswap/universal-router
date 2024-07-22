@@ -55,6 +55,7 @@ abstract contract DeployUniversalRouter is Script {
         console2.log('weth9:', params.weth9);
         console2.log('v2Factory:', params.v2Factory);
         console2.log('v3Factory:', params.v3Factory);
+        console2.log('v3NFTPositionManager:', params.v3NFTPositionManager);
     }
 
     function mapUnsupported(address protocol) internal view returns (address) {
