@@ -1,10 +1,8 @@
 solmate/=lib/solmate/
 permit2/=lib/permit2/
-v4-periphery/=lib/v4-periphery/
 forge-std/=lib/forge-std/src/
-@openzeppelin/contracts/token/ERC721/=lib/ERC721
-@openzeppelin/contracts-v4=node_modules/@openzeppelin/contracts-v4
+@openzeppelin/contracts=node_modules/@openzeppelin/contracts
 @uniswap/v3-core/=node_modules/@uniswap/v3-core/
 @uniswap/v2-core/=node_modules/@uniswap/v2-core/
-@uniswap/v3-periphery/=node_modules/@uniswap/v3-periphery/
+@uniswap/v3-periphery/=lib/v3-periphery/
 @uniswap/v4-periphery/=lib/v4-periphery/

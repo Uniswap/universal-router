@@ -134,7 +134,7 @@ describe('Migration Tests:', () => {
         // eve generated a signature for bob's token - fails since eve is not the owner
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
-        ).to.be.revertedWithCustomError(router, 'ERC721PermitFailed')
+        ).to.be.revertedWithCustomError(router, 'ExecutionFailed')
       })
 
       it('other address can call permit on behalf of someone as long as owner of the token generated the signature properly', async () => {
@@ -224,7 +224,7 @@ describe('Migration Tests:', () => {
         planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
-        ).to.be.revertedWithCustomError(router, 'CallToV3PositionManagerFailed')
+        ).to.be.revertedWithCustomError(router, 'ExecutionFailed')
       })
 
       it('cannot call decrease liquidity with improper function selector', async () => {
@@ -299,7 +299,7 @@ describe('Migration Tests:', () => {
         // call to decrease liquidity fails since the deadline is set to 0
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
-        ).to.be.revertedWithCustomError(router, 'CallToV3PositionManagerFailed')
+        ).to.be.revertedWithCustomError(router, 'ExecutionFailed')
       })
 
       it('cannot call decrease liquidity if not authorized', async () => {
@@ -672,7 +672,7 @@ describe('Migration Tests:', () => {
 
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
-        ).to.be.revertedWithCustomError(router, 'CallToV3PositionManagerFailed')
+        ).to.be.revertedWithCustomError(router, 'ExecutionFailed')
       })
 
       it('cannot call collect if the router is not approved for that tokenid', async () => {

@@ -21,8 +21,6 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
     error InvalidV3Action(bytes4 action);
-    error CallToV3PositionManagerFailed(bytes returnData);
-    error ERC721PermitFailed(bytes returnData);
     error NotAuthorizedForToken(uint256 tokenId);
 
     /// @notice Decodes and executes the given command with the given inputs
@@ -212,9 +210,6 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
             } else {
                 if (command == Commands.ERC721_PERMIT) {
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
-                    if (!success) {
-                        revert ERC721PermitFailed(output);
-                    }
                 } else if (command == Commands.V3_POSITION_MANAGER_CALL) {
                     bytes4 selector;
                     uint256 tokenId;
@@ -232,9 +227,6 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                     }
 
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
-                    if (!success) {
-                        revert CallToV3PositionManagerFailed(output);
-                    }
                 } else {
                     // placeholder area for command
                     revert InvalidCommandType(command);

@@ -12,7 +12,7 @@ import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
 import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
-import {IERC165} from '@openzeppelin/contracts-v4/utils/introspection/IERC165.sol';
+import {IERC165} from '@openzeppelin/contracts/utils/introspection/IERC165.sol';
 
 contract UniversalRouterTest is Test {
     address constant RECIPIENT = address(1234);
