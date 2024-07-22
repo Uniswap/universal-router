@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {MigratorImmutables} from '../modules/MigratorImmutables.sol';
 import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
 
-abstract contract Migrator is MigratorImmutables {
+abstract contract V3ToV4Migrator is MigratorImmutables {
     function isValidV3Action(bytes4 selector) internal pure returns (bool) {
         return selector == INonfungiblePositionManager.decreaseLiquidity.selector
             || selector == INonfungiblePositionManager.collect.selector
