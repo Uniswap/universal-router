@@ -18,18 +18,9 @@ import {
   encodePathExactInput,
 } from '../shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
-import { IPermit2, UniversalRouter, INonfungiblePositionManager } from '../../../typechain'
+import { IPermit2, UniversalRouter } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import {
-  approveAndExecuteSwapRouter02,
-  resetFork,
-  WETH,
-  DAI,
-  USDC,
-  USDT,
-  PERMIT2,
-  V3_NFT_POSITION_MANAGER,
-} from '../shared/mainnetForkHelpers'
+import { approveAndExecuteSwapRouter02, resetFork, WETH, DAI, USDC, USDT, PERMIT2 } from '../shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,
   ALICE_ADDRESS,
@@ -56,9 +47,7 @@ describe('Uniswap Gas Tests', () => {
   let permit2: IPermit2
   let daiContract: Contract
   let wethContract: Contract
-  let usdcContract: Contract
   let planner: RoutePlanner
-  let v3NFTPositionManager: INonfungiblePositionManager
 
   // 6 pairs for gas tests with high numbers of trades
   let pair_DAI_WETH: Pair
@@ -75,9 +64,7 @@ describe('Uniswap Gas Tests', () => {
     bob = (await ethers.getSigners())[1]
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
-    usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
-    v3NFTPositionManager = V3_NFT_POSITION_MANAGER.connect(bob) as INonfungiblePositionManager
     router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
     pair_DAI_WETH = await makePair(bob, DAI, WETH)
     pair_DAI_USDC = await makePair(bob, DAI, USDC)
@@ -86,12 +73,10 @@ describe('Uniswap Gas Tests', () => {
     // alice gives bob some tokens
     await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100000))
     await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100))
-    await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(100000))
 
     // Bob max-approves the permit2 contract to access his DAI and WETH
     await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
     await wethContract.connect(bob).approve(permit2.address, MAX_UINT)
-    await usdcContract.connect(bob).approve(permit2.address, MAX_UINT)
   })
 
   describe('Trade on UniswapV2', () => {
