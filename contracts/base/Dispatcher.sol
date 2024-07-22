@@ -19,10 +19,11 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
     using BytesLib for bytes;
 
     error InvalidCommandType(uint256 commandType);
+    error BalanceTooLow();
     error InvalidV3Action(bytes4 action);
     error CallToV3PositionManagerFailed(bytes returnData);
+    error ERC721PermitFailed(bytes returnData);
     error NotAuthorizedForToken(uint256 tokenId);
-    error BalanceTooLow();
 
     /// @notice Decodes and executes the given command with the given inputs
     /// @param commandType The command type to execute
@@ -210,23 +211,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                 // 0x10 <= command < 0x18
             } else {
                 if (command == Commands.ERC721_PERMIT) {
-                    address spender;
-                    uint256 tokenId;
-                    uint256 deadline;
-                    uint8 v;
-                    bytes32 r;
-                    bytes32 s;
-                    assembly {
-                        spender := calldataload(inputs.offset)
-                        tokenId := calldataload(add(inputs.offset, 0x20))
-                        deadline := calldataload(add(inputs.offset, 0x40))
-                        v := calldataload(add(inputs.offset, 0x60))
-                        r := calldataload(add(inputs.offset, 0x80))
-                        s := calldataload(add(inputs.offset, 0xA0))
+                    (success, output) = address(V3_POSITION_MANAGER).call(inputs);
+                    if (!success) {
+                        revert ERC721PermitFailed(output);
                     }
-
-                    erc721Permit(map(spender), tokenId, deadline, v, r, s);
-                } else if (command == Commands.V3_POSITION_MANAGER_CALL) {
+                } 
+                else if (command == Commands.V3_POSITION_MANAGER_CALL) {
                     bytes4 selector;
                     uint256 tokenId;
                     assembly {
@@ -242,7 +232,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, Migrator, 
                         revert NotAuthorizedForToken(tokenId);
                     }
 
-                    (success, output) = address(V3_POSITION_MANGER).call(inputs);
+                    (success, output) = address(V3_POSITION_MANAGER).call(inputs);
                     if (!success) {
                         revert CallToV3PositionManagerFailed(output);
                     }

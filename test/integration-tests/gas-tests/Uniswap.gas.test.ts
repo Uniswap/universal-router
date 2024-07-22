@@ -38,19 +38,15 @@ import {
   ETH_ADDRESS,
   MAX_UINT,
   MAX_UINT160,
-  MAX_UINT128,
   MSG_SENDER,
   ONE_PERCENT_BIPS,
   SOURCE_MSG_SENDER,
   SOURCE_ROUTER,
 } from '../shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from '../shared/helpers'
-import getPermitNFTSignature from '../shared/getPermitNFTSignature'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { RoutePlanner, CommandType } from '../shared/planner'
-import { FeeAmount } from '@uniswap/v3-sdk'
-import { encodeDecreaseLiquidity, encodeCollect, encodeBurn } from '../shared/encodeCall'
 const { ethers } = hre
 
 describe('Uniswap Gas Tests', () => {
@@ -63,8 +59,6 @@ describe('Uniswap Gas Tests', () => {
   let usdcContract: Contract
   let planner: RoutePlanner
   let v3NFTPositionManager: INonfungiblePositionManager
-
-  let tokenId: BigNumber
 
   // 6 pairs for gas tests with high numbers of trades
   let pair_DAI_WETH: Pair
@@ -1208,147 +1202,6 @@ describe('Uniswap Gas Tests', () => {
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
         })
-      })
-    })
-  })
-
-  describe('Migrator', () => {
-    beforeEach(async () => {
-      planner = new RoutePlanner()
-      // Bob max-approves the v3PM to access his USDC and WETH
-      await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
-      await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
-
-      // need to mint the nft to bob
-      const tx = await v3NFTPositionManager.mint({
-        token0: USDC.address,
-        token1: WETH.address,
-        fee: FeeAmount.LOW,
-        tickLower: 0,
-        tickUpper: 194980,
-        amount0Desired: expandTo6DecimalsBN(2500),
-        amount1Desired: expandTo18DecimalsBN(1),
-        amount0Min: 0,
-        amount1Min: 0,
-        recipient: bob.address,
-        deadline: MAX_UINT,
-      })
-
-      const receipt = await tx.wait()
-
-      const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
-
-      if (transferEvent && transferEvent.args) {
-        tokenId = transferEvent.args.tokenId
-      }
-    })
-    describe('erc721permit', () => {
-      it('gas: erc721permit', async () => {
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
-
-        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
-
-        const { commands, inputs } = planner
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-      })
-    })
-    describe('decrease liquidity', () => {
-      it('gas: erc721permit + decreaseLiquidity', async () => {
-        // first we need to permit the router to spend the nft
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
-
-        let position = await v3NFTPositionManager.positions(tokenId)
-        let liquidity = position.liquidity
-
-        const decreaseParams = {
-          tokenId: tokenId,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-
-        const { commands, inputs } = planner
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-      })
-    })
-    describe('collect', () => {
-      it('gas: erc721permit + decreaseLiquidity + collect', async () => {
-        // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
-
-        let position = await v3NFTPositionManager.positions(tokenId)
-        let liquidity = position.liquidity
-
-        const decreaseParams = {
-          tokenId: tokenId,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        const collectParams = {
-          tokenId: tokenId,
-          recipient: bob.address,
-          amount0Max: MAX_UINT128,
-          amount1Max: MAX_UINT128,
-        }
-
-        const encodedCollectCall = encodeCollect(collectParams)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
-
-        const { commands, inputs } = planner
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-      })
-    })
-
-    describe('burn', () => {
-      it('gas: erc721permit + decreaseLiquidity + collect + burn', async () => {
-        // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenId, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenId, MAX_UINT, v, r, s])
-
-        let position = await v3NFTPositionManager.positions(tokenId)
-        let liquidity = position.liquidity
-
-        const decreaseParams = {
-          tokenId: tokenId,
-          liquidity: liquidity,
-          amount0Min: 0,
-          amount1Min: 0,
-          deadline: MAX_UINT,
-        }
-
-        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
-
-        const collectParams = {
-          tokenId: tokenId,
-          recipient: bob.address,
-          amount0Max: MAX_UINT128,
-          amount1Max: MAX_UINT128,
-        }
-
-        const encodedCollectCall = encodeCollect(collectParams)
-
-        const encodedBurnCall = encodeBurn(tokenId)
-
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedBurnCall])
-
-        const { commands, inputs } = planner
-        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
       })
     })
   })

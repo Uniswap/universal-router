@@ -4,7 +4,7 @@ import { BigNumber } from 'ethers'
 import { IPermit2, UniversalRouter, INonfungiblePositionManager } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, PERMIT2, V3_NFT_POSITION_MANAGER } from './shared/mainnetForkHelpers'
-import { ADDRESS_THIS, ZERO_ADDRESS, ALICE_ADDRESS, MAX_UINT, MAX_UINT128 } from './shared/constants'
+import { ZERO_ADDRESS, ALICE_ADDRESS, MAX_UINT, MAX_UINT128 } from './shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
@@ -12,7 +12,7 @@ import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 import getPermitNFTSignature from './shared/getPermitNFTSignature'
 import { FeeAmount } from '@uniswap/v3-sdk'
-import { encodeDecreaseLiquidity, encodeCollect, encodeBurn } from './shared/encodeCall'
+import { encodeERC721Permit, encodeDecreaseLiquidity, encodeCollect, encodeBurn } from './shared/encodeCall'
 import { executeRouter } from './shared/executeRouter'
 const { ethers } = hre
 
@@ -21,7 +21,6 @@ describe('Migration Tests:', () => {
   let bob: SignerWithAddress
   let eve: SignerWithAddress
   let router: UniversalRouter
-  let permit2: IPermit2
   let daiContract: Contract
   let wethContract: Contract
   let usdcContract: Contract
@@ -42,7 +41,6 @@ describe('Migration Tests:', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
-    permit2 = PERMIT2.connect(bob) as IPermit2
     v3NFTPositionManager = V3_NFT_POSITION_MANAGER.connect(bob) as INonfungiblePositionManager
     router = (await deployUniversalRouter()) as UniversalRouter
     planner = new RoutePlanner()
@@ -51,11 +49,6 @@ describe('Migration Tests:', () => {
     await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100000))
     await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100))
     await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(100000))
-
-    // Bob max-approves the permit2 contract to access his DAI and WETH
-    await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
-    await wethContract.connect(bob).approve(permit2.address, MAX_UINT)
-    await usdcContract.connect(bob).approve(permit2.address, MAX_UINT)
   })
 
   describe('Migrator', () => {
@@ -98,23 +91,21 @@ describe('Migration Tests:', () => {
     })
 
     describe('erc721permit', () => {
-      it('erc721 permit succeeds when passing in ADDRESS_THIS for router', async () => {
+      it('erc721 permit succeeds', async () => {
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
 
-        expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(ZERO_ADDRESS)
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        // bob permits the router to spend token
-        await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
-
-        expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(router.address)
-      })
-
-      it('erc721 permit also succeeds when passing in actual address', async () => {
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-
-        planner.addCommand(CommandType.ERC721_PERMIT, [router.address, tokenIdv3, MAX_UINT, v, r, s])
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(ZERO_ADDRESS)
 
@@ -125,18 +116,41 @@ describe('Migration Tests:', () => {
       })
 
       it('only owner of the token can generate a signature to permit another address', async () => {
+        // eve is not the owner of the token
         const { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         // eve generated a signature for bob's token - fails since eve is not the owner
-        await expect(executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)).to.be.revertedWith(
-          'Unauthorized'
-        )
+        await expect(
+          executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+        ).to.be.revertedWithCustomError(router, 'ERC721PermitFailed')
       })
 
       it('other address can call permit on behalf of someone as long as owner of the token generated the signature properly', async () => {
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(ZERO_ADDRESS)
 
@@ -151,7 +165,18 @@ describe('Migration Tests:', () => {
       it('decrease liquidity succeeds', async () => {
         // first we need to permit the router to spend the nft
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -169,7 +194,7 @@ describe('Migration Tests:', () => {
 
         const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
         position = await v3NFTPositionManager.positions(tokenIdv3)
@@ -196,7 +221,7 @@ describe('Migration Tests:', () => {
 
         const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
         ).to.be.revertedWithCustomError(router, 'CallToV3PositionManagerFailed')
@@ -205,7 +230,18 @@ describe('Migration Tests:', () => {
       it('cannot call decrease liquidity with improper function selector', async () => {
         // first we need to permit the router to spend the nft
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -228,7 +264,7 @@ describe('Migration Tests:', () => {
           .substring(0, 10)
         const encodedCall = functionSignature + encodedParams.substring(2)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCall])
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
         ).to.be.revertedWithCustomError(router, 'InvalidV3Action')
@@ -237,7 +273,18 @@ describe('Migration Tests:', () => {
       it('fails if decrease liquidity call fails', async () => {
         // first we need to permit the router to spend the nft
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -247,7 +294,7 @@ describe('Migration Tests:', () => {
 
         const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
 
         // call to decrease liquidity fails since the deadline is set to 0
         await expect(
@@ -258,7 +305,18 @@ describe('Migration Tests:', () => {
       it('cannot call decrease liquidity if not authorized', async () => {
         // bob creates a signature for the router to spend the token
         const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
@@ -280,7 +338,7 @@ describe('Migration Tests:', () => {
 
         const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
 
         // bob is trying to use the token that is now owned by eve. he is not authorized to do so
         await expect(
@@ -297,7 +355,18 @@ describe('Migration Tests:', () => {
 
         // eve creates a signature for the router to spend the token
         let { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
         planner = new RoutePlanner()
@@ -309,7 +378,7 @@ describe('Migration Tests:', () => {
 
         const encodedDecreaseCall = encodeDecreaseLiquidity(params)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
       })
@@ -322,7 +391,18 @@ describe('Migration Tests:', () => {
 
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -346,8 +426,8 @@ describe('Migration Tests:', () => {
 
         const encodedCollectCall = encodeCollect(collectParams)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
@@ -369,7 +449,18 @@ describe('Migration Tests:', () => {
       it('collecting the correct amount', async () => {
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -384,7 +475,7 @@ describe('Migration Tests:', () => {
 
         const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
@@ -411,7 +502,7 @@ describe('Migration Tests:', () => {
 
         await v3NFTPositionManager.setApprovalForAll(eve.address, true)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
 
         await executeRouter(planner, eve, router, wethContract, daiContract, usdcContract)
 
@@ -440,7 +531,18 @@ describe('Migration Tests:', () => {
 
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -464,8 +566,8 @@ describe('Migration Tests:', () => {
 
         const encodedCollectCall = encodeCollect(collectParams)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
@@ -481,7 +583,18 @@ describe('Migration Tests:', () => {
       it('cannot call collect with improper signature', async () => {
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -509,8 +622,8 @@ describe('Migration Tests:', () => {
         const functionSignatureCollect = ethers.utils.id('collect((uint256,address,uint128))').substring(0, 10)
         const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
 
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
@@ -520,7 +633,18 @@ describe('Migration Tests:', () => {
       it('cannot call collect with improper params', async () => {
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -543,8 +667,8 @@ describe('Migration Tests:', () => {
         const functionSignatureCollect = ethers.utils.id('collect((uint256,address,uint128,uint128))').substring(0, 10)
         const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
 
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
@@ -554,7 +678,18 @@ describe('Migration Tests:', () => {
       it('cannot call collect if the router is not approved for that tokenid', async () => {
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
         planner = new RoutePlanner()
@@ -583,8 +718,8 @@ describe('Migration Tests:', () => {
 
         const encodedCollectCall = encodeCollect(collectParams)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
 
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
@@ -594,7 +729,18 @@ describe('Migration Tests:', () => {
       it('address cannot call collect if unapproved for that tokenid', async () => {
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
         planner = new RoutePlanner()
@@ -613,7 +759,7 @@ describe('Migration Tests:', () => {
 
         const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
         const collectParams = {
@@ -625,7 +771,7 @@ describe('Migration Tests:', () => {
 
         const encodedCollectCall = encodeCollect(collectParams)
         planner = new RoutePlanner()
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
 
         // not approved on the collect call
         await expect(
@@ -638,7 +784,18 @@ describe('Migration Tests:', () => {
       it('burn succeeds', async () => {
         // first we need to permit the router to spend the nft
         let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
-        planner.addCommand(CommandType.ERC721_PERMIT, [ADDRESS_THIS, tokenIdv3, MAX_UINT, v, r, s])
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -664,9 +821,9 @@ describe('Migration Tests:', () => {
 
         const encodedBurnCall = encodeBurn(tokenIdv3)
 
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedDecreaseCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedCollectCall])
-        planner.addCommand(CommandType.V3_POSM_CALL, [encodedBurnCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 

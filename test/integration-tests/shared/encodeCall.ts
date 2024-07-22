@@ -1,13 +1,23 @@
 import { ethers } from 'ethers'
 import { BigNumber } from 'ethers'
 
+const permitSignature = 'permit(address,uint256,uint256,uint8,bytes32,bytes32)'
 const decreaseLiquidityFunctionSignature = 'decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))'
 const collectFunctionSignature = 'collect((uint256,address,uint128,uint128))'
 const burnFunctionSignature = 'burn(uint256)'
 
 const DECREASE_LIQUIDITY_STRUCT =
-  '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min, uint256 deadline)'
+  '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min,uint256 deadline)'
 const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint256 amount0Max,uint256 amount1Max)'
+
+interface ERC721PermitParams {
+  spender: string
+  tokenId: ethers.BigNumber
+  deadline: string
+  v: number
+  r: string
+  s: string
+}
 
 interface DecreaseLiquidityParams {
   tokenId: ethers.BigNumber
@@ -22,6 +32,18 @@ interface CollectParams {
   recipient: string
   amount0Max: string
   amount1Max: string
+}
+
+const encodeERC721Permit = (params: ERC721PermitParams): string => {
+  const abi = new ethers.utils.AbiCoder()
+  const { spender, tokenId, deadline, v, r, s } = params
+  const encodedParams = abi.encode(
+    ['address', 'uint256', 'uint256', 'uint8', 'bytes32', 'bytes32'],
+    [spender, tokenId, deadline, v, r, s]
+  )
+  const functionSignature = ethers.utils.id(permitSignature).substring(0, 10)
+  const encodedCall = functionSignature + encodedParams.substring(2)
+  return encodedCall
 }
 
 const encodeDecreaseLiquidity = (params: DecreaseLiquidityParams): string => {
@@ -48,4 +70,4 @@ const encodeBurn = (params: BigNumber): string => {
   return encodedBurnCall
 }
 
-export { encodeDecreaseLiquidity, encodeCollect, encodeBurn }
+export { encodeERC721Permit, encodeDecreaseLiquidity, encodeCollect, encodeBurn }
