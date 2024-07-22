@@ -5,7 +5,7 @@ import {MigratorImmutables} from '../modules/MigratorImmutables.sol';
 import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
 
 abstract contract V3ToV4Migrator is MigratorImmutables {
-    function isValidV3Action(bytes4 selector) internal pure returns (bool) {
+    function isValidAction(bytes4 selector) internal pure returns (bool) {
         return selector == INonfungiblePositionManager.decreaseLiquidity.selector
             || selector == INonfungiblePositionManager.collect.selector
             || selector == INonfungiblePositionManager.burn.selector;

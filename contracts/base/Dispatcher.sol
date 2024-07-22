@@ -12,6 +12,7 @@ import {Commands} from '../libraries/Commands.sol';
 import {LockAndMsgSender} from './LockAndMsgSender.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
+import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
@@ -20,7 +21,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
-    error InvalidV3Action(bytes4 action);
+    error InvalidAction(bytes4 action);
     error NotAuthorizedForToken(uint256 tokenId);
 
     /// @notice Decodes and executes the given command with the given inputs
@@ -209,6 +210,14 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                 // 0x10 <= command < 0x18
             } else {
                 if (command == Commands.ERC721_PERMIT) {
+                    bytes4 selector;
+                    assembly {
+                        selector := calldataload(inputs.offset)
+                    }
+                    if (selector != IERC721Permit.permit.selector) {
+                        revert InvalidAction(selector);
+                    }
+
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V3_POSITION_MANAGER_CALL) {
                     bytes4 selector;
@@ -219,8 +228,8 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                         tokenId := calldataload(add(inputs.offset, 0x04))
                     }
 
-                    if (!isValidV3Action(selector)) {
-                        revert InvalidV3Action(selector);
+                    if (!isValidAction(selector)) {
+                        revert InvalidAction(selector);
                     }
                     if (!isAuthorizedForToken(lockedBy, tokenId)) {
                         revert NotAuthorizedForToken(tokenId);
