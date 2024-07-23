@@ -7,3 +7,6 @@
 [submodule "lib/permit2"]
 	path = lib/permit2
 	url = git@github.com:Uniswap/permit2.git
+[submodule "lib/v3-periphery"]
+	path = lib/v3-periphery
+	url = https://github.com/uniswap/v3-periphery

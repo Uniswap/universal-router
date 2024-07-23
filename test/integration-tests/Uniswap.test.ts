@@ -1,7 +1,5 @@
 import type { Contract } from '@ethersproject/contracts'
-import { TransactionReceipt } from '@ethersproject/abstract-provider'
 import { Pair } from '@uniswap/v2-sdk'
-import { parseEvents, V2_EVENTS, V3_EVENTS } from './shared/parseEvents'
 import { expect } from './shared/expect'
 import { BigNumber, BigNumberish } from 'ethers'
 import { IPermit2, UniversalRouter } from '../../typechain'
@@ -27,6 +25,7 @@ import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 import { getPermitSignature, getPermitBatchSignature, PermitSingle } from './shared/protocolHelpers/permit2'
 import { encodePathExactInput, encodePathExactOutput } from './shared/swapRouter02Helpers'
+import { executeRouter } from './shared/executeRouter'
 const { ethers } = hre
 
 describe('Uniswap V2 and V3 Tests:', () => {
@@ -51,7 +50,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
-    router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
+    router = (await deployUniversalRouter()) as UniversalRouter
     planner = new RoutePlanner()
 
     // alice gives bob some tokens
@@ -95,7 +94,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           [DAI.address, WETH.address],
           SOURCE_MSG_SENDER,
         ])
-        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
       })
@@ -126,7 +132,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           [DAI.address, WETH.address],
           SOURCE_MSG_SENDER,
         ])
-        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
       })
@@ -159,7 +172,9 @@ describe('Uniswap V2 and V3 Tests:', () => {
         ])
 
         const testCustomErrors = await (await ethers.getContractFactory('TestCustomErrors')).deploy()
-        await expect(executeRouter(planner)).to.be.revertedWithCustomError(testCustomErrors, 'UnsafeCast')
+        await expect(
+          executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+        ).to.be.revertedWithCustomError(testCustomErrors, 'UnsafeCast')
       })
 
       it('V3 exactIn, permiting the exact amount', async () => {
@@ -193,7 +208,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           path,
           SOURCE_MSG_SENDER,
         ])
-        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
       })
@@ -229,7 +251,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           path,
           SOURCE_MSG_SENDER,
         ])
-        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
       })
@@ -254,7 +283,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           [DAI.address, WETH.address],
           SOURCE_MSG_SENDER,
         ])
-        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gt(minAmountOut)
       })
 
@@ -268,7 +304,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
         planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, 0])
-        const { daiBalanceBefore, daiBalanceAfter } = await executeRouter(planner)
+        const { daiBalanceBefore, daiBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.gt(amountOut)
       })
 
@@ -288,7 +331,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
         const wethBalanceBeforeBob = await wethContract.balanceOf(bob.address)
 
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        await router.connect(bob)['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
 
         const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
         const wethBalanceAfterBob = await wethContract.balanceOf(bob.address)
@@ -313,7 +356,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
 
-        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gt(minAmountOut)
       })
     })
@@ -329,7 +379,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         ])
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
 
-        const { gasSpent, ethBalanceBefore, ethBalanceAfter, v2SwapEventArgs } = await executeRouter(planner)
+        const { gasSpent, ethBalanceBefore, ethBalanceAfter, v2SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1Out: wethTraded } = v2SwapEventArgs!
 
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(wethTraded.sub(gasSpent))
@@ -347,7 +404,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, amountOut])
         planner.addCommand(CommandType.SWEEP, [DAI.address, MSG_SENDER, 0])
 
-        const { gasSpent, ethBalanceBefore, ethBalanceAfter, v2SwapEventArgs } = await executeRouter(planner)
+        const { gasSpent, ethBalanceBefore, ethBalanceAfter, v2SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1Out: wethTraded } = v2SwapEventArgs!
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(amountOut.sub(gasSpent))
         expect(wethTraded).to.eq(amountOut)
@@ -371,10 +435,9 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         const { commands, inputs } = planner
 
-        await expect(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)).to.changeEtherBalances(
-          [alice, bob],
-          [totalPortion, actualAmountOut]
-        )
+        await expect(
+          router.connect(bob)['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        ).to.changeEtherBalances([alice, bob], [totalPortion, actualAmountOut])
       })
     })
 
@@ -392,7 +455,15 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
 
-        const { daiBalanceBefore, daiBalanceAfter, v2SwapEventArgs } = await executeRouter(planner, amountIn)
+        const { daiBalanceBefore, daiBalanceAfter, v2SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract,
+          amountIn
+        )
         const { amount0Out: daiTraded } = v2SwapEventArgs!
 
         expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.gt(minAmountOut)
@@ -414,7 +485,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
 
         const { ethBalanceBefore, ethBalanceAfter, daiBalanceBefore, daiBalanceAfter, v2SwapEventArgs, gasSpent } =
-          await executeRouter(planner, value)
+          await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract, value)
         const { amount0Out: daiTraded, amount1In: wethTraded } = v2SwapEventArgs!
         expect(daiBalanceAfter.sub(daiBalanceBefore)).gt(amountOut) // rounding
         expect(daiBalanceAfter.sub(daiBalanceBefore)).eq(daiTraded)
@@ -459,7 +530,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
         addV3ExactInTrades(planner, 1, amountOutMin)
 
-        const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1: wethTraded } = v3SwapEventArgs!
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(amountOutMin)
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethTraded.mul(-1))
@@ -483,7 +561,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
           wethBalanceAfter,
           usdcBalanceBefore,
           usdcBalanceAfter,
-        } = await executeRouter(planner)
+        } = await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
         expect(daiBalanceBefore.sub(amountIn)).to.eq(daiBalanceAfter)
         expect(wethBalanceAfter).to.eq(wethBalanceBefore)
@@ -497,7 +575,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [MSG_SENDER, amountOut, amountInMax, path, SOURCE_MSG_SENDER])
 
-        const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount0: daiTraded } = v3SwapEventArgs!
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(amountOut)
         expect(daiTraded).to.be.lt(amountInMax)
@@ -512,7 +597,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         const { commands, inputs } = planner
 
         const balanceWethBefore = await wethContract.balanceOf(bob.address)
-        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        await router.connect(bob)['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
         const balanceWethAfter = await wethContract.balanceOf(bob.address)
         expect(balanceWethAfter.sub(balanceWethBefore)).to.eq(amountOut)
       })
@@ -524,7 +609,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         addV3ExactInTrades(planner, 1, amountOutMin, ADDRESS_THIS)
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
 
-        const { ethBalanceBefore, ethBalanceAfter, v3SwapEventArgs, gasSpent } = await executeRouter(planner)
+        const { ethBalanceBefore, ethBalanceAfter, v3SwapEventArgs, gasSpent } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1: wethTraded } = v3SwapEventArgs!
 
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.gte(amountOutMin.sub(gasSpent))
@@ -545,7 +637,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         ])
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, amountOut])
 
-        const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(planner)
+        const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
 
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(amountOut.sub(gasSpent))
       })
@@ -561,6 +660,11 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         const { ethBalanceBefore, ethBalanceAfter, daiBalanceBefore, daiBalanceAfter, gasSpent } = await executeRouter(
           planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract,
           amountIn
         )
 
@@ -577,7 +681,7 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
 
         const { ethBalanceBefore, ethBalanceAfter, daiBalanceBefore, daiBalanceAfter, gasSpent, v3SwapEventArgs } =
-          await executeRouter(planner, amountInMax)
+          await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract, amountInMax)
         const { amount0: daiTraded, amount1: wethTraded } = v3SwapEventArgs!
 
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.eq(daiTraded)
@@ -612,7 +716,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // amountIn of 0 because the USDC is already in the pair
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, v2AmountOutMin, v2Tokens, SOURCE_MSG_SENDER])
 
-        const { wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1Out: wethTraded } = v2SwapEventArgs!
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethTraded)
       })
@@ -639,7 +750,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_ROUTER,
         ])
 
-        const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1: wethTraded } = v3SwapEventArgs!
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethTraded.mul(-1))
       })
@@ -663,7 +781,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // 3) trade route2 and return tokens to bob
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, minAmountOut2, route2, SOURCE_MSG_SENDER])
 
-        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
       })
 
@@ -698,7 +823,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // 3) trade route2 and return tokens to bob
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, minAmountOut2, route2, SOURCE_MSG_SENDER])
 
-        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
       })
 
@@ -727,7 +859,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
 
-        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
       })
 
@@ -780,7 +919,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_MSG_SENDER,
         ])
 
-        const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(planner)
+        const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
       })
 
@@ -854,7 +1000,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
           SOURCE_ROUTER,
         ])
 
-        const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(planner)
+        const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOut1USDC.add(minAmountOut2USDC))
       })
 
@@ -877,7 +1030,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // aggregate slippage check
         planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, minAmountOut])
 
-        const { wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs, v3SwapEventArgs } = await executeRouter(planner)
+        const { wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs, v3SwapEventArgs } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
         const { amount1Out: wethOutV2 } = v2SwapEventArgs!
         let { amount1: wethOutV3 } = v3SwapEventArgs!
 
@@ -905,6 +1065,11 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
         const { usdcBalanceBefore, usdcBalanceAfter, v2SwapEventArgs, v3SwapEventArgs } = await executeRouter(
           planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract,
           value
         )
         const { amount0Out: usdcOutV2 } = v2SwapEventArgs!
@@ -930,7 +1095,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, expandTo18DecimalsBN(0.0005)])
 
         const { ethBalanceBefore, ethBalanceAfter, gasSpent, v2SwapEventArgs, v3SwapEventArgs } = await executeRouter(
-          planner
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
         )
         const { amount1Out: wethOutV2 } = v2SwapEventArgs!
         let { amount1: wethOutV3 } = v3SwapEventArgs!
@@ -964,7 +1134,14 @@ describe('Uniswap V2 and V3 Tests:', () => {
         // aggregate slippage check
         planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, fullAmountOut])
 
-        const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(planner)
+        const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+          planner,
+          bob,
+          router,
+          wethContract,
+          daiContract,
+          usdcContract
+        )
 
         // TODO: permit2 test alice doesn't send more than maxAmountIn DAI
         expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(fullAmountOut.sub(gasSpent))
@@ -1025,7 +1202,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
           planner.addSubPlan(subplan)
 
           const { usdcBalanceBefore, usdcBalanceAfter, daiBalanceBefore, daiBalanceAfter } = await executeRouter(
-            planner
+            planner,
+            bob,
+            router,
+            wethContract,
+            daiContract,
+            usdcContract
           )
 
           expect(daiBalanceBefore.sub(daiBalanceAfter)).to.eq(planOneV2AmountIn.add(planOneV3AmountIn))
@@ -1076,7 +1258,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
           planner.addSubPlan(subplan)
 
           const { usdcBalanceBefore, usdcBalanceAfter, daiBalanceBefore, daiBalanceAfter } = await executeRouter(
-            planner
+            planner,
+            bob,
+            router,
+            wethContract,
+            daiContract,
+            usdcContract
           )
 
           // dai balance should be unchanged as the weth sweep failed
@@ -1131,7 +1318,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
           planner.addSubPlan(subplan)
 
           const { usdcBalanceBefore, usdcBalanceAfter, daiBalanceBefore, daiBalanceAfter } = await executeRouter(
-            planner
+            planner,
+            bob,
+            router,
+            wethContract,
+            daiContract,
+            usdcContract
           )
 
           // dai and usdc balances both unchanged because both trades failed
@@ -1183,7 +1375,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
           planner.addSubPlan(subplan)
 
           const { usdcBalanceBefore, usdcBalanceAfter, daiBalanceBefore, daiBalanceAfter } = await executeRouter(
-            planner
+            planner,
+            bob,
+            router,
+            wethContract,
+            daiContract,
+            usdcContract
           )
 
           // dai balance has changed as this trade should succeed
@@ -1195,65 +1392,4 @@ describe('Uniswap V2 and V3 Tests:', () => {
       })
     })
   })
-
-  type V2SwapEventArgs = {
-    amount0In: BigNumber
-    amount0Out: BigNumber
-    amount1In: BigNumber
-    amount1Out: BigNumber
-  }
-
-  type V3SwapEventArgs = {
-    amount0: BigNumber
-    amount1: BigNumber
-  }
-
-  type ExecutionParams = {
-    wethBalanceBefore: BigNumber
-    wethBalanceAfter: BigNumber
-    daiBalanceBefore: BigNumber
-    daiBalanceAfter: BigNumber
-    usdcBalanceBefore: BigNumber
-    usdcBalanceAfter: BigNumber
-    ethBalanceBefore: BigNumber
-    ethBalanceAfter: BigNumber
-    v2SwapEventArgs: V2SwapEventArgs | undefined
-    v3SwapEventArgs: V3SwapEventArgs | undefined
-    receipt: TransactionReceipt
-    gasSpent: BigNumber
-  }
-
-  async function executeRouter(planner: RoutePlanner, value?: BigNumberish): Promise<ExecutionParams> {
-    const ethBalanceBefore: BigNumber = await ethers.provider.getBalance(bob.address)
-    const wethBalanceBefore: BigNumber = await wethContract.balanceOf(bob.address)
-    const daiBalanceBefore: BigNumber = await daiContract.balanceOf(bob.address)
-    const usdcBalanceBefore: BigNumber = await usdcContract.balanceOf(bob.address)
-
-    const { commands, inputs } = planner
-
-    const receipt = await (await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, { value })).wait()
-    const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-    const v2SwapEventArgs = parseEvents(V2_EVENTS, receipt)[0]?.args as unknown as V2SwapEventArgs
-    const v3SwapEventArgs = parseEvents(V3_EVENTS, receipt)[0]?.args as unknown as V3SwapEventArgs
-
-    const ethBalanceAfter: BigNumber = await ethers.provider.getBalance(bob.address)
-    const wethBalanceAfter: BigNumber = await wethContract.balanceOf(bob.address)
-    const daiBalanceAfter: BigNumber = await daiContract.balanceOf(bob.address)
-    const usdcBalanceAfter: BigNumber = await usdcContract.balanceOf(bob.address)
-
-    return {
-      wethBalanceBefore,
-      wethBalanceAfter,
-      daiBalanceBefore,
-      daiBalanceAfter,
-      usdcBalanceBefore,
-      usdcBalanceAfter,
-      ethBalanceBefore,
-      ethBalanceAfter,
-      v2SwapEventArgs,
-      v3SwapEventArgs,
-      receipt,
-      gasSpent,
-    }
-  }
 })
