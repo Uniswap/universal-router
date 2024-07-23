@@ -9,7 +9,7 @@ import {
   PERMIT2_ADDRESS,
   V3_NFT_POSITION_MANAGER_MAINNET,
 } from './constants'
-import {deployV4PositionManager} from './deployV4'
+import { deployV4PositionManager } from './deployV4'
 
 export async function deployRouter(mockReentrantWETH?: string): Promise<UniversalRouter> {
   const routerParameters = {
