@@ -368,17 +368,54 @@ describe('V3 to V4 Migration Tests:', () => {
         ).to.be.revertedWithCustomError(router, 'NotAuthorizedForToken')
       })
 
-      it('bob is permitted over the nft so he can call decrease even though he is not the owner', async () => {
+      it('ever permits bob for all tokens - he can call decrease even though he is not the owner', async () => {
         // transfer the token to eve
         await v3NFTPositionManager.transferFrom(bob.address, eve.address, tokenIdv3)
 
-        // eve permits bob to spend the token
+        // eve permits bob to spend all of her tokens
         await v3NFTPositionManager.connect(eve).setApprovalForAll(bob.address, true)
 
         // eve creates a signature for the router to spend the token
         let { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
           spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+
+        await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+        planner = new RoutePlanner()
+
+        let position = await v3NFTPositionManager.positions(tokenIdv3)
+        let liquidity = position.liquidity
+
+        const params = { tokenId: tokenIdv3, liquidity: liquidity, amount0Min: 0, amount1Min: 0, deadline: MAX_UINT }
+
+        const encodedDecreaseCall = encodeDecreaseLiquidity(params)
+
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
+
+        await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      })
+
+      it('eve permits bob for the token and router for all tokens - he can call decrease even though he is not the owner', async () => {
+        // transfer the token to eve
+        await v3NFTPositionManager.transferFrom(bob.address, eve.address, tokenIdv3)
+
+        // eve approves the router to spend all of her tokens
+        await v3NFTPositionManager.connect(eve).setApprovalForAll(router.address, true)
+
+        // eve creates a signature for bob to spend the token
+        let { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, bob.address, tokenIdv3, MAX_UINT)
+        const erc721PermitParams = {
+          spender: bob.address,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -850,6 +887,62 @@ describe('V3 to V4 Migration Tests:', () => {
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
         expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
+      })
+
+      it('burn fails if you arent approved spender of nft', async () => {
+        // first we need to permit the router to spend the nft
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        const erc721PermitParams = {
+          spender: router.address,
+          tokenId: tokenIdv3,
+          deadline: MAX_UINT,
+          v: v,
+          r: r,
+          s: s,
+        }
+
+        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+
+        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+
+        let position = await v3NFTPositionManager.positions(tokenIdv3)
+        let liquidity = position.liquidity
+
+        const decreaseParams = {
+          tokenId: tokenIdv3,
+          liquidity: liquidity,
+          amount0Min: 0,
+          amount1Min: 0,
+          deadline: MAX_UINT,
+        }
+
+        const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
+
+        const collectParams = {
+          tokenId: tokenIdv3,
+          recipient: bob.address,
+          amount0Max: MAX_UINT128,
+          amount1Max: MAX_UINT128,
+        }
+
+        const encodedCollectCall = encodeCollect(collectParams)
+
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
+
+        // bob decreases and collects the liquidity
+        await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+        planner = new RoutePlanner()
+
+        const encodedBurnCall = encodeBurn(tokenIdv3)
+
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
+
+        // eve tries to burn the token - she is not approved to do so
+        await expect(
+          executeRouter(planner, eve, router, wethContract, daiContract, usdcContract)
+        ).to.be.revertedWithCustomError(router, 'NotAuthorizedForToken')
       })
     })
   })
