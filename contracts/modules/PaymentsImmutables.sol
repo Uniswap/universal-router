@@ -10,10 +10,10 @@ struct PaymentsParameters {
 }
 
 contract PaymentsImmutables {
-    /// @dev WETH9 address
+    /// @notice WETH9 address
     IWETH9 internal immutable WETH9;
 
-    /// @dev Permit2 address
+    /// @notice Permit2 address
     IPermit2 internal immutable PERMIT2;
 
     enum Spenders {

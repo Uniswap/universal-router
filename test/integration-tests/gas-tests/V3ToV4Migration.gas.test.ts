@@ -91,7 +91,7 @@ describe('V3 to V4 Migration Gas Tests', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         const { commands, inputs } = planner
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -112,7 +112,7 @@ describe('V3 to V4 Migration Gas Tests', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -148,7 +148,7 @@ describe('V3 to V4 Migration Gas Tests', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -195,7 +195,7 @@ describe('V3 to V4 Migration Gas Tests', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity

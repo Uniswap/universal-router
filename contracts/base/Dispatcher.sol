@@ -209,7 +209,8 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                 }
                 // 0x10 <= command < 0x18
             } else {
-                if (command == Commands.ERC721_PERMIT) {
+                // This contract MUST be approved to spend the token since its going to be doing the call on the position manager
+                if (command == Commands.V3_POSITION_MANAGER_PERMIT) {
                     bytes4 selector;
                     assembly {
                         selector := calldataload(inputs.offset)
@@ -231,6 +232,10 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                     if (!isValidAction(selector)) {
                         revert InvalidAction(selector);
                     }
+                    // If any other address that is not the owner wants to call this function, it also needs to be approved (in addition to this contract)
+                    // This can be done in 2 ways:
+                    //    1. This contract is permitted for the specific token and the caller is approved for ALL of the owner's tokens
+                    //    2. This contract is permitted for ALL of the owner's tokens and the caller is permitted for the specific token
                     if (!isAuthorizedForToken(lockedBy, tokenId)) {
                         revert NotAuthorizedForToken(tokenId);
                     }

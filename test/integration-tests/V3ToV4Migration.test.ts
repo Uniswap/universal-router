@@ -105,7 +105,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(ZERO_ADDRESS)
 
@@ -115,7 +115,7 @@ describe('V3 to V4 Migration Tests:', () => {
         expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(router.address)
       })
 
-      it('need to call permit when executing erc721_permit command', async () => {
+      it('need to call permit when executing V3_POSITION_MANAGER_PERMIT command', async () => {
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
 
@@ -129,7 +129,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedDecreaseCall = encodeDecreaseLiquidity(decreaseParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedDecreaseCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedDecreaseCall])
 
         // trying to execute the permit commmand by calling decrease liquidity
         await expect(
@@ -151,7 +151,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         // eve generated a signature for bob's token - fails since eve is not the owner
         await expect(
@@ -172,7 +172,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(ZERO_ADDRESS)
 
@@ -198,7 +198,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -263,7 +263,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -306,7 +306,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -338,7 +338,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
@@ -368,7 +368,7 @@ describe('V3 to V4 Migration Tests:', () => {
         ).to.be.revertedWithCustomError(router, 'NotAuthorizedForToken')
       })
 
-      it('ever permits bob for all tokens - he can call decrease even though he is not the owner', async () => {
+      it('eve permits bob for all tokens - he can call decrease even though he is not the owner', async () => {
         // transfer the token to eve
         await v3NFTPositionManager.transferFrom(bob.address, eve.address, tokenIdv3)
 
@@ -388,10 +388,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
-
-        await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
-        planner = new RoutePlanner()
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -405,7 +402,7 @@ describe('V3 to V4 Migration Tests:', () => {
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
       })
 
-      it('eve permits bob for the token and router for all tokens - he can call decrease even though he is not the owner', async () => {
+      it('eve permits bob for the token and approves router for all her tokens - he can call decrease even though he is not the owner', async () => {
         // transfer the token to eve
         await v3NFTPositionManager.transferFrom(bob.address, eve.address, tokenIdv3)
 
@@ -425,10 +422,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
-
-        await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
-        planner = new RoutePlanner()
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -461,7 +455,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -519,7 +513,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -601,7 +595,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -653,7 +647,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -703,7 +697,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -748,7 +742,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
         planner = new RoutePlanner()
@@ -799,7 +793,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
         planner = new RoutePlanner()
@@ -854,7 +848,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity
@@ -903,7 +897,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
-        planner.addCommand(CommandType.ERC721_PERMIT, [encodedErc721PermitCall])
+        planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
         let position = await v3NFTPositionManager.positions(tokenIdv3)
         let liquidity = position.liquidity

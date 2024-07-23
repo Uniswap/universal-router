@@ -22,7 +22,7 @@ export enum CommandType {
   PERMIT2_TRANSFER_FROM_BATCH = 0x0d,
   BALANCE_CHECK_ERC20 = 0x0e,
 
-  ERC721_PERMIT = 0x10,
+  V3_POSITION_MANAGER_PERMIT = 0x10,
   V3_POSITION_MANAGER_CALL = 0x11,
 
   EXECUTE_SUB_PLAN = 0x21,
@@ -65,7 +65,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.PAY_PORTION]: ['address', 'address', 'uint256'],
   [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
 
-  [CommandType.ERC721_PERMIT]: ['bytes'],
+  [CommandType.V3_POSITION_MANAGER_PERMIT]: ['bytes'],
   [CommandType.V3_POSITION_MANAGER_CALL]: ['bytes'],
 }
 
@@ -102,7 +102,7 @@ export type RouterCommand = {
 }
 
 export function createCommand(type: CommandType, parameters: any[]): RouterCommand {
-  if (type === CommandType.V3_POSITION_MANAGER_CALL || type === CommandType.ERC721_PERMIT) {
+  if (type === CommandType.V3_POSITION_MANAGER_CALL || type === CommandType.V3_POSITION_MANAGER_PERMIT) {
     return { type, encodedInput: parameters[0] }
   } else {
     const encodedInput = defaultAbiCoder.encode(ABI_DEFINITION[type], parameters)

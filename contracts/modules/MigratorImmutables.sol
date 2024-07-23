@@ -8,7 +8,7 @@ struct MigratorParameters {
 }
 
 contract MigratorImmutables {
-    /// @dev v3PositionManager address
+    /// @notice v3PositionManager address
     INonfungiblePositionManager internal immutable V3_POSITION_MANAGER;
 
     constructor(MigratorParameters memory params) {
