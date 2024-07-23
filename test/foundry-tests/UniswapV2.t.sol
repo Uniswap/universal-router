@@ -34,7 +34,8 @@ abstract contract UniswapV2Test is Test {
             v3Factory: address(0),
             pairInitCodeHash: bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f),
             poolInitCodeHash: bytes32(0),
-            v3NFTPositionManager: address(0)
+            v3NFTPositionManager: address(0),
+            v4PositionManager: address(0)
         });
         router = new UniversalRouter(params);
 

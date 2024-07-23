@@ -9,6 +9,7 @@ import {
   PERMIT2_ADDRESS,
   V3_NFT_POSITION_MANAGER_MAINNET,
 } from './constants'
+import {deployV4PositionManager} from './deployV4'
 
 export async function deployRouter(mockReentrantWETH?: string): Promise<UniversalRouter> {
   const routerParameters = {
@@ -19,6 +20,7 @@ export async function deployRouter(mockReentrantWETH?: string): Promise<Universa
     pairInitCodeHash: V2_INIT_CODE_HASH_MAINNET,
     poolInitCodeHash: V3_INIT_CODE_HASH_MAINNET,
     v3NFTPositionManager: V3_NFT_POSITION_MANAGER_MAINNET,
+    v4PositionManager: await deployV4PositionManager(),
   }
 
   const routerFactory = await ethers.getContractFactory('UniversalRouter')

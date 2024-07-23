@@ -9,4 +9,5 @@ struct RouterParameters {
     bytes32 pairInitCodeHash;
     bytes32 poolInitCodeHash;
     address v3NFTPositionManager;
+    address v4PositionManager;
 }

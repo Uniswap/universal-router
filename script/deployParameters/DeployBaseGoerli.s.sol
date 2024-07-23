@@ -13,7 +13,8 @@ contract DeployBaseGoerli is DeployUniversalRouter {
             v3Factory: 0x9323c1d6D800ed51Bd7C6B216cfBec678B7d0BC2,
             pairInitCodeHash: BYTES32_ZERO,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
-            v3NFTPositionManager: address(0)
+            v3NFTPositionManager: address(0),
+            v4PositionManager: address(0)
         });
 
         unsupported = 0x7B46ee9BaB49bd5b37117494689A035b0F187B59;
