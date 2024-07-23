@@ -6,7 +6,7 @@ import { ALICE_ADDRESS, DEADLINE } from './../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import deployUniversalRouter from './../shared/deployUniversalRouter'
-import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
+import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 const { ethers } = hre
 
 describe('Check Ownership Gas', () => {

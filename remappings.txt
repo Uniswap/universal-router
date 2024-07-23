@@ -1,4 +1,4 @@
-solmate/=lib/solmate/
+solmate/=lib/solmate/src/
 permit2/=lib/permit2/
 forge-std/=lib/forge-std/src/
 @openzeppelin/contracts=node_modules/@openzeppelin/contracts
