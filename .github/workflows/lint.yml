@@ -40,4 +40,4 @@ jobs:
         id: build
 
       - name: Run linter
-        run: yarn run lint::check
+        run: yarn run lint:check
