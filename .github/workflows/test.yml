@@ -47,6 +47,6 @@ jobs:
         run: yarn compile
 
       - name: Run Integration tests
-        run: yarn test
+        run: yarn test:hardhat
         env:
           INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
