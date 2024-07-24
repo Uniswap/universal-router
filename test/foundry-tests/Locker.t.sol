@@ -21,4 +21,21 @@ contract LockerTest is Test {
         Locker.set(address(0));
         assertEq(Locker.get(), address(0));
     }
+
+    function test_fuzz_isLocked(address locker) public {
+        assertEq(Locker.get(), address(0));
+        assertEq(Locker.isLocked(), false);
+
+        Locker.set(locker);
+        // the contract is locked when the locker is not address(0)
+        assertEq(Locker.isLocked(), locker != address(0));
+
+        Locker.set(address(0));
+        assertEq(Locker.isLocked(), false);
+    }
+
+    function test_lockerSlot() public {
+        bytes32 expectedSlot = bytes32(uint256(keccak256('Locker')) - 1);
+        assertEq(expectedSlot, Locker.LOCKER_SLOT);
+    }
 }

@@ -61,8 +61,8 @@
     "typescript": "^3.7.3"
   },
   "scripts": {
-    "compile": "hardhat compile",
-    "test": "hardhat test",
+    "compile": "hardhat compile && forge build",
+    "test": "yarn compile && hardhat test && forge test --isolate",
     "test:gas": "UPDATE_SNAPSHOT=1 yarn test --grep gas",
     "test:all": "UPDATE_SNAPSHOT=1 yarn test",
     "prettier:fix": "prettier --write '**/*.ts' && prettier --write '**/*.json'",
