@@ -18,4 +18,8 @@ library Locker {
             locker := tload(LOCKED_BY_SLOT)
         }
     }
+
+    function isLocked() internal view returns (bool) {
+        return Locker.get() != address(0);
+    }
 }

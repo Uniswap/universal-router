@@ -6,7 +6,6 @@ import {V3SwapRouter} from '../modules/uniswap/v3/V3SwapRouter.sol';
 import {BytesLib} from '../modules/uniswap/v3/BytesLib.sol';
 import {Payments} from '../modules/Payments.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
-import {Locker} from '../libraries/Locker.sol';
 import {V3ToV4Migrator} from '../modules/V3ToV4Migrator.sol';
 import {Callbacks} from '../base/Callbacks.sol';
 import {Commands} from '../libraries/Commands.sol';
@@ -56,7 +55,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         bytes calldata path = inputs.toBytes(3);
-                        address payer = payerIsUser ? Locker.get() : address(this);
+                        address payer = payerIsUser ? _msgSender() : address(this);
                         v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
@@ -72,7 +71,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         bytes calldata path = inputs.toBytes(3);
-                        address payer = payerIsUser ? Locker.get() : address(this);
+                        address payer = payerIsUser ? _msgSender() : address(this);
                         v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
                         // equivalent: abi.decode(inputs, (address, address, uint160))
@@ -84,12 +83,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             recipient := calldataload(add(inputs.offset, 0x20))
                             amount := calldataload(add(inputs.offset, 0x40))
                         }
-                        permit2TransferFrom(token, Locker.get(), map(recipient), amount);
+                        permit2TransferFrom(token, _msgSender(), map(recipient), amount);
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
                         (IAllowanceTransfer.PermitBatch memory permitBatch,) =
                             abi.decode(inputs, (IAllowanceTransfer.PermitBatch, bytes));
                         bytes calldata data = inputs.toBytes(1);
-                        PERMIT2.permit(Locker.get(), permitBatch, data);
+                        PERMIT2.permit(_msgSender(), permitBatch, data);
                     } else if (command == Commands.SWEEP) {
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
@@ -143,7 +142,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         address[] calldata path = inputs.toAddressArray(3);
-                        address payer = payerIsUser ? Locker.get() : address(this);
+                        address payer = payerIsUser ? _msgSender() : address(this);
                         v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
@@ -159,7 +158,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         address[] calldata path = inputs.toAddressArray(3);
-                        address payer = payerIsUser ? Locker.get() : address(this);
+                        address payer = payerIsUser ? _msgSender() : address(this);
                         v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_PERMIT) {
                         // equivalent: abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes))
@@ -168,7 +167,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             permitSingle := inputs.offset
                         }
                         bytes calldata data = inputs.toBytes(6); // PermitSingle takes first 6 slots (0..5)
-                        PERMIT2.permit(Locker.get(), permitSingle, data);
+                        PERMIT2.permit(_msgSender(), permitSingle, data);
                     } else if (command == Commands.WRAP_ETH) {
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;
@@ -190,7 +189,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
                         (IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) =
                             abi.decode(inputs, (IAllowanceTransfer.AllowanceTransferDetails[]));
-                        permit2TransferFrom(batchDetails, Locker.get());
+                        permit2TransferFrom(batchDetails, _msgSender());
                     } else if (command == Commands.BALANCE_CHECK_ERC20) {
                         // equivalent: abi.decode(inputs, (address, address, uint256))
                         address owner;
@@ -237,7 +236,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                     // This can be done in 2 ways:
                     //    1. This contract is permitted for the specific token and the caller is approved for ALL of the owner's tokens
                     //    2. This contract is permitted for ALL of the owner's tokens and the caller is permitted for the specific token
-                    if (!isAuthorizedForToken(Locker.get(), tokenId)) {
+                    if (!isAuthorizedForToken(_msgSender(), tokenId)) {
                         revert NotAuthorizedForToken(tokenId);
                     }
 
