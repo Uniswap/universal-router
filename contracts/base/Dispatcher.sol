@@ -219,8 +219,11 @@ abstract contract Dispatcher is
                 }
                 // 0x10 <= command < 0x18
             } else {
-                // This contract MUST be approved to spend the token since its going to be doing the call on the position manager
-                if (command == Commands.V3_POSITION_MANAGER_PERMIT) {
+                if (command == Commands.V4_SWAP) {
+                    // pass the calldata provided to V4SwapRouter._executeActions (defined in BaseActionsRouter)
+                    _executeActions(inputs);
+                    // This contract MUST be approved to spend the token since its going to be doing the call on the position manager
+                } else if (command == Commands.V3_POSITION_MANAGER_PERMIT) {
                     bytes4 selector;
                     assembly {
                         selector := calldataload(inputs.offset)

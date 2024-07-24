@@ -66,6 +66,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.PAY_PORTION]: ['address', 'address', 'uint256'],
   [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
 
+  [CommandType.V4_SWAP]: ['bytes'],
   [CommandType.V3_POSITION_MANAGER_PERMIT]: ['bytes'],
   [CommandType.V3_POSITION_MANAGER_CALL]: ['bytes'],
 }
