@@ -8,13 +8,14 @@ contract LockAndMsgSender {
 
     /// @notice Modifier enforcing a reentrancy lock that allows self-reentrancy
     modifier isNotLocked() {
-        // The contract is allowed to reenter itself to perform EXECUTE_SUB_PLAN commands
+        // Apply a reentrancy lock for all external callers
         if (msg.sender != address(this)) {
             if (Locker.isLocked()) revert ContractLocked();
             Locker.set(msg.sender);
             _;
             Locker.set(address(0));
         } else {
+            // The contract is allowed to reenter itself, so the lock is not checked
             _;
         }
     }
