@@ -20,9 +20,8 @@ contract LockAndMsgSender {
         }
     }
 
-    /// @notice Function to be used instead of msg.sender, as the contract performs self-reentrancy and at
-    /// times msg.sender == address(this). Instead _msgSender() returns the initiator of the lock
-    function _msgSender() internal view returns (address) {
+    /// @notice return the current locker of the contract
+    function _getLocker() internal view returns (address) {
         return Locker.get();
     }
 }

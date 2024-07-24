@@ -38,8 +38,9 @@ library Commands {
     // The following constant defines one of the boundaries where the if blocks split commands
     uint256 constant SECOND_IF_BOUNDARY = 0x10;
 
-    uint256 constant V3_POSITION_MANAGER_PERMIT = 0x10;
-    uint256 constant V3_POSITION_MANAGER_CALL = 0x11;
+    uint256 constant V4_SWAP = 0x10;
+    uint256 constant V3_POSITION_MANAGER_PERMIT = 0x11;
+    uint256 constant V3_POSITION_MANAGER_CALL = 0x12;
 
     // The commands are executed in nested if blocks to minimise gas consumption
     // The following constant defines one of the boundaries where the if blocks split commands

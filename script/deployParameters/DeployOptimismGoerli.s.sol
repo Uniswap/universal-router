@@ -13,6 +13,7 @@ contract DeployOptimismGoerli is DeployUniversalRouter {
             v3Factory: 0xB656dA17129e7EB733A557f4EBc57B76CFbB5d10,
             pairInitCodeHash: BYTES32_ZERO,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
+            v4PoolManager: address(0),
             v3NFTPositionManager: address(0),
             v4PositionManager: address(0)
         });

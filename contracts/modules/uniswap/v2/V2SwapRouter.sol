@@ -4,7 +4,6 @@ pragma solidity ^0.8.24;
 import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import {UniswapV2Library} from './UniswapV2Library.sol';
 import {UniswapImmutables} from '../UniswapImmutables.sol';
-import {Payments} from '../../Payments.sol';
 import {Permit2Payments} from '../../Permit2Payments.sol';
 import {Constants} from '../../../libraries/Constants.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';

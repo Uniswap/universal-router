@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {V2SwapRouter} from '../modules/uniswap/v2/V2SwapRouter.sol';
 import {V3SwapRouter} from '../modules/uniswap/v3/V3SwapRouter.sol';
+import {V4SwapRouter} from '../modules/uniswap/v4/V4SwapRouter.sol';
 import {BytesLib} from '../modules/uniswap/v3/BytesLib.sol';
 import {Payments} from '../modules/Payments.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
@@ -17,7 +18,15 @@ import {Constants} from '../libraries/Constants.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
-abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migrator, Callbacks, LockAndMsgSender {
+abstract contract Dispatcher is
+    Payments,
+    V2SwapRouter,
+    V3SwapRouter,
+    V4SwapRouter,
+    V3ToV4Migrator,
+    Callbacks,
+    LockAndMsgSender
+{
     using BytesLib for bytes;
 
     error InvalidCommandType(uint256 commandType);
@@ -271,6 +280,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
         } else {
             return recipient;
         }
+    }
+
+    /// @notice Function to be used instead of msg.sender, as the contract performs self-reentrancy and at
+    /// times msg.sender == address(this). Instead _msgSender() returns the initiator of the lock
+    function _msgSender() internal override view returns (address) {
+        return _getLocker();
     }
 
     /// @notice Executes encoded commands along with provided inputs.

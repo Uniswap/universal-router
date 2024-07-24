@@ -13,6 +13,7 @@ contract DeployArbitrum is DeployUniversalRouter {
             v3Factory: 0x1F98431c8aD98523631AE4a59f267346ea31F984,
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
+            v4PoolManager: address(0),
             v3NFTPositionManager: 0xC36442b4a4522E871399CD717aBDD847Ab11FE88,
             v4PositionManager: address(0)
         });

@@ -13,6 +13,7 @@ contract DeployBSC is DeployUniversalRouter {
             v3Factory: 0xdB1d10011AD0Ff90774D0C6Bb92e5C5c8b4461F7,
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
+            v4PoolManager: address(0),
             v3NFTPositionManager: 0x7b8A01B39D58278b5DE7e48c8449c9f4F5170613,
             v4PositionManager: address(0)
         });
