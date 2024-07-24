@@ -61,12 +61,12 @@
     "typescript": "^3.7.3"
   },
   "scripts": {
-    "compile": "hardhat compile",
-    "test": "hardhat test",
+    "compile": "hardhat compile && forge build",
+    "test:hardhat": "yarn compile && hardhat test",
     "test:gas": "UPDATE_SNAPSHOT=1 yarn test --grep gas",
-    "test:all": "UPDATE_SNAPSHOT=1 yarn test",
+    "test:all": "UPDATE_SNAPSHOT=1 yarn test:hardhat && forge test --isolate",
     "prettier:fix": "prettier --write '**/*.ts' && prettier --write '**/*.json'",
-    "lint:fix": "yarn prettier:fix && forge fmt",
-    "prettier": "prettier --check '**/*.ts' && forge fmt --check"
+    "lint": "yarn prettier:fix && forge fmt",
+    "lint:check": "prettier --check '**/*.ts' && forge fmt --check"
   }
 }
