@@ -56,7 +56,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          forge test --isolate -vvv
         id: test
         env:
           FORK_URL: https://mainnet.infura.io/v3/${{ secrets.INFURA_API_KEY }}
