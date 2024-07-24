@@ -1,5 +1,4 @@
 import { UniversalRouter, ERC20, IWETH9, IPermit2 } from '../../typechain'
-import { BigNumber } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { abi as ROUTER_ABI } from '../../artifacts/contracts/UniversalRouter.sol/UniversalRouter.json'
@@ -22,7 +21,6 @@ import { makePair } from './shared/swapRouter02Helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import hre from 'hardhat'
-import { findCustomErrorSelector } from './shared/parseEvents'
 
 const { ethers } = hre
 const routerInterface = new ethers.utils.Interface(ROUTER_ABI)
@@ -33,7 +31,6 @@ describe('UniversalRouter', () => {
   let permit2: IPermit2
   let daiContract: ERC20
   let wethContract: IWETH9
-  let mockLooksRareToken: ERC20
   let pair_DAI_WETH: Pair
 
   beforeEach(async () => {
