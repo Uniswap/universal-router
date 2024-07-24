@@ -3,7 +3,7 @@ pragma solidity ^0.8.15;
 
 import 'forge-std/Test.sol';
 import {IPermit2} from 'permit2/src/interfaces/IPermit2.sol';
-import {ERC20} from 'solmate/src/tokens/ERC20.sol';
+import {ERC20} from 'solmate/tokens/ERC20.sol';
 import {IUniswapV2Factory} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import {UniversalRouter} from '../../contracts/UniversalRouter.sol';
@@ -34,7 +34,8 @@ abstract contract UniswapV2Test is Test {
             v3Factory: address(0),
             pairInitCodeHash: bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f),
             poolInitCodeHash: bytes32(0),
-            v3NFTPositionManager: address(0)
+            v3NFTPositionManager: address(0),
+            v4PositionManager: address(0)
         });
         router = new UniversalRouter(params);
 

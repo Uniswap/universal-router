@@ -10,7 +10,7 @@ import {MockERC20} from './mock/MockERC20.sol';
 import {Callbacks} from '../../contracts/base/Callbacks.sol';
 import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
 import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
-import {ERC20} from 'solmate/src/tokens/ERC20.sol';
+import {ERC20} from 'solmate/tokens/ERC20.sol';
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {IERC165} from '@openzeppelin/contracts/utils/introspection/IERC165.sol';
 
@@ -31,7 +31,8 @@ contract UniversalRouterTest is Test {
             v3Factory: address(0),
             pairInitCodeHash: bytes32(0),
             poolInitCodeHash: bytes32(0),
-            v3NFTPositionManager: address(0)
+            v3NFTPositionManager: address(0),
+            v4PositionManager: address(0)
         });
         router = new UniversalRouter(params);
         testModule = new ExampleModule();

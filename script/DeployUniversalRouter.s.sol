@@ -40,7 +40,8 @@ abstract contract DeployUniversalRouter is Script {
             v3Factory: mapUnsupported(params.v3Factory),
             pairInitCodeHash: params.pairInitCodeHash,
             poolInitCodeHash: params.poolInitCodeHash,
-            v3NFTPositionManager: mapUnsupported(params.v3NFTPositionManager)
+            v3NFTPositionManager: mapUnsupported(params.v3NFTPositionManager),
+            v4PositionManager: mapUnsupported(params.v4PositionManager)
         });
 
         logParams();
@@ -56,6 +57,7 @@ abstract contract DeployUniversalRouter is Script {
         console2.log('v2Factory:', params.v2Factory);
         console2.log('v3Factory:', params.v3Factory);
         console2.log('v3NFTPositionManager:', params.v3NFTPositionManager);
+        console2.log('v4PositionManager:', params.v4PositionManager);
     }
 
     function mapUnsupported(address protocol) internal view returns (address) {
