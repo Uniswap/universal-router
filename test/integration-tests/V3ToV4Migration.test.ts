@@ -1,7 +1,7 @@
 import type { Contract } from '@ethersproject/contracts'
 import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
-import { UniversalRouter, INonfungiblePositionManager } from '../../typechain'
+import { UniversalRouter, INonfungiblePositionManager, PositionManager } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, V3_NFT_POSITION_MANAGER } from './shared/mainnetForkHelpers'
 import { ZERO_ADDRESS, ALICE_ADDRESS, MAX_UINT, MAX_UINT128 } from './shared/constants'
@@ -12,7 +12,16 @@ import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 import getPermitNFTSignature from './shared/getPermitNFTSignature'
 import { FeeAmount } from '@uniswap/v3-sdk'
-import { encodeERC721Permit, encodeDecreaseLiquidity, encodeCollect, encodeBurn } from './shared/encodeCall'
+import {
+  encodeERC721Permit,
+  encodeDecreaseLiquidity,
+  encodeCollect,
+  encodeBurn,
+  encodeModifyLiquidities,
+  encodeUnlockData,
+  encodeMintData,
+  encodeCloseData
+} from './shared/encodeCall'
 import { executeRouter } from './shared/executeRouter'
 const { ethers } = hre
 
@@ -26,6 +35,7 @@ describe('V3 to V4 Migration Tests:', () => {
   let usdcContract: Contract
   let planner: RoutePlanner
   let v3NFTPositionManager: INonfungiblePositionManager
+  let v4PositionManager: PositionManager
 
   let tokenIdv3: BigNumber
 
@@ -42,7 +52,8 @@ describe('V3 to V4 Migration Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     v3NFTPositionManager = V3_NFT_POSITION_MANAGER.connect(bob) as INonfungiblePositionManager
-    router = (await deployUniversalRouter()) as UniversalRouter
+    [router, v4PositionManager] = (await deployUniversalRouter()) as [UniversalRouter, PositionManager]
+
     planner = new RoutePlanner()
 
     // alice gives bob some tokens
@@ -51,7 +62,7 @@ describe('V3 to V4 Migration Tests:', () => {
     await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(100000))
   })
 
-  describe('Migrator', () => {
+  describe('V3 Commands', () => {
     beforeEach(async () => {
       // Bob max-approves the v3PM to access his USDC and WETH
       await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
@@ -938,6 +949,78 @@ describe('V3 to V4 Migration Tests:', () => {
           executeRouter(planner, eve, router, wethContract, daiContract, usdcContract)
         ).to.be.revertedWithCustomError(router, 'NotAuthorizedForToken')
       })
+    })
+  })
+
+  describe.only('V4 Commands', () => {
+    beforeEach(async () => {
+      await v4PositionManager
+        .connect(bob)
+        .initializePool(
+          {
+            currency0: USDC.address,
+            currency1: WETH.address,
+            fee: FeeAmount.LOW,
+            tickSpacing: 10,
+            hooks: '0x0000000000000000000000000000000000000000',
+          },
+          '79228162514264337593543950336',
+          '0x'
+        )
+    })
+
+    it('mint v4 succeeds', async () => {
+
+      await wethContract.connect(bob).transfer(router.address, expandTo18DecimalsBN(100))
+      await usdcContract.connect(bob).transfer(router.address, expandTo6DecimalsBN(10000))
+
+      const mintParams = {
+        LiquidityRange: {
+          PoolKey: {
+            currency0: USDC.address,
+            currency1: WETH.address,
+            fee: FeeAmount.LOW,
+            tickSpacing: 10,
+            IHooks: '0x0000000000000000000000000000000000000000',
+          },
+          tickLower: -60,
+          tickUpper: 60,
+        },
+        liquidity: '61774308500',
+        owner: bob.address,
+        hookData: '0x',
+      }
+
+      const encodedMintData = encodeMintData(mintParams)
+
+      const encodedCloseData0 = encodeCloseData(mintParams.LiquidityRange.PoolKey.currency0)
+      const encodedCloseData1 = encodeCloseData(mintParams.LiquidityRange.PoolKey.currency1)
+
+      const Actions = {
+        MINT: 0,
+        BURN: 1,
+        INCREASE: 2,
+        DECREASE: 3,
+        CLOSE_CURRENCY: 4,
+      }
+
+      const unlockDataParams = {
+        actions: [Actions.MINT, Actions.CLOSE_CURRENCY, Actions.CLOSE_CURRENCY],
+        unlockParams: [encodedMintData, encodedCloseData0, encodedCloseData1],
+      }
+
+      const encodedUnlockData = encodeUnlockData(unlockDataParams)
+
+      const modifyLiquiditiesParams = {
+        unlockData: encodedUnlockData,
+        deadline: MAX_UINT,
+      }
+
+      const encodedModifyLiquiditiesCall = encodeModifyLiquidities(modifyLiquiditiesParams)
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedModifyLiquiditiesCall])
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
     })
   })
 })

@@ -14,6 +14,7 @@ import {ERC20} from 'solmate/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
 import {Constants} from '../libraries/Constants.sol';
+import {IPositionManager} from '@uniswap/v4-periphery/src/interfaces/IPositionManager.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
@@ -242,6 +243,17 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                     }
 
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
+                } else if (command == Commands.V4_POSITION_CALL) {
+                    bytes4 selector;
+                    assembly {
+                        selector := calldataload(inputs.offset)
+                    }
+
+                    if (selector != IPositionManager.modifyLiquidities.selector) {
+                        revert InvalidAction(selector);
+                    }
+
+                    (success, output) = address(V4_POSITION_MANAGER).call(inputs);
                 } else {
                     // placeholder area for command
                     revert InvalidCommandType(command);

@@ -3,10 +3,10 @@ const { ethers } = hre
 
 import { PositionManager, PoolManager } from '../../../typechain'
 
-export async function deployV4PositionManager(poolManager: string): Promise<string> {
+export async function deployV4PositionManager(poolManager: string): Promise<PositionManager> {
   const positionManagerFactory = await ethers.getContractFactory('PositionManager')
   const positionManager = (await positionManagerFactory.deploy(poolManager)) as unknown as PositionManager
-  return positionManager.address
+  return positionManager
 }
 
 export async function deployV4PoolManager(): Promise<string> {
