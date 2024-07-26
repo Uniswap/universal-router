@@ -18,8 +18,8 @@ import {
   encodePathExactInput,
 } from '../shared/swapRouter02Helpers'
 import { BigNumber, BigNumberish } from 'ethers'
-import { IPermit2, UniversalRouter } from '../../../typechain'
-import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
+import { IPermit2, UniversalRouter, PositionManager } from '../../../typechain'
+import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { approveAndExecuteSwapRouter02, resetFork, WETH, DAI, USDC, USDT, PERMIT2 } from '../shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,
@@ -65,7 +65,8 @@ describe('Uniswap Gas Tests', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
-    router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
+    ;[router] = (await deployUniversalRouter()) as [UniversalRouter, PositionManager]
+    router = router.connect(bob)
     pair_DAI_WETH = await makePair(bob, DAI, WETH)
     pair_DAI_USDC = await makePair(bob, DAI, USDC)
     pair_USDC_WETH = await makePair(bob, USDC, WETH)

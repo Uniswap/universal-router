@@ -1,12 +1,12 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
-import { UniversalRouter } from '../../../typechain'
+import { UniversalRouter, PositionManager } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { resetFork, USDC } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './../shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import deployUniversalRouter from './../shared/deployUniversalRouter'
-import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
+import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 const { ethers } = hre
 
 describe('Check Ownership Gas', () => {
@@ -20,8 +20,8 @@ describe('Check Ownership Gas', () => {
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
     })
-    alice = await ethers.getSigner(ALICE_ADDRESS)
-    router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
+    alice = (await ethers.getSigner(ALICE_ADDRESS)) as SignerWithAddress
+    ;[router] = (await deployUniversalRouter()) as [UniversalRouter, PositionManager]
     planner = new RoutePlanner()
   })
 

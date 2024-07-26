@@ -1,6 +1,6 @@
 import type { Contract } from '@ethersproject/contracts'
-import { UniversalRouter } from '../../../typechain'
-import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
+import { UniversalRouter, PositionManager } from '../../../typechain'
+import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, DAI, WETH } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, ONE_PERCENT_BIPS } from '../shared/constants'
 import { expandTo18DecimalsBN } from '../shared/helpers'
@@ -31,8 +31,8 @@ describe('Payments Gas Tests', () => {
     alice = await ethers.getSigner(ALICE_ADDRESS)
     bob = (await ethers.getSigners())[1]
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
-    wethContract = new ethers.Contract(WETH.address, new ethers.utils.Interface(WETH_ABI.abi), alice)
-    router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
+    wethContract = new ethers.Contract(WETH.address, new ethers.utils.Interface(WETH_ABI.abi), alice) as Contract
+    ;[router] = (await deployUniversalRouter()) as [UniversalRouter, PositionManager]
     planner = new RoutePlanner()
   })
 

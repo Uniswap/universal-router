@@ -2,8 +2,8 @@ import type { Contract } from '@ethersproject/contracts'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { BigNumber, BigNumberish } from 'ethers'
-import { IPermit2, UniversalRouter } from '../../typechain'
-import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
+import { IPermit2, UniversalRouter, PositionManager } from '../../typechain'
+import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, USDT, PERMIT2 } from './shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,
@@ -50,7 +50,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
-    router = (await deployUniversalRouter()) as UniversalRouter
+    ;[router] = (await deployUniversalRouter()) as [UniversalRouter, PositionManager]
+    router = router.connect(bob)
     planner = new RoutePlanner()
 
     // alice gives bob some tokens

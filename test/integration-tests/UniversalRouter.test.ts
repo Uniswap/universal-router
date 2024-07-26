@@ -1,8 +1,8 @@
-import { UniversalRouter, ERC20, IWETH9, IPermit2 } from '../../typechain'
+import { UniversalRouter, ERC20, IWETH9, IPermit2, PositionManager } from '../../typechain'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { abi as ROUTER_ABI } from '../../artifacts/contracts/UniversalRouter.sol/UniversalRouter.json'
-import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
+import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { abi as WETH_ABI } from '../../artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
 
 import deployUniversalRouter from './shared/deployUniversalRouter'
@@ -45,7 +45,8 @@ describe('UniversalRouter', () => {
     wethContract = new ethers.Contract(WETH.address, WETH_ABI, alice) as IWETH9
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
     permit2 = PERMIT2.connect(alice) as IPermit2
-    router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
+    ;[router] = (await deployUniversalRouter()) as [UniversalRouter, PositionManager]
+    router = router.connect(alice)
   })
 
   describe('#execute', () => {
@@ -119,8 +120,9 @@ describe('UniversalRouter', () => {
       let { commands, inputs } = planner
       const sweepCalldata = routerInterface.encodeFunctionData('execute(bytes,bytes[])', [commands, inputs])
 
-      const reentrantWETH = await (await ethers.getContractFactory('ReenteringWETH')).deploy()
-      router = (await deployUniversalRouter(reentrantWETH.address)).connect(alice) as UniversalRouter
+      const reentrantWETH = (await (await ethers.getContractFactory('ReenteringWETH')).deploy()) as ERC20
+      ;[router] = (await deployUniversalRouter(reentrantWETH.address)) as [UniversalRouter, PositionManager]
+      router = router.connect(alice)
       await reentrantWETH.setParameters(router.address, sweepCalldata)
 
       planner = new RoutePlanner()
