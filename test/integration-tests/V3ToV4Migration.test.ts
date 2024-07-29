@@ -20,7 +20,7 @@ import {
   encodeModifyLiquidities,
   encodeUnlockData,
   encodeMintData,
-  encodeCloseData
+  encodeCloseData,
 } from './shared/encodeCall'
 import { executeRouter } from './shared/executeRouter'
 const { ethers } = hre
@@ -35,6 +35,7 @@ describe('V3 to V4 Migration Tests:', () => {
   let usdcContract: Contract
   let planner: RoutePlanner
   let v3NFTPositionManager: INonfungiblePositionManager
+  let v4PositionManagerAddress: string
   let v4PositionManager: PositionManager
 
   let tokenIdv3: BigNumber
@@ -52,7 +53,9 @@ describe('V3 to V4 Migration Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     v3NFTPositionManager = V3_NFT_POSITION_MANAGER.connect(bob) as INonfungiblePositionManager
-    [router, v4PositionManager] = (await deployUniversalRouter()) as [UniversalRouter, PositionManager]
+    router = (await deployUniversalRouter()) as UniversalRouter
+    v4PositionManagerAddress = await router.V4_POSITION_MANAGER()
+    v4PositionManager = (await ethers.getContractAt('PositionManager', v4PositionManagerAddress)) as PositionManager
 
     planner = new RoutePlanner()
 
@@ -952,25 +955,22 @@ describe('V3 to V4 Migration Tests:', () => {
     })
   })
 
-  describe.only('V4 Commands', () => {
+  describe('V4 Commands', () => {
     beforeEach(async () => {
-      await v4PositionManager
-        .connect(bob)
-        .initializePool(
-          {
-            currency0: USDC.address,
-            currency1: WETH.address,
-            fee: FeeAmount.LOW,
-            tickSpacing: 10,
-            hooks: '0x0000000000000000000000000000000000000000',
-          },
-          '79228162514264337593543950336',
-          '0x'
-        )
+      await v4PositionManager.connect(bob).initializePool(
+        {
+          currency0: USDC.address,
+          currency1: WETH.address,
+          fee: FeeAmount.LOW,
+          tickSpacing: 10,
+          hooks: '0x0000000000000000000000000000000000000000',
+        },
+        '79228162514264337593543950336',
+        '0x'
+      )
     })
 
     it('mint v4 succeeds', async () => {
-
       await wethContract.connect(bob).transfer(router.address, expandTo18DecimalsBN(100))
       await usdcContract.connect(bob).transfer(router.address, expandTo6DecimalsBN(10000))
 

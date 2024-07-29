@@ -1,6 +1,6 @@
 import hre from 'hardhat'
 const { ethers } = hre
-import { UniversalRouter, PositionManager } from '../../../typechain'
+import { UniversalRouter } from '../../../typechain'
 import {
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
@@ -11,9 +11,8 @@ import {
 } from './constants'
 import { deployV4PositionManager, deployV4PoolManager } from './deployV4'
 
-export async function deployRouter(mockReentrantWETH?: string): Promise<[UniversalRouter, PositionManager]> {
+export async function deployRouter(mockReentrantWETH?: string): Promise<UniversalRouter> {
   const poolManager = await deployV4PoolManager()
-  const positionManager = await deployV4PositionManager(poolManager)
   const routerParameters = {
     permit2: PERMIT2_ADDRESS,
     weth9: mockReentrantWETH ?? '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
@@ -22,12 +21,12 @@ export async function deployRouter(mockReentrantWETH?: string): Promise<[Univers
     pairInitCodeHash: V2_INIT_CODE_HASH_MAINNET,
     poolInitCodeHash: V3_INIT_CODE_HASH_MAINNET,
     v3NFTPositionManager: V3_NFT_POSITION_MANAGER_MAINNET,
-    v4PositionManager: positionManager.address,
+    v4PositionManager: await deployV4PositionManager(poolManager),
   }
 
   const routerFactory = await ethers.getContractFactory('UniversalRouter')
   const router = (await routerFactory.deploy(routerParameters)) as unknown as UniversalRouter
-  return [router, positionManager]
+  return router
 }
 
 export default deployRouter

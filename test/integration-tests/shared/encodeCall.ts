@@ -147,7 +147,7 @@ const encodeMintData = (params: MintParams): string => {
 const encodeCloseData = (params: string): string => {
   const abi = new ethers.utils.AbiCoder()
   const encodedParams = abi.encode(['address'], [params])
-  return encodedParams  
+  return encodedParams
 }
 
 export {
@@ -158,5 +158,5 @@ export {
   encodeModifyLiquidities,
   encodeUnlockData,
   encodeMintData,
-  encodeCloseData
+  encodeCloseData,
 }
