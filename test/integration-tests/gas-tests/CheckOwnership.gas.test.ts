@@ -21,7 +21,7 @@ describe('Check Ownership Gas', () => {
       params: [ALICE_ADDRESS],
     })
     alice = await ethers.getSigner(ALICE_ADDRESS)
-    router = (await deployUniversalRouter()) as UniversalRouter
+    router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
   })
 
