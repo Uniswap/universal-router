@@ -11,8 +11,9 @@ struct MigratorParameters {
 
 contract MigratorImmutables {
     /// @notice v3PositionManager address
-    INonfungiblePositionManager internal immutable V3_POSITION_MANAGER;
-    IPositionManager internal immutable V4_POSITION_MANAGER;
+    INonfungiblePositionManager public immutable V3_POSITION_MANAGER;
+    /// @notice v4PositionManager address
+    IPositionManager public immutable V4_POSITION_MANAGER;
 
     constructor(MigratorParameters memory params) {
         V3_POSITION_MANAGER = INonfungiblePositionManager(params.v3PositionManager);

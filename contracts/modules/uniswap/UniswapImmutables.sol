@@ -9,16 +9,16 @@ struct UniswapParameters {
 }
 
 contract UniswapImmutables {
-    /// @dev The address of UniswapV2Factory
+    /// @notice The address of UniswapV2Factory
     address internal immutable UNISWAP_V2_FACTORY;
 
-    /// @dev The UniswapV2Pair initcodehash
+    /// @notice The UniswapV2Pair initcodehash
     bytes32 internal immutable UNISWAP_V2_PAIR_INIT_CODE_HASH;
 
-    /// @dev The address of UniswapV3Factory
+    /// @notice The address of UniswapV3Factory
     address internal immutable UNISWAP_V3_FACTORY;
 
-    /// @dev The UniswapV3Pool initcodehash
+    /// @notice The UniswapV3Pool initcodehash
     bytes32 internal immutable UNISWAP_V3_POOL_INIT_CODE_HASH;
 
     constructor(UniswapParameters memory params) {
