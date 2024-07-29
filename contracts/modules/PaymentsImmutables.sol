@@ -11,10 +11,10 @@ struct PaymentsParameters {
 
 contract PaymentsImmutables {
     /// @notice WETH9 address
-    IWETH9 public immutable WETH9;
+    IWETH9 internal immutable WETH9;
 
     /// @notice Permit2 address
-    IPermit2 public immutable PERMIT2;
+    IPermit2 internal immutable PERMIT2;
 
     enum Spenders {
         OSConduit,
