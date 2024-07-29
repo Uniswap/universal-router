@@ -20,7 +20,7 @@ describe('Check Ownership Gas', () => {
       method: 'hardhat_impersonateAccount',
       params: [ALICE_ADDRESS],
     })
-    alice = (await ethers.getSigner(ALICE_ADDRESS)) as SignerWithAddress
+    alice = await ethers.getSigner(ALICE_ADDRESS)
     router = (await deployUniversalRouter()) as UniversalRouter
     planner = new RoutePlanner()
   })
