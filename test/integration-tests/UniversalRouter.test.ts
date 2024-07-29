@@ -1,4 +1,4 @@
-import { UniversalRouter, ERC20, IWETH9, IPermit2, PositionManager } from '../../typechain'
+import { UniversalRouter, ERC20, IWETH9, IPermit2 } from '../../typechain'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { abi as ROUTER_ABI } from '../../artifacts/contracts/UniversalRouter.sol/UniversalRouter.json'
@@ -45,8 +45,7 @@ describe('UniversalRouter', () => {
     wethContract = new ethers.Contract(WETH.address, WETH_ABI, alice) as IWETH9
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
     permit2 = PERMIT2.connect(alice) as IPermit2
-    ;[router] = (await deployUniversalRouter()) as [UniversalRouter, PositionManager]
-    router = router.connect(alice)
+    router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
   })
 
   describe('#execute', () => {
@@ -121,8 +120,7 @@ describe('UniversalRouter', () => {
       const sweepCalldata = routerInterface.encodeFunctionData('execute(bytes,bytes[])', [commands, inputs])
 
       const reentrantWETH = (await (await ethers.getContractFactory('ReenteringWETH')).deploy()) as ERC20
-      ;[router] = (await deployUniversalRouter(reentrantWETH.address)) as [UniversalRouter, PositionManager]
-      router = router.connect(alice)
+      router = (await deployUniversalRouter(reentrantWETH.address)).connect(alice) as UniversalRouter
       await reentrantWETH.setParameters(router.address, sweepCalldata)
 
       planner = new RoutePlanner()

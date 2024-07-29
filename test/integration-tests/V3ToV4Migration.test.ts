@@ -26,6 +26,7 @@ describe('V3 to V4 Migration Tests:', () => {
   let usdcContract: Contract
   let planner: RoutePlanner
   let v3NFTPositionManager: INonfungiblePositionManager
+  let v4PositionManagerAddress: string
   let v4PositionManager: PositionManager
 
   let tokenIdv3: BigNumber
@@ -43,7 +44,10 @@ describe('V3 to V4 Migration Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     v3NFTPositionManager = V3_NFT_POSITION_MANAGER.connect(bob) as INonfungiblePositionManager
-    ;[router, v4PositionManager] = (await deployUniversalRouter()) as [UniversalRouter, PositionManager]
+    router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
+    v4PositionManagerAddress = await router.V4_POSITION_MANAGER()
+    v4PositionManager = (await ethers.getContractAt('PositionManager', v4PositionManagerAddress)) as PositionManager
+
     planner = new RoutePlanner()
 
     // alice gives bob some tokens

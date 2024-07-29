@@ -31,8 +31,8 @@ describe('Payments Gas Tests', () => {
     alice = await ethers.getSigner(ALICE_ADDRESS)
     bob = (await ethers.getSigners())[1]
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
-    wethContract = new ethers.Contract(WETH.address, new ethers.utils.Interface(WETH_ABI.abi), alice) as Contract
-    ;[router] = (await deployUniversalRouter()) as [UniversalRouter, PositionManager]
+    wethContract = new ethers.Contract(WETH.address, new ethers.utils.Interface(WETH_ABI.abi), alice)
+    router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
   })
 

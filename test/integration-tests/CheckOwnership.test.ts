@@ -1,6 +1,6 @@
 import { CommandType, RoutePlanner } from './shared/planner'
 import { expect } from './shared/expect'
-import { UniversalRouter, PositionManager } from '../../typechain'
+import { UniversalRouter } from '../../typechain'
 import { resetFork, USDC } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -26,8 +26,8 @@ describe('Check Ownership', () => {
         method: 'hardhat_impersonateAccount',
         params: [ALICE_ADDRESS],
       })
-      alice = (await ethers.getSigner(ALICE_ADDRESS)) as SignerWithAddress
-      ;[router] = (await deployUniversalRouter()) as [UniversalRouter, PositionManager]
+      alice = await ethers.getSigner(ALICE_ADDRESS)
+      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
       usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
       aliceUSDCBalance = await usdcContract.balanceOf(ALICE_ADDRESS)
       planner = new RoutePlanner()

@@ -1,5 +1,5 @@
 import { CommandType, RoutePlanner } from './../shared/planner'
-import { UniversalRouter, PositionManager } from '../../../typechain'
+import { UniversalRouter } from '../../../typechain'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import { resetFork, USDC } from './../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './../shared/constants'
@@ -21,7 +21,7 @@ describe('Check Ownership Gas', () => {
       params: [ALICE_ADDRESS],
     })
     alice = (await ethers.getSigner(ALICE_ADDRESS)) as SignerWithAddress
-    ;[router] = (await deployUniversalRouter()) as [UniversalRouter, PositionManager]
+    router = (await deployUniversalRouter()) as UniversalRouter
     planner = new RoutePlanner()
   })
 
