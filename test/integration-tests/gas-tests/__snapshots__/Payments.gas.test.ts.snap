@@ -24,7 +24,7 @@ Object {
 exports[`Payments Gas Tests Individual Command Tests gas: TRANSFER with ETH 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 31556,
+  "gasUsed": 31553,
 }
 `;
 

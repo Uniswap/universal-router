@@ -88,6 +88,8 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
                         IAllowanceTransfer.PermitBatch calldata permitBatch;
                         assembly {
+                            // this is a variable length struct, so calldataload(inputs.offset) contains the
+                            // offset from inputs.offset at which the struct begins
                             permitBatch := add(inputs.offset, calldataload(inputs.offset))
                         }
                         bytes calldata data = inputs.toBytes(1);
@@ -190,8 +192,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                         }
                         Payments.unwrapWETH9(map(recipient), amountMin);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
-                        (IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) =
-                            abi.decode(inputs, (IAllowanceTransfer.AllowanceTransferDetails[]));
+                        IAllowanceTransfer.AllowanceTransferDetails[] calldata batchDetails;
+                        (uint256 length, uint256 offset) = inputs.toLengthOffset(0);
+                        assembly {
+                            batchDetails.length := length
+                            batchDetails.offset := offset
+                        }
                         permit2TransferFrom(batchDetails, _msgSender());
                     } else if (command == Commands.BALANCE_CHECK_ERC20) {
                         // equivalent: abi.decode(inputs, (address, address, uint256))
