@@ -6,7 +6,7 @@ import {UniswapV2Library} from './UniswapV2Library.sol';
 import {UniswapImmutables} from '../UniswapImmutables.sol';
 import {Permit2Payments} from '../../Permit2Payments.sol';
 import {Constants} from '../../../libraries/Constants.sol';
-import {ERC20} from 'solmate/tokens/ERC20.sol';
+import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
 /// @title Router for Uniswap v2 Trades
 abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {

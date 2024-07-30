@@ -1,8 +1,8 @@
 import type { Contract } from '@ethersproject/contracts'
 import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
-import { UniversalRouter, INonfungiblePositionManager } from '../../typechain'
-import { abi as TOKEN_ABI } from '../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
+import { UniversalRouter, INonfungiblePositionManager, PositionManager } from '../../typechain'
+import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, V3_NFT_POSITION_MANAGER } from './shared/mainnetForkHelpers'
 import { ZERO_ADDRESS, ALICE_ADDRESS, MAX_UINT, MAX_UINT128 } from './shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
@@ -26,6 +26,8 @@ describe('V3 to V4 Migration Tests:', () => {
   let usdcContract: Contract
   let planner: RoutePlanner
   let v3NFTPositionManager: INonfungiblePositionManager
+  let v4PositionManagerAddress: string
+  let v4PositionManager: PositionManager
 
   let tokenIdv3: BigNumber
 
@@ -43,6 +45,9 @@ describe('V3 to V4 Migration Tests:', () => {
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     v3NFTPositionManager = V3_NFT_POSITION_MANAGER.connect(bob) as INonfungiblePositionManager
     router = (await deployUniversalRouter()) as UniversalRouter
+    v4PositionManagerAddress = await router.V4_POSITION_MANAGER()
+    v4PositionManager = (await ethers.getContractAt('PositionManager', v4PositionManagerAddress)) as PositionManager
+
     planner = new RoutePlanner()
 
     // alice gives bob some tokens

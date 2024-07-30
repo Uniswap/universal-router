@@ -1,7 +1,7 @@
 import { UniversalRouter, IWETH9, ERC20 } from '../../../typechain'
 import { expect } from '../shared/expect'
 import { ALICE_ADDRESS } from '../shared/constants'
-import { abi as TOKEN_ABI } from '../../../artifacts/solmate/tokens/ERC20.sol/ERC20.json'
+import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { abi as WETH_ABI } from '../../../artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
 import { resetFork, WETH, DAI } from '../shared/mainnetForkHelpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
