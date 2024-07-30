@@ -86,8 +86,10 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                         }
                         permit2TransferFrom(token, _msgSender(), map(recipient), amount);
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
-                        (IAllowanceTransfer.PermitBatch memory permitBatch,) =
-                            abi.decode(inputs, (IAllowanceTransfer.PermitBatch, bytes));
+                        IAllowanceTransfer.PermitBatch calldata permitBatch;
+                        assembly {
+                            permitBatch := add(inputs.offset, calldataload(inputs.offset))
+                        }
                         bytes calldata data = inputs.toBytes(1);
                         PERMIT2.permit(_msgSender(), permitBatch, data);
                     } else if (command == Commands.SWEEP) {
