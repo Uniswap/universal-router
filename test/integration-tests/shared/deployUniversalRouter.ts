@@ -22,7 +22,7 @@ export async function deployRouter(mockReentrantWETH?: string): Promise<Universa
     poolInitCodeHash: V3_INIT_CODE_HASH_MAINNET,
     v4PoolManager,
     v3NFTPositionManager: V3_NFT_POSITION_MANAGER_MAINNET,
-    v4PositionManager: await deployV4PositionManager(v4PoolManager),
+    v4PositionManager: await deployV4PositionManager(v4PoolManager, PERMIT2_ADDRESS),
   }
 
   const routerFactory = await ethers.getContractFactory('UniversalRouter')

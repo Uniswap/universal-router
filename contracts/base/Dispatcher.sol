@@ -287,7 +287,7 @@ abstract contract Dispatcher is
 
     /// @notice Function to be used instead of msg.sender, as the contract performs self-reentrancy and at
     /// times msg.sender == address(this). Instead _msgSender() returns the initiator of the lock
-    function _msgSender() internal override view returns (address) {
+    function _msgSender() internal view override returns (address) {
         return _getLocker();
     }
 
