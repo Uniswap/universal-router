@@ -42,10 +42,10 @@ describe('V3 to V4 Migration Tests:', () => {
 
   let tokenIdv3: BigNumber
 
-  const MINT = 0x22
-  const INCREASE_LIQUIDITY = 0x01
-  const SETTLE_WITH_BALANCE = 0x24
-  const SWEEP_ERC20_TO = 0x25
+  const MINT_POSITION = 0x02
+  const INCREASE_LIQUIDITY = 0x00
+  const SETTLE_WITH_BALANCE = 0x12
+  const SWEEP = 0x19
 
   beforeEach(async () => {
     await resetFork()
@@ -1009,7 +1009,7 @@ describe('V3 to V4 Migration Tests:', () => {
       const encodedERC20To1 = encodeERC20To(mintParams.LiquidityRange.PoolKey.currency1, bob.address)
 
       const unlockDataParams = {
-        actions: [MINT, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP_ERC20_TO, SWEEP_ERC20_TO],
+        actions: [MINT_POSITION, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP, SWEEP],
         unlockParams: [encodedMintData, encodedSettleBalance0, encodedSettleBalance1, encodedERC20To0, encodedERC20To1],
       }
 
@@ -1064,7 +1064,7 @@ describe('V3 to V4 Migration Tests:', () => {
       const encodedERC20To1 = encodeERC20To(mintParams.LiquidityRange.PoolKey.currency1, bob.address)
 
       let unlockDataParams = {
-        actions: [MINT, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP_ERC20_TO, SWEEP_ERC20_TO],
+        actions: [MINT_POSITION, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP, SWEEP],
         unlockParams: [encodedMintData, encodedSettleBalance0, encodedSettleBalance1, encodedERC20To0, encodedERC20To1],
       }
 
@@ -1107,7 +1107,7 @@ describe('V3 to V4 Migration Tests:', () => {
       const encodedIncreaseData = encodeIncreaseData(increaseParams)
 
       unlockDataParams = {
-        actions: [INCREASE_LIQUIDITY, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP_ERC20_TO, SWEEP_ERC20_TO],
+        actions: [INCREASE_LIQUIDITY, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP, SWEEP],
         unlockParams: [
           encodedIncreaseData,
           encodedSettleBalance0,
@@ -1229,7 +1229,7 @@ describe('V3 to V4 Migration Tests:', () => {
       const encodedERC20To1 = encodeERC20To(mintParams.LiquidityRange.PoolKey.currency1, bob.address)
 
       let unlockDataParams = {
-        actions: [MINT, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP_ERC20_TO, SWEEP_ERC20_TO],
+        actions: [MINT_POSITION, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP, SWEEP],
         unlockParams: [encodedMintData, encodedSettleBalance0, encodedSettleBalance1, encodedERC20To0, encodedERC20To1],
       }
 
