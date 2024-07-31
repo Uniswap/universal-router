@@ -67,6 +67,13 @@ interface MintParams {
   hookData: string
 }
 
+interface IncreaseParams {
+  tokenId: number
+  LiquidityRange: LiquidityRange
+  liquidity: string
+  hookData: string
+}
+
 const encodeERC721Permit = (params: ERC721PermitParams): string => {
   const abi = new ethers.utils.AbiCoder()
   const { spender, tokenId, deadline, v, r, s } = params
@@ -144,9 +151,40 @@ const encodeMintData = (params: MintParams): string => {
   return encodedParams
 }
 
-const encodeCloseData = (params: string): string => {
+const encodeIncreaseData = (params: IncreaseParams): string => {
   const abi = new ethers.utils.AbiCoder()
-  const encodedParams = abi.encode(['address'], [params])
+  const { tokenId, LiquidityRange, liquidity, hookData } = params
+  const encodedParams = abi.encode(
+    ['uint256', 'tuple(tuple(address,address,uint24,int24,address),int24,int24)', 'uint256', 'bytes'],
+    [
+      tokenId,
+      [
+        [
+          LiquidityRange.PoolKey.currency0,
+          LiquidityRange.PoolKey.currency1,
+          LiquidityRange.PoolKey.fee,
+          LiquidityRange.PoolKey.tickSpacing,
+          LiquidityRange.PoolKey.IHooks,
+        ],
+        LiquidityRange.tickLower,
+        LiquidityRange.tickUpper,
+      ],
+      liquidity,
+      hookData,
+    ]
+  )
+  return encodedParams
+}
+
+const encodeSettleBalance = (currency: string, amt: string): string => {
+  const abi = new ethers.utils.AbiCoder()
+  const encodedParams = abi.encode(['address', 'uint256'], [currency, amt])
+  return encodedParams
+}
+
+const encodeERC20To = (currency: string, to: string): string => {
+  const abi = new ethers.utils.AbiCoder()
+  const encodedParams = abi.encode(['address', 'address'], [currency, to])
   return encodedParams
 }
 
@@ -158,5 +196,7 @@ export {
   encodeModifyLiquidities,
   encodeUnlockData,
   encodeMintData,
-  encodeCloseData,
+  encodeIncreaseData,
+  encodeSettleBalance,
+  encodeERC20To,
 }
