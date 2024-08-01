@@ -294,7 +294,7 @@ describe('V3 to V4 Migration Tests:', () => {
         planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCall])
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
-        ).to.be.revertedWithCustomError(router, 'InvalidAction')
+        ).to.be.revertedWithCustomError(router, 'ExecutionFailed')
       })
 
       it('fails if decrease liquidity call fails', async () => {
@@ -685,7 +685,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         await expect(
           executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
-        ).to.be.revertedWithCustomError(router, 'InvalidAction')
+        ).to.be.revertedWithCustomError(router, 'ExecutionFailed')
       })
 
       it('cannot call collect with improper params', async () => {
