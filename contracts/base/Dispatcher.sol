@@ -10,7 +10,7 @@ import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
 import {V3ToV4Migrator} from '../modules/V3ToV4Migrator.sol';
 import {Callbacks} from '../base/Callbacks.sol';
 import {Commands} from '../libraries/Commands.sol';
-import {LockAndMsgSender} from './LockAndMsgSender.sol';
+import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
@@ -25,7 +25,7 @@ abstract contract Dispatcher is
     V4SwapRouter,
     V3ToV4Migrator,
     Callbacks,
-    LockAndMsgSender
+    Lock
 {
     using BytesLib for bytes;
 
@@ -287,7 +287,13 @@ abstract contract Dispatcher is
 
     /// @notice Function to be used instead of msg.sender, as the contract performs self-reentrancy and at
     /// times msg.sender == address(this). Instead _msgSender() returns the initiator of the lock
+    /// @dev overrides BaseActionsRouter._msgSender in V4Router
     function _msgSender() internal view override returns (address) {
+        return _getLocker();
+    }
+
+    /// @notice External view function of the current locker
+    function msgSender() external view returns (address) {
         return _getLocker();
     }
 

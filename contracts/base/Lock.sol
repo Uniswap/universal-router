@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Locker} from '../libraries/Locker.sol';
 
-contract LockAndMsgSender {
+contract Lock {
     error ContractLocked();
 
     /// @notice Modifier enforcing a reentrancy lock that allows self-reentrancy
