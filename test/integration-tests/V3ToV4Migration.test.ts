@@ -987,6 +987,10 @@ describe('V3 to V4 Migration Tests:', () => {
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedModifyLiquiditiesCallWithMint])
 
+      // assert that the posm holds tokens before executeRouter
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(expandTo6DecimalsBN(100000))
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(expandTo18DecimalsBN(100))
+
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
       // bob successfully sweeped his usdc and weth from the v4 position manager
@@ -994,6 +998,34 @@ describe('V3 to V4 Migration Tests:', () => {
       expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
 
       // TODO: test that bob has the correct amount of weth and usdc
+      // bob owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+    })
+
+    it('an address can mint on behalf of another address', async () => {
+      // transfer to v4posm
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      // mint params for bob
+      const encodedModifyLiquiditiesCallWithMint = mintSettleSweep()
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedModifyLiquiditiesCallWithMint])
+
+      // assert that the posm holds tokens before executeRouter
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(expandTo6DecimalsBN(100000))
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(expandTo18DecimalsBN(100))
+
+      // alice mints a position for bob
+      await executeRouter(planner, alice, router, wethContract, daiContract, usdcContract)
+
+      // bob successfully sweeped his usdc and weth from the v4 position manager
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+
+      // TODO: test that bob has the correct amount of weth and usdc
+      // bob owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
     })
 
     it('increase v4 succeeds', async () => {
@@ -1006,6 +1038,8 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedModifyLiquiditiesCallWithMint])
 
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      // bob owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
 
       // increase position second
       planner = new RoutePlanner()
@@ -1016,13 +1050,77 @@ describe('V3 to V4 Migration Tests:', () => {
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedModifyLiquiditiesCallWithIncrease])
 
+      // assert that the posm holds tokens before executeRouter
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(expandTo6DecimalsBN(10000))
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(expandTo18DecimalsBN(10))
+
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
       // bob successfully sweeped his usdc and weth from the v4 position manager
-      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
       expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      
+
+      // bob still owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
     })
 
+    it('an address can increase a position on behalf of another address', async () => {
+      // mint position first
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      const encodedModifyLiquiditiesCallWithMint = mintSettleSweep()
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedModifyLiquiditiesCallWithMint])
+
+      // bob mints himself a position
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      // bob owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+
+      // increase position second
+      planner = new RoutePlanner()
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
+
+      // increase params for bob
+      const encodedModifyLiquiditiesCallWithIncrease = increaseSettleSweep()
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedModifyLiquiditiesCallWithIncrease])
+
+      // assert that the posm holds tokens before executeRouter
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(expandTo6DecimalsBN(10000))
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(expandTo18DecimalsBN(10))
+
+      // alice increases the position for bob
+      await executeRouter(planner, alice, router, wethContract, daiContract, usdcContract)
+
+      // bob successfully sweeped his usdc and weth from the v4 position manager
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      
+
+      // bob still owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+    })
+  })
+
+  describe('Migration', () => {
+    beforeEach(async () => {
+      // initialize new pool on v4
+      await v4PositionManager.connect(bob).initializePool(
+        {
+          currency0: USDC.address,
+          currency1: WETH.address,
+          fee: FeeAmount.LOW,
+          tickSpacing: 10,
+          hooks: '0x0000000000000000000000000000000000000000',
+        },
+        '79228162514264337593543950336',
+        '0x'
+      )
+    })
     it('migrate with minting succeeds', async () => {
       // Bob max-approves the v3PM to access his USDC and WETH
       await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
@@ -1043,9 +1141,15 @@ describe('V3 to V4 Migration Tests:', () => {
         deadline: MAX_UINT,
       })
 
+      // bob owns a v3position
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(1)
+
+      // bob does not own a v4position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(0)
+
       const receipt = await tx.wait()
       const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
-      let tokenIdv3 = transferEvent?.args?.tokenId
+      tokenIdv3 = transferEvent?.args?.tokenId
 
       // permit, decrease, collect, burn
       const encodedErc721PermitCall = await permit()
@@ -1068,6 +1172,12 @@ describe('V3 to V4 Migration Tests:', () => {
       // bob successfully sweeped his usdc and weth from the v4 position manager
       expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
       expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+
+      // bob does not own a v3position
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
+
+      // bob owns a v4position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
     })
 
     it('migrate with increasing succeeds', async () => {
@@ -1080,6 +1190,12 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedModifyLiquiditiesCallWithMint])
 
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // bob does not own a v3position
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
+
+      // bob owns a v4position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
 
       // bob successfully sweeped his usdc and weth from the v4 position manager
       expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
@@ -1108,7 +1224,10 @@ describe('V3 to V4 Migration Tests:', () => {
 
       const receipt = await tx.wait()
       const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
-      let tokenIdv3 = transferEvent?.args?.tokenId
+      tokenIdv3 = transferEvent?.args?.tokenId
+
+      // bob owns a v3position
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(1)
 
       // permit, decrease, collect, burn
       const encodedErc721PermitCall = await permit()
@@ -1131,6 +1250,12 @@ describe('V3 to V4 Migration Tests:', () => {
       // bob successfully sweeped his usdc and weth from the v4 position manager
       expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
       expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+
+      // bob does not own a v3position
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
+
+      // bob still owns a v4position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
     })
   })
 
@@ -1160,8 +1285,10 @@ describe('V3 to V4 Migration Tests:', () => {
     const encodeSweep0 = encodeSweep(mintParams.LiquidityRange.PoolKey.currency0, bob.address)
     const encodeSweep1 = encodeSweep(mintParams.LiquidityRange.PoolKey.currency1, bob.address)
 
+    const bytesActions = [MINT_POSITION, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP, SWEEP]
+
     const unlockDataParams = {
-      actions: [MINT_POSITION, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP, SWEEP],
+      actions: new Uint8Array(bytesActions),
       unlockParams: [encodedMintData, encodedSettleBalance0, encodedSettleBalance1, encodeSweep0, encodeSweep1],
     }
 
@@ -1202,8 +1329,10 @@ describe('V3 to V4 Migration Tests:', () => {
     const encodeSweep0 = encodeSweep(increaseParams.LiquidityRange.PoolKey.currency0, bob.address)
     const encodeSweep1 = encodeSweep(increaseParams.LiquidityRange.PoolKey.currency1, bob.address)
 
+    const bytesActions = [INCREASE_LIQUIDITY, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP, SWEEP]
+
     const unlockDataParams = {
-      actions: [INCREASE_LIQUIDITY, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP, SWEEP],
+      actions: new Uint8Array(bytesActions),
       unlockParams: [encodedIncreaseData, encodedSettleBalance0, encodedSettleBalance1, encodeSweep0, encodeSweep1],
     }
 

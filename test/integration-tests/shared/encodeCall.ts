@@ -42,7 +42,7 @@ interface ModifyLiquiditiesParams {
 }
 
 interface UnlockDataParams {
-  actions: number[]
+  actions: Uint8Array
   unlockParams: string[]
 }
 
@@ -122,7 +122,7 @@ const encodeModifyLiquidities = (params: ModifyLiquiditiesParams): string => {
 const encodeUnlockData = (params: UnlockDataParams): string => {
   const abi = new ethers.utils.AbiCoder()
   const { actions, unlockParams } = params
-  const encodedParams = abi.encode(['uint8[]', 'bytes[]'], [actions, unlockParams])
+  const encodedParams = abi.encode(['bytes', 'bytes[]'], [actions, unlockParams])
   return encodedParams
 }
 
