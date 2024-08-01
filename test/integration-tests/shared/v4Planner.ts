@@ -97,6 +97,10 @@ export class V4Planner {
     this.params.push(command.encodedInput)
     this.actions = this.actions.concat(command.action.toString(16).padStart(2, '0'))
   }
+
+  finalize(): string {
+    return defaultAbiCoder.encode(['bytes', 'bytes[]'], [this.actions, this.params])
+  }
 }
 
 export type RouterAction = {

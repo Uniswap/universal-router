@@ -2,7 +2,7 @@ import type { Contract } from '@ethersproject/contracts'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { BigNumber, BigNumberish } from 'ethers'
-import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
+import { IPermit2, IUniswapV3Pool, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, USDT, PERMIT2 } from './shared/mainnetForkHelpers'
 import {
@@ -26,7 +26,27 @@ import hre from 'hardhat'
 import { getPermitSignature, getPermitBatchSignature, PermitSingle } from './shared/protocolHelpers/permit2'
 import { encodePathExactInput, encodePathExactOutput } from './shared/swapRouter02Helpers'
 import { executeRouter } from './shared/executeRouter'
-import { deployV4PoolManager, initializeV4Pools } from './shared/v4Helpers'
+import {
+  addLiquidityToV4Pool,
+  DAI_USDC_POOL_KEY,
+  DAI_USDC_PRICE,
+  DAI_USDC_TICK,
+  DAI_USDC_TICK_LOWER,
+  DAI_USDC_TICK_UPPER,
+  deployV4PoolManager,
+  ETH_USDC_POOL_KEY,
+  ETH_USDC_PRICE,
+  ETH_USDC_TICK,
+  ETH_USDC_TICK_LOWER,
+  ETH_USDC_TICK_UPPER,
+  initializeV4Pool,
+  USDC_WETH_POOL_KEY,
+  USDC_WETH_PRICE,
+  USDC_WETH_TICK,
+  USDC_WETH_TICK_LOWER,
+  USDC_WETH_TICK_UPPER,
+} from './shared/v4Helpers'
+import { V4Planner } from './shared/v4Planner'
 const { ethers } = hre
 
 describe('Uniswap V2, V3, and V4 Tests:', () => {
@@ -38,6 +58,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
   let wethContract: Contract
   let usdcContract: Contract
   let planner: RoutePlanner
+  let v4Planner: V4Planner
   let v4PoolManager: PoolManager
   let v4PositionManager: PositionManager
 
@@ -53,19 +74,19 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
-    v4PoolManager = (await deployV4PoolManager()) as PoolManager
-    router = (await deployUniversalRouter(v4PoolManager.address)) as UniversalRouter
-    v4PositionManager = (await ethers.getContractAt(
-      'PositionManager',
-      await router.V4_POSITION_MANAGER()
-    )) as PositionManager
+    v4PoolManager = (await deployV4PoolManager()).connect(bob) as PoolManager
+    router = (await deployUniversalRouter(v4PoolManager.address)).connect(bob) as UniversalRouter
+    v4PositionManager = (await ethers.getContractAt('PositionManager', await router.V4_POSITION_MANAGER())).connect(
+      bob
+    ) as PositionManager
 
     planner = new RoutePlanner()
+    v4Planner = new V4Planner()
 
     // alice gives bob some tokens
     await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100000))
     await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100))
-    await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(100000))
+    await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(10000000))
 
     // Bob max-approves the permit2 contract to access his DAI and WETH
     await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
@@ -276,7 +297,42 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
 
   describe('Trade on UniswapV4', () => {
     beforeEach(async () => {
-      await initializeV4Pools(v4PoolManager)
+      await permit2.approve(DAI.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
+      await permit2.approve(WETH.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
+      await permit2.approve(USDC.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
+
+      await initializeV4Pool(v4PoolManager, USDC_WETH_POOL_KEY, USDC_WETH_PRICE)
+      await initializeV4Pool(v4PoolManager, DAI_USDC_POOL_KEY, DAI_USDC_PRICE)
+      await initializeV4Pool(v4PoolManager, ETH_USDC_POOL_KEY, ETH_USDC_PRICE)
+
+      await addLiquidityToV4Pool(
+        v4PositionManager,
+        USDC_WETH_POOL_KEY,
+        USDC_WETH_TICK_LOWER,
+        USDC_WETH_TICK_UPPER,
+        expandTo18DecimalsBN(2).toString(),
+        bob
+      )
+      await addLiquidityToV4Pool(
+        v4PositionManager,
+        DAI_USDC_POOL_KEY,
+        DAI_USDC_TICK_LOWER,
+        DAI_USDC_TICK_UPPER,
+        expandTo18DecimalsBN(400).toString(),
+        bob
+      )
+      await addLiquidityToV4Pool(
+        v4PositionManager,
+        ETH_USDC_POOL_KEY,
+        ETH_USDC_TICK_LOWER,
+        ETH_USDC_TICK_UPPER,
+        expandTo18DecimalsBN(0.1).toString(),
+        bob
+      )
+    })
+
+    it('succeeded to set up v4', () => {
+      console.log('yay!')
     })
   })
 
