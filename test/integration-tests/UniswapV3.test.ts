@@ -21,6 +21,8 @@ import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 import { encodePathExactInput, encodePathExactOutput } from './shared/swapRouter02Helpers'
 import { executeRouter } from './shared/executeRouter'
+import { getPermitSignature, PermitSingle } from './shared/protocolHelpers/permit2'
+import { ADDRESS_ZERO } from '@uniswap/v3-sdk'
 const { ethers } = hre
 
 describe('Uniswap V3 Tests:', () => {
@@ -86,6 +88,101 @@ describe('Uniswap V3 Tests:', () => {
       ])
     }
   }
+
+  describe('Trade on Uniswap with Permit2, giving approval every time', () => {
+    let permit: PermitSingle
+
+    beforeEach(async () => {
+      // cancel the permit on DAI
+      await permit2.approve(DAI.address, ADDRESS_ZERO, 0, 0)
+    })
+
+    it('V3 exactIn, permiting the exact amount', async () => {
+      const amountInDAI = expandTo18DecimalsBN(100)
+      const minAmountOutWETH = expandTo18DecimalsBN(0.02)
+
+      // first bob approves permit2 to access his DAI
+      await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
+
+      // second bob signs a permit to allow the router to access his DAI
+      permit = {
+        details: {
+          token: DAI.address,
+          amount: amountInDAI,
+          expiration: 0, // expiration of 0 is block.timestamp
+          nonce: 0, // this is his first trade
+        },
+        spender: router.address,
+        sigDeadline: DEADLINE,
+      }
+      const sig = await getPermitSignature(permit, bob, permit2)
+
+      const path = encodePathExactInput([DAI.address, WETH.address])
+
+      // 1) permit the router to access funds, 2) trade, which takes the funds directly from permit2
+      planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
+      planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+        MSG_SENDER,
+        amountInDAI,
+        minAmountOutWETH,
+        path,
+        SOURCE_MSG_SENDER,
+      ])
+      const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
+    })
+
+    it('V3 exactOut, permiting the exact amount', async () => {
+      const maxAmountInDAI = expandTo18DecimalsBN(4000)
+      const amountOutWETH = expandTo18DecimalsBN(1)
+
+      // first bob approves permit2 to access his DAI
+      await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
+
+      // second bob signs a permit to allow the router to access his DAI
+      permit = {
+        details: {
+          token: DAI.address,
+          amount: maxAmountInDAI,
+          expiration: 0, // expiration of 0 is block.timestamp
+          nonce: 0, // this is his first trade
+        },
+        spender: router.address,
+        sigDeadline: DEADLINE,
+      }
+      const sig = await getPermitSignature(permit, bob, permit2)
+
+      const path = encodePathExactOutput([DAI.address, WETH.address])
+
+      // 1) permit the router to access funds, 2) trade, which takes the funds directly from permit2
+      planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
+      planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
+        MSG_SENDER,
+        amountOutWETH,
+        maxAmountInDAI,
+        path,
+        SOURCE_MSG_SENDER,
+      ])
+      const { wethBalanceBefore, wethBalanceAfter, daiBalanceAfter, daiBalanceBefore } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
+    })
+  })
 
   describe('ERC20 --> ERC20', () => {
     it('completes a V3 exactIn swap', async () => {
