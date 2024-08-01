@@ -3,27 +3,27 @@
 exports[`V3 to V4 Migration Gas Tests Migrator burn gas: erc721permit + decreaseLiquidity + collect + burn 1`] = `
 Object {
   "calldataByteLength": 1092,
-  "gasUsed": 255926,
+  "gasUsed": 256225,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests Migrator collect gas: erc721permit + decreaseLiquidity + collect 1`] = `
 Object {
   "calldataByteLength": 964,
-  "gasUsed": 223606,
+  "gasUsed": 223884,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests Migrator decrease liquidity gas: erc721permit + decreaseLiquidity 1`] = `
 Object {
   "calldataByteLength": 740,
-  "gasUsed": 201994,
+  "gasUsed": 202176,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests Migrator erc721permit gas: erc721permit 1`] = `
 Object {
   "calldataByteLength": 484,
-  "gasUsed": 65954,
+  "gasUsed": 66040,
 }
 `;
