@@ -2,7 +2,7 @@ import type { Contract } from '@ethersproject/contracts'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { BigNumber, BigNumberish } from 'ethers'
-import { IPermit2, UniversalRouter } from '../../typechain'
+import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, USDT, PERMIT2 } from './shared/mainnetForkHelpers'
 import {
@@ -26,9 +26,10 @@ import hre from 'hardhat'
 import { getPermitSignature, getPermitBatchSignature, PermitSingle } from './shared/protocolHelpers/permit2'
 import { encodePathExactInput, encodePathExactOutput } from './shared/swapRouter02Helpers'
 import { executeRouter } from './shared/executeRouter'
+import { deployV4PoolManager, initializeV4Pools } from './shared/v4Helpers'
 const { ethers } = hre
 
-describe('Uniswap V2 and V3 Tests:', () => {
+describe('Uniswap V2, V3, and V4 Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: UniversalRouter
@@ -37,6 +38,8 @@ describe('Uniswap V2 and V3 Tests:', () => {
   let wethContract: Contract
   let usdcContract: Contract
   let planner: RoutePlanner
+  let v4PoolManager: PoolManager
+  let v4PositionManager: PositionManager
 
   beforeEach(async () => {
     await resetFork()
@@ -50,7 +53,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
-    router = (await deployUniversalRouter()) as UniversalRouter
+    v4PoolManager = (await deployV4PoolManager()) as PoolManager
+    router = (await deployUniversalRouter(v4PoolManager.address)) as UniversalRouter
+    v4PositionManager = (await ethers.getContractAt(
+      'PositionManager',
+      await router.V4_POSITION_MANAGER()
+    )) as PositionManager
+
     planner = new RoutePlanner()
 
     // alice gives bob some tokens
@@ -262,6 +271,12 @@ describe('Uniswap V2 and V3 Tests:', () => {
         expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
         expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
       })
+    })
+  })
+
+  describe('Trade on UniswapV4', () => {
+    beforeEach(async () => {
+      await initializeV4Pools(v4PoolManager)
     })
   })
 
