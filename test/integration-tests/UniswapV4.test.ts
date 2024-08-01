@@ -15,6 +15,7 @@ import {
   DAI_USDC,
   deployV4PoolManager,
   encodeMultihopExactInPath,
+  encodeMultihopExactOutPath,
   encodeMultihopPath,
   ETH_USDC,
   initializeV4Pool,
@@ -37,8 +38,13 @@ describe('Uniswap V4 Tests:', () => {
   let v4PoolManager: PoolManager
   let v4PositionManager: PositionManager
 
+  // exact in trade
   const amountInUSDC: BigNumber = expandTo6DecimalsBN(1000)
-  const minAmountOut: BigNumber = expandTo18DecimalsBN(0.25)
+  const minAmountOutWETH: BigNumber = expandTo18DecimalsBN(0.25)
+
+  // exact out trade
+  const amountOutWETH = expandTo18DecimalsBN(0.26)
+  const maxAmountInUSDC = expandTo6DecimalsBN(1000)
 
   beforeEach(async () => {
     await resetFork()
@@ -93,14 +99,12 @@ describe('Uniswap V4 Tests:', () => {
 
   describe('ERC20 --> ERC20', () => {
     it('completes a v4 exactInSingle swap', async () => {
-      const minAmountOut = expandTo18DecimalsBN(0.25)
-
       v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
         {
           poolKey: USDC_WETH.poolKey,
           zeroForOne: true,
           amountIn: amountInUSDC,
-          amountOutMinimum: minAmountOut,
+          amountOutMinimum: minAmountOutWETH,
           sqrtPriceLimitX96: 0,
           hookData: '0x',
         },
@@ -119,7 +123,7 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut)
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
       expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.eq(amountInUSDC)
     })
 
@@ -130,7 +134,7 @@ describe('Uniswap V4 Tests:', () => {
           currencyIn,
           path: encodeMultihopExactInPath([USDC_WETH.poolKey], currencyIn),
           amountIn: amountInUSDC,
-          amountOutMinimum: minAmountOut,
+          amountOutMinimum: minAmountOutWETH,
         },
       ])
       v4Planner.addAction(Actions.SETTLE_ALL, [USDC_WETH.poolKey.currency0])
@@ -147,8 +151,65 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut)
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
       expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.eq(amountInUSDC)
+    })
+
+    it('completes a v4 exactOutSingle swap', async () => {
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT_SINGLE, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          zeroForOne: true,
+          amountOut: amountOutWETH,
+          amountInMaximum: maxAmountInUSDC,
+          sqrtPriceLimitX96: 0,
+          hookData: '0x',
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_ALL, [USDC_WETH.poolKey.currency0])
+      v4Planner.addAction(Actions.TAKE_ALL, [USDC_WETH.poolKey.currency1, bob.address])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { usdcBalanceBefore, usdcBalanceAfter, wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
+      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.lte(maxAmountInUSDC)
+    })
+
+    it('completes a v4 exactOut 1 hop swap', async () => {
+      let currencyOut = USDC_WETH.poolKey.currency1
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT, [
+        {
+          currencyOut,
+          path: encodeMultihopExactOutPath([USDC_WETH.poolKey], currencyOut),
+          amountOut: amountOutWETH,
+          amountInMaximum: maxAmountInUSDC,
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_ALL, [USDC_WETH.poolKey.currency0])
+      v4Planner.addAction(Actions.TAKE_ALL, [USDC_WETH.poolKey.currency1, bob.address])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { usdcBalanceBefore, usdcBalanceAfter, wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
+      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.lte(maxAmountInUSDC)
     })
   })
 })

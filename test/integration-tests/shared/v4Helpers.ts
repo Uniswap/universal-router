@@ -104,7 +104,7 @@ export async function addLiquidityToV4Pool(
 export const encodeMultihopExactInPath = (poolKeys: any[], currencyIn: string): any[] => {
   let pathKeys = []
   for (let i = 0; i < poolKeys.length; i++) {
-    let currencyOut = currencyIn == poolKeys[i].currency0 ? poolKeys[i].currency1 : poolKeys[i].currency1
+    let currencyOut = currencyIn == poolKeys[i].currency0 ? poolKeys[i].currency1 : poolKeys[i].currency0
     let pathKey = {
       intermediateCurrency: currencyOut,
       fee: poolKeys[i].fee,
@@ -114,6 +114,23 @@ export const encodeMultihopExactInPath = (poolKeys: any[], currencyIn: string): 
     }
     pathKeys.push(pathKey)
     currencyIn = currencyOut
+  }
+  return pathKeys
+}
+
+export const encodeMultihopExactOutPath = (poolKeys: any[], currencyOut: string): any[] => {
+  let pathKeys = []
+  for (let i = poolKeys.length; i > 0; i--) {
+    let currencyIn = currencyOut == poolKeys[i - 1].currency0 ? poolKeys[i - 1].currency1 : poolKeys[i - 1].currency0
+    let pathKey = {
+      intermediateCurrency: currencyIn,
+      fee: poolKeys[i - 1].fee,
+      tickSpacing: poolKeys[i - 1].tickSpacing,
+      hooks: poolKeys[i - 1].hooks,
+      hookData: '0x',
+    }
+    pathKeys.push(pathKey)
+    currencyOut = currencyIn
   }
   return pathKeys
 }
