@@ -28,23 +28,11 @@ import { encodePathExactInput, encodePathExactOutput } from './shared/swapRouter
 import { executeRouter } from './shared/executeRouter'
 import {
   addLiquidityToV4Pool,
-  DAI_USDC_POOL_KEY,
-  DAI_USDC_PRICE,
-  DAI_USDC_TICK,
-  DAI_USDC_TICK_LOWER,
-  DAI_USDC_TICK_UPPER,
+  DAI_USDC,
   deployV4PoolManager,
-  ETH_USDC_POOL_KEY,
-  ETH_USDC_PRICE,
-  ETH_USDC_TICK,
-  ETH_USDC_TICK_LOWER,
-  ETH_USDC_TICK_UPPER,
+  ETH_USDC,
   initializeV4Pool,
-  USDC_WETH_POOL_KEY,
-  USDC_WETH_PRICE,
-  USDC_WETH_TICK,
-  USDC_WETH_TICK_LOWER,
-  USDC_WETH_TICK_UPPER,
+  USDC_WETH,
 } from './shared/v4Helpers'
 import { V4Planner } from './shared/v4Planner'
 const { ethers } = hre
@@ -301,34 +289,13 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       await permit2.approve(WETH.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
       await permit2.approve(USDC.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
 
-      await initializeV4Pool(v4PoolManager, USDC_WETH_POOL_KEY, USDC_WETH_PRICE)
-      await initializeV4Pool(v4PoolManager, DAI_USDC_POOL_KEY, DAI_USDC_PRICE)
-      await initializeV4Pool(v4PoolManager, ETH_USDC_POOL_KEY, ETH_USDC_PRICE)
+      await initializeV4Pool(v4PoolManager, USDC_WETH.poolKey, USDC_WETH.price)
+      await initializeV4Pool(v4PoolManager, DAI_USDC.poolKey, DAI_USDC.price)
+      await initializeV4Pool(v4PoolManager, ETH_USDC.poolKey, ETH_USDC.price)
 
-      await addLiquidityToV4Pool(
-        v4PositionManager,
-        USDC_WETH_POOL_KEY,
-        USDC_WETH_TICK_LOWER,
-        USDC_WETH_TICK_UPPER,
-        expandTo18DecimalsBN(2).toString(),
-        bob
-      )
-      await addLiquidityToV4Pool(
-        v4PositionManager,
-        DAI_USDC_POOL_KEY,
-        DAI_USDC_TICK_LOWER,
-        DAI_USDC_TICK_UPPER,
-        expandTo18DecimalsBN(400).toString(),
-        bob
-      )
-      await addLiquidityToV4Pool(
-        v4PositionManager,
-        ETH_USDC_POOL_KEY,
-        ETH_USDC_TICK_LOWER,
-        ETH_USDC_TICK_UPPER,
-        expandTo18DecimalsBN(0.1).toString(),
-        bob
-      )
+      await addLiquidityToV4Pool(v4PositionManager, USDC_WETH, expandTo18DecimalsBN(2).toString(), bob)
+      await addLiquidityToV4Pool(v4PositionManager, DAI_USDC, expandTo18DecimalsBN(400).toString(), bob)
+      await addLiquidityToV4Pool(v4PositionManager, ETH_USDC, expandTo18DecimalsBN(0.1).toString(), bob)
     })
 
     it('succeeded to set up v4', () => {
