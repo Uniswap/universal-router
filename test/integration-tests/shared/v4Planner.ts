@@ -1,8 +1,8 @@
 import { defaultAbiCoder } from 'ethers/lib/utils'
 
 /**
- * CommandTypes
- * @description Flags that modify a command's execution
+ * Actions
+ * @description Constants that define what action to perform
  * @enum {number}
  */
 export enum Actions {
@@ -83,7 +83,7 @@ const ABI_DEFINITION: { [key in Actions]: string[] } = {
   [Actions.SWEEP]: ['address', 'address'],
 }
 
-export class RoutePlanner {
+export class V4Planner {
   actions: string
   params: string[]
 
@@ -92,19 +92,19 @@ export class RoutePlanner {
     this.params = []
   }
 
-  addCommand(type: Actions, parameters: any[]): void {
-    let command = createCommand(type, parameters)
+  addAction(type: Actions, parameters: any[]): void {
+    let command = createAction(type, parameters)
     this.params.push(command.encodedInput)
     this.actions = this.actions.concat(command.action.toString(16).padStart(2, '0'))
   }
 }
 
-export type ActionsRouterCommand = {
+export type RouterAction = {
   action: Actions
   encodedInput: string
 }
 
-export function createCommand(action: Actions, parameters: any[]): ActionsRouterCommand {
+export function createAction(action: Actions, parameters: any[]): RouterAction {
   const encodedInput = defaultAbiCoder.encode(ABI_DEFINITION[action], parameters)
   return { action, encodedInput }
 }
