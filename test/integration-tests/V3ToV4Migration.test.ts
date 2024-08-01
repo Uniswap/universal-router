@@ -1059,7 +1059,6 @@ describe('V3 to V4 Migration Tests:', () => {
       // bob successfully sweeped his usdc and weth from the v4 position manager
       expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
       expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
-      
 
       // bob still owns a position
       expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
@@ -1099,7 +1098,6 @@ describe('V3 to V4 Migration Tests:', () => {
       // bob successfully sweeped his usdc and weth from the v4 position manager
       expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
       expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
-      
 
       // bob still owns a position
       expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
