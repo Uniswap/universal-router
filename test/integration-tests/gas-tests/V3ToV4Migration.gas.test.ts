@@ -12,7 +12,18 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { RoutePlanner, CommandType } from '../shared/planner'
 import { FeeAmount } from '@uniswap/v3-sdk'
-import { encodeERC721Permit, encodeDecreaseLiquidity, encodeCollect, encodeBurn, encodeMintData, encodeIncreaseData, encodeSettleBalance, encodeUnlockData, encodeERC20To, encodeModifyLiquidities } from '../shared/encodeCall'
+import {
+  encodeERC721Permit,
+  encodeDecreaseLiquidity,
+  encodeCollect,
+  encodeBurn,
+  encodeMintData,
+  encodeIncreaseData,
+  encodeSettleBalance,
+  encodeUnlockData,
+  encodeSweep,
+  encodeModifyLiquidities,
+} from '../shared/encodeCall'
 const { ethers } = hre
 import { executeRouter } from '../shared/executeRouter'
 
@@ -262,7 +273,7 @@ describe('V3 to V4 Migration Gas Tests', () => {
         // transfer to v4posm
         await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
         await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
-  
+
         const mintParams = {
           LiquidityRange: {
             PoolKey: {
@@ -279,31 +290,31 @@ describe('V3 to V4 Migration Gas Tests', () => {
           owner: bob.address,
           hookData: '0x',
         }
-  
+
         const encodedMintData = encodeMintData(mintParams)
-  
+
         const encodedSettleBalance0 = encodeSettleBalance(mintParams.LiquidityRange.PoolKey.currency0, MAX_UINT)
         const encodedSettleBalance1 = encodeSettleBalance(mintParams.LiquidityRange.PoolKey.currency1, MAX_UINT)
-  
-        const encodedERC20To0 = encodeERC20To(mintParams.LiquidityRange.PoolKey.currency0, bob.address)
-        const encodedERC20To1 = encodeERC20To(mintParams.LiquidityRange.PoolKey.currency1, bob.address)
-  
+
+        const encodedSweep0 = encodeSweep(mintParams.LiquidityRange.PoolKey.currency0, bob.address)
+        const encodedSweep1 = encodeSweep(mintParams.LiquidityRange.PoolKey.currency1, bob.address)
+
         const unlockDataParams = {
           actions: [MINT_POSITION, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP, SWEEP],
-          unlockParams: [encodedMintData, encodedSettleBalance0, encodedSettleBalance1, encodedERC20To0, encodedERC20To1],
+          unlockParams: [encodedMintData, encodedSettleBalance0, encodedSettleBalance1, encodedSweep0, encodedSweep1],
         }
-  
+
         const encodedUnlockData = encodeUnlockData(unlockDataParams)
-  
+
         const modifyLiquiditiesParams = {
           unlockData: encodedUnlockData,
           deadline: MAX_UINT,
         }
-  
+
         const encodedModifyLiquiditiesCall = encodeModifyLiquidities(modifyLiquiditiesParams)
-  
+
         planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedModifyLiquiditiesCall])
-  
+
         const { commands, inputs } = planner
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
       })
@@ -398,12 +409,12 @@ describe('V3 to V4 Migration Gas Tests', () => {
         const encodedSettleBalance0 = encodeSettleBalance(mintParams.LiquidityRange.PoolKey.currency0, MAX_UINT)
         const encodedSettleBalance1 = encodeSettleBalance(mintParams.LiquidityRange.PoolKey.currency1, MAX_UINT)
 
-        const encodedERC20To0 = encodeERC20To(mintParams.LiquidityRange.PoolKey.currency0, bob.address)
-        const encodedERC20To1 = encodeERC20To(mintParams.LiquidityRange.PoolKey.currency1, bob.address)
+        const encodedSweep0 = encodeSweep(mintParams.LiquidityRange.PoolKey.currency0, bob.address)
+        const encodedSweep1 = encodeSweep(mintParams.LiquidityRange.PoolKey.currency1, bob.address)
 
         let unlockDataParams = {
           actions: [MINT_POSITION, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP, SWEEP],
-          unlockParams: [encodedMintData, encodedSettleBalance0, encodedSettleBalance1, encodedERC20To0, encodedERC20To1],
+          unlockParams: [encodedMintData, encodedSettleBalance0, encodedSettleBalance1, encodedSweep0, encodedSweep1],
         }
 
         let encodedUnlockData = encodeUnlockData(unlockDataParams)
@@ -427,7 +438,7 @@ describe('V3 to V4 Migration Gas Tests', () => {
         // mint position first
         await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
         await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
-  
+
         const mintParams = {
           LiquidityRange: {
             PoolKey: {
@@ -444,38 +455,38 @@ describe('V3 to V4 Migration Gas Tests', () => {
           owner: bob.address,
           hookData: '0x',
         }
-  
+
         const encodedMintData = encodeMintData(mintParams)
-  
+
         const encodedSettleBalance0 = encodeSettleBalance(mintParams.LiquidityRange.PoolKey.currency0, MAX_UINT)
         const encodedSettleBalance1 = encodeSettleBalance(mintParams.LiquidityRange.PoolKey.currency1, MAX_UINT)
-  
-        const encodedERC20To0 = encodeERC20To(mintParams.LiquidityRange.PoolKey.currency0, bob.address)
-        const encodedERC20To1 = encodeERC20To(mintParams.LiquidityRange.PoolKey.currency1, bob.address)
-  
+
+        const encodedSweep0 = encodeSweep(mintParams.LiquidityRange.PoolKey.currency0, bob.address)
+        const encodedSweep1 = encodeSweep(mintParams.LiquidityRange.PoolKey.currency1, bob.address)
+
         let unlockDataParams = {
           actions: [MINT_POSITION, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP, SWEEP],
-          unlockParams: [encodedMintData, encodedSettleBalance0, encodedSettleBalance1, encodedERC20To0, encodedERC20To1],
+          unlockParams: [encodedMintData, encodedSettleBalance0, encodedSettleBalance1, encodedSweep0, encodedSweep1],
         }
-  
+
         let encodedUnlockData = encodeUnlockData(unlockDataParams)
-  
+
         let modifyLiquiditiesParams = {
           unlockData: encodedUnlockData,
           deadline: MAX_UINT,
         }
-  
+
         let encodedModifyLiquiditiesCall = encodeModifyLiquidities(modifyLiquiditiesParams)
-  
+
         planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedModifyLiquiditiesCall])
-  
+
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
-  
+
         // increase position second
         planner = new RoutePlanner()
         await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
         await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
-  
+
         // TODO: grab tokenID
         const increaseParams = {
           tokenId: 1,
@@ -493,31 +504,31 @@ describe('V3 to V4 Migration Gas Tests', () => {
           liquidity: '6000000',
           hookData: '0x',
         }
-  
+
         const encodedIncreaseData = encodeIncreaseData(increaseParams)
-  
+
         unlockDataParams = {
           actions: [INCREASE_LIQUIDITY, SETTLE_WITH_BALANCE, SETTLE_WITH_BALANCE, SWEEP, SWEEP],
           unlockParams: [
             encodedIncreaseData,
             encodedSettleBalance0,
             encodedSettleBalance1,
-            encodedERC20To0,
-            encodedERC20To1,
+            encodedSweep0,
+            encodedSweep1,
           ],
         }
-  
+
         encodedUnlockData = encodeUnlockData(unlockDataParams)
-  
+
         modifyLiquiditiesParams = {
           unlockData: encodedUnlockData,
           deadline: MAX_UINT,
         }
-  
+
         encodedModifyLiquiditiesCall = encodeModifyLiquidities(modifyLiquiditiesParams)
-  
+
         planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedModifyLiquiditiesCall])
-  
+
         const { commands, inputs } = planner
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
       })

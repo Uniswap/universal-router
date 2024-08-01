@@ -182,7 +182,7 @@ const encodeSettleBalance = (currency: string, amt: string): string => {
   return encodedParams
 }
 
-const encodeERC20To = (currency: string, to: string): string => {
+const encodeSweep = (currency: string, to: string): string => {
   const abi = new ethers.utils.AbiCoder()
   const encodedParams = abi.encode(['address', 'address'], [currency, to])
   return encodedParams
@@ -198,5 +198,5 @@ export {
   encodeMintData,
   encodeIncreaseData,
   encodeSettleBalance,
-  encodeERC20To,
+  encodeSweep,
 }
