@@ -10,6 +10,7 @@ import {Constants} from '../../../libraries/Constants.sol';
 import {Permit2Payments} from '../../Permit2Payments.sol';
 import {UniswapImmutables} from '../UniswapImmutables.sol';
 import {Constants} from '../../../libraries/Constants.sol';
+import {MaxInputAmount} from '../../../libraries/MaxInputAmount.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
 /// @title Router for Uniswap v3 Trades
@@ -23,13 +24,6 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
     error V3TooMuchRequested();
     error V3InvalidAmountOut();
     error V3InvalidCaller();
-
-    /// @dev Used as the placeholder value for maxAmountIn, because the computed amount in for an exact output swap
-    /// can never actually be this value
-    uint256 private constant DEFAULT_MAX_AMOUNT_IN = type(uint256).max;
-
-    /// @dev Transient storage variable used for checking slippage
-    uint256 private maxAmountInCached = DEFAULT_MAX_AMOUNT_IN;
 
     /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
     uint160 internal constant MIN_SQRT_RATIO = 4295128739;
@@ -60,7 +54,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
                 path = path.skipToken();
                 _swap(-amountToPay.toInt256(), msg.sender, path, payer, false);
             } else {
-                if (amountToPay > maxAmountInCached) revert V3TooMuchRequested();
+                if (amountToPay > MaxInputAmount.get()) revert V3TooMuchRequested();
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
                 payOrPermit2Transfer(tokenOut, payer, msg.sender, amountToPay);
             }
@@ -127,7 +121,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
         bytes calldata path,
         address payer
     ) internal {
-        maxAmountInCached = amountInMaximum;
+        MaxInputAmount.set(amountInMaximum);
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
             _swap(-amountOut.toInt256(), recipient, path, payer, false);
 
@@ -135,7 +129,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
 
         if (amountOutReceived != amountOut) revert V3InvalidAmountOut();
 
-        maxAmountInCached = DEFAULT_MAX_AMOUNT_IN;
+        MaxInputAmount.set(0);
     }
 
     /// @dev Performs a single swap for both exactIn and exactOut
