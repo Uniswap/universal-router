@@ -18,15 +18,7 @@ import {Constants} from '../libraries/Constants.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
-abstract contract Dispatcher is
-    Payments,
-    V2SwapRouter,
-    V3SwapRouter,
-    V4SwapRouter,
-    V3ToV4Migrator,
-    Callbacks,
-    Lock
-{
+abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRouter, V3ToV4Migrator, Callbacks, Lock {
     using BytesLib for bytes;
 
     error InvalidCommandType(uint256 commandType);
