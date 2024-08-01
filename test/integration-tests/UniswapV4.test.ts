@@ -1,5 +1,6 @@
 import type { Contract } from '@ethersproject/contracts'
 import { BigNumber } from 'ethers'
+import { expect } from './shared/expect'
 import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, PERMIT2 } from './shared/mainnetForkHelpers'
@@ -7,17 +8,20 @@ import { ALICE_ADDRESS, DEADLINE, MAX_UINT, MAX_UINT160 } from './shared/constan
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
-import { RoutePlanner } from './shared/planner'
+import { CommandType, RoutePlanner } from './shared/planner'
 import hre from 'hardhat'
 import {
   addLiquidityToV4Pool,
   DAI_USDC,
   deployV4PoolManager,
+  encodeMultihopExactInPath,
+  encodeMultihopPath,
   ETH_USDC,
   initializeV4Pool,
   USDC_WETH,
 } from './shared/v4Helpers'
-import { V4Planner } from './shared/v4Planner'
+import { Actions, V4Planner } from './shared/v4Planner'
+import { executeRouter } from './shared/executeRouter'
 const { ethers } = hre
 
 describe('Uniswap V4 Tests:', () => {
@@ -33,7 +37,8 @@ describe('Uniswap V4 Tests:', () => {
   let v4PoolManager: PoolManager
   let v4PositionManager: PositionManager
 
-  const amountIn: BigNumber = expandTo18DecimalsBN(5)
+  const amountInUSDC: BigNumber = expandTo6DecimalsBN(1000)
+  const minAmountOut: BigNumber = expandTo18DecimalsBN(0.25)
 
   beforeEach(async () => {
     await resetFork()
@@ -48,7 +53,7 @@ describe('Uniswap V4 Tests:', () => {
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
     v4PoolManager = (await deployV4PoolManager()).connect(bob) as PoolManager
-    router = (await deployUniversalRouter(v4PoolManager.address)) as UniversalRouter
+    router = (await deployUniversalRouter(v4PoolManager.address)).connect(bob) as UniversalRouter
     v4PositionManager = (await ethers.getContractAt('PositionManager', await router.V4_POSITION_MANAGER())).connect(
       bob
     ) as PositionManager
@@ -57,9 +62,9 @@ describe('Uniswap V4 Tests:', () => {
     v4Planner = new V4Planner()
 
     // alice gives bob some tokens
-    await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100000))
-    await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100))
-    await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(10000000))
+    await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(1000000))
+    await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(1000))
+    await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(50000000))
 
     // Bob max-approves the permit2 contract to access his DAI and WETH
     await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
@@ -69,6 +74,7 @@ describe('Uniswap V4 Tests:', () => {
     // for these tests Bob gives the router max approval on permit2
     await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
     await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
+    await permit2.approve(USDC.address, router.address, MAX_UINT160, DEADLINE)
 
     // for setting up pools, bob gives position manager approval on permit2
     await permit2.approve(DAI.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
@@ -86,8 +92,63 @@ describe('Uniswap V4 Tests:', () => {
   })
 
   describe('ERC20 --> ERC20', () => {
-    it('succeeded to set up v4', () => {
-      console.log('yay!')
+    it('completes a v4 exactInSingle swap', async () => {
+      const minAmountOut = expandTo18DecimalsBN(0.25)
+
+      v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          zeroForOne: true,
+          amountIn: amountInUSDC,
+          amountOutMinimum: minAmountOut,
+          sqrtPriceLimitX96: 0,
+          hookData: '0x',
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_ALL, [USDC_WETH.poolKey.currency0])
+      v4Planner.addAction(Actions.TAKE_ALL, [USDC_WETH.poolKey.currency1, bob.address])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { usdcBalanceBefore, usdcBalanceAfter, wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut)
+      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.eq(amountInUSDC)
+    })
+
+    it('completes a v4 exactIn 1 hop swap', async () => {
+      let currencyIn = USDC_WETH.poolKey.currency0
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([USDC_WETH.poolKey], currencyIn),
+          amountIn: amountInUSDC,
+          amountOutMinimum: minAmountOut,
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_ALL, [USDC_WETH.poolKey.currency0])
+      v4Planner.addAction(Actions.TAKE_ALL, [USDC_WETH.poolKey.currency1, bob.address])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { usdcBalanceBefore, usdcBalanceAfter, wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut)
+      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.eq(amountInUSDC)
     })
   })
 })
