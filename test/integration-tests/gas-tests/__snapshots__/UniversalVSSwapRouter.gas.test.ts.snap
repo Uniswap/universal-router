@@ -7,32 +7,32 @@ Object {
 }
 `;
 
-exports[`Uniswap UX Tests gas: Comparisons Casual Swapper - 3 swaps Permit2 Max Approval Swap 1`] = `1103919`;
+exports[`Uniswap UX Tests gas: Comparisons Casual Swapper - 3 swaps Permit2 Max Approval Swap 1`] = `1104139`;
 
-exports[`Uniswap UX Tests gas: Comparisons Casual Swapper - 3 swaps Permit2 Sign Per Swap 1`] = `1138221`;
+exports[`Uniswap UX Tests gas: Comparisons Casual Swapper - 3 swaps Permit2 Sign Per Swap 1`] = `1138441`;
 
 exports[`Uniswap UX Tests gas: Comparisons Casual Swapper - 3 swaps SwapRouter02 1`] = `1124979`;
 
-exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper - 10 swaps Permit2 Max Approval Swap 1`] = `3080584`;
+exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper - 10 swaps Permit2 Max Approval Swap 1`] = `3081244`;
 
-exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper - 10 swaps Permit2 Sign Per Swap 1`] = `3233639`;
+exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper - 10 swaps Permit2 Sign Per Swap 1`] = `3234299`;
 
 exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper - 10 swaps SwapRouter02 1`] = `3195011`;
 
-exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper across 3 swap router versions - 15 swaps across 3 versions Permit2 Max Approval Swap 1`] = `4102191`;
+exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper across 3 swap router versions - 15 swaps across 3 versions Permit2 Max Approval Swap 1`] = `4103071`;
 
-exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper across 3 swap router versions - 15 swaps across 3 versions Permit2 Sign Per Swap 1`] = `4305557`;
+exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper across 3 swap router versions - 15 swaps across 3 versions Permit2 Sign Per Swap 1`] = `4306437`;
 
 exports[`Uniswap UX Tests gas: Comparisons Frequent Swapper across 3 swap router versions - 15 swaps across 3 versions SwapRouter02 1`] = `4282374`;
 
-exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Complex Swap Permit2 Max Approval Swap 1`] = `508612`;
+exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Complex Swap Permit2 Max Approval Swap 1`] = `508700`;
 
-exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Complex Swap Permit2 Sign Per Swap 1`] = `508930`;
+exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Complex Swap Permit2 Sign Per Swap 1`] = `509018`;
 
 exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Complex Swap SwapRouter02 1`] = `500008`;
 
-exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Simple Swap Permit2 Max Approval Swap 1`] = `299563`;
+exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Simple Swap Permit2 Max Approval Swap 1`] = `299607`;
 
-exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Simple Swap Permit2 Sign Per Swap 1`] = `299499`;
+exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Simple Swap Permit2 Sign Per Swap 1`] = `299543`;
 
 exports[`Uniswap UX Tests gas: Comparisons One Time Swapper - Simple Swap SwapRouter02 1`] = `270033`;
