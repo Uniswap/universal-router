@@ -4,7 +4,7 @@ const { ethers } = hre
 import { PositionManager, PoolManager } from '../../../typechain'
 import { DAI, USDC, WETH } from './mainnetForkHelpers'
 import { ADDRESS_ZERO, FeeAmount } from '@uniswap/v3-sdk'
-import { MAX_UINT160, ZERO_ADDRESS } from './constants'
+import { MAX_UINT128, MAX_UINT160, ZERO_ADDRESS } from './constants'
 import { Actions, V4Planner } from './v4Planner'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber } from 'ethers'
@@ -86,7 +86,7 @@ export async function addLiquidityToV4Pool(
     tickLower: pool.tickLower,
     tickUpper: pool.tickUpper,
   }
-  v4Planner.addAction(Actions.MINT_POSITION, [positionConfig, liquidity, owner.address, '0x'])
+  v4Planner.addAction(Actions.MINT_POSITION, [positionConfig, liquidity, MAX_UINT128, MAX_UINT128, owner.address, '0x'])
   v4Planner.addAction(Actions.CLOSE_CURRENCY, [pool.poolKey.currency0])
   v4Planner.addAction(Actions.CLOSE_CURRENCY, [pool.poolKey.currency1])
 

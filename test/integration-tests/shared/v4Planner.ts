@@ -66,7 +66,7 @@ const ABI_DEFINITION: { [key in Actions]: string[] } = {
   // Liquidity commands
   [Actions.INCREASE_LIQUIDITY]: ['uint256', POSITION_CONFIG_STRUCT, 'uint256', 'bytes'],
   [Actions.DECREASE_LIQUIDITY]: ['uint256', POSITION_CONFIG_STRUCT, 'uint256', 'bytes'],
-  [Actions.MINT_POSITION]: [POSITION_CONFIG_STRUCT, 'uint256', 'address', 'bytes'],
+  [Actions.MINT_POSITION]: [POSITION_CONFIG_STRUCT, 'uint256', 'uint128', 'uint128', 'address', 'bytes'],
   [Actions.BURN_POSITION]: ['uint256', POSITION_CONFIG_STRUCT, 'bytes'],
 
   // Swapping commands
