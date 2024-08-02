@@ -86,8 +86,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                         }
                         permit2TransferFrom(token, msgSender(), map(recipient), amount);
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
-                        (IAllowanceTransfer.PermitBatch memory permitBatch,) =
-                            abi.decode(inputs, (IAllowanceTransfer.PermitBatch, bytes));
+                        IAllowanceTransfer.PermitBatch calldata permitBatch;
+                        assembly {
+                            // this is a variable length struct, so calldataload(inputs.offset) contains the
+                            // offset from inputs.offset at which the struct begins
+                            permitBatch := add(inputs.offset, calldataload(inputs.offset))
+                        }
                         bytes calldata data = inputs.toBytes(1);
                         PERMIT2.permit(msgSender(), permitBatch, data);
                     } else if (command == Commands.SWEEP) {
@@ -188,8 +192,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                         }
                         Payments.unwrapWETH9(map(recipient), amountMin);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
-                        (IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) =
-                            abi.decode(inputs, (IAllowanceTransfer.AllowanceTransferDetails[]));
+                        IAllowanceTransfer.AllowanceTransferDetails[] calldata batchDetails;
+                        (uint256 length, uint256 offset) = inputs.toLengthOffset(0);
+                        assembly {
+                            batchDetails.length := length
+                            batchDetails.offset := offset
+                        }
                         permit2TransferFrom(batchDetails, msgSender());
                     } else if (command == Commands.BALANCE_CHECK_ERC20) {
                         // equivalent: abi.decode(inputs, (address, address, uint256))
