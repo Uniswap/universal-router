@@ -22,22 +22,21 @@ export enum Actions {
 
   // closing deltas on the pool manager
   // settling
-  // SETTLE = 0x10,
-  SETTLE_ALL = 0x11,
-  SETTLE_WITH_BALANCE = 0x12,
+  SETTLE_ALL = 0x09,
+  SETTLE = 0x10,
+  // SETTLE_PAIR = 0x11,
   // taking
-  // TAKE = 0x13,
-  TAKE_ALL = 0x14,
-  // TAKE_PORTION = 0x15,
+  // TAKE = 0x12,
+  TAKE_ALL = 0x13,
+  // TAKE_PORTION = 0x14,
 
-  CLOSE_CURRENCY = 0x16,
-  // CLOSE_PAIR = 0x17,
-  // CLEAR = 0x18,
-  SWEEP = 0x19,
+  CLOSE_CURRENCY = 0x15,
+  // CLEAR_OR_TAKE = 0x16,
+  SWEEP = 0x17,
 
   // minting/burning 6909s to close deltas
-  // MINT_6909 = 0x20,
-  // BURN_6909 = 0x21,
+  // MINT_6909 = 0x18,
+  // BURN_6909 = 0x19,
 }
 
 const POOL_KEY_STRUCT = '(address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks)'
@@ -64,10 +63,10 @@ const SWAP_EXACT_OUT_STRUCT =
 
 const ABI_DEFINITION: { [key in Actions]: string[] } = {
   // Liquidity commands
-  [Actions.INCREASE_LIQUIDITY]: ['uint256', POSITION_CONFIG_STRUCT, 'uint256', 'bytes'],
-  [Actions.DECREASE_LIQUIDITY]: ['uint256', POSITION_CONFIG_STRUCT, 'uint256', 'bytes'],
-  [Actions.MINT_POSITION]: [POSITION_CONFIG_STRUCT, 'uint256', 'address', 'bytes'],
-  [Actions.BURN_POSITION]: ['uint256', POSITION_CONFIG_STRUCT, 'bytes'],
+  [Actions.INCREASE_LIQUIDITY]: ['uint256', POSITION_CONFIG_STRUCT, 'uint256', 'uint256', 'uint256', 'bytes'],
+  [Actions.DECREASE_LIQUIDITY]: ['uint256', POSITION_CONFIG_STRUCT, 'uint256', 'uint256', 'uint256', 'bytes'],
+  [Actions.MINT_POSITION]: [POSITION_CONFIG_STRUCT, 'uint256', 'uint256', 'uint256', 'address', 'bytes'],
+  [Actions.BURN_POSITION]: ['uint256', POSITION_CONFIG_STRUCT, 'uint256', 'uint256', 'bytes'],
 
   // Swapping commands
   [Actions.SWAP_EXACT_IN_SINGLE]: [SWAP_EXACT_IN_SINGLE_STRUCT],
@@ -77,7 +76,7 @@ const ABI_DEFINITION: { [key in Actions]: string[] } = {
 
   // Payments commands
   [Actions.SETTLE_ALL]: ['address'],
-  [Actions.SETTLE_WITH_BALANCE]: ['address'],
+  [Actions.SETTLE]: ['address', 'uint256', 'bool'],
   [Actions.TAKE_ALL]: ['address', 'address'],
   [Actions.CLOSE_CURRENCY]: ['address'],
   [Actions.SWEEP]: ['address', 'address'],

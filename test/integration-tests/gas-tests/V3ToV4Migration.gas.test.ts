@@ -265,12 +265,14 @@ describe('V3 to V4 Migration Gas Tests', () => {
             tickUpper: USDC_WETH.tickUpper,
           },
           '6000000',
+          MAX_UINT128,
+          MAX_UINT128,
           bob.address,
           '0x',
         ])
 
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+        v4Planner.addAction(Actions.SETTLE, [USDC.address, 1, false])
+        v4Planner.addAction(Actions.SETTLE, [WETH.address, 1, false])
         v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
         v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 
@@ -357,12 +359,14 @@ describe('V3 to V4 Migration Gas Tests', () => {
             tickUpper: USDC_WETH.tickUpper,
           },
           '6000000',
+          MAX_UINT128,
+          MAX_UINT128,
           bob.address,
           '0x',
         ])
 
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+        v4Planner.addAction(Actions.SETTLE, [USDC.address, 1, false])
+        v4Planner.addAction(Actions.SETTLE, [WETH.address, 1, false])
         v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
         v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 
@@ -388,12 +392,14 @@ describe('V3 to V4 Migration Gas Tests', () => {
             tickUpper: USDC_WETH.tickUpper,
           },
           '6000000',
+          MAX_UINT128,
+          MAX_UINT128,
           bob.address,
           '0x',
         ])
 
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+        v4Planner.addAction(Actions.SETTLE, [USDC.address, 1, false])
+        v4Planner.addAction(Actions.SETTLE, [WETH.address, 1, false])
         v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
         v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 
@@ -419,11 +425,13 @@ describe('V3 to V4 Migration Gas Tests', () => {
             tickUpper: USDC_WETH.tickUpper,
           },
           '6000000',
+          MAX_UINT128,
+          MAX_UINT128,
           '0x',
         ])
 
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+        v4Planner.addAction(Actions.SETTLE, [USDC.address, 1, false])
+        v4Planner.addAction(Actions.SETTLE, [WETH.address, 1, false])
         v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
         v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 
@@ -447,12 +455,14 @@ describe('V3 to V4 Migration Gas Tests', () => {
             tickUpper: USDC_WETH.tickUpper,
           },
           '6000000',
+          MAX_UINT128,
+          MAX_UINT128,
           bob.address,
           '0x',
         ])
 
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+        v4Planner.addAction(Actions.SETTLE, [USDC.address, 1, false])
+        v4Planner.addAction(Actions.SETTLE, [WETH.address, 1, false])
         v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
         v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 
@@ -543,10 +553,12 @@ describe('V3 to V4 Migration Gas Tests', () => {
             tickUpper: USDC_WETH.tickUpper,
           },
           '6000000',
+          MAX_UINT128,
+          MAX_UINT128,
           '0x',
         ])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+        v4Planner.addAction(Actions.SETTLE, [USDC.address, 1, false])
+        v4Planner.addAction(Actions.SETTLE, [WETH.address, 1, false])
         v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
         v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 
