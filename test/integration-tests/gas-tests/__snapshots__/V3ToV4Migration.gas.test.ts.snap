@@ -1,29 +1,57 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`V3 to V4 Migration Gas Tests Migrator burn gas: erc721permit + decreaseLiquidity + collect + burn 1`] = `
+exports[`V3 to V4 Migration Gas Tests V3 Commands burn gas: erc721permit + decreaseLiquidity + collect + burn 1`] = `
 Object {
   "calldataByteLength": 1092,
-  "gasUsed": 256225,
+  "gasUsed": 256214,
 }
 `;
 
-exports[`V3 to V4 Migration Gas Tests Migrator collect gas: erc721permit + decreaseLiquidity + collect 1`] = `
+exports[`V3 to V4 Migration Gas Tests V3 Commands collect gas: erc721permit + decreaseLiquidity + collect 1`] = `
 Object {
   "calldataByteLength": 964,
-  "gasUsed": 223884,
+  "gasUsed": 223872,
 }
 `;
 
-exports[`V3 to V4 Migration Gas Tests Migrator decrease liquidity gas: erc721permit + decreaseLiquidity 1`] = `
+exports[`V3 to V4 Migration Gas Tests V3 Commands decrease liquidity gas: erc721permit + decreaseLiquidity 1`] = `
 Object {
   "calldataByteLength": 740,
-  "gasUsed": 202176,
+  "gasUsed": 202166,
 }
 `;
 
-exports[`V3 to V4 Migration Gas Tests Migrator erc721permit gas: erc721permit 1`] = `
+exports[`V3 to V4 Migration Gas Tests V3 Commands erc721permit gas: erc721permit 1`] = `
 Object {
   "calldataByteLength": 484,
-  "gasUsed": 66040,
+  "gasUsed": 66032,
+}
+`;
+
+exports[`V3 to V4 Migration Gas Tests V4 Commands increase gas: increase 1`] = `
+Object {
+  "calldataByteLength": 1476,
+  "gasUsed": 172132,
+}
+`;
+
+exports[`V3 to V4 Migration Gas Tests V4 Commands increase gas: migrate and increase 1`] = `
+Object {
+  "calldataByteLength": 2372,
+  "gasUsed": 392156,
+}
+`;
+
+exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate and mint 1`] = `
+Object {
+  "calldataByteLength": 2372,
+  "gasUsed": 550568,
+}
+`;
+
+exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: mint 1`] = `
+Object {
+  "calldataByteLength": 1476,
+  "gasUsed": 387247,
 }
 `;

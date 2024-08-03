@@ -9,11 +9,19 @@ import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
+import { V4Planner, Actions } from './shared/v4Planner'
 import hre from 'hardhat'
 import getPermitNFTSignature from './shared/getPermitNFTSignature'
 import { FeeAmount } from '@uniswap/v3-sdk'
-import { encodeERC721Permit, encodeDecreaseLiquidity, encodeCollect, encodeBurn } from './shared/encodeCall'
+import {
+  encodeERC721Permit,
+  encodeDecreaseLiquidity,
+  encodeCollect,
+  encodeBurn,
+  encodeModifyLiquidities,
+} from './shared/encodeCall'
 import { executeRouter } from './shared/executeRouter'
+import { USDC_WETH } from './shared/v4Helpers'
 const { ethers } = hre
 
 describe('V3 to V4 Migration Tests:', () => {
@@ -25,6 +33,7 @@ describe('V3 to V4 Migration Tests:', () => {
   let wethContract: Contract
   let usdcContract: Contract
   let planner: RoutePlanner
+  let v4Planner: V4Planner
   let v3NFTPositionManager: INonfungiblePositionManager
   let v4PositionManagerAddress: string
   let v4PositionManager: PositionManager
@@ -49,6 +58,7 @@ describe('V3 to V4 Migration Tests:', () => {
     v4PositionManager = (await ethers.getContractAt('PositionManager', v4PositionManagerAddress)) as PositionManager
 
     planner = new RoutePlanner()
+    v4Planner = new V4Planner()
 
     // alice gives bob some tokens
     await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100000))
@@ -56,7 +66,7 @@ describe('V3 to V4 Migration Tests:', () => {
     await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(100000))
   })
 
-  describe('Migrator', () => {
+  describe('V3 Commands', () => {
     beforeEach(async () => {
       // Bob max-approves the v3PM to access his USDC and WETH
       await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
@@ -945,4 +955,656 @@ describe('V3 to V4 Migration Tests:', () => {
       })
     })
   })
+
+  describe('V4 Commands', () => {
+    beforeEach(async () => {
+      // initialize new pool on v4
+      await v4PositionManager.connect(bob).initializePool(USDC_WETH.poolKey, USDC_WETH.price, '0x')
+    })
+
+    it('mint v4 succeeds', async () => {
+      // transfer to v4posm
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      const calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      // assert that the posm holds tokens before executeRouter
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(expandTo6DecimalsBN(100000))
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(expandTo18DecimalsBN(100))
+
+      // bob does not own a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(0)
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+      let bobUSDCBalanceBefore = await usdcContract.balanceOf(bob.address)
+      let bobWETHBalanceBefore = await wethContract.balanceOf(bob.address)
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // bob successfully sweeped his usdc and weth from the v4 position manager
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await usdcContract.balanceOf(bob.address)).to.be.gt(bobUSDCBalanceBefore)
+      expect(await wethContract.balanceOf(bob.address)).to.be.gt(bobWETHBalanceBefore)
+
+      // bob owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+      expect(await v4PositionManager.ownerOf(expectedTokenId)).to.eq(bob.address)
+    })
+
+    it('an address can mint on behalf of another address', async () => {
+      // transfer to v4posm
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      // mint params for bob
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      const calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      // bob does not own a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(0)
+      // alice does not own a position
+      expect(await v4PositionManager.balanceOf(alice.address)).to.eq(0)
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      // alice mints a position for bob
+      await executeRouter(planner, alice, router, wethContract, daiContract, usdcContract)
+
+      // bob owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+      // alice does not own a position
+      expect(await v4PositionManager.balanceOf(alice.address)).to.eq(0)
+
+      expect(await v4PositionManager.ownerOf(expectedTokenId)).to.eq(bob.address)
+    })
+
+    it('increase v4 succeeds', async () => {
+      // transfer to v4posm
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+      // mint position first
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      // bob owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+
+      // increase position second
+      planner = new RoutePlanner()
+      v4Planner = new V4Planner()
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
+
+      v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
+        expectedTokenId,
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      // assert that the posm holds tokens before executeRouter
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(expandTo6DecimalsBN(10000))
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(expandTo18DecimalsBN(10))
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // bob successfully sweeped his usdc and weth from the v4 position manager
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
+
+      // bob still owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+      expect(await v4PositionManager.ownerOf(expectedTokenId)).to.eq(bob.address)
+    })
+
+    it('an address can increase a position on behalf of another address', async () => {
+      // mint position first
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      // bob mints himself a position
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      // bob owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+
+      // increase position second
+      planner = new RoutePlanner()
+      v4Planner = new V4Planner()
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
+
+      // increase params for bob's position
+      v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
+        expectedTokenId,
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      // alice increases the position for bob
+      await executeRouter(planner, alice, router, wethContract, daiContract, usdcContract)
+
+      // bob still owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+      // alice does not own a position
+      expect(await v4PositionManager.balanceOf(alice.address)).to.eq(0)
+
+      expect(await v4PositionManager.ownerOf(expectedTokenId)).to.eq(bob.address)
+    })
+
+    it('decrease v4 does not succeed because UR is not approved', async () => {
+      // first mint the v4 nft
+      // transfer to v4posm
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // try to decrease the position second
+      planner = new RoutePlanner()
+      v4Planner = new V4Planner()
+
+      // try to decrease the position without approval
+      v4Planner.addAction(Actions.DECREASE_LIQUIDITY, [
+        expectedTokenId,
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        0,
+        0,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.CLOSE_CURRENCY, [USDC.address])
+      v4Planner.addAction(Actions.CLOSE_CURRENCY, [WETH.address])
+
+      calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      await expect(
+        executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      ).to.be.revertedWithCustomError(router, 'ExecutionFailed')
+
+      // succeeds if UR is approved (but should not happen!)
+      await v4PositionManager.connect(bob).approve(router.address, expectedTokenId)
+
+      // alice calls the router to decrease bob's position
+      await executeRouter(planner, alice, router, wethContract, daiContract, usdcContract)
+
+      // bob still owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+    })
+
+    it('burn v4 does not succeed because UR is not approved', async () => {
+      // first mint the v4 nft
+      // transfer to v4posm
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // try to decrease the position second
+      planner = new RoutePlanner()
+      v4Planner = new V4Planner()
+
+      // try to decrease the position without approval
+      v4Planner.addAction(Actions.BURN_POSITION, [
+        expectedTokenId,
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        0,
+        0,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.CLOSE_CURRENCY, [USDC.address])
+      v4Planner.addAction(Actions.CLOSE_CURRENCY, [WETH.address])
+
+      calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      await expect(
+        executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      ).to.be.revertedWithCustomError(router, 'ExecutionFailed')
+
+      // succeeds if UR is approved (but should not happen!)
+      await v4PositionManager.connect(bob).approve(router.address, expectedTokenId)
+
+      // alice calls the router to burn bob's position
+      await executeRouter(planner, alice, router, wethContract, daiContract, usdcContract)
+
+      // bob's position is burned
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(0)
+    })
+  })
+
+  describe('Migration', () => {
+    beforeEach(async () => {
+      // initialize new pool on v4
+      await v4PositionManager.connect(bob).initializePool(
+        {
+          currency0: USDC.address,
+          currency1: WETH.address,
+          fee: FeeAmount.LOW,
+          tickSpacing: 10,
+          hooks: '0x0000000000000000000000000000000000000000',
+        },
+        '79228162514264337593543950336',
+        '0x'
+      )
+    })
+    it('migrate with minting succeeds', async () => {
+      // Bob max-approves the v3PM to access his USDC and WETH
+      await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+      await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+
+      // mint the nft to bob on v3
+      const tx = await v3NFTPositionManager.mint({
+        token0: USDC.address,
+        token1: WETH.address,
+        fee: FeeAmount.LOW,
+        tickLower: 0,
+        tickUpper: 194980,
+        amount0Desired: expandTo6DecimalsBN(2500),
+        amount1Desired: expandTo18DecimalsBN(1),
+        amount0Min: 0,
+        amount1Min: 0,
+        recipient: bob.address,
+        deadline: MAX_UINT,
+      })
+
+      // bob owns a v3position
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(1)
+
+      // bob does not own a v4position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(0)
+
+      const receipt = await tx.wait()
+      const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
+      tokenIdv3 = transferEvent?.args?.tokenId
+
+      // permit, decrease, collect, burn
+      const encodedErc721PermitCall = await permit()
+      const encodedDecreaseCall = await decreaseLiquidity()
+      // set receiver to v4posm
+      const encodedCollectCall = collect()
+      const encodedBurnCall = encodeBurn(tokenIdv3)
+
+      planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
+      planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
+      planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
+      planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
+
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // bob successfully sweeped his usdc and weth from the v4 position manager
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+
+      // bob does not own a v3position
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
+
+      // bob owns a v4position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+      expect(await v4PositionManager.ownerOf(expectedTokenId)).to.eq(bob.address)
+    })
+
+    it('migrate with increasing succeeds', async () => {
+      // transfer to v4posm
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // bob does not own a v3position
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
+
+      // bob owns a v4position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+
+      // bob successfully sweeped his usdc and weth from the v4 position manager
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+
+      // migrate with increasing
+      planner = new RoutePlanner()
+      v4Planner = new V4Planner()
+      // Bob max-approves the v3PM to access his USDC and WETH
+      await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+      await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+
+      // mint the nft to bob on v3
+      const tx = await v3NFTPositionManager.mint({
+        token0: USDC.address,
+        token1: WETH.address,
+        fee: FeeAmount.LOW,
+        tickLower: 0,
+        tickUpper: 194980,
+        amount0Desired: expandTo6DecimalsBN(2500),
+        amount1Desired: expandTo18DecimalsBN(1),
+        amount0Min: 0,
+        amount1Min: 0,
+        recipient: bob.address,
+        deadline: MAX_UINT,
+      })
+
+      const receipt = await tx.wait()
+      const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
+      tokenIdv3 = transferEvent?.args?.tokenId
+
+      // bob owns a v3position
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(1)
+
+      // permit, decrease, collect, burn
+      const encodedErc721PermitCall = await permit()
+      const encodedDecreaseCall = await decreaseLiquidity()
+      // set receiver to v4posm
+      const encodedCollectCall = collect()
+      const encodedBurnCall = encodeBurn(tokenIdv3)
+
+      planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
+      planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
+      planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
+      planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
+
+      // increase params for bob's position
+      v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
+        expectedTokenId,
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
+      v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // bob successfully sweeped his usdc and weth from the v4 position manager
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+
+      // bob does not own a v3position
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
+
+      // bob still owns a v4position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+      expect(await v4PositionManager.ownerOf(expectedTokenId)).to.eq(bob.address)
+    })
+  })
+
+  async function permit(): Promise<string> {
+    const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+
+    const erc721PermitParams = {
+      spender: router.address,
+      tokenId: tokenIdv3,
+      deadline: MAX_UINT,
+      v: v,
+      r: r,
+      s: s,
+    }
+
+    return encodeERC721Permit(erc721PermitParams)
+  }
+
+  async function decreaseLiquidity(): Promise<string> {
+    let position = await v3NFTPositionManager.positions(tokenIdv3)
+    let liquidity = position.liquidity
+
+    const decreaseParams = {
+      tokenId: tokenIdv3,
+      liquidity: liquidity,
+      amount0Min: 0,
+      amount1Min: 0,
+      deadline: MAX_UINT,
+    }
+
+    return encodeDecreaseLiquidity(decreaseParams)
+  }
+
+  function collect(): string {
+    // set receiver to v4posm
+    const collectParams = {
+      tokenId: tokenIdv3,
+      recipient: v4PositionManager.address,
+      amount0Max: MAX_UINT128,
+      amount1Max: MAX_UINT128,
+    }
+
+    return encodeCollect(collectParams)
+  }
 })

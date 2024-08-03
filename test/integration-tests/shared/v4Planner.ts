@@ -64,10 +64,10 @@ const SWAP_EXACT_OUT_STRUCT =
 
 const ABI_DEFINITION: { [key in Actions]: string[] } = {
   // Liquidity commands
-  [Actions.INCREASE_LIQUIDITY]: ['uint256', POSITION_CONFIG_STRUCT, 'uint256', 'bytes'],
-  [Actions.DECREASE_LIQUIDITY]: ['uint256', POSITION_CONFIG_STRUCT, 'uint256', 'bytes'],
+  [Actions.INCREASE_LIQUIDITY]: ['uint256', POSITION_CONFIG_STRUCT, 'uint256', 'uint128', 'uint128', 'bytes'],
+  [Actions.DECREASE_LIQUIDITY]: ['uint256', POSITION_CONFIG_STRUCT, 'uint256', 'uint128', 'uint128', 'bytes'],
   [Actions.MINT_POSITION]: [POSITION_CONFIG_STRUCT, 'uint256', 'uint128', 'uint128', 'address', 'bytes'],
-  [Actions.BURN_POSITION]: ['uint256', POSITION_CONFIG_STRUCT, 'bytes'],
+  [Actions.BURN_POSITION]: ['uint256', POSITION_CONFIG_STRUCT, 'uint128', 'uint128', 'bytes'],
 
   // Swapping commands
   [Actions.SWAP_EXACT_IN_SINGLE]: [SWAP_EXACT_IN_SINGLE_STRUCT],
