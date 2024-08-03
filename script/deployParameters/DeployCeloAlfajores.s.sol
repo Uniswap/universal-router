@@ -13,6 +13,7 @@ contract DeployCeloAlfajores is DeployUniversalRouter {
             v3Factory: 0xAfE208a311B21f13EF87E33A90049fC17A7acDEc,
             pairInitCodeHash: BYTES32_ZERO,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
+            v4PoolManager: address(0),
             v3NFTPositionManager: address(0),
             v4PositionManager: address(0)
         });

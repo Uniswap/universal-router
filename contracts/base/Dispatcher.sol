@@ -3,13 +3,14 @@ pragma solidity ^0.8.24;
 
 import {V2SwapRouter} from '../modules/uniswap/v2/V2SwapRouter.sol';
 import {V3SwapRouter} from '../modules/uniswap/v3/V3SwapRouter.sol';
+import {V4SwapRouter} from '../modules/uniswap/v4/V4SwapRouter.sol';
 import {BytesLib} from '../modules/uniswap/v3/BytesLib.sol';
 import {Payments} from '../modules/Payments.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
 import {V3ToV4Migrator} from '../modules/V3ToV4Migrator.sol';
 import {Callbacks} from '../base/Callbacks.sol';
 import {Commands} from '../libraries/Commands.sol';
-import {LockAndMsgSender} from './LockAndMsgSender.sol';
+import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
@@ -17,7 +18,7 @@ import {Constants} from '../libraries/Constants.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
-abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migrator, Callbacks, LockAndMsgSender {
+abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRouter, V3ToV4Migrator, Callbacks, Lock {
     using BytesLib for bytes;
 
     error InvalidCommandType(uint256 commandType);
@@ -56,7 +57,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         bytes calldata path = inputs.toBytes(3);
-                        address payer = payerIsUser ? msgSender() : address(this);
+                        address payer = payerIsUser ? _msgSender() : address(this);
                         v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
@@ -72,7 +73,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         bytes calldata path = inputs.toBytes(3);
-                        address payer = payerIsUser ? msgSender() : address(this);
+                        address payer = payerIsUser ? _msgSender() : address(this);
                         v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
                         // equivalent: abi.decode(inputs, (address, address, uint160))
@@ -84,7 +85,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             recipient := calldataload(add(inputs.offset, 0x20))
                             amount := calldataload(add(inputs.offset, 0x40))
                         }
-                        permit2TransferFrom(token, msgSender(), map(recipient), amount);
+                        permit2TransferFrom(token, _msgSender(), map(recipient), amount);
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
                         IAllowanceTransfer.PermitBatch calldata permitBatch;
                         assembly {
@@ -93,7 +94,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             permitBatch := add(inputs.offset, calldataload(inputs.offset))
                         }
                         bytes calldata data = inputs.toBytes(1);
-                        PERMIT2.permit(msgSender(), permitBatch, data);
+                        PERMIT2.permit(_msgSender(), permitBatch, data);
                     } else if (command == Commands.SWEEP) {
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
@@ -147,7 +148,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         address[] calldata path = inputs.toAddressArray(3);
-                        address payer = payerIsUser ? msgSender() : address(this);
+                        address payer = payerIsUser ? _msgSender() : address(this);
                         v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
@@ -163,7 +164,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         address[] calldata path = inputs.toAddressArray(3);
-                        address payer = payerIsUser ? msgSender() : address(this);
+                        address payer = payerIsUser ? _msgSender() : address(this);
                         v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_PERMIT) {
                         // equivalent: abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes))
@@ -172,7 +173,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             permitSingle := inputs.offset
                         }
                         bytes calldata data = inputs.toBytes(6); // PermitSingle takes first 6 slots (0..5)
-                        PERMIT2.permit(msgSender(), permitSingle, data);
+                        PERMIT2.permit(_msgSender(), permitSingle, data);
                     } else if (command == Commands.WRAP_ETH) {
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;
@@ -198,7 +199,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                             batchDetails.length := length
                             batchDetails.offset := offset
                         }
-                        permit2TransferFrom(batchDetails, msgSender());
+                        permit2TransferFrom(batchDetails, _msgSender());
                     } else if (command == Commands.BALANCE_CHECK_ERC20) {
                         // equivalent: abi.decode(inputs, (address, address, uint256))
                         address owner;
@@ -218,8 +219,11 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                 }
                 // 0x10 <= command < 0x18
             } else {
-                // This contract MUST be approved to spend the token since its going to be doing the call on the position manager
-                if (command == Commands.V3_POSITION_MANAGER_PERMIT) {
+                if (command == Commands.V4_SWAP) {
+                    // pass the calldata provided to V4SwapRouter._executeActions (defined in BaseActionsRouter)
+                    _executeActions(inputs);
+                    // This contract MUST be approved to spend the token since its going to be doing the call on the position manager
+                } else if (command == Commands.V3_POSITION_MANAGER_PERMIT) {
                     bytes4 selector;
                     assembly {
                         selector := calldataload(inputs.offset)
@@ -245,7 +249,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
                     // This can be done in 2 ways:
                     //    1. This contract is permitted for the specific token and the caller is approved for ALL of the owner's tokens
                     //    2. This contract is permitted for ALL of the owner's tokens and the caller is permitted for the specific token
-                    if (!isAuthorizedForToken(msgSender(), tokenId)) {
+                    if (!isAuthorizedForToken(_msgSender(), tokenId)) {
                         revert NotAuthorizedForToken(tokenId);
                     }
 
@@ -277,12 +281,24 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V3ToV4Migr
     /// @return output The resultant recipient for the command
     function map(address recipient) internal view returns (address) {
         if (recipient == Constants.MSG_SENDER) {
-            return msgSender();
+            return _msgSender();
         } else if (recipient == Constants.ADDRESS_THIS) {
             return address(this);
         } else {
             return recipient;
         }
+    }
+
+    /// @notice Function to be used instead of msg.sender, as the contract performs self-reentrancy and at
+    /// times msg.sender == address(this). Instead _msgSender() returns the initiator of the lock
+    /// @dev overrides BaseActionsRouter._msgSender in V4Router
+    function _msgSender() internal view override returns (address) {
+        return _getLocker();
+    }
+
+    /// @notice External view function of the current locker
+    function msgSender() external view returns (address) {
+        return _getLocker();
     }
 
     /// @notice Executes encoded commands along with provided inputs.

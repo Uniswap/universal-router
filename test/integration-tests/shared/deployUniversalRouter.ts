@@ -9,10 +9,10 @@ import {
   PERMIT2_ADDRESS,
   V3_NFT_POSITION_MANAGER_MAINNET,
 } from './constants'
-import { deployV4PositionManager, deployV4PoolManager } from './deployV4'
+import { deployV4PoolManager, deployV4PositionManager } from './v4Helpers'
 
-export async function deployRouter(mockReentrantWETH?: string): Promise<UniversalRouter> {
-  const poolManager = await deployV4PoolManager()
+export async function deployRouter(v4PoolManager?: string, mockReentrantWETH?: string): Promise<UniversalRouter> {
+  const poolManager: string = v4PoolManager ?? (await deployV4PoolManager()).address
   const routerParameters = {
     permit2: PERMIT2_ADDRESS,
     weth9: mockReentrantWETH ?? '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
@@ -20,8 +20,9 @@ export async function deployRouter(mockReentrantWETH?: string): Promise<Universa
     v3Factory: V3_FACTORY_MAINNET,
     pairInitCodeHash: V2_INIT_CODE_HASH_MAINNET,
     poolInitCodeHash: V3_INIT_CODE_HASH_MAINNET,
+    v4PoolManager: poolManager,
     v3NFTPositionManager: V3_NFT_POSITION_MANAGER_MAINNET,
-    v4PositionManager: await deployV4PositionManager(poolManager, PERMIT2_ADDRESS),
+    v4PositionManager: (await deployV4PositionManager(poolManager, PERMIT2_ADDRESS)).address,
   }
 
   const routerFactory = await ethers.getContractFactory('UniversalRouter')

@@ -974,6 +974,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickUpper: USDC_WETH.tickUpper,
         },
         '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
         bob.address,
         '0x',
       ])
@@ -1024,6 +1026,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickUpper: USDC_WETH.tickUpper,
         },
         '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
         bob.address,
         '0x',
       ])
@@ -1067,6 +1071,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickUpper: USDC_WETH.tickUpper,
         },
         '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
         bob.address,
         '0x',
       ])
@@ -1100,6 +1106,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickUpper: USDC_WETH.tickUpper,
         },
         '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
         '0x',
       ])
 
@@ -1139,6 +1147,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickUpper: USDC_WETH.tickUpper,
         },
         '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
         bob.address,
         '0x',
       ])
@@ -1174,6 +1184,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickUpper: USDC_WETH.tickUpper,
         },
         '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
         '0x',
       ])
 
@@ -1210,6 +1222,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickUpper: USDC_WETH.tickUpper,
         },
         '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
         bob.address,
         '0x',
       ])
@@ -1240,6 +1254,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickUpper: USDC_WETH.tickUpper,
         },
         '6000000',
+        0,
+        0,
         '0x',
       ])
 
@@ -1277,6 +1293,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickUpper: USDC_WETH.tickUpper,
         },
         '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
         bob.address,
         '0x',
       ])
@@ -1306,6 +1324,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickLower: USDC_WETH.tickLower,
           tickUpper: USDC_WETH.tickUpper,
         },
+        0,
+        0,
         '0x',
       ])
 
@@ -1395,6 +1415,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickUpper: USDC_WETH.tickUpper,
         },
         '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
         bob.address,
         '0x',
       ])
@@ -1436,6 +1458,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickUpper: USDC_WETH.tickUpper,
         },
         '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
         bob.address,
         '0x',
       ])
@@ -1513,6 +1537,8 @@ describe('V3 to V4 Migration Tests:', () => {
           tickUpper: USDC_WETH.tickUpper,
         },
         '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
         '0x',
       ])
 

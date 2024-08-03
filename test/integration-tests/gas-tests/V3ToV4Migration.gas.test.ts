@@ -265,6 +265,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
             tickUpper: USDC_WETH.tickUpper,
           },
           '6000000',
+          MAX_UINT128,
+          MAX_UINT128,
           bob.address,
           '0x',
         ])
@@ -357,6 +359,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
             tickUpper: USDC_WETH.tickUpper,
           },
           '6000000',
+          MAX_UINT128,
+          MAX_UINT128,
           bob.address,
           '0x',
         ])
@@ -388,6 +392,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
             tickUpper: USDC_WETH.tickUpper,
           },
           '6000000',
+          MAX_UINT128,
+          MAX_UINT128,
           bob.address,
           '0x',
         ])
@@ -419,6 +425,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
             tickUpper: USDC_WETH.tickUpper,
           },
           '6000000',
+          MAX_UINT128,
+          MAX_UINT128,
           '0x',
         ])
 
@@ -447,6 +455,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
             tickUpper: USDC_WETH.tickUpper,
           },
           '6000000',
+          MAX_UINT128,
+          MAX_UINT128,
           bob.address,
           '0x',
         ])
@@ -543,6 +553,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
             tickUpper: USDC_WETH.tickUpper,
           },
           '6000000',
+          MAX_UINT128,
+          MAX_UINT128,
           '0x',
         ])
         v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
