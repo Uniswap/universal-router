@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Constants} from '../libraries/Constants.sol';
+import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
 import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
@@ -27,7 +28,7 @@ abstract contract Payments is PaymentsImmutables {
         if (token == Constants.ETH) {
             recipient.safeTransferETH(value);
         } else {
-            if (value == Constants.CONTRACT_BALANCE) {
+            if (value == ActionConstants.CONTRACT_BALANCE) {
                 value = ERC20(token).balanceOf(address(this));
             }
 
@@ -73,7 +74,7 @@ abstract contract Payments is PaymentsImmutables {
     /// @param recipient The recipient of the WETH
     /// @param amount The amount to wrap (can be CONTRACT_BALANCE)
     function wrapETH(address recipient, uint256 amount) internal {
-        if (amount == Constants.CONTRACT_BALANCE) {
+        if (amount == ActionConstants.CONTRACT_BALANCE) {
             amount = address(this).balance;
         } else if (amount > address(this).balance) {
             revert InsufficientETH();

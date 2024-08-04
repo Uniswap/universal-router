@@ -8,7 +8,7 @@ import {IUniswapV2Factory} from '@uniswap/v2-core/contracts/interfaces/IUniswapV
 import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import {UniversalRouter} from '../../contracts/UniversalRouter.sol';
 import {Payments} from '../../contracts/modules/Payments.sol';
-import {Constants} from '../../contracts/libraries/Constants.sol';
+import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
 
@@ -64,7 +64,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token0();
         path[1] = token1();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(Constants.MSG_SENDER, AMOUNT, 0, path, true);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, true);
 
         router.execute(commands, inputs);
         assertEq(ERC20(token0()).balanceOf(FROM), BALANCE - AMOUNT);
@@ -77,7 +77,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token1();
         path[1] = token0();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(Constants.MSG_SENDER, AMOUNT, 0, path, true);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, true);
 
         router.execute(commands, inputs);
         assertEq(ERC20(token1()).balanceOf(FROM), BALANCE - AMOUNT);
@@ -91,7 +91,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token0();
         path[1] = token1();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(Constants.MSG_SENDER, AMOUNT, 0, path, false);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, false);
 
         router.execute(commands, inputs);
         assertGt(ERC20(token1()).balanceOf(FROM), BALANCE);
@@ -104,7 +104,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token1();
         path[1] = token0();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(Constants.MSG_SENDER, AMOUNT, 0, path, false);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, false);
 
         router.execute(commands, inputs);
         assertGt(ERC20(token0()).balanceOf(FROM), BALANCE);
@@ -116,7 +116,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token0();
         path[1] = token1();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(Constants.MSG_SENDER, AMOUNT, type(uint256).max, path, true);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, true);
 
         router.execute(commands, inputs);
         assertLt(ERC20(token0()).balanceOf(FROM), BALANCE);
@@ -129,7 +129,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token1();
         path[1] = token0();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(Constants.MSG_SENDER, AMOUNT, type(uint256).max, path, true);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, true);
 
         router.execute(commands, inputs);
         assertLt(ERC20(token1()).balanceOf(FROM), BALANCE);
@@ -143,7 +143,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token0();
         path[1] = token1();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(Constants.MSG_SENDER, AMOUNT, type(uint256).max, path, false);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, false);
 
         router.execute(commands, inputs);
         assertGe(ERC20(token1()).balanceOf(FROM), BALANCE + AMOUNT);
@@ -156,7 +156,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token1();
         path[1] = token0();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(Constants.MSG_SENDER, AMOUNT, type(uint256).max, path, false);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, false);
 
         router.execute(commands, inputs);
         assertGe(ERC20(token0()).balanceOf(FROM), BALANCE + AMOUNT);

@@ -7,6 +7,7 @@ export const MAX_UINT128 = '0xffffffffffffffffffffffffffffffff'
 export const MAX_UINT160 = '0xffffffffffffffffffffffffffffffffffffffff'
 export const DEADLINE = 2000000000
 export const CONTRACT_BALANCE = '0x8000000000000000000000000000000000000000000000000000000000000000'
+export const OPEN_DELTA = 0
 export const ALREADY_PAID = 0
 export const ALICE_ADDRESS = '0x28c6c06298d514db089934071355e5743bf21d60'
 export const ETH_ADDRESS = ethers.constants.AddressZero

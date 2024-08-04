@@ -5,7 +5,7 @@ import { BigNumber } from 'ethers'
 import { UniversalRouter, INonfungiblePositionManager, PositionManager } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, V3_NFT_POSITION_MANAGER } from '../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, MAX_UINT, MAX_UINT128 } from '../shared/constants'
+import { ALICE_ADDRESS, DEADLINE, MAX_UINT, MAX_UINT128, OPEN_DELTA, SOURCE_ROUTER } from '../shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from '../shared/helpers'
 import getPermitNFTSignature from '../shared/getPermitNFTSignature'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -271,8 +271,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
           '0x',
         ])
 
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+        v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+        v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
         v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
         v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 
@@ -365,8 +365,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
           '0x',
         ])
 
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+        v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+        v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
         v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
         v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 
@@ -398,8 +398,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
           '0x',
         ])
 
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+        v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+        v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
         v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
         v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 
@@ -430,8 +430,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
           '0x',
         ])
 
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+        v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+        v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
         v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
         v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 
@@ -461,8 +461,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
           '0x',
         ])
 
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+        v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+        v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
         v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
         v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 
@@ -557,8 +557,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
           MAX_UINT128,
           '0x',
         ])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [USDC.address])
-        v4Planner.addAction(Actions.SETTLE_WITH_BALANCE, [WETH.address])
+        v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+        v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
         v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
         v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 

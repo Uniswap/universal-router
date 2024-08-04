@@ -1,9 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.24;
 
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {SafeCast160} from 'permit2/src/libraries/SafeCast160.sol';
 import {Payments} from './Payments.sol';
-import {Constants} from '../libraries/Constants.sol';
 
 /// @title Payments through Permit2
 /// @notice Performs interactions with Permit2 to transfer tokens
