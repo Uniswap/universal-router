@@ -14,7 +14,7 @@ import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
-import {Constants} from '../libraries/Constants.sol';
+import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
@@ -280,9 +280,9 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
     /// @param recipient The recipient or recipient-flag for the command
     /// @return output The resultant recipient for the command
     function map(address recipient) internal view returns (address) {
-        if (recipient == Constants.MSG_SENDER) {
+        if (recipient == ActionConstants.MSG_SENDER) {
             return msgSender();
-        } else if (recipient == Constants.ADDRESS_THIS) {
+        } else if (recipient == ActionConstants.ADDRESS_THIS) {
             return address(this);
         } else {
             return recipient;

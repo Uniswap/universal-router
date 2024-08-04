@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 
 import 'forge-std/Test.sol';
-import {Constants} from '../../contracts/libraries/Constants.sol';
 import {Locker} from '../../contracts/libraries/Locker.sol';
 
 contract LockerTest is Test {
