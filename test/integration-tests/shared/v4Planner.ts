@@ -22,22 +22,24 @@ export enum Actions {
 
   // closing deltas on the pool manager
   // settling
-  SETTLE_ALL = 0x09,
-  SETTLE = 0x10,
+  SETTLE = 0x09,
+  SETTLE_ALL = 0x10,
   // SETTLE_PAIR = 0x11,
   // taking
-  // TAKE = 0x12,
+  TAKE = 0x12,
   TAKE_ALL = 0x13,
-  // TAKE_PORTION = 0x14,
+  TAKE_PORTION = 0x14,
   // TAKE_PAIR = 0x15,
 
-  CLOSE_CURRENCY = 0x16,
-  // CLEAR_OR_TAKE = 0x17,
-  SWEEP = 0x18,
+  SETTLE_TAKE_PAIR = 0x16,
+
+  CLOSE_CURRENCY = 0x17,
+  // CLEAR_OR_TAKE = 0x18,
+  SWEEP = 0x19,
 
   // minting/burning 6909s to close deltas
-  // MINT_6909 = 0x19,
-  // BURN_6909 = 0x20,
+  // MINT_6909 = 0x20,
+  // BURN_6909 = 0x21,
 }
 
 const POOL_KEY_STRUCT = '(address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks)'
@@ -76,9 +78,12 @@ const ABI_DEFINITION: { [key in Actions]: string[] } = {
   [Actions.SWAP_EXACT_OUT]: [SWAP_EXACT_OUT_STRUCT],
 
   // Payments commands
-  [Actions.SETTLE_ALL]: ['address'],
   [Actions.SETTLE]: ['address', 'uint256', 'bool'],
-  [Actions.TAKE_ALL]: ['address', 'address'],
+  [Actions.SETTLE_ALL]: ['address', 'uint256'],
+  [Actions.TAKE]: ['address', 'address', 'uint256'],
+  [Actions.TAKE_ALL]: ['address', 'uint256'],
+  [Actions.TAKE_PORTION]: ['address', 'address', 'uint256'],
+  [Actions.SETTLE_TAKE_PAIR]: ['address', 'address'],
   [Actions.CLOSE_CURRENCY]: ['address'],
   [Actions.SWEEP]: ['address', 'address'],
 }

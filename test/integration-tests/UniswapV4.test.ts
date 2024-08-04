@@ -112,9 +112,7 @@ describe('Uniswap V4 Tests:', () => {
           hookData: '0x',
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, bob.address])
-
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [usdcContract.address, wethContract.address])
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
       const { usdcBalanceBefore, usdcBalanceAfter, wethBalanceBefore, wethBalanceAfter } = await executeRouter(
@@ -141,8 +139,7 @@ describe('Uniswap V4 Tests:', () => {
           amountOutMinimum: minAmountOutWETH,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, bob.address])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, wethContract.address])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -170,8 +167,7 @@ describe('Uniswap V4 Tests:', () => {
           amountOutMinimum: minAmountOutWETH,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, bob.address])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, wethContract.address])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -199,8 +195,7 @@ describe('Uniswap V4 Tests:', () => {
           hookData: '0x',
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, bob.address])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [usdcContract.address, wethContract.address])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -228,8 +223,7 @@ describe('Uniswap V4 Tests:', () => {
           amountInMaximum: maxAmountInUSDC,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, bob.address])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [usdcContract.address, wethContract.address])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -257,8 +251,7 @@ describe('Uniswap V4 Tests:', () => {
           amountInMaximum: maxAmountInDAI,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [daiContract.address])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, bob.address])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [daiContract.address, wethContract.address])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
