@@ -260,6 +260,80 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(v2AmountIn)
       expect(await usdcContract.balanceOf(router.address)).to.be.eq(0)
     })
+
+    it('V4, then V3', async () => {
+      // DAI -v4-> USDC -v3-> WETH
+      const v4AmountIn: BigNumber = expandTo18DecimalsBN(1234)
+      const v4AmountOutMin = 0
+      const v3Tokens = [USDC.address, WETH.address]
+      const v3AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE + ONE_PERCENT))
+
+      v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
+        {
+          poolKey: DAI_USDC.poolKey,
+          zeroForOne: true,
+          amountIn: v4AmountIn,
+          amountOutMinimum: v4AmountOutMin,
+          sqrtPriceLimitX96: 0,
+          hookData: '0x',
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_ALL, [daiContract.address, MAX_UINT160])
+      // take all of the available tokens (open_delta), with the router (address(this)) as the recipient
+      v4Planner.addAction(Actions.TAKE, [usdcContract.address, ADDRESS_THIS, OPEN_DELTA])
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+        MSG_SENDER, // the recipient of the output is the caller
+        CONTRACT_BALANCE, // the router's balance is the input amount
+        v3AmountOutMin,
+        encodePathExactInput(v3Tokens),
+        SOURCE_ROUTER, // the USDC is in the router
+      ])
+
+      const { daiBalanceBefore, daiBalanceAfter, wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } =
+        await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      const { amount1: wethTraded } = v3SwapEventArgs!
+
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethTraded.mul(-1))
+      expect(wethTraded.mul(-1)).to.be.gte(v4AmountOutMin)
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(v4AmountIn)
+      expect(await usdcContract.balanceOf(router.address)).to.be.eq(0)
+    })
+
+    it('V4, then V2', async () => {
+      // DAI -v4-> USDC -v2-> WETH
+      const v4AmountIn: BigNumber = expandTo18DecimalsBN(1234)
+      const v4AmountOutMin = 0
+      const v2Tokens = [USDC.address, WETH.address]
+      const v2AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE + ONE_PERCENT))
+
+      v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
+        {
+          poolKey: DAI_USDC.poolKey,
+          zeroForOne: true,
+          amountIn: v4AmountIn,
+          amountOutMinimum: v4AmountOutMin,
+          sqrtPriceLimitX96: 0,
+          hookData: '0x',
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_ALL, [daiContract.address, MAX_UINT160])
+      // take all of the available tokens (open_delta), with the v2 pair as the recipient
+      v4Planner.addAction(Actions.TAKE, [usdcContract.address, Pair.getAddress(USDC, WETH), OPEN_DELTA])
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, v2AmountOutMin, v2Tokens, SOURCE_MSG_SENDER])
+
+      const { daiBalanceBefore, daiBalanceAfter, wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs } =
+        await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      const { amount1Out: wethTraded } = v2SwapEventArgs!
+
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethTraded)
+      expect(wethTraded).to.be.gte(v4AmountOutMin)
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(v4AmountIn)
+      expect(await usdcContract.balanceOf(router.address)).to.be.eq(0)
+    })
   })
 
   describe('Split routes', () => {
