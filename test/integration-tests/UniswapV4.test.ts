@@ -107,6 +107,7 @@ describe('Uniswap V4 Tests:', () => {
     await permit2.approve(DAI.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
     await permit2.approve(WETH.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
     await permit2.approve(USDC.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
+
     // bob initializes 3 v4 pools
     await initializeV4Pool(v4PoolManager, USDC_WETH.poolKey, USDC_WETH.price)
     await initializeV4Pool(v4PoolManager, DAI_USDC.poolKey, DAI_USDC.price)
