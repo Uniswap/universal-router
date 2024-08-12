@@ -2,7 +2,7 @@ import type { Contract } from '@ethersproject/contracts'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
-import { IPermit2, UniversalRouter } from '../../typechain'
+import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, USDT, PERMIT2 } from './shared/mainnetForkHelpers'
 import {
@@ -10,9 +10,11 @@ import {
   ALICE_ADDRESS,
   CONTRACT_BALANCE,
   DEADLINE,
+  ETH_ADDRESS,
   MAX_UINT,
   MAX_UINT160,
   MSG_SENDER,
+  OPEN_DELTA,
   SOURCE_MSG_SENDER,
   SOURCE_ROUTER,
 } from './shared/constants'
@@ -24,9 +26,19 @@ import hre from 'hardhat'
 import { getPermitBatchSignature } from './shared/protocolHelpers/permit2'
 import { encodePathExactInput, encodePathExactOutput } from './shared/swapRouter02Helpers'
 import { executeRouter } from './shared/executeRouter'
+import { Actions, V4Planner } from './shared/v4Planner'
+import {
+  addLiquidityToV4Pool,
+  DAI_USDC,
+  deployV4PoolManager,
+  encodeMultihopExactInPath,
+  ETH_USDC,
+  initializeV4Pool,
+  USDC_WETH,
+} from './shared/v4Helpers'
 const { ethers } = hre
 
-describe('Uniswap V2 and V3 Tests:', () => {
+describe('Uniswap V2, V3, and V4 Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: UniversalRouter
@@ -35,6 +47,13 @@ describe('Uniswap V2 and V3 Tests:', () => {
   let wethContract: Contract
   let usdcContract: Contract
   let planner: RoutePlanner
+  let v4Planner: V4Planner
+  let v4PoolManager: PoolManager
+  let v4PositionManager: PositionManager
+
+  // current market ETH price at block
+  const USD_ETH_PRICE = 3820
+  const ONE_PERCENT = 38
 
   beforeEach(async () => {
     await resetFork()
@@ -48,13 +67,20 @@ describe('Uniswap V2 and V3 Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
-    router = (await deployUniversalRouter()) as UniversalRouter
+
+    v4PoolManager = (await deployV4PoolManager()).connect(bob) as PoolManager
+    router = (await deployUniversalRouter(v4PoolManager.address)).connect(bob) as UniversalRouter
+
+    v4PositionManager = (await ethers.getContractAt('PositionManager', await router.V4_POSITION_MANAGER())).connect(
+      bob
+    ) as PositionManager
     planner = new RoutePlanner()
+    v4Planner = new V4Planner()
 
     // alice gives bob some tokens
-    await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100000))
-    await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100))
-    await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(100000))
+    await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(1000000))
+    await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(1000))
+    await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(50000000))
 
     // Bob max-approves the permit2 contract to access his DAI and WETH
     await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
@@ -65,6 +91,21 @@ describe('Uniswap V2 and V3 Tests:', () => {
     await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
     await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
     await permit2.approve(USDC.address, router.address, MAX_UINT160, DEADLINE)
+
+    // for setting up pools, bob gives position manager approval on permit2
+    await permit2.approve(DAI.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
+    await permit2.approve(WETH.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
+    await permit2.approve(USDC.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
+
+    // bob initializes 3 v4 pools
+    await initializeV4Pool(v4PoolManager, USDC_WETH.poolKey, USDC_WETH.price)
+    await initializeV4Pool(v4PoolManager, DAI_USDC.poolKey, DAI_USDC.price)
+    await initializeV4Pool(v4PoolManager, ETH_USDC.poolKey, ETH_USDC.price)
+
+    // bob adds liquidity to the pools
+    await addLiquidityToV4Pool(v4PositionManager, USDC_WETH, expandTo18DecimalsBN(2).toString(), bob)
+    await addLiquidityToV4Pool(v4PositionManager, DAI_USDC, expandTo18DecimalsBN(400).toString(), bob)
+    await addLiquidityToV4Pool(v4PositionManager, ETH_USDC, expandTo18DecimalsBN(0.1).toString(), bob)
   })
 
   describe('Interleaving routes', () => {
@@ -514,6 +555,58 @@ describe('Uniswap V2 and V3 Tests:', () => {
 
       // TODO: permit2 test alice doesn't send more than maxAmountIn DAI
       expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(fullAmountOut.sub(gasSpent))
+    })
+
+    it.only('ERC20 --> ERC20 split V4 and V4 different routes, with wrap, aggregate slippage', async () => {
+      // DAI -> USDC -> WETH 
+      // and DAI -> USDC -> ETH -> WETH
+      const route1 = [DAI_USDC.poolKey, USDC_WETH.poolKey]
+      const route2 = [DAI_USDC.poolKey, ETH_USDC.poolKey]
+      const v4AmountIn1 = expandTo18DecimalsBN(100)
+      const v4AmountIn2 = expandTo18DecimalsBN(150)
+      const aggregateMinOut = expandTo18DecimalsBN(250 / (USD_ETH_PRICE + ONE_PERCENT))
+
+      let currencyIn = daiContract.address
+      // add first split to v4 planner
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath(route1, currencyIn),
+          amountIn: v4AmountIn1,
+          amountOutMinimum: 0,
+        },
+      ])
+      // add second split to v4 planner
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath(route2, currencyIn),
+          amountIn: v4AmountIn2,
+          amountOutMinimum: 0,
+        },
+      ])
+      // settle all DAI with no limit
+      v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, v4AmountIn1.add(v4AmountIn2)])
+      // take all the WETH and all the ETH into the router
+      v4Planner.addAction(Actions.TAKE, [WETH.address, ADDRESS_THIS, OPEN_DELTA])
+      v4Planner.addAction(Actions.TAKE, [ETH_ADDRESS, ADDRESS_THIS, OPEN_DELTA])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+      // wrap all the ETH into WETH
+      planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, CONTRACT_BALANCE])
+      // now we can send the WETH to the user, with aggregate slippage check
+      planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, aggregateMinOut])
+
+      const { daiBalanceBefore, daiBalanceAfter, wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(aggregateMinOut)
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(v4AmountIn1.add(v4AmountIn2))
     })
 
     describe('Batch reverts', () => {
