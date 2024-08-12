@@ -4,7 +4,7 @@ import { expect } from './shared/expect'
 import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, PERMIT2 } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, MAX_UINT, MAX_UINT160 } from './shared/constants'
+import { ALICE_ADDRESS, DEADLINE, MAX_UINT, MAX_UINT160, ONE_PERCENT_BIPS } from './shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
@@ -182,6 +182,44 @@ describe('Uniswap V4 Tests:', () => {
 
       expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
       expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
+    })
+
+    it('completes a v4 exactIn 2 hop swap, with take portion', async () => {
+      // DAI -> USDC -> WETH
+      let currencyIn = daiContract.address
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyIn),
+          amountIn: amountInDAI,
+          amountOutMinimum: minAmountOutWETH,
+        },
+      ])
+      // take 1% of the output to alice, then settle and take the rest to the caller
+      v4Planner.addAction(Actions.TAKE_PORTION, [WETH.address, alice.address, ONE_PERCENT_BIPS])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, wethContract.address])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
+
+      const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
+
+      const aliceFee = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
+      const bobEarnings = wethBalanceAfter.sub(wethBalanceBefore)
+      const totalOut = aliceFee.add(bobEarnings)
+
+      expect(totalOut).to.be.gte(minAmountOutWETH)
+      expect(totalOut.mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
     })
 
     it('completes a v4 exactOutSingle swap', async () => {
