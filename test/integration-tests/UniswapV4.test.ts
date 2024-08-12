@@ -223,7 +223,7 @@ describe('Uniswap V4 Tests:', () => {
     })
 
     it('completes a v4 exactIn 2 hop swap, with take portion native', async () => {
-      // DAI -> USDC -> WETH
+      // DAI -> USDC -> ETH
       let currencyIn = daiContract.address
       v4Planner.addAction(Actions.SWAP_EXACT_IN, [
         {
