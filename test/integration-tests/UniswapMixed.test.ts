@@ -53,7 +53,6 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
 
   // current market ETH price at block
   const USD_ETH_PRICE = 3820
-  const ONE_PERCENT = 38
 
   beforeEach(async () => {
     await resetFork()
@@ -557,14 +556,14 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(fullAmountOut.sub(gasSpent))
     })
 
-    it.only('ERC20 --> ERC20 split V4 and V4 different routes, with wrap, aggregate slippage', async () => {
-      // DAI -> USDC -> WETH
-      // and DAI -> USDC -> ETH -> WETH
+    it('ERC20 --> ERC20 split V4 and V4 different routes, with wrap, aggregate slippage', async () => {
+      // route 1: DAI -> USDC -> WETH
+      // route 2: DAI -> USDC -> ETH, then router wraps ETH -> WETH
       const route1 = [DAI_USDC.poolKey, USDC_WETH.poolKey]
       const route2 = [DAI_USDC.poolKey, ETH_USDC.poolKey]
       const v4AmountIn1 = expandTo18DecimalsBN(100)
       const v4AmountIn2 = expandTo18DecimalsBN(150)
-      const aggregateMinOut = expandTo18DecimalsBN(250 / (USD_ETH_PRICE + ONE_PERCENT))
+      const aggregateMinOut = expandTo18DecimalsBN(250 / (USD_ETH_PRICE * 1.01))
 
       let currencyIn = daiContract.address
       // add first split to v4 planner
