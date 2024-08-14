@@ -4,7 +4,15 @@ import { expect } from './shared/expect'
 import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, PERMIT2 } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, MAX_UINT, MAX_UINT160, ONE_PERCENT_BIPS } from './shared/constants'
+import {
+  ALICE_ADDRESS,
+  DEADLINE,
+  ETH_ADDRESS,
+  MAX_UINT,
+  MAX_UINT160,
+  ONE_PERCENT_BIPS,
+  OPEN_DELTA,
+} from './shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
@@ -184,7 +192,7 @@ describe('Uniswap V4 Tests:', () => {
       expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
     })
 
-    it('completes a v4 exactIn 2 hop swap, with take portion', async () => {
+    it('completes a v4 exactIn 2 hop swap, with take portion on output', async () => {
       // DAI -> USDC -> WETH
       let currencyIn = daiContract.address
       v4Planner.addAction(Actions.SWAP_EXACT_IN, [
@@ -220,6 +228,54 @@ describe('Uniswap V4 Tests:', () => {
 
       expect(totalOut).to.be.gte(minAmountOutWETH)
       expect(totalOut.mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
+    })
+
+    it('completes a v4 exactIn 2 hop swap, with take portion on input', async () => {
+      // DAI -> USDC -> WETH
+      let currencyIn = daiContract.address
+      // trade is 1% less than previously, so adjust expected output
+      let minOut = minAmountOutWETH.mul(99).div(100)
+
+      // settle the input tokens to the pool manager
+      console.log('1')
+      v4Planner.addAction(Actions.SETTLE, [currencyIn, amountInDAI, true])
+      // take 1% of the input tokens
+      console.log('1')
+      v4Planner.addAction(Actions.TAKE_PORTION, [currencyIn, alice.address, ONE_PERCENT_BIPS])
+      // swap using the OPEN_DELTA as input amount
+      console.log('1')
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyIn),
+          amountIn: OPEN_DELTA,
+          amountOutMinimum: minOut,
+        },
+      ])
+      // take the output weth
+      console.log('1')
+      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, minOut])
+
+      console.log('1')
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const daiBalanceBeforeAlice = await daiContract.balanceOf(alice.address)
+
+      const { daiBalanceBefore, daiBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      const daiBalanceAfterAlice = await daiContract.balanceOf(alice.address)
+
+      const aliceFee = daiBalanceAfterAlice.sub(daiBalanceBeforeAlice)
+      const bobSpent = daiBalanceBefore.sub(daiBalanceAfter)
+
+      expect(bobSpent.mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
     })
 
     it('completes a v4 exactIn 2 hop swap, with take portion native', async () => {
