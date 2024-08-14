@@ -39,25 +39,24 @@ describe('Uniswap V4 Tests:', () => {
 
   // current market ETH price at block
   const USD_ETH_PRICE = 3820
-  const ONE_PERCENT = 38
 
   // USD-pegged -> (W)NATIVE trades
   // exact in trade
   const amountIn = 1000
   const amountInUSDC: BigNumber = expandTo6DecimalsBN(amountIn)
   const amountInDAI: BigNumber = expandTo18DecimalsBN(amountIn)
-  const minAmountOutNative: BigNumber = expandTo18DecimalsBN(amountIn / (USD_ETH_PRICE + ONE_PERCENT))
+  const minAmountOutNative: BigNumber = expandTo18DecimalsBN(amountIn / Math.floor(USD_ETH_PRICE * 1.01))
 
   // exact out trade
   const amountOut = 0.26
   const amountOutNative = expandTo18DecimalsBN(amountOut)
-  const maxAmountInUSDC = expandTo6DecimalsBN(amountOut * (USD_ETH_PRICE + ONE_PERCENT))
-  const maxAmountInDAI = expandTo18DecimalsBN(amountOut * (USD_ETH_PRICE + ONE_PERCENT))
+  const maxAmountInUSDC = expandTo6DecimalsBN(amountOut * Math.floor(USD_ETH_PRICE * 1.01))
+  const maxAmountInDAI = expandTo18DecimalsBN(amountOut * Math.floor(USD_ETH_PRICE * 1.01))
 
   // (W)NATIVE -> USD-pegged trades
   // exact in trade
   const amountInNative: BigNumber = expandTo18DecimalsBN(1.23)
-  const minAmountOutUSD = (USD_ETH_PRICE - ONE_PERCENT) * 1.23
+  const minAmountOutUSD = Math.floor(USD_ETH_PRICE * 0.99 * 1.23)
   const minAmountOutUSDC: BigNumber = expandTo6DecimalsBN(minAmountOutUSD)
   const minAmountOutDAI: BigNumber = expandTo18DecimalsBN(minAmountOutUSD)
 
@@ -65,7 +64,7 @@ describe('Uniswap V4 Tests:', () => {
   const amountOutUSD = 2345
   const amountOutUSDC: BigNumber = expandTo6DecimalsBN(amountOutUSD)
   const amountOutDAI: BigNumber = expandTo18DecimalsBN(amountOutUSD)
-  const maxAmountInNative: BigNumber = expandTo18DecimalsBN(amountOutUSD / (USD_ETH_PRICE - ONE_PERCENT))
+  const maxAmountInNative: BigNumber = expandTo18DecimalsBN(amountOutUSD / Math.floor(USD_ETH_PRICE * 0.99))
 
   beforeEach(async () => {
     await resetFork()
@@ -318,7 +317,7 @@ describe('Uniswap V4 Tests:', () => {
     })
 
     it('completes a v4 exactIn 1 hop swap', async () => {
-      // USDC -> WETH
+      // ETH -> USDC
       let currencyIn = ETH_ADDRESS
       v4Planner.addAction(Actions.SWAP_EXACT_IN, [
         {
@@ -418,7 +417,7 @@ describe('Uniswap V4 Tests:', () => {
           currencyOut,
           path: encodeMultihopExactOutPath([ETH_USDC.poolKey], currencyOut),
           amountOut: amountOutUSDC,
-          amountInMaximum: amountInNative,
+          amountInMaximum: maxAmountInNative,
         },
       ])
       v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [ETH_ADDRESS, currencyOut])
