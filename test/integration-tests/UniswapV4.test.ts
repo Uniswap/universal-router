@@ -237,13 +237,10 @@ describe('Uniswap V4 Tests:', () => {
       let minOut = minAmountOutWETH.mul(99).div(100)
 
       // settle the input tokens to the pool manager
-      console.log('1')
       v4Planner.addAction(Actions.SETTLE, [currencyIn, amountInDAI, true])
       // take 1% of the input tokens
-      console.log('1')
       v4Planner.addAction(Actions.TAKE_PORTION, [currencyIn, alice.address, ONE_PERCENT_BIPS])
       // swap using the OPEN_DELTA as input amount
-      console.log('1')
       v4Planner.addAction(Actions.SWAP_EXACT_IN, [
         {
           currencyIn,
@@ -253,10 +250,8 @@ describe('Uniswap V4 Tests:', () => {
         },
       ])
       // take the output weth
-      console.log('1')
       v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, minOut])
 
-      console.log('1')
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
       const daiBalanceBeforeAlice = await daiContract.balanceOf(alice.address)
