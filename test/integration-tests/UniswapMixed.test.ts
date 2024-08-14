@@ -563,7 +563,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       const route2 = [DAI_USDC.poolKey, ETH_USDC.poolKey]
       const v4AmountIn1 = expandTo18DecimalsBN(100)
       const v4AmountIn2 = expandTo18DecimalsBN(150)
-      const aggregateMinOut = expandTo18DecimalsBN(250 / (USD_ETH_PRICE * 1.01))
+      const aggregateMinOut = expandTo18DecimalsBN(250 / Math.floor(USD_ETH_PRICE * 1.01))
 
       let currencyIn = daiContract.address
       // add first split to v4 planner
