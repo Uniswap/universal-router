@@ -236,6 +236,26 @@ describe('UniversalRouter', () => {
         await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
       })
 
+      it('completes a trade for ETH --> WETH --> ERC20', async () => {
+        const balanceOfDaiBefore = await daiContract.balanceOf(alice.address)
+        const minAmountOut = ethers.utils.parseEther('0.000000000000001');
+
+        const wethAmount = ethers.utils.parseEther('1')
+
+        planner.addCommand(CommandType.WRAP_ETH, [alice.address, wethAmount])
+        planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+          alice.address,
+          wethAmount,
+          minAmountOut,
+          [WETH.address, DAI.address],
+          SOURCE_MSG_SENDER,
+        ])
+        const { commands, inputs } = planner
+        const result = await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE, {value: wethAmount})
+        await result.wait()
+        expect(await daiContract.balanceOf(alice.address)).to.not.eq(balanceOfDaiBefore)
+      })
+
       it('completes a trade for ERC20 --> ETH --> Seaport NFT', async () => {
         const maxAmountIn = expandTo18DecimalsBN(100_000)
         const tokenId = advancedOrder.parameters.offer[0].identifierOrCriteria
