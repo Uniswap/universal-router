@@ -257,7 +257,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                 } else if (command == Commands.V4_POSITION_CALL) {
                     // should only call modifyLiquidities() to mint or increase liquidity
                     // do not permit or approve this contract over a v4 position or someone could use this command to decrease/burn your position
-                    (success, output) = address(V4_POSITION_MANAGER).call(inputs);
+                    (success, output) = address(V4_POSITION_MANAGER).call{value: address(this).balance}(inputs);
                 } else {
                     // placeholder area for command
                     revert InvalidCommandType(command);
