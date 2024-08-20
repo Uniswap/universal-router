@@ -5,9 +5,18 @@ import { BigNumber } from 'ethers'
 import { UniversalRouter, INonfungiblePositionManager, PositionManager } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, V3_NFT_POSITION_MANAGER } from '../shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, MAX_UINT, MAX_UINT128, OPEN_DELTA, SOURCE_ROUTER } from '../shared/constants'
+import {
+  ALICE_ADDRESS,
+  DEADLINE,
+  MAX_UINT,
+  MAX_UINT128,
+  OPEN_DELTA,
+  SOURCE_ROUTER,
+  ZERO_ADDRESS,
+} from '../shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from '../shared/helpers'
 import getPermitNFTSignature from '../shared/getPermitNFTSignature'
+import getPermitV4Signature from '../shared/getPermitV4Signature'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { RoutePlanner, CommandType } from '../shared/planner'
@@ -18,6 +27,7 @@ import {
   encodeCollect,
   encodeBurn,
   encodeModifyLiquidities,
+  encodeERC721PermitV4,
 } from '../shared/encodeCall'
 const { ethers } = hre
 import { executeRouter } from '../shared/executeRouter'
@@ -417,6 +427,28 @@ describe('V3 to V4 Migration Gas Tests', () => {
         await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
         await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
 
+        // need to approve the router to spend the nft
+        let { compact } = await getPermitV4Signature(
+          bob,
+          v4PositionManager,
+          router.address,
+          expectedTokenId,
+          MAX_UINT,
+          { nonce: 1 }
+        )
+
+        let erc721PermitParams = {
+          spender: router.address,
+          tokenId: expectedTokenId,
+          deadline: MAX_UINT,
+          nonce: 1,
+          signature: compact,
+        }
+
+        let encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParams)
+
+        planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
+
         v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
           expectedTokenId,
           {
@@ -438,6 +470,22 @@ describe('V3 to V4 Migration Gas Tests', () => {
         calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
 
         planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+        compact = (
+          await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
+        ).compact
+
+        erc721PermitParams = {
+          spender: ZERO_ADDRESS,
+          tokenId: expectedTokenId,
+          deadline: MAX_UINT,
+          nonce: 2,
+          signature: compact,
+        }
+
+        encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParams)
+
+        planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
 
         const { commands, inputs } = planner
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
@@ -512,7 +560,7 @@ describe('V3 to V4 Migration Gas Tests', () => {
           s: s,
         }
 
-        const encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
+        let encodedErc721PermitCall = encodeERC721Permit(erc721PermitParams)
 
         planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
 
@@ -545,6 +593,28 @@ describe('V3 to V4 Migration Gas Tests', () => {
         planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
         planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
 
+        // need to approve the router to spend the nft
+        let { compact } = await getPermitV4Signature(
+          bob,
+          v4PositionManager,
+          router.address,
+          expectedTokenId,
+          MAX_UINT,
+          { nonce: 1 }
+        )
+
+        let erc721PermitParamsV4 = {
+          spender: router.address,
+          tokenId: expectedTokenId,
+          deadline: MAX_UINT,
+          nonce: 1,
+          signature: compact,
+        }
+
+        encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParamsV4)
+
+        planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
+
         v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
           expectedTokenId,
           {
@@ -565,6 +635,22 @@ describe('V3 to V4 Migration Gas Tests', () => {
         calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
 
         planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+        compact = (
+          await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
+        ).compact
+
+        erc721PermitParamsV4 = {
+          spender: ZERO_ADDRESS,
+          tokenId: expectedTokenId,
+          deadline: MAX_UINT,
+          nonce: 2,
+          signature: compact,
+        }
+
+        encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParamsV4)
+
+        planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
 
         const { commands, inputs } = planner
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
