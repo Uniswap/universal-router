@@ -3,8 +3,17 @@ import { BigNumber } from 'ethers'
 import { expect } from './shared/expect'
 import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { resetFork, WETH, DAI, USDC, PERMIT2 } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, MAX_UINT, MAX_UINT160, MSG_SENDER } from './shared/constants'
+import { resetFork, WETH, DAI, USDC, PERMIT2, USD_ETH_PRICE } from './shared/mainnetForkHelpers'
+import {
+  ALICE_ADDRESS,
+  DEADLINE,
+  ETH_ADDRESS,
+  MAX_UINT,
+  MAX_UINT160,
+  MSG_SENDER,
+  ONE_PERCENT_BIPS,
+  OPEN_DELTA,
+} from './shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
@@ -37,27 +46,23 @@ describe('Uniswap V4 Tests:', () => {
   let v4PoolManager: PoolManager
   let v4PositionManager: PositionManager
 
-  // current market ETH price at block
-  const USD_ETH_PRICE = 3820
-  const ONE_PERCENT = 38
-
   // USD-pegged -> (W)NATIVE trades
   // exact in trade
   const amountIn = 1000
   const amountInUSDC: BigNumber = expandTo6DecimalsBN(amountIn)
   const amountInDAI: BigNumber = expandTo18DecimalsBN(amountIn)
-  const minAmountOutNative: BigNumber = expandTo18DecimalsBN(amountIn / (USD_ETH_PRICE + ONE_PERCENT))
+  const minAmountOutNative: BigNumber = expandTo18DecimalsBN(amountIn / Math.floor(USD_ETH_PRICE * 1.01))
 
   // exact out trade
   const amountOut = 0.26
   const amountOutNative = expandTo18DecimalsBN(amountOut)
-  const maxAmountInUSDC = expandTo6DecimalsBN(amountOut * (USD_ETH_PRICE + ONE_PERCENT))
-  const maxAmountInDAI = expandTo18DecimalsBN(amountOut * (USD_ETH_PRICE + ONE_PERCENT))
+  const maxAmountInUSDC = expandTo6DecimalsBN(amountOut * Math.floor(USD_ETH_PRICE * 1.01))
+  const maxAmountInDAI = expandTo18DecimalsBN(amountOut * Math.floor(USD_ETH_PRICE * 1.01))
 
   // (W)NATIVE -> USD-pegged trades
   // exact in trade
   const amountInNative: BigNumber = expandTo18DecimalsBN(1.23)
-  const minAmountOutUSD = (USD_ETH_PRICE - ONE_PERCENT) * 1.23
+  const minAmountOutUSD = Math.floor(USD_ETH_PRICE * 0.99 * 1.23)
   const minAmountOutUSDC: BigNumber = expandTo6DecimalsBN(minAmountOutUSD)
   const minAmountOutDAI: BigNumber = expandTo18DecimalsBN(minAmountOutUSD)
 
@@ -65,7 +70,7 @@ describe('Uniswap V4 Tests:', () => {
   const amountOutUSD = 2345
   const amountOutUSDC: BigNumber = expandTo6DecimalsBN(amountOutUSD)
   const amountOutDAI: BigNumber = expandTo18DecimalsBN(amountOutUSD)
-  const maxAmountInNative: BigNumber = expandTo18DecimalsBN(amountOutUSD / (USD_ETH_PRICE - ONE_PERCENT))
+  const maxAmountInNative: BigNumber = expandTo18DecimalsBN(amountOutUSD / Math.floor(USD_ETH_PRICE * 0.99))
 
   beforeEach(async () => {
     await resetFork()
@@ -203,6 +208,125 @@ describe('Uniswap V4 Tests:', () => {
       expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
     })
 
+    it('completes a v4 exactIn 2 hop swap, with take portion on output', async () => {
+      // DAI -> USDC -> WETH
+      let currencyIn = daiContract.address
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyIn),
+          amountIn: amountInDAI,
+          amountOutMinimum: minAmountOutNative,
+        },
+      ])
+      // take 1% of the output to alice, then settle and take the rest to the caller
+      v4Planner.addAction(Actions.TAKE_PORTION, [WETH.address, alice.address, ONE_PERCENT_BIPS])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, wethContract.address])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
+
+      const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
+
+      const aliceFee = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
+      const bobEarnings = wethBalanceAfter.sub(wethBalanceBefore)
+      const totalOut = aliceFee.add(bobEarnings)
+
+      expect(totalOut).to.be.gte(minAmountOutNative)
+      expect(totalOut.mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
+    })
+
+    it('completes a v4 exactIn 2 hop swap, with take portion on input', async () => {
+      // DAI -> USDC -> WETH
+      let currencyIn = daiContract.address
+      // trade is 1% less than previously, so adjust expected output
+      let minOut = minAmountOutNative.mul(99).div(100)
+
+      // settle the input tokens to the pool manager
+      v4Planner.addAction(Actions.SETTLE, [currencyIn, amountInDAI, true])
+      // take 1% of the input tokens
+      v4Planner.addAction(Actions.TAKE_PORTION, [currencyIn, alice.address, ONE_PERCENT_BIPS])
+      // swap using the OPEN_DELTA as input amount
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyIn),
+          amountIn: OPEN_DELTA,
+          amountOutMinimum: minOut,
+        },
+      ])
+      // take the output weth
+      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, minOut])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const daiBalanceBeforeAlice = await daiContract.balanceOf(alice.address)
+
+      const { daiBalanceBefore, daiBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      const daiBalanceAfterAlice = await daiContract.balanceOf(alice.address)
+
+      const aliceFee = daiBalanceAfterAlice.sub(daiBalanceBeforeAlice)
+      const bobSpent = daiBalanceBefore.sub(daiBalanceAfter)
+
+      expect(bobSpent.mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
+    })
+
+    it('completes a v4 exactIn 2 hop swap, with take portion native', async () => {
+      // DAI -> USDC -> ETH
+      let currencyIn = daiContract.address
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([DAI_USDC.poolKey, ETH_USDC.poolKey], currencyIn),
+          amountIn: amountInDAI,
+          amountOutMinimum: minAmountOutNative,
+        },
+      ])
+      // take 1% of the output to alice, then settle and take the rest to the caller
+      v4Planner.addAction(Actions.TAKE_PORTION, [ETH_ADDRESS, alice.address, ONE_PERCENT_BIPS])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, ETH_ADDRESS])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const ethBalanceBeforeAlice: BigNumber = await ethers.provider.getBalance(alice.address)
+
+      const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      const ethBalanceAfterAlice: BigNumber = await ethers.provider.getBalance(alice.address)
+
+      const aliceFee = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice)
+      const bobEarnings = ethBalanceAfter.add(gasSpent).sub(ethBalanceBefore)
+      const totalOut = aliceFee.add(bobEarnings)
+
+      expect(totalOut).to.be.gte(minAmountOutNative)
+      expect(totalOut.mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
+    })
+
     it('completes a v4 exactOutSingle swap', async () => {
       v4Planner.addAction(Actions.SWAP_EXACT_OUT_SINGLE, [
         {
@@ -319,7 +443,7 @@ describe('Uniswap V4 Tests:', () => {
     })
 
     it('completes a v4 exactIn 1 hop swap', async () => {
-      // USDC -> WETH
+      // ETH -> USDC
       let currencyIn = ETH_ADDRESS
       v4Planner.addAction(Actions.SWAP_EXACT_IN, [
         {
@@ -419,7 +543,7 @@ describe('Uniswap V4 Tests:', () => {
           currencyOut,
           path: encodeMultihopExactOutPath([ETH_USDC.poolKey], currencyOut),
           amountOut: amountOutUSDC,
-          amountInMaximum: amountInNative,
+          amountInMaximum: maxAmountInNative,
         },
       ])
       v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [ETH_ADDRESS, currencyOut])

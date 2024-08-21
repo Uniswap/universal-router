@@ -4,7 +4,7 @@ import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
 import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { resetFork, WETH, DAI, USDC, USDT, PERMIT2 } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, USDC, USDT, PERMIT2, USD_ETH_PRICE } from './shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,
   ALICE_ADDRESS,
@@ -104,11 +104,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
     await addLiquidityToV4Pool(v4PositionManager, ETH_USDC, expandTo18DecimalsBN(0.1).toString(), bob)
   })
 
-  describe.only('Interleaving routes', () => {
-    // current market ETH price at block
-    const USD_ETH_PRICE = 3820
-    const ONE_PERCENT = 38
-
+  describe('Interleaving routes', () => {
     it('V3, then V2', async () => {
       const v3Tokens = [DAI.address, USDC.address]
       const v2Tokens = [USDC.address, WETH.address]
@@ -177,7 +173,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       const v3Tokens = [DAI.address, USDC.address]
       const v3AmountIn: BigNumber = expandTo18DecimalsBN(1234)
       const v3AmountOutMin = 0
-      const v4AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE + ONE_PERCENT))
+      const v4AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE * 1.01))
 
       planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
         ADDRESS_THIS, // the router is the recipient of the v3 trade
@@ -222,7 +218,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       const v2Tokens = [DAI.address, USDC.address]
       const v2AmountIn: BigNumber = expandTo18DecimalsBN(1234)
       const v2AmountOutMin = 0
-      const v4AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE + ONE_PERCENT))
+      const v4AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE * 1.01))
 
       planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
         ADDRESS_THIS, // the router is the recipient of the v3 trade
@@ -267,7 +263,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       const v4AmountIn: BigNumber = expandTo18DecimalsBN(1234)
       const v4AmountOutMin = 0
       const v3Tokens = [USDC.address, WETH.address]
-      const v3AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE + ONE_PERCENT))
+      const v3AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE * 1.01))
 
       v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
         {
@@ -307,7 +303,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       const v4AmountIn: BigNumber = expandTo18DecimalsBN(1.2)
       const v4AmountOutMin = 0
       const v3Tokens = [USDC.address, DAI.address]
-      const v3AmountOutMin = expandTo18DecimalsBN(1.2 * USD_ETH_PRICE - ONE_PERCENT)
+      const v3AmountOutMin = expandTo18DecimalsBN(1.2 * USD_ETH_PRICE * 0.99)
 
       v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
         {
@@ -346,7 +342,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       const v4AmountIn: BigNumber = expandTo18DecimalsBN(1.2)
       const v4AmountOutMin = 0
       const v3Tokens = [USDC.address, DAI.address]
-      const v3AmountOutMin = expandTo18DecimalsBN(1.2 * USD_ETH_PRICE - ONE_PERCENT)
+      const v3AmountOutMin = expandTo18DecimalsBN(1.2 * USD_ETH_PRICE * 0.99)
 
       // wrap ETH into WETH
       planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, v4AmountIn])
@@ -389,7 +385,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       const v4AmountIn: BigNumber = expandTo18DecimalsBN(1234)
       const v4AmountOutMin = 0
       const v2Tokens = [USDC.address, WETH.address]
-      const v2AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE + ONE_PERCENT))
+      const v2AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE * 1.01))
 
       v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
         {
@@ -801,6 +797,58 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
 
       // TODO: permit2 test alice doesn't send more than maxAmountIn DAI
       expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(fullAmountOut.sub(gasSpent))
+    })
+
+    it('ERC20 --> ERC20 split V4 and V4 different routes, with wrap, aggregate slippage', async () => {
+      // route 1: DAI -> USDC -> WETH
+      // route 2: DAI -> USDC -> ETH, then router wraps ETH -> WETH
+      const route1 = [DAI_USDC.poolKey, USDC_WETH.poolKey]
+      const route2 = [DAI_USDC.poolKey, ETH_USDC.poolKey]
+      const v4AmountIn1 = expandTo18DecimalsBN(100)
+      const v4AmountIn2 = expandTo18DecimalsBN(150)
+      const aggregateMinOut = expandTo18DecimalsBN(250 / Math.floor(USD_ETH_PRICE * 1.01))
+
+      let currencyIn = daiContract.address
+      // add first split to v4 planner
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath(route1, currencyIn),
+          amountIn: v4AmountIn1,
+          amountOutMinimum: 0,
+        },
+      ])
+      // add second split to v4 planner
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath(route2, currencyIn),
+          amountIn: v4AmountIn2,
+          amountOutMinimum: 0,
+        },
+      ])
+      // settle all DAI with no limit
+      v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, v4AmountIn1.add(v4AmountIn2)])
+      // take all the WETH and all the ETH into the router
+      v4Planner.addAction(Actions.TAKE, [WETH.address, ADDRESS_THIS, OPEN_DELTA])
+      v4Planner.addAction(Actions.TAKE, [ETH_ADDRESS, ADDRESS_THIS, OPEN_DELTA])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+      // wrap all the ETH into WETH
+      planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, CONTRACT_BALANCE])
+      // now we can send the WETH to the user, with aggregate slippage check
+      planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, aggregateMinOut])
+
+      const { daiBalanceBefore, daiBalanceAfter, wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(aggregateMinOut)
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(v4AmountIn1.add(v4AmountIn2))
     })
 
     describe('Batch reverts', () => {
