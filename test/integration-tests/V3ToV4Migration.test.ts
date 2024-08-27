@@ -1952,8 +1952,10 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
       planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
 
+      // unwrap weth to eth and set router as recipient
       planner.addCommand(CommandType.UNWRAP_WETH, [router.address, 0])
 
+      // transfer usdc to v4 position manager
       planner.addCommand(CommandType.TRANSFER, [USDC.address, v4PositionManager.address, CONTRACT_BALANCE])
 
       v4Planner.addAction(Actions.MINT_POSITION, [
@@ -1976,6 +1978,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
       let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
 
+      // mint the v4 position and transfer eth to the v4 position manager
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
 
       let expectedTokenId = await v4PositionManager.nextTokenId()
