@@ -177,12 +177,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                     } else if (command == Commands.WRAP_ETH) {
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;
-                        uint256 amountMin;
+                        uint256 amount;
                         assembly {
                             recipient := calldataload(inputs.offset)
-                            amountMin := calldataload(add(inputs.offset, 0x20))
+                            amount := calldataload(add(inputs.offset, 0x20))
                         }
-                        Payments.wrapETH(map(recipient), amountMin);
+                        Payments.wrapETH(map(recipient), amount);
                     } else if (command == Commands.UNWRAP_WETH) {
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;

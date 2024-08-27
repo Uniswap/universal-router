@@ -4,7 +4,16 @@ import { expect } from './shared/expect'
 import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, PERMIT2 } from './shared/mainnetForkHelpers'
-import { ALICE_ADDRESS, DEADLINE, MAX_UINT, MAX_UINT160 } from './shared/constants'
+import {
+  ALICE_ADDRESS,
+  DEADLINE,
+  ETH_ADDRESS,
+  MAX_UINT,
+  MAX_UINT160,
+  MSG_SENDER,
+  ONE_PERCENT_BIPS,
+  OPEN_DELTA,
+} from './shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
@@ -37,17 +46,34 @@ describe('Uniswap V4 Tests:', () => {
   let v4PoolManager: PoolManager
   let v4PositionManager: PositionManager
 
+  // current market ETH price at block
+  const USD_ETH_PRICE = 3820
+
+  // USD-pegged -> (W)NATIVE trades
   // exact in trade
   const amountIn = 1000
   const amountInUSDC: BigNumber = expandTo6DecimalsBN(amountIn)
   const amountInDAI: BigNumber = expandTo18DecimalsBN(amountIn)
-  const minAmountOutWETH: BigNumber = expandTo18DecimalsBN(0.25)
+  const minAmountOutNative: BigNumber = expandTo18DecimalsBN(amountIn / Math.floor(USD_ETH_PRICE * 1.01))
 
   // exact out trade
-  const amountOutWETH = expandTo18DecimalsBN(0.26)
-  const maxAmountIn = 1000
-  const maxAmountInUSDC = expandTo6DecimalsBN(maxAmountIn)
-  const maxAmountInDAI = expandTo18DecimalsBN(maxAmountIn)
+  const amountOut = 0.26
+  const amountOutNative = expandTo18DecimalsBN(amountOut)
+  const maxAmountInUSDC = expandTo6DecimalsBN(amountOut * Math.floor(USD_ETH_PRICE * 1.01))
+  const maxAmountInDAI = expandTo18DecimalsBN(amountOut * Math.floor(USD_ETH_PRICE * 1.01))
+
+  // (W)NATIVE -> USD-pegged trades
+  // exact in trade
+  const amountInNative: BigNumber = expandTo18DecimalsBN(1.23)
+  const minAmountOutUSD = Math.floor(USD_ETH_PRICE * 0.99 * 1.23)
+  const minAmountOutUSDC: BigNumber = expandTo6DecimalsBN(minAmountOutUSD)
+  const minAmountOutDAI: BigNumber = expandTo18DecimalsBN(minAmountOutUSD)
+
+  // exact out trade
+  const amountOutUSD = 2345
+  const amountOutUSDC: BigNumber = expandTo6DecimalsBN(amountOutUSD)
+  const amountOutDAI: BigNumber = expandTo18DecimalsBN(amountOutUSD)
+  const maxAmountInNative: BigNumber = expandTo18DecimalsBN(amountOutUSD / Math.floor(USD_ETH_PRICE * 0.99))
 
   beforeEach(async () => {
     await resetFork()
@@ -107,7 +133,7 @@ describe('Uniswap V4 Tests:', () => {
           poolKey: USDC_WETH.poolKey,
           zeroForOne: true,
           amountIn: amountInUSDC,
-          amountOutMinimum: minAmountOutWETH,
+          amountOutMinimum: minAmountOutNative,
           sqrtPriceLimitX96: 0,
           hookData: '0x',
         },
@@ -124,7 +150,7 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutNative)
       expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.eq(amountInUSDC)
     })
 
@@ -136,7 +162,7 @@ describe('Uniswap V4 Tests:', () => {
           currencyIn,
           path: encodeMultihopExactInPath([USDC_WETH.poolKey], currencyIn),
           amountIn: amountInUSDC,
-          amountOutMinimum: minAmountOutWETH,
+          amountOutMinimum: minAmountOutNative,
         },
       ])
       v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, wethContract.address])
@@ -152,7 +178,7 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutNative)
       expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.eq(amountInUSDC)
     })
 
@@ -164,7 +190,7 @@ describe('Uniswap V4 Tests:', () => {
           currencyIn,
           path: encodeMultihopExactInPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyIn),
           amountIn: amountInDAI,
-          amountOutMinimum: minAmountOutWETH,
+          amountOutMinimum: minAmountOutNative,
         },
       ])
       v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, wethContract.address])
@@ -180,8 +206,127 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutNative)
       expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
+    })
+
+    it('completes a v4 exactIn 2 hop swap, with take portion on output', async () => {
+      // DAI -> USDC -> WETH
+      let currencyIn = daiContract.address
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyIn),
+          amountIn: amountInDAI,
+          amountOutMinimum: minAmountOutNative,
+        },
+      ])
+      // take 1% of the output to alice, then settle and take the rest to the caller
+      v4Planner.addAction(Actions.TAKE_PORTION, [WETH.address, alice.address, ONE_PERCENT_BIPS])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, wethContract.address])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
+
+      const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
+
+      const aliceFee = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
+      const bobEarnings = wethBalanceAfter.sub(wethBalanceBefore)
+      const totalOut = aliceFee.add(bobEarnings)
+
+      expect(totalOut).to.be.gte(minAmountOutNative)
+      expect(totalOut.mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
+    })
+
+    it('completes a v4 exactIn 2 hop swap, with take portion on input', async () => {
+      // DAI -> USDC -> WETH
+      let currencyIn = daiContract.address
+      // trade is 1% less than previously, so adjust expected output
+      let minOut = minAmountOutNative.mul(99).div(100)
+
+      // settle the input tokens to the pool manager
+      v4Planner.addAction(Actions.SETTLE, [currencyIn, amountInDAI, true])
+      // take 1% of the input tokens
+      v4Planner.addAction(Actions.TAKE_PORTION, [currencyIn, alice.address, ONE_PERCENT_BIPS])
+      // swap using the OPEN_DELTA as input amount
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyIn),
+          amountIn: OPEN_DELTA,
+          amountOutMinimum: minOut,
+        },
+      ])
+      // take the output weth
+      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, minOut])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const daiBalanceBeforeAlice = await daiContract.balanceOf(alice.address)
+
+      const { daiBalanceBefore, daiBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      const daiBalanceAfterAlice = await daiContract.balanceOf(alice.address)
+
+      const aliceFee = daiBalanceAfterAlice.sub(daiBalanceBeforeAlice)
+      const bobSpent = daiBalanceBefore.sub(daiBalanceAfter)
+
+      expect(bobSpent.mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
+    })
+
+    it('completes a v4 exactIn 2 hop swap, with take portion native', async () => {
+      // DAI -> USDC -> ETH
+      let currencyIn = daiContract.address
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([DAI_USDC.poolKey, ETH_USDC.poolKey], currencyIn),
+          amountIn: amountInDAI,
+          amountOutMinimum: minAmountOutNative,
+        },
+      ])
+      // take 1% of the output to alice, then settle and take the rest to the caller
+      v4Planner.addAction(Actions.TAKE_PORTION, [ETH_ADDRESS, alice.address, ONE_PERCENT_BIPS])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, ETH_ADDRESS])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const ethBalanceBeforeAlice: BigNumber = await ethers.provider.getBalance(alice.address)
+
+      const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      const ethBalanceAfterAlice: BigNumber = await ethers.provider.getBalance(alice.address)
+
+      const aliceFee = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice)
+      const bobEarnings = ethBalanceAfter.add(gasSpent).sub(ethBalanceBefore)
+      const totalOut = aliceFee.add(bobEarnings)
+
+      expect(totalOut).to.be.gte(minAmountOutNative)
+      expect(totalOut.mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
     })
 
     it('completes a v4 exactOutSingle swap', async () => {
@@ -189,7 +334,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           poolKey: USDC_WETH.poolKey,
           zeroForOne: true,
-          amountOut: amountOutWETH,
+          amountOut: amountOutNative,
           amountInMaximum: maxAmountInUSDC,
           sqrtPriceLimitX96: 0,
           hookData: '0x',
@@ -208,7 +353,7 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutNative)
       expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.lte(maxAmountInUSDC)
     })
 
@@ -219,7 +364,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyOut,
           path: encodeMultihopExactOutPath([USDC_WETH.poolKey], currencyOut),
-          amountOut: amountOutWETH,
+          amountOut: amountOutNative,
           amountInMaximum: maxAmountInUSDC,
         },
       ])
@@ -236,7 +381,7 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutNative)
       expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.lte(maxAmountInUSDC)
     })
 
@@ -247,7 +392,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyOut,
           path: encodeMultihopExactOutPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyOut),
-          amountOut: amountOutWETH,
+          amountOut: amountOutNative,
           amountInMaximum: maxAmountInDAI,
         },
       ])
@@ -264,7 +409,373 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutNative)
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
+    })
+  })
+
+  describe('ETH --> ERC20', () => {
+    it('completes a v4 exactInSingle swap', async () => {
+      v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
+        {
+          poolKey: ETH_USDC.poolKey,
+          zeroForOne: true,
+          amountIn: amountInNative,
+          amountOutMinimum: minAmountOutUSDC,
+          sqrtPriceLimitX96: 0,
+          hookData: '0x',
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [ETH_ADDRESS, usdcContract.address])
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { usdcBalanceBefore, usdcBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract,
+        amountInNative // pass in the ETH to the call
+      )
+
+      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
+      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.be.eq(amountInNative.add(gasSpent))
+      expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOutUSDC)
+    })
+
+    it('completes a v4 exactIn 1 hop swap', async () => {
+      // ETH -> USDC
+      let currencyIn = ETH_ADDRESS
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([ETH_USDC.poolKey], currencyIn),
+          amountIn: amountInNative,
+          amountOutMinimum: minAmountOutUSDC,
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, usdcContract.address])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { usdcBalanceBefore, usdcBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract,
+        amountInNative // pass in the ETH to the call
+      )
+
+      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
+      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.be.eq(amountInNative.add(gasSpent))
+      expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOutUSDC)
+    })
+
+    it('completes a v4 exactIn 2 hop swap', async () => {
+      // ETH -> USDC -> DAI
+      let currencyIn = ETH_ADDRESS
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([ETH_USDC.poolKey, DAI_USDC.poolKey], currencyIn),
+          amountIn: amountInNative,
+          amountOutMinimum: minAmountOutDAI,
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, daiContract.address])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { daiBalanceBefore, daiBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract,
+        amountInNative // pass in the ETH to the call
+      )
+
+      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
+      expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.gte(minAmountOutDAI)
+      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.be.eq(amountInNative.add(gasSpent))
+    })
+
+    it('completes a v4 exactOutSingle swap', async () => {
+      // ETH -> USDC
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT_SINGLE, [
+        {
+          poolKey: ETH_USDC.poolKey,
+          zeroForOne: true,
+          amountOut: amountOutUSDC,
+          amountInMaximum: maxAmountInNative,
+          sqrtPriceLimitX96: 0,
+          hookData: '0x',
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [ETH_ADDRESS, usdcContract.address])
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+      // sweep excess ETH leftover back to the caller!
+      planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, MSG_SENDER, 0])
+
+      const { usdcBalanceBefore, usdcBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract,
+        maxAmountInNative // send in the max amount of ETH
+      )
+
+      // no eth left in the router
+      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
+      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.be.lte(maxAmountInNative.add(gasSpent))
+      expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.eq(amountOutUSDC)
+    })
+
+    it('completes a v4 exactOut 1 hop swap', async () => {
+      // ETH -> USDC
+      let currencyOut = usdcContract.address
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT, [
+        {
+          currencyOut,
+          path: encodeMultihopExactOutPath([ETH_USDC.poolKey], currencyOut),
+          amountOut: amountOutUSDC,
+          amountInMaximum: maxAmountInNative,
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [ETH_ADDRESS, currencyOut])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+      // sweep excess ETH leftover back to the caller!
+      planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, MSG_SENDER, 0])
+
+      const { usdcBalanceBefore, usdcBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract,
+        maxAmountInNative // send in the max amount of ETH
+      )
+
+      // no eth left in the router
+      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
+      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.be.lte(maxAmountInNative.add(gasSpent))
+      expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.eq(amountOutUSDC)
+    })
+
+    it('completes a v4 exactOut 2 hop swap', async () => {
+      // ETH -> USDC -> DAI
+      let currencyOut = daiContract.address
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT, [
+        {
+          currencyOut,
+          path: encodeMultihopExactOutPath([ETH_USDC.poolKey, DAI_USDC.poolKey], currencyOut),
+          amountOut: amountOutDAI,
+          amountInMaximum: maxAmountInNative,
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [ETH_ADDRESS, daiContract.address])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+      // sweep excess ETH leftover back to the caller!
+      planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, MSG_SENDER, 0])
+
+      const { daiBalanceBefore, daiBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract,
+        maxAmountInNative // send in the max amount of ETH
+      )
+
+      // no eth left in the router
+      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
+      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.be.lte(maxAmountInNative.add(gasSpent))
+      expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.eq(amountOutDAI)
+    })
+  })
+
+  describe('ERC20 --> ETH', () => {
+    it('completes a v4 exactInSingle swap', async () => {
+      // USDC -> ETH
+      v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
+        {
+          poolKey: ETH_USDC.poolKey,
+          zeroForOne: false,
+          amountIn: amountInUSDC,
+          amountOutMinimum: minAmountOutNative,
+          sqrtPriceLimitX96: 0,
+          hookData: '0x',
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [usdcContract.address, ETH_ADDRESS])
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { usdcBalanceBefore, usdcBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
+      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.eq(amountInUSDC)
+      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.gte(minAmountOutNative.sub(gasSpent))
+    })
+
+    it('completes a v4 exactIn 1 hop swap', async () => {
+      // USDC -> ETH
+      let currencyIn = usdcContract.address
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([ETH_USDC.poolKey], currencyIn),
+          amountIn: amountInUSDC,
+          amountOutMinimum: minAmountOutNative,
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, ETH_ADDRESS])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { usdcBalanceBefore, usdcBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
+      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.eq(amountInUSDC)
+      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.gte(minAmountOutNative.sub(gasSpent))
+    })
+
+    it('completes a v4 exactIn 2 hop swap', async () => {
+      // DAI -> USDC -> ETH
+      let currencyIn = daiContract.address
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn,
+          path: encodeMultihopExactInPath([DAI_USDC.poolKey, ETH_USDC.poolKey], currencyIn),
+          amountIn: amountInDAI,
+          amountOutMinimum: minAmountOutNative,
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, ETH_ADDRESS])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { daiBalanceBefore, daiBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
+      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.gte(minAmountOutNative.sub(gasSpent))
+    })
+
+    it('completes a v4 exactOutSingle swap', async () => {
+      // USDC -> ETH
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT_SINGLE, [
+        {
+          poolKey: ETH_USDC.poolKey,
+          zeroForOne: false,
+          amountOut: amountOutNative,
+          amountInMaximum: maxAmountInUSDC,
+          sqrtPriceLimitX96: 0,
+          hookData: '0x',
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [usdcContract.address, ETH_ADDRESS])
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { usdcBalanceBefore, usdcBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
+      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.lte(maxAmountInUSDC)
+      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.eq(amountOutNative.sub(gasSpent))
+    })
+
+    it('completes a v4 exactOut 1 hop swap', async () => {
+      // USDC -> ETH
+      let currencyOut = ETH_ADDRESS
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT, [
+        {
+          currencyOut,
+          path: encodeMultihopExactOutPath([ETH_USDC.poolKey], currencyOut),
+          amountOut: amountOutNative,
+          amountInMaximum: maxAmountInUSDC,
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [usdcContract.address, currencyOut])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { usdcBalanceBefore, usdcBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
+      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.lte(maxAmountInUSDC)
+      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.eq(amountOutNative.sub(gasSpent))
+    })
+
+    it('completes a v4 exactOut 2 hop swap', async () => {
+      // DAI -> USDC -> ETH
+      let currencyOut = ETH_ADDRESS
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT, [
+        {
+          currencyOut,
+          path: encodeMultihopExactOutPath([DAI_USDC.poolKey, ETH_USDC.poolKey], currencyOut),
+          amountOut: amountOutNative,
+          amountInMaximum: maxAmountInDAI,
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [daiContract.address, currencyOut])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { daiBalanceBefore, daiBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
+      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.eq(amountOutNative.sub(gasSpent))
       expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
     })
   })
