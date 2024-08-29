@@ -31,27 +31,27 @@ Object {
 exports[`V3 to V4 Migration Gas Tests V4 Commands increase gas: increase 1`] = `
 Object {
   "calldataByteLength": 2308,
-  "gasUsed": 223264,
+  "gasUsed": 223352,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands increase gas: migrate and increase 1`] = `
 Object {
   "calldataByteLength": 3204,
-  "gasUsed": 449087,
+  "gasUsed": 449157,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate and mint 1`] = `
 Object {
   "calldataByteLength": 2500,
-  "gasUsed": 555225,
+  "gasUsed": 555260,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: mint 1`] = `
 Object {
   "calldataByteLength": 1604,
-  "gasUsed": 392949,
+  "gasUsed": 392993,
 }
 `;
