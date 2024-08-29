@@ -66,6 +66,6 @@ contract UniversalRouter is IUniversalRouter, Dispatcher {
 
     /// @notice To receive ETH from WETH
     receive() external payable {
-        if (msg.sender != address(WETH9)) revert InvalidEthSender();
+        if (msg.sender != address(WETH9) && msg.sender != address(poolManager)) revert InvalidEthSender();
     }
 }
