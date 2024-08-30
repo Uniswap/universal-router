@@ -44,7 +44,7 @@ contract UniversalRouter is IUniversalRouter, Dispatcher {
 
         // loop through all given commands, execute them and pass along outputs as defined
         for (uint256 commandIndex = 0; commandIndex < numCommands;) {
-            bytes1 command = commands[commandIndex];
+            uint8 command = uint8(commands[commandIndex]);
 
             bytes calldata input = inputs[commandIndex];
 
@@ -60,7 +60,7 @@ contract UniversalRouter is IUniversalRouter, Dispatcher {
         }
     }
 
-    function successRequired(bytes1 command) internal pure returns (bool) {
+    function successRequired(uint8 command) internal pure returns (bool) {
         return command & Commands.FLAG_ALLOW_REVERT == 0;
     }
 
