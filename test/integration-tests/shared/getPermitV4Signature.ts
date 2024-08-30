@@ -3,7 +3,7 @@ import { splitSignature } from 'ethers/lib/utils'
 import { PositionManager } from '../../../typechain'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
-export default async function getPermitNFTSignature(
+export default async function getPermitV4Signature(
   wallet: SignerWithAddress,
   positionManager: PositionManager,
   spender: string,

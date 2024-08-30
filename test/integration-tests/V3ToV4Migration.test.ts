@@ -1590,6 +1590,77 @@ describe('V3 to V4 Migration Tests:', () => {
       expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
     })
 
+    it('decrease v4 does not succeed because UR is not approved', async () => {
+      // first mint the v4 nft
+      // transfer to v4posm
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // try to decrease the position second
+      planner = new RoutePlanner()
+      v4Planner = new V4Planner()
+
+      // try to decrease the position without approval
+      v4Planner.addAction(Actions.DECREASE_LIQUIDITY, [
+        expectedTokenId,
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        0,
+        0,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.CLOSE_CURRENCY, [USDC.address])
+      v4Planner.addAction(Actions.CLOSE_CURRENCY, [WETH.address])
+
+      calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      await expect(
+        executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      ).to.be.revertedWithCustomError(router, 'ExecutionFailed')
+
+      // succeeds if UR is approved (but should not happen!)
+      await v4PositionManager.connect(bob).approve(router.address, expectedTokenId)
+
+      // alice calls the router to decrease bob's position
+      await executeRouter(planner, alice, router, wethContract, daiContract, usdcContract)
+
+      // bob still owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+    })
+
     it('burn v4 does not succeed because UR is not approved', async () => {
       // first mint the v4 nft
       // transfer to v4posm
