@@ -3,6 +3,6 @@
 exports[`Check Ownership Gas gas: balance check ERC20 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 37737,
+  "gasUsed": 37731,
 }
 `;
