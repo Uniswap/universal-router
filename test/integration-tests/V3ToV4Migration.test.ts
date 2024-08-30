@@ -4,7 +4,15 @@ import { BigNumber } from 'ethers'
 import { UniversalRouter, INonfungiblePositionManager, PositionManager } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, V3_NFT_POSITION_MANAGER } from './shared/mainnetForkHelpers'
-import { ZERO_ADDRESS, ALICE_ADDRESS, MAX_UINT, MAX_UINT128, OPEN_DELTA, SOURCE_ROUTER } from './shared/constants'
+import {
+  ZERO_ADDRESS,
+  ALICE_ADDRESS,
+  MAX_UINT,
+  MAX_UINT128,
+  OPEN_DELTA,
+  SOURCE_ROUTER,
+  CONTRACT_BALANCE,
+} from './shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
@@ -13,7 +21,7 @@ import { V4Planner, Actions } from './shared/v4Planner'
 import hre from 'hardhat'
 import getPermitNFTSignature from './shared/getPermitNFTSignature'
 import getPermitV4Signature from './shared/getPermitV4Signature'
-import { FeeAmount } from '@uniswap/v3-sdk'
+import { ADDRESS_ZERO, FeeAmount } from '@uniswap/v3-sdk'
 import {
   encodeERC721Permit,
   encodeDecreaseLiquidity,
@@ -23,7 +31,7 @@ import {
   encodeERC721PermitV4,
 } from './shared/encodeCall'
 import { executeRouter } from './shared/executeRouter'
-import { USDC_WETH } from './shared/v4Helpers'
+import { USDC_WETH, ETH_USDC } from './shared/v4Helpers'
 const { ethers } = hre
 
 describe('V3 to V4 Migration Tests:', () => {
@@ -1230,7 +1238,7 @@ describe('V3 to V4 Migration Tests:', () => {
       await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
 
-      // need to approve the router to spend the nft
+      // need to permit the router first to increase liquidity on the LP nft
       let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
         nonce: 1,
       })
@@ -1323,7 +1331,7 @@ describe('V3 to V4 Migration Tests:', () => {
       await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
 
-      // need to approve the router to spend the nft
+      // need to permit the router first to increase liquidity on the LP nft
       let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
         nonce: 1,
       })
@@ -1362,6 +1370,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
 
+      // then we need to "un-permit" the router (permit address 0) so that the router can no longer spend the nft
+      // if the router is not unpermitted, anyone can call V4_POSITION_MANAGER_CALL and decrease / burn the position
       compact = (
         await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
       ).compact
@@ -1437,7 +1447,7 @@ describe('V3 to V4 Migration Tests:', () => {
       await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
 
-      // need to approve the router to spend the nft
+      // need to permit the router to spend the nft
       let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
         nonce: 1,
       })
@@ -1477,6 +1487,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
 
+      // caller needs to "un-permit" the router (permit address 0) so that the router can no longer spend the nft
+      // if the router is not unpermitted, anyone can call V4_POSITION_MANAGER_CALL and decrease / burn the position
       compact = (
         await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
       ).compact
@@ -1734,6 +1746,8 @@ describe('V3 to V4 Migration Tests:', () => {
         '79228162514264337593543950336',
         '0x'
       )
+
+      await v4PositionManager.connect(bob).initializePool(ETH_USDC.poolKey, ETH_USDC.price, '0x')
     })
     it('migrate with minting succeeds', async () => {
       // Bob max-approves the v3PM to access his USDC and WETH
@@ -1897,8 +1911,7 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
       planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
 
-      // need to permit and unpermit router
-      // need to approve the router to spend the nft
+      // need to permit the router to spend the nft first
       let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
         nonce: 1,
       })
@@ -1938,6 +1951,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
 
+      // Need to "un-permit" the router (permit address 0) so that the router can no longer spend the nft
+      // if the router is not unpermitted, anyone can call V4_POSITION_MANAGER_CALL and decrease / burn the position
       compact = (
         await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
       ).compact
@@ -1969,6 +1984,93 @@ describe('V3 to V4 Migration Tests:', () => {
 
       // router is no longer approved
       expect(await v4PositionManager.getApproved(expectedTokenId)).to.eq(ZERO_ADDRESS)
+    })
+
+    it('migrate a weth position into an eth position by forwarding eth', async () => {
+      // Bob max-approves the v3PM to access his USDC and WETH
+      await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+      await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+
+      // mint the nft to bob on v3
+      const tx = await v3NFTPositionManager.mint({
+        token0: USDC.address,
+        token1: WETH.address,
+        fee: FeeAmount.LOW,
+        tickLower: 0,
+        tickUpper: 194980,
+        amount0Desired: expandTo6DecimalsBN(2500),
+        amount1Desired: expandTo18DecimalsBN(1),
+        amount0Min: 0,
+        amount1Min: 0,
+        recipient: bob.address,
+        deadline: MAX_UINT,
+      })
+
+      // bob owns a v3position
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(1)
+
+      // bob does not own a v4position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(0)
+
+      const receipt = await tx.wait()
+      const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
+      tokenIdv3 = transferEvent?.args?.tokenId
+
+      // permit, decrease, collect, burn
+      const encodedErc721PermitCall = await permit()
+      const encodedDecreaseCall = await decreaseLiquidity()
+      // set receiver to v4posm
+      const encodedCollectCall = collect(router.address)
+      const encodedBurnCall = encodeBurn(tokenIdv3)
+
+      planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
+      planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
+      planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
+      planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
+
+      // unwrap weth to eth and set router as recipient
+      planner.addCommand(CommandType.UNWRAP_WETH, [router.address, 0])
+
+      // transfer usdc to v4 position manager
+      planner.addCommand(CommandType.TRANSFER, [USDC.address, v4PositionManager.address, CONTRACT_BALANCE])
+
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: ETH_USDC.poolKey,
+          tickLower: ETH_USDC.tickLower,
+          tickUpper: ETH_USDC.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SETTLE, [ADDRESS_ZERO, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [ADDRESS_ZERO, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      // mint the v4 position and transfer eth to the v4 position manager
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // bob successfully sweeped his usdc and weth from the v4 position manager
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+
+      // bob does not own a v3position
+      expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
+
+      // bob owns a v4position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+      expect(await v4PositionManager.ownerOf(expectedTokenId)).to.eq(bob.address)
     })
   })
 
