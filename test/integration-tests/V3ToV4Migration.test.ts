@@ -1238,7 +1238,7 @@ describe('V3 to V4 Migration Tests:', () => {
       await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
 
-      // need to approve the router to spend the nft
+      // need to permit the router first to increase liquidity on the LP nft
       let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
         nonce: 1,
       })
@@ -1331,7 +1331,7 @@ describe('V3 to V4 Migration Tests:', () => {
       await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
 
-      // need to approve the router to spend the nft
+      // need to permit the router first to increase liquidity on the LP nft
       let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
         nonce: 1,
       })
@@ -1370,6 +1370,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
 
+      // then we need to "un-permit" the router (permit address 0) so that the router can no longer spend the nft
+      // if the router is not unpermitted, anyone can call V4_POSITION_MANAGER_CALL and decrease / burn the position
       compact = (
         await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
       ).compact
@@ -1445,7 +1447,7 @@ describe('V3 to V4 Migration Tests:', () => {
       await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
 
-      // need to approve the router to spend the nft
+      // need to permit the router to spend the nft
       let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
         nonce: 1,
       })
@@ -1485,6 +1487,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
 
+      // caller needs to "un-permit" the router (permit address 0) so that the router can no longer spend the nft
+      // if the router is not unpermitted, anyone can call V4_POSITION_MANAGER_CALL and decrease / burn the position
       compact = (
         await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
       ).compact
@@ -1836,8 +1840,7 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
       planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
 
-      // need to permit and unpermit router
-      // need to approve the router to spend the nft
+      // need to permit the router to spend the nft first
       let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
         nonce: 1,
       })
@@ -1877,6 +1880,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
 
+      // Need to "un-permit" the router (permit address 0) so that the router can no longer spend the nft
+      // if the router is not unpermitted, anyone can call V4_POSITION_MANAGER_CALL and decrease / burn the position
       compact = (
         await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
       ).compact
