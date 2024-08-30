@@ -235,15 +235,17 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V3_POSITION_MANAGER_CALL) {
                     bytes4 selector;
-                    uint256 tokenId;
                     assembly {
                         selector := calldataload(inputs.offset)
-                        // tokenId is always the first parameter in the valid actions
-                        tokenId := calldataload(add(inputs.offset, 0x04))
                     }
-
                     if (!isValidAction(selector)) {
                         revert InvalidAction(selector);
+                    }
+
+                    uint256 tokenId;
+                    assembly {
+                        // tokenId is always the first parameter in the valid actions
+                        tokenId := calldataload(add(inputs.offset, 0x04))
                     }
                     // If any other address that is not the owner wants to call this function, it also needs to be approved (in addition to this contract)
                     // This can be done in 2 ways:
