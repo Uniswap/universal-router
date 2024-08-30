@@ -12,6 +12,7 @@ import { RoutePlanner, CommandType } from './shared/planner'
 import { V4Planner, Actions } from './shared/v4Planner'
 import hre from 'hardhat'
 import getPermitNFTSignature from './shared/getPermitNFTSignature'
+import getPermitV4Signature from './shared/getPermitV4Signature'
 import { FeeAmount } from '@uniswap/v3-sdk'
 import {
   encodeERC721Permit,
@@ -19,6 +20,7 @@ import {
   encodeCollect,
   encodeBurn,
   encodeModifyLiquidities,
+  encodeERC721PermitV4,
 } from './shared/encodeCall'
 import { executeRouter } from './shared/executeRouter'
 import { USDC_WETH } from './shared/v4Helpers'
@@ -1059,7 +1061,137 @@ describe('V3 to V4 Migration Tests:', () => {
       expect(await v4PositionManager.ownerOf(expectedTokenId)).to.eq(bob.address)
     })
 
-    it('increase v4 succeeds', async () => {
+    it('erc721 permit on v4 succeeds', async () => {
+      // transfer to v4posm
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      // mint position first
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      // router is not approved to spend the token
+      expect(await v4PositionManager.getApproved(expectedTokenId)).to.eq(ZERO_ADDRESS)
+
+      const { compact } = await getPermitV4Signature(
+        bob,
+        v4PositionManager,
+        router.address,
+        expectedTokenId,
+        MAX_UINT,
+        { nonce: 1 }
+      )
+
+      const erc721PermitParams = {
+        spender: router.address,
+        tokenId: expectedTokenId,
+        deadline: MAX_UINT,
+        nonce: 1,
+        signature: compact,
+      }
+
+      const encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParams)
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
+
+      // bob permits the router to spend token
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // router is approved to spend the token
+      expect(await v4PositionManager.getApproved(expectedTokenId)).to.eq(router.address)
+    })
+
+    it('erc721 permit and unpermit on v4 succeeds', async () => {
+      // transfer to v4posm
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      // mint position first
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
+        nonce: 1,
+      })
+
+      let erc721PermitParams = {
+        spender: router.address,
+        tokenId: expectedTokenId,
+        deadline: MAX_UINT,
+        nonce: 1,
+        signature: compact,
+      }
+
+      let encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParams)
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
+
+      compact = (
+        await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
+      ).compact
+
+      erc721PermitParams = {
+        spender: ZERO_ADDRESS,
+        tokenId: expectedTokenId,
+        deadline: MAX_UINT,
+        nonce: 2,
+        signature: compact,
+      }
+
+      encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParams)
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
+
+      // bob permits the router to spend token
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // router is no longer approved to spend the token
+      expect(await v4PositionManager.getApproved(expectedTokenId)).to.eq(ZERO_ADDRESS)
+    })
+
+    it('increase v4 succeeds by permitting router', async () => {
       // transfer to v4posm
       await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
@@ -1098,6 +1230,23 @@ describe('V3 to V4 Migration Tests:', () => {
       await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
 
+      // need to approve the router to spend the nft
+      let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
+        nonce: 1,
+      })
+
+      let erc721PermitParams = {
+        spender: router.address,
+        tokenId: expectedTokenId,
+        deadline: MAX_UINT,
+        nonce: 1,
+        signature: compact,
+      }
+
+      let encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParams)
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
+
       v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
         expectedTokenId,
         {
@@ -1135,7 +1284,120 @@ describe('V3 to V4 Migration Tests:', () => {
       expect(await v4PositionManager.ownerOf(expectedTokenId)).to.eq(bob.address)
     })
 
-    it('an address can increase a position on behalf of another address', async () => {
+    it('increase v4 succeeds by permitting and unpermitting router', async () => {
+      // transfer to v4posm
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+      // mint position first
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      // bob owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+
+      // increase position second
+      planner = new RoutePlanner()
+      v4Planner = new V4Planner()
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
+
+      // need to approve the router to spend the nft
+      let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
+        nonce: 1,
+      })
+
+      let erc721PermitParams = {
+        spender: router.address,
+        tokenId: expectedTokenId,
+        deadline: MAX_UINT,
+        nonce: 1,
+        signature: compact,
+      }
+
+      let encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParams)
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
+
+      v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
+        expectedTokenId,
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      compact = (
+        await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
+      ).compact
+
+      erc721PermitParams = {
+        spender: ZERO_ADDRESS,
+        tokenId: expectedTokenId,
+        deadline: MAX_UINT,
+        nonce: 2,
+        signature: compact,
+      }
+
+      encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParams)
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
+
+      // assert that the posm holds tokens before executeRouter
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(expandTo6DecimalsBN(10000))
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(expandTo18DecimalsBN(10))
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // bob successfully sweeped his usdc and weth from the v4 position manager
+      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
+
+      // bob still owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
+      expect(await v4PositionManager.ownerOf(expectedTokenId)).to.eq(bob.address)
+
+      // router is no longer approved
+      expect(await v4PositionManager.getApproved(expectedTokenId)).to.eq(ZERO_ADDRESS)
+    })
+
+    // should only be done if they are also using the owner's signature to unpermit the router at the end
+    it('an address can increase a position on behalf of another address if permitted', async () => {
       // mint position first
       await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
@@ -1175,6 +1437,23 @@ describe('V3 to V4 Migration Tests:', () => {
       await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
 
+      // need to approve the router to spend the nft
+      let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
+        nonce: 1,
+      })
+
+      let erc721PermitParams = {
+        spender: router.address,
+        tokenId: expectedTokenId,
+        deadline: MAX_UINT,
+        nonce: 1,
+        signature: compact,
+      }
+
+      let encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParams)
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
+
       // increase params for bob's position
       v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
         expectedTokenId,
@@ -1198,6 +1477,22 @@ describe('V3 to V4 Migration Tests:', () => {
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
 
+      compact = (
+        await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
+      ).compact
+
+      erc721PermitParams = {
+        spender: ZERO_ADDRESS,
+        tokenId: expectedTokenId,
+        deadline: MAX_UINT,
+        nonce: 2,
+        signature: compact,
+      }
+
+      encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParams)
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
+
       // alice increases the position for bob
       await executeRouter(planner, alice, router, wethContract, daiContract, usdcContract)
 
@@ -1207,6 +1502,80 @@ describe('V3 to V4 Migration Tests:', () => {
       expect(await v4PositionManager.balanceOf(alice.address)).to.eq(0)
 
       expect(await v4PositionManager.ownerOf(expectedTokenId)).to.eq(bob.address)
+
+      // router is no longer approved
+      expect(await v4PositionManager.getApproved(expectedTokenId)).to.eq(ZERO_ADDRESS)
+    })
+
+    it('decrease v4 does not succeed because UR is not approved', async () => {
+      // first mint the v4 nft
+      // transfer to v4posm
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // try to decrease the position second
+      planner = new RoutePlanner()
+      v4Planner = new V4Planner()
+
+      // try to decrease the position without approval
+      v4Planner.addAction(Actions.DECREASE_LIQUIDITY, [
+        expectedTokenId,
+        {
+          poolKey: USDC_WETH.poolKey,
+          tickLower: USDC_WETH.tickLower,
+          tickUpper: USDC_WETH.tickUpper,
+        },
+        '6000000',
+        0,
+        0,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.CLOSE_CURRENCY, [USDC.address])
+      v4Planner.addAction(Actions.CLOSE_CURRENCY, [WETH.address])
+
+      calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      await expect(
+        executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      ).to.be.revertedWithCustomError(router, 'ExecutionFailed')
+
+      // succeeds if UR is approved (but should not happen!)
+      await v4PositionManager.connect(bob).approve(router.address, expectedTokenId)
+
+      // alice calls the router to decrease bob's position
+      await executeRouter(planner, alice, router, wethContract, daiContract, usdcContract)
+
+      // bob still owns a position
+      expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
     })
 
     it('decrease v4 does not succeed because UR is not approved', async () => {
@@ -1400,7 +1769,7 @@ describe('V3 to V4 Migration Tests:', () => {
       const encodedErc721PermitCall = await permit()
       const encodedDecreaseCall = await decreaseLiquidity()
       // set receiver to v4posm
-      const encodedCollectCall = collect()
+      const encodedCollectCall = collect(v4PositionManager.address)
       const encodedBurnCall = encodeBurn(tokenIdv3)
 
       planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
@@ -1517,16 +1886,34 @@ describe('V3 to V4 Migration Tests:', () => {
       expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(1)
 
       // permit, decrease, collect, burn
-      const encodedErc721PermitCall = await permit()
+      let encodedErc721PermitCall = await permit()
       const encodedDecreaseCall = await decreaseLiquidity()
       // set receiver to v4posm
-      const encodedCollectCall = collect()
+      const encodedCollectCall = collect(v4PositionManager.address)
       const encodedBurnCall = encodeBurn(tokenIdv3)
 
       planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
       planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
       planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
       planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
+
+      // need to permit and unpermit router
+      // need to approve the router to spend the nft
+      let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
+        nonce: 1,
+      })
+
+      let erc721PermitParams = {
+        spender: router.address,
+        tokenId: expectedTokenId,
+        deadline: MAX_UINT,
+        nonce: 1,
+        signature: compact,
+      }
+
+      encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParams)
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
 
       // increase params for bob's position
       v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
@@ -1551,6 +1938,22 @@ describe('V3 to V4 Migration Tests:', () => {
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
 
+      compact = (
+        await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
+      ).compact
+
+      erc721PermitParams = {
+        spender: ZERO_ADDRESS,
+        tokenId: expectedTokenId,
+        deadline: MAX_UINT,
+        nonce: 2,
+        signature: compact,
+      }
+
+      encodedErc721PermitCall = encodeERC721PermitV4(erc721PermitParams)
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
+
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
       // bob successfully sweeped his usdc and weth from the v4 position manager
@@ -1563,6 +1966,9 @@ describe('V3 to V4 Migration Tests:', () => {
       // bob still owns a v4position
       expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
       expect(await v4PositionManager.ownerOf(expectedTokenId)).to.eq(bob.address)
+
+      // router is no longer approved
+      expect(await v4PositionManager.getApproved(expectedTokenId)).to.eq(ZERO_ADDRESS)
     })
   })
 
@@ -1596,11 +2002,11 @@ describe('V3 to V4 Migration Tests:', () => {
     return encodeDecreaseLiquidity(decreaseParams)
   }
 
-  function collect(): string {
+  function collect(recipient: string): string {
     // set receiver to v4posm
     const collectParams = {
       tokenId: tokenIdv3,
-      recipient: v4PositionManager.address,
+      recipient: recipient,
       amount0Max: MAX_UINT128,
       amount1Max: MAX_UINT128,
     }
