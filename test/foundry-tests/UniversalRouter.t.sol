@@ -7,7 +7,6 @@ import {Payments} from '../../contracts/modules/Payments.sol';
 import {Constants} from '../../contracts/libraries/Constants.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {MockERC20} from './mock/MockERC20.sol';
-import {Callbacks} from '../../contracts/base/Callbacks.sol';
 import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
 import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
@@ -21,7 +20,6 @@ contract UniversalRouterTest is Test {
     UniversalRouter router;
     ExampleModule testModule;
     MockERC20 erc20;
-    Callbacks callbacks;
 
     function setUp() public {
         RouterParameters memory params = RouterParameters({
@@ -38,7 +36,6 @@ contract UniversalRouterTest is Test {
         router = new UniversalRouter(params);
         testModule = new ExampleModule();
         erc20 = new MockERC20();
-        callbacks = new Callbacks();
     }
 
     event ExampleModuleEvent(string message);
@@ -98,11 +95,5 @@ contract UniversalRouterTest is Test {
 
         vm.expectRevert(Payments.InsufficientETH.selector);
         router.execute(commands, inputs);
-    }
-
-    function testSupportsInterface() public {
-        bool supportsERC165 = callbacks.supportsInterface(type(IERC165).interfaceId);
-
-        assertEq(supportsERC165, true);
     }
 }
