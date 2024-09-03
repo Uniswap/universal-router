@@ -133,7 +133,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                         revert InvalidCommandType(command);
                     }
                 } else {
-                    // 0x08 <= command < 0x0f
+                    // 0x08 <= command < 0x10
                     if (command == Commands.V2_SWAP_EXACT_IN) {
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
                         address recipient;
