@@ -8,7 +8,6 @@ import {BytesLib} from '../modules/uniswap/v3/BytesLib.sol';
 import {Payments} from '../modules/Payments.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
 import {V3ToV4Migrator} from '../modules/V3ToV4Migrator.sol';
-import {Callbacks} from '../base/Callbacks.sol';
 import {Commands} from '../libraries/Commands.sol';
 import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
@@ -18,7 +17,7 @@ import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstan
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
-abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRouter, V3ToV4Migrator, Callbacks, Lock {
+abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRouter, V3ToV4Migrator, Lock {
     using BytesLib for bytes;
 
     error InvalidCommandType(uint256 commandType);
