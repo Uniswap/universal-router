@@ -9,6 +9,8 @@ struct MigratorParameters {
     address v4PositionManager;
 }
 
+/// @title Migrator Immutables
+/// @notice Immutable state for liquidity-migration contracts
 contract MigratorImmutables {
     /// @notice v3PositionManager address
     INonfungiblePositionManager public immutable V3_POSITION_MANAGER;
