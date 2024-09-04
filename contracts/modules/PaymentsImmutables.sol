@@ -16,11 +16,6 @@ contract PaymentsImmutables {
     /// @notice Permit2 address
     IPermit2 internal immutable PERMIT2;
 
-    enum Spenders {
-        OSConduit,
-        Sudoswap
-    }
-
     constructor(PaymentsParameters memory params) {
         WETH9 = IWETH9(params.weth9);
         PERMIT2 = IPermit2(params.permit2);
