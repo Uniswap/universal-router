@@ -23,6 +23,7 @@ abstract contract Permit2Payments is Payments {
 
     /// @notice Performs a batch transferFrom on Permit2
     /// @param batchDetails An array detailing each of the transfers that should occur
+    /// @param owner The address that should be the owner of all transfers
     function permit2TransferFrom(IAllowanceTransfer.AllowanceTransferDetails[] calldata batchDetails, address owner)
         internal
     {
