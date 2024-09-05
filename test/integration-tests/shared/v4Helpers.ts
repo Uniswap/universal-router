@@ -60,13 +60,17 @@ export const ETH_USDC = {
 
 export async function deployV4PositionManager(v4PoolManager: string, permit2: string): Promise<PositionManager> {
   const positionManagerFactory = await ethers.getContractFactory('PositionManager')
-  const positionManager = (await positionManagerFactory.deploy(v4PoolManager, permit2)) as unknown as PositionManager
+  const positionManager = (await positionManagerFactory.deploy(
+    v4PoolManager,
+    permit2,
+    50000
+  )) as unknown as PositionManager
   return positionManager
 }
 
 export async function deployV4PoolManager(): Promise<PoolManager> {
   const poolManagerFactory = await ethers.getContractFactory('PoolManager')
-  const poolManager = (await poolManagerFactory.deploy(500000)) as unknown as PoolManager
+  const poolManager = (await poolManagerFactory.deploy()) as unknown as PoolManager
   return poolManager
 }
 
