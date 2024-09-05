@@ -1507,13 +1507,7 @@ describe('V3 to V4 Migration Tests:', () => {
       v4Planner = new V4Planner()
 
       // try to decrease the position without approval
-      v4Planner.addAction(Actions.DECREASE_LIQUIDITY, [
-        expectedTokenId,
-        '6000000',
-        0,
-        0,
-        '0x',
-      ])
+      v4Planner.addAction(Actions.DECREASE_LIQUIDITY, [expectedTokenId, '6000000', 0, 0, '0x'])
 
       v4Planner.addAction(Actions.CLOSE_CURRENCY, [USDC.address])
       v4Planner.addAction(Actions.CLOSE_CURRENCY, [WETH.address])
@@ -1571,13 +1565,7 @@ describe('V3 to V4 Migration Tests:', () => {
       v4Planner = new V4Planner()
 
       // try to decrease the position without approval
-      v4Planner.addAction(Actions.DECREASE_LIQUIDITY, [
-        expectedTokenId,
-        '6000000',
-        0,
-        0,
-        '0x',
-      ])
+      v4Planner.addAction(Actions.DECREASE_LIQUIDITY, [expectedTokenId, '6000000', 0, 0, '0x'])
 
       v4Planner.addAction(Actions.CLOSE_CURRENCY, [USDC.address])
       v4Planner.addAction(Actions.CLOSE_CURRENCY, [WETH.address])
@@ -1635,12 +1623,7 @@ describe('V3 to V4 Migration Tests:', () => {
       v4Planner = new V4Planner()
 
       // try to decrease the position without approval
-      v4Planner.addAction(Actions.BURN_POSITION, [
-        expectedTokenId,
-        0,
-        0,
-        '0x',
-      ])
+      v4Planner.addAction(Actions.BURN_POSITION, [expectedTokenId, 0, 0, '0x'])
 
       v4Planner.addAction(Actions.CLOSE_CURRENCY, [USDC.address])
       v4Planner.addAction(Actions.CLOSE_CURRENCY, [WETH.address])
@@ -1952,9 +1935,9 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.TRANSFER, [USDC.address, v4PositionManager.address, CONTRACT_BALANCE])
 
       v4Planner.addAction(Actions.MINT_POSITION, [
-ETH_USDC.poolKey,
-          ETH_USDC.tickLower,
-          ETH_USDC.tickUpper,
+        ETH_USDC.poolKey,
+        ETH_USDC.tickLower,
+        ETH_USDC.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,

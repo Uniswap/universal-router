@@ -85,7 +85,16 @@ export async function addLiquidityToV4Pool(
   owner: SignerWithAddress
 ) {
   let v4Planner: V4Planner = new V4Planner()
-  v4Planner.addAction(Actions.MINT_POSITION, [pool.poolKey, pool.tickLower, pool.tickUpper, liquidity, MAX_UINT128, MAX_UINT128, owner.address, '0x'])
+  v4Planner.addAction(Actions.MINT_POSITION, [
+    pool.poolKey,
+    pool.tickLower,
+    pool.tickUpper,
+    liquidity,
+    MAX_UINT128,
+    MAX_UINT128,
+    owner.address,
+    '0x',
+  ])
   v4Planner.addAction(Actions.CLOSE_CURRENCY, [pool.poolKey.currency0])
   v4Planner.addAction(Actions.CLOSE_CURRENCY, [pool.poolKey.currency1])
 
