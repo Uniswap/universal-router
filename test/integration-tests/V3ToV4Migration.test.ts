@@ -978,11 +978,9 @@ describe('V3 to V4 Migration Tests:', () => {
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
 
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,
@@ -1030,11 +1028,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       // mint params for bob
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,
@@ -1076,11 +1072,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       // mint position first
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,
@@ -1137,11 +1131,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       // mint position first
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,
@@ -1205,11 +1197,9 @@ describe('V3 to V4 Migration Tests:', () => {
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
       // mint position first
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,
@@ -1255,18 +1245,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
 
-      v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
-        expectedTokenId,
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
-        '6000000',
-        MAX_UINT128,
-        MAX_UINT128,
-        '0x',
-      ])
+      v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [expectedTokenId, '6000000', MAX_UINT128, MAX_UINT128, '0x'])
 
       v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
       v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
@@ -1298,11 +1277,9 @@ describe('V3 to V4 Migration Tests:', () => {
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
       // mint position first
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,
@@ -1348,18 +1325,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
 
-      v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
-        expectedTokenId,
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
-        '6000000',
-        MAX_UINT128,
-        MAX_UINT128,
-        '0x',
-      ])
+      v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [expectedTokenId, '6000000', MAX_UINT128, MAX_UINT128, '0x'])
 
       v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
       v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
@@ -1413,11 +1379,9 @@ describe('V3 to V4 Migration Tests:', () => {
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
 
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,
@@ -1465,18 +1429,7 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
 
       // increase params for bob's position
-      v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
-        expectedTokenId,
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
-        '6000000',
-        MAX_UINT128,
-        MAX_UINT128,
-        '0x',
-      ])
+      v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [expectedTokenId, '6000000', MAX_UINT128, MAX_UINT128, '0x'])
 
       v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
       v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
@@ -1526,11 +1479,9 @@ describe('V3 to V4 Migration Tests:', () => {
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
 
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,
@@ -1556,18 +1507,7 @@ describe('V3 to V4 Migration Tests:', () => {
       v4Planner = new V4Planner()
 
       // try to decrease the position without approval
-      v4Planner.addAction(Actions.DECREASE_LIQUIDITY, [
-        expectedTokenId,
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
-        '6000000',
-        0,
-        0,
-        '0x',
-      ])
+      v4Planner.addAction(Actions.DECREASE_LIQUIDITY, [expectedTokenId, '6000000', 0, 0, '0x'])
 
       v4Planner.addAction(Actions.CLOSE_CURRENCY, [USDC.address])
       v4Planner.addAction(Actions.CLOSE_CURRENCY, [WETH.address])
@@ -1597,11 +1537,9 @@ describe('V3 to V4 Migration Tests:', () => {
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
 
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,
@@ -1627,18 +1565,7 @@ describe('V3 to V4 Migration Tests:', () => {
       v4Planner = new V4Planner()
 
       // try to decrease the position without approval
-      v4Planner.addAction(Actions.DECREASE_LIQUIDITY, [
-        expectedTokenId,
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
-        '6000000',
-        0,
-        0,
-        '0x',
-      ])
+      v4Planner.addAction(Actions.DECREASE_LIQUIDITY, [expectedTokenId, '6000000', 0, 0, '0x'])
 
       v4Planner.addAction(Actions.CLOSE_CURRENCY, [USDC.address])
       v4Planner.addAction(Actions.CLOSE_CURRENCY, [WETH.address])
@@ -1668,11 +1595,9 @@ describe('V3 to V4 Migration Tests:', () => {
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
 
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,
@@ -1698,17 +1623,7 @@ describe('V3 to V4 Migration Tests:', () => {
       v4Planner = new V4Planner()
 
       // try to decrease the position without approval
-      v4Planner.addAction(Actions.BURN_POSITION, [
-        expectedTokenId,
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
-        0,
-        0,
-        '0x',
-      ])
+      v4Planner.addAction(Actions.BURN_POSITION, [expectedTokenId, 0, 0, '0x'])
 
       v4Planner.addAction(Actions.CLOSE_CURRENCY, [USDC.address])
       v4Planner.addAction(Actions.CLOSE_CURRENCY, [WETH.address])
@@ -1792,11 +1707,9 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
 
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,
@@ -1835,11 +1748,9 @@ describe('V3 to V4 Migration Tests:', () => {
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
 
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,
@@ -1929,18 +1840,7 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [encodedErc721PermitCall])
 
       // increase params for bob's position
-      v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [
-        expectedTokenId,
-        {
-          poolKey: USDC_WETH.poolKey,
-          tickLower: USDC_WETH.tickLower,
-          tickUpper: USDC_WETH.tickUpper,
-        },
-        '6000000',
-        MAX_UINT128,
-        MAX_UINT128,
-        '0x',
-      ])
+      v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [expectedTokenId, '6000000', MAX_UINT128, MAX_UINT128, '0x'])
 
       v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
       v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
@@ -2035,11 +1935,9 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.TRANSFER, [USDC.address, v4PositionManager.address, CONTRACT_BALANCE])
 
       v4Planner.addAction(Actions.MINT_POSITION, [
-        {
-          poolKey: ETH_USDC.poolKey,
-          tickLower: ETH_USDC.tickLower,
-          tickUpper: ETH_USDC.tickUpper,
-        },
+        ETH_USDC.poolKey,
+        ETH_USDC.tickLower,
+        ETH_USDC.tickUpper,
         '6000000',
         MAX_UINT128,
         MAX_UINT128,

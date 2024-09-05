@@ -60,13 +60,17 @@ export const ETH_USDC = {
 
 export async function deployV4PositionManager(v4PoolManager: string, permit2: string): Promise<PositionManager> {
   const positionManagerFactory = await ethers.getContractFactory('PositionManager')
-  const positionManager = (await positionManagerFactory.deploy(v4PoolManager, permit2)) as unknown as PositionManager
+  const positionManager = (await positionManagerFactory.deploy(
+    v4PoolManager,
+    permit2,
+    50000
+  )) as unknown as PositionManager
   return positionManager
 }
 
 export async function deployV4PoolManager(): Promise<PoolManager> {
   const poolManagerFactory = await ethers.getContractFactory('PoolManager')
-  const poolManager = (await poolManagerFactory.deploy(500000)) as unknown as PoolManager
+  const poolManager = (await poolManagerFactory.deploy()) as unknown as PoolManager
   return poolManager
 }
 
@@ -81,12 +85,16 @@ export async function addLiquidityToV4Pool(
   owner: SignerWithAddress
 ) {
   let v4Planner: V4Planner = new V4Planner()
-  let positionConfig = {
-    poolKey: pool.poolKey,
-    tickLower: pool.tickLower,
-    tickUpper: pool.tickUpper,
-  }
-  v4Planner.addAction(Actions.MINT_POSITION, [positionConfig, liquidity, MAX_UINT128, MAX_UINT128, owner.address, '0x'])
+  v4Planner.addAction(Actions.MINT_POSITION, [
+    pool.poolKey,
+    pool.tickLower,
+    pool.tickUpper,
+    liquidity,
+    MAX_UINT128,
+    MAX_UINT128,
+    owner.address,
+    '0x',
+  ])
   v4Planner.addAction(Actions.CLOSE_CURRENCY, [pool.poolKey.currency0])
   v4Planner.addAction(Actions.CLOSE_CURRENCY, [pool.poolKey.currency1])
 
