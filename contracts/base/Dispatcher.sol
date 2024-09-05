@@ -25,6 +25,18 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
     error InvalidAction(bytes4 action);
     error NotAuthorizedForToken(uint256 tokenId);
 
+    /// @notice Executes encoded commands along with provided inputs.
+    /// @param commands A set of concatenated commands, each 1 byte in length
+    /// @param inputs An array of byte strings containing abi encoded inputs for each command
+    function execute(bytes calldata commands, bytes[] calldata inputs) external payable virtual;
+
+    /// @notice Public view function to be used instead of msg.sender, as the contract performs self-reentrancy and at
+    /// times msg.sender == address(this). Instead msgSender() returns the initiator of the lock
+    /// @dev overrides BaseActionsRouter.msgSender in V4Router
+    function msgSender() public view override returns (address) {
+        return _getLocker();
+    }
+
     /// @notice Decodes and executes the given command with the given inputs
     /// @param commandType The command type to execute
     /// @param inputs The inputs to execute the command with
@@ -289,16 +301,4 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
             return recipient;
         }
     }
-
-    /// @notice Public view function to be used instead of msg.sender, as the contract performs self-reentrancy and at
-    /// times msg.sender == address(this). Instead msgSender() returns the initiator of the lock
-    /// @dev overrides BaseActionsRouter.msgSender in V4Router
-    function msgSender() public view override returns (address) {
-        return _getLocker();
-    }
-
-    /// @notice Executes encoded commands along with provided inputs.
-    /// @param commands A set of concatenated commands, each 1 byte in length
-    /// @param inputs An array of byte strings containing abi encoded inputs for each command
-    function execute(bytes calldata commands, bytes[] calldata inputs) external payable virtual;
 }

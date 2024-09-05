@@ -12,11 +12,6 @@ import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
 import {MigratorImmutables, MigratorParameters} from './modules/MigratorImmutables.sol';
 
 contract UniversalRouter is IUniversalRouter, Dispatcher {
-    modifier checkDeadline(uint256 deadline) {
-        if (block.timestamp > deadline) revert TransactionDeadlinePassed();
-        _;
-    }
-
     constructor(RouterParameters memory params)
         UniswapImmutables(
             UniswapParameters(params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash)
@@ -25,6 +20,16 @@ contract UniversalRouter is IUniversalRouter, Dispatcher {
         PaymentsImmutables(PaymentsParameters(params.permit2, params.weth9))
         MigratorImmutables(MigratorParameters(params.v3NFTPositionManager, params.v4PositionManager))
     {}
+
+    modifier checkDeadline(uint256 deadline) {
+        if (block.timestamp > deadline) revert TransactionDeadlinePassed();
+        _;
+    }
+
+    /// @notice To receive ETH from WETH
+    receive() external payable {
+        if (msg.sender != address(WETH9) && msg.sender != address(poolManager)) revert InvalidEthSender();
+    }
 
     /// @inheritdoc IUniversalRouter
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
@@ -58,10 +63,5 @@ contract UniversalRouter is IUniversalRouter, Dispatcher {
 
     function successRequired(bytes1 command) internal pure returns (bool) {
         return command & Commands.FLAG_ALLOW_REVERT == 0;
-    }
-
-    /// @notice To receive ETH from WETH
-    receive() external payable {
-        if (msg.sender != address(WETH9) && msg.sender != address(poolManager)) revert InvalidEthSender();
     }
 }
