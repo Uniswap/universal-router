@@ -281,7 +281,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
         } else {
             // 0x21 <= command
             if (command == Commands.EXECUTE_SUB_PLAN) {
-                (bytes calldata _commands, bytes[] calldata _inputs) = inputs.decodeActionsRouterParams();
+                (bytes calldata _commands, bytes[] calldata _inputs) = inputs.decodeCommandsAndInputs();
                 (success, output) = (address(this)).call(abi.encodeCall(Dispatcher.execute, (_commands, _inputs)));
             } else {
                 // placeholder area for commands 0x22-0x3f
