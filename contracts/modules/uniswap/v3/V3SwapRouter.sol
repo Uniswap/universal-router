@@ -7,6 +7,7 @@ import {SafeCast} from '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import {IUniswapV3Pool} from '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 import {IUniswapV3SwapCallback} from '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
+import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 import {Permit2Payments} from '../../Permit2Payments.sol';
 import {UniswapImmutables} from '../UniswapImmutables.sol';
 import {MaxInputAmount} from '../../../libraries/MaxInputAmount.sol';
@@ -16,6 +17,7 @@ import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3SwapCallback {
     using V3Path for bytes;
     using BytesLib for bytes;
+    using CalldataDecoder for bytes;
     using SafeCast for uint256;
 
     error V3InvalidSwap();
