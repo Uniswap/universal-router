@@ -4,8 +4,11 @@
 pragma solidity ^0.8.0;
 
 import {Constants} from '../../../libraries/Constants.sol';
+import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 
 library BytesLib {
+    using CalldataDecoder for bytes;
+
     error SliceOutOfBounds();
 
     /// @notice Returns the address starting at byte 0
@@ -68,5 +71,11 @@ library BytesLib {
             res.length := length
             res.offset := offset
         }
+    }
+
+    /// @notice Equivalent to abi.decode(bytes, bytes[])
+    /// @param _bytes The input bytes string to extract an parameters from
+    function decodeCommandsAndInputs(bytes calldata _bytes) internal pure returns (bytes calldata, bytes[] calldata) {
+        return _bytes.decodeActionsRouterParams();
     }
 }
