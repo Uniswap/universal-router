@@ -14,11 +14,13 @@ import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
+import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
 abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRouter, V3ToV4Migrator, Lock {
     using BytesLib for bytes;
+    using CalldataDecoder for bytes;
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
@@ -279,8 +281,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
         } else {
             // 0x21 <= command
             if (command == Commands.EXECUTE_SUB_PLAN) {
-                bytes calldata _commands = inputs.toBytes(0);
-                bytes[] calldata _inputs = inputs.toBytesArray(1);
+                (bytes calldata _commands, bytes[] calldata _inputs) = inputs.decodeActionsRouterParams();
                 (success, output) = (address(this)).call(abi.encodeCall(Dispatcher.execute, (_commands, _inputs)));
             } else {
                 // placeholder area for commands 0x22-0x3f

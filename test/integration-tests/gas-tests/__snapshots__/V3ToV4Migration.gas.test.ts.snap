@@ -31,34 +31,34 @@ Object {
 exports[`V3 to V4 Migration Gas Tests V4 Commands increase gas: increase 1`] = `
 Object {
   "calldataByteLength": 2084,
-  "gasUsed": 227149,
+  "gasUsed": 228007,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands increase gas: migrate and increase 1`] = `
 Object {
   "calldataByteLength": 2980,
-  "gasUsed": 452177,
+  "gasUsed": 452864,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate and mint 1`] = `
 Object {
   "calldataByteLength": 2500,
-  "gasUsed": 590223,
+  "gasUsed": 591090,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate weth position into eth position with forwarding 1`] = `
 Object {
   "calldataByteLength": 2788,
-  "gasUsed": 594553,
+  "gasUsed": 595247,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: mint 1`] = `
 Object {
   "calldataByteLength": 1604,
-  "gasUsed": 436651,
+  "gasUsed": 437518,
 }
 `;
