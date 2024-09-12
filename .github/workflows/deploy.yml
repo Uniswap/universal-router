@@ -2,6 +2,8 @@ name: Release
 on:
   # manual trigger
   workflow_dispatch:
+    - main
+    - dev
 
 jobs:
   deploy:
