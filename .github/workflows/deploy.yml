@@ -43,5 +43,5 @@ jobs:
           NPM_CONFIG_USERCONFIG: /dev/null
           YARN_NPM_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
-        run: yarn publish
+        run: yarn npm publish
       
