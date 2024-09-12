@@ -1,31 +1,43 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.24;
 
 import {V2SwapRouter} from '../modules/uniswap/v2/V2SwapRouter.sol';
 import {V3SwapRouter} from '../modules/uniswap/v3/V3SwapRouter.sol';
+import {V4SwapRouter} from '../modules/uniswap/v4/V4SwapRouter.sol';
 import {BytesLib} from '../modules/uniswap/v3/BytesLib.sol';
 import {Payments} from '../modules/Payments.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
-import {NFTImmutables} from '../modules/NFTImmutables.sol';
-import {Callbacks} from '../base/Callbacks.sol';
+import {V3ToV4Migrator} from '../modules/V3ToV4Migrator.sol';
 import {Commands} from '../libraries/Commands.sol';
-import {LockAndMsgSender} from './LockAndMsgSender.sol';
-import {ERC721} from 'solmate/src/tokens/ERC721.sol';
-import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
+import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
-import {ICryptoPunksMarket} from '../interfaces/external/ICryptoPunksMarket.sol';
+import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
+import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
+import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
-abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRouter, Callbacks, LockAndMsgSender {
+abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRouter, V3ToV4Migrator, Lock {
     using BytesLib for bytes;
+    using CalldataDecoder for bytes;
 
     error InvalidCommandType(uint256 commandType);
-    error BuyPunkFailed();
-    error InvalidOwnerERC721();
-    error InvalidOwnerERC1155();
     error BalanceTooLow();
+    error InvalidAction(bytes4 action);
+    error NotAuthorizedForToken(uint256 tokenId);
+
+    /// @notice Executes encoded commands along with provided inputs.
+    /// @param commands A set of concatenated commands, each 1 byte in length
+    /// @param inputs An array of byte strings containing abi encoded inputs for each command
+    function execute(bytes calldata commands, bytes[] calldata inputs) external payable virtual;
+
+    /// @notice Public view function to be used instead of msg.sender, as the contract performs self-reentrancy and at
+    /// times msg.sender == address(this). Instead msgSender() returns the initiator of the lock
+    /// @dev overrides BaseActionsRouter.msgSender in V4Router
+    function msgSender() public view override returns (address) {
+        return _getLocker();
+    }
 
     /// @notice Decodes and executes the given command with the given inputs
     /// @param commandType The command type to execute
@@ -38,10 +50,12 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
 
         success = true;
 
-        if (command < Commands.FOURTH_IF_BOUNDARY) {
-            if (command < Commands.SECOND_IF_BOUNDARY) {
+        // 0x00 <= command < 0x21
+        if (command < Commands.EXECUTE_SUB_PLAN) {
+            // 0x00 <= command < 0x10
+            if (command < Commands.V4_SWAP) {
                 // 0x00 <= command < 0x08
-                if (command < Commands.FIRST_IF_BOUNDARY) {
+                if (command < Commands.V2_SWAP_EXACT_IN) {
                     if (command == Commands.V3_SWAP_EXACT_IN) {
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
                         address recipient;
@@ -56,7 +70,7 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         bytes calldata path = inputs.toBytes(3);
-                        address payer = payerIsUser ? lockedBy : address(this);
+                        address payer = payerIsUser ? msgSender() : address(this);
                         v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
@@ -72,7 +86,7 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         bytes calldata path = inputs.toBytes(3);
-                        address payer = payerIsUser ? lockedBy : address(this);
+                        address payer = payerIsUser ? msgSender() : address(this);
                         v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
                         // equivalent: abi.decode(inputs, (address, address, uint160))
@@ -84,12 +98,16 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                             recipient := calldataload(add(inputs.offset, 0x20))
                             amount := calldataload(add(inputs.offset, 0x40))
                         }
-                        permit2TransferFrom(token, lockedBy, map(recipient), amount);
+                        permit2TransferFrom(token, msgSender(), map(recipient), amount);
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
-                        (IAllowanceTransfer.PermitBatch memory permitBatch,) =
-                            abi.decode(inputs, (IAllowanceTransfer.PermitBatch, bytes));
+                        IAllowanceTransfer.PermitBatch calldata permitBatch;
+                        assembly {
+                            // this is a variable length struct, so calldataload(inputs.offset) contains the
+                            // offset from inputs.offset at which the struct begins
+                            permitBatch := add(inputs.offset, calldataload(inputs.offset))
+                        }
                         bytes calldata data = inputs.toBytes(1);
-                        PERMIT2.permit(lockedBy, permitBatch, data);
+                        PERMIT2.permit(msgSender(), permitBatch, data);
                     } else if (command == Commands.SWEEP) {
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
@@ -127,8 +145,8 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                         // placeholder area for command 0x07
                         revert InvalidCommandType(command);
                     }
-                    // 0x08 <= command < 0x10
                 } else {
+                    // 0x08 <= command < 0x10
                     if (command == Commands.V2_SWAP_EXACT_IN) {
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
                         address recipient;
@@ -143,7 +161,7 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         address[] calldata path = inputs.toAddressArray(3);
-                        address payer = payerIsUser ? lockedBy : address(this);
+                        address payer = payerIsUser ? msgSender() : address(this);
                         v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool))
@@ -159,7 +177,7 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         address[] calldata path = inputs.toAddressArray(3);
-                        address payer = payerIsUser ? lockedBy : address(this);
+                        address payer = payerIsUser ? msgSender() : address(this);
                         v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer);
                     } else if (command == Commands.PERMIT2_PERMIT) {
                         // equivalent: abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes))
@@ -168,16 +186,16 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                             permitSingle := inputs.offset
                         }
                         bytes calldata data = inputs.toBytes(6); // PermitSingle takes first 6 slots (0..5)
-                        PERMIT2.permit(lockedBy, permitSingle, data);
+                        PERMIT2.permit(msgSender(), permitSingle, data);
                     } else if (command == Commands.WRAP_ETH) {
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;
-                        uint256 amountMin;
+                        uint256 amount;
                         assembly {
                             recipient := calldataload(inputs.offset)
-                            amountMin := calldataload(add(inputs.offset, 0x20))
+                            amount := calldataload(add(inputs.offset, 0x20))
                         }
-                        Payments.wrapETH(map(recipient), amountMin);
+                        Payments.wrapETH(map(recipient), amount);
                     } else if (command == Commands.UNWRAP_WETH) {
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;
@@ -188,9 +206,13 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                         }
                         Payments.unwrapWETH9(map(recipient), amountMin);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
-                        (IAllowanceTransfer.AllowanceTransferDetails[] memory batchDetails) =
-                            abi.decode(inputs, (IAllowanceTransfer.AllowanceTransferDetails[]));
-                        permit2TransferFrom(batchDetails, lockedBy);
+                        IAllowanceTransfer.AllowanceTransferDetails[] calldata batchDetails;
+                        (uint256 length, uint256 offset) = inputs.toLengthOffset(0);
+                        assembly {
+                            batchDetails.length := length
+                            batchDetails.offset := offset
+                        }
+                        permit2TransferFrom(batchDetails, msgSender());
                     } else if (command == Commands.BALANCE_CHECK_ERC20) {
                         // equivalent: abi.decode(inputs, (address, address, uint256))
                         address owner;
@@ -208,220 +230,76 @@ abstract contract Dispatcher is NFTImmutables, Payments, V2SwapRouter, V3SwapRou
                         revert InvalidCommandType(command);
                     }
                 }
-                // 0x10 <= command
             } else {
-                // 0x10 <= command < 0x18
-                if (command < Commands.THIRD_IF_BOUNDARY) {
-                    if (command == Commands.SEAPORT_V1_5) {
-                        /// @dev Seaport 1.4 and 1.5 allow for orders to be created by contracts.
-                        ///     These orders pass control to the contract offerers during fufillment,
-                        ///         allowing them to perform any number of destructive actions as a holder of the NFT.
-                        ///     Integrators should be aware that in some scenarios: e.g. purchasing an NFT that allows the holder
-                        ///         to claim another NFT, the contract offerer can "steal" the claim during order fufillment.
-                        ///     For some such purchases, an OWNER_CHECK command can be prepended to ensure that all tokens have the desired owner at the end of the transaction.
-                        ///     This is also outlined in the Seaport documentation: https://github.com/ProjectOpenSea/seaport/blob/main/docs/SeaportDocumentation.md
-                        (uint256 value, bytes calldata data) = getValueAndData(inputs);
-                        (success, output) = SEAPORT_V1_5.call{value: value}(data);
-                    } else if (command == Commands.LOOKS_RARE_V2) {
-                        // equivalent: abi.decode(inputs, (uint256, bytes))
-                        uint256 value;
-                        assembly {
-                            value := calldataload(inputs.offset)
-                        }
-                        bytes calldata data = inputs.toBytes(1);
-                        (success, output) = LOOKS_RARE_V2.call{value: value}(data);
-                    } else if (command == Commands.NFTX) {
-                        // equivalent: abi.decode(inputs, (uint256, bytes))
-                        (uint256 value, bytes calldata data) = getValueAndData(inputs);
-                        (success, output) = NFTX_ZAP.call{value: value}(data);
-                    } else if (command == Commands.CRYPTOPUNKS) {
-                        // equivalent: abi.decode(inputs, (uint256, address, uint256))
-                        uint256 punkId;
-                        address recipient;
-                        uint256 value;
-                        assembly {
-                            punkId := calldataload(inputs.offset)
-                            recipient := calldataload(add(inputs.offset, 0x20))
-                            value := calldataload(add(inputs.offset, 0x40))
-                        }
-                        (success, output) = CRYPTOPUNKS.call{value: value}(
-                            abi.encodeWithSelector(ICryptoPunksMarket.buyPunk.selector, punkId)
-                        );
-                        if (success) ICryptoPunksMarket(CRYPTOPUNKS).transferPunk(map(recipient), punkId);
-                        else output = abi.encodePacked(BuyPunkFailed.selector);
-                    } else if (command == Commands.OWNER_CHECK_721) {
-                        // equivalent: abi.decode(inputs, (address, address, uint256))
-                        address owner;
-                        address token;
-                        uint256 id;
-                        assembly {
-                            owner := calldataload(inputs.offset)
-                            token := calldataload(add(inputs.offset, 0x20))
-                            id := calldataload(add(inputs.offset, 0x40))
-                        }
-                        success = (ERC721(token).ownerOf(id) == owner);
-                        if (!success) output = abi.encodePacked(InvalidOwnerERC721.selector);
-                    } else if (command == Commands.OWNER_CHECK_1155) {
-                        // equivalent: abi.decode(inputs, (address, address, uint256, uint256))
-                        address owner;
-                        address token;
-                        uint256 id;
-                        uint256 minBalance;
-                        assembly {
-                            owner := calldataload(inputs.offset)
-                            token := calldataload(add(inputs.offset, 0x20))
-                            id := calldataload(add(inputs.offset, 0x40))
-                            minBalance := calldataload(add(inputs.offset, 0x60))
-                        }
-                        success = (ERC1155(token).balanceOf(owner, id) >= minBalance);
-                        if (!success) output = abi.encodePacked(InvalidOwnerERC1155.selector);
-                    } else if (command == Commands.SWEEP_ERC721) {
-                        // equivalent: abi.decode(inputs, (address, address, uint256))
-                        address token;
-                        address recipient;
-                        uint256 id;
-                        assembly {
-                            token := calldataload(inputs.offset)
-                            recipient := calldataload(add(inputs.offset, 0x20))
-                            id := calldataload(add(inputs.offset, 0x40))
-                        }
-                        Payments.sweepERC721(token, map(recipient), id);
+                // 0x10 <= command < 0x21
+                if (command == Commands.V4_SWAP) {
+                    // pass the calldata provided to V4SwapRouter._executeActions (defined in BaseActionsRouter)
+                    _executeActions(inputs);
+                    // This contract MUST be approved to spend the token since its going to be doing the call on the position manager
+                } else if (command == Commands.V3_POSITION_MANAGER_PERMIT) {
+                    bytes4 selector;
+                    assembly {
+                        selector := calldataload(inputs.offset)
                     }
-                    // 0x18 <= command < 0x1f
+                    if (selector != IERC721Permit.permit.selector) {
+                        revert InvalidAction(selector);
+                    }
+
+                    (success, output) = address(V3_POSITION_MANAGER).call(inputs);
+                } else if (command == Commands.V3_POSITION_MANAGER_CALL) {
+                    bytes4 selector;
+                    assembly {
+                        selector := calldataload(inputs.offset)
+                    }
+                    if (!isValidAction(selector)) {
+                        revert InvalidAction(selector);
+                    }
+
+                    uint256 tokenId;
+                    assembly {
+                        // tokenId is always the first parameter in the valid actions
+                        tokenId := calldataload(add(inputs.offset, 0x04))
+                    }
+                    // If any other address that is not the owner wants to call this function, it also needs to be approved (in addition to this contract)
+                    // This can be done in 2 ways:
+                    //    1. This contract is permitted for the specific token and the caller is approved for ALL of the owner's tokens
+                    //    2. This contract is permitted for ALL of the owner's tokens and the caller is permitted for the specific token
+                    if (!isAuthorizedForToken(msgSender(), tokenId)) {
+                        revert NotAuthorizedForToken(tokenId);
+                    }
+
+                    (success, output) = address(V3_POSITION_MANAGER).call(inputs);
+                } else if (command == Commands.V4_POSITION_CALL) {
+                    // should only call modifyLiquidities() to mint
+                    // do not permit or approve this contract over a v4 position or someone could use this command to decrease, burn, or transfer your position
+                    (success, output) = address(V4_POSITION_MANAGER).call{value: address(this).balance}(inputs);
                 } else {
-                    if (command == Commands.X2Y2_721) {
-                        (success, output) = callAndTransfer721(inputs, X2Y2);
-                    } else if (command == Commands.SUDOSWAP) {
-                        // equivalent: abi.decode(inputs, (uint256, bytes))
-                        (uint256 value, bytes calldata data) = getValueAndData(inputs);
-                        (success, output) = SUDOSWAP.call{value: value}(data);
-                    } else if (command == Commands.NFT20) {
-                        // equivalent: abi.decode(inputs, (uint256, bytes))
-                        (uint256 value, bytes calldata data) = getValueAndData(inputs);
-                        (success, output) = NFT20_ZAP.call{value: value}(data);
-                    } else if (command == Commands.X2Y2_1155) {
-                        (success, output) = callAndTransfer1155(inputs, X2Y2);
-                    } else if (command == Commands.FOUNDATION) {
-                        (success, output) = callAndTransfer721(inputs, FOUNDATION);
-                    } else if (command == Commands.SWEEP_ERC1155) {
-                        // equivalent: abi.decode(inputs, (address, address, uint256, uint256))
-                        address token;
-                        address recipient;
-                        uint256 id;
-                        uint256 amount;
-                        assembly {
-                            token := calldataload(inputs.offset)
-                            recipient := calldataload(add(inputs.offset, 0x20))
-                            id := calldataload(add(inputs.offset, 0x40))
-                            amount := calldataload(add(inputs.offset, 0x60))
-                        }
-                        Payments.sweepERC1155(token, map(recipient), id, amount);
-                    } else if (command == Commands.ELEMENT_MARKET) {
-                        // equivalent: abi.decode(inputs, (uint256, bytes))
-                        (uint256 value, bytes calldata data) = getValueAndData(inputs);
-                        (success, output) = ELEMENT_MARKET.call{value: value}(data);
-                    } else {
-                        // placeholder for command 0x1f
-                        revert InvalidCommandType(command);
-                    }
+                    // placeholder area for commands 0x13-0x20
+                    revert InvalidCommandType(command);
                 }
             }
-            // 0x20 <= command
         } else {
-            if (command == Commands.SEAPORT_V1_4) {
-                /// @dev Seaport 1.4 and 1.5 allow for orders to be created by contracts.
-                ///     These orders pass control to the contract offerers during fufillment,
-                ///         allowing them to perform any number of destructive actions as a holder of the NFT.
-                ///     Integrators should be aware that in some scenarios: e.g. purchasing an NFT that allows the holder
-                ///         to claim another NFT, the contract offerer can "steal" the claim during order fufillment.
-                ///     For some such purchases, an OWNER_CHECK command can be prepended to ensure that all tokens have the desired owner at the end of the transaction.
-                ///     This is also outlined in the Seaport documentation: https://github.com/ProjectOpenSea/seaport/blob/main/docs/SeaportDocumentation.md
-                (uint256 value, bytes calldata data) = getValueAndData(inputs);
-                (success, output) = SEAPORT_V1_4.call{value: value}(data);
-            } else if (command == Commands.EXECUTE_SUB_PLAN) {
-                bytes calldata _commands = inputs.toBytes(0);
-                bytes[] calldata _inputs = inputs.toBytesArray(1);
-                (success, output) =
-                    (address(this)).call(abi.encodeWithSelector(Dispatcher.execute.selector, _commands, _inputs));
-            } else if (command == Commands.APPROVE_ERC20) {
-                ERC20 token;
-                PaymentsImmutables.Spenders spender;
-                assembly {
-                    token := calldataload(inputs.offset)
-                    spender := calldataload(add(inputs.offset, 0x20))
-                }
-                Payments.approveERC20(token, spender);
+            // 0x21 <= command
+            if (command == Commands.EXECUTE_SUB_PLAN) {
+                (bytes calldata _commands, bytes[] calldata _inputs) = inputs.decodeCommandsAndInputs();
+                (success, output) = (address(this)).call(abi.encodeCall(Dispatcher.execute, (_commands, _inputs)));
             } else {
-                // placeholder area for commands 0x23-0x3f
+                // placeholder area for commands 0x22-0x3f
                 revert InvalidCommandType(command);
             }
         }
     }
 
-    /// @notice Executes encoded commands along with provided inputs.
-    /// @param commands A set of concatenated commands, each 1 byte in length
-    /// @param inputs An array of byte strings containing abi encoded inputs for each command
-    function execute(bytes calldata commands, bytes[] calldata inputs) external payable virtual;
-
-    /// @notice Performs a call to purchase an ERC721, then transfers the ERC721 to a specified recipient
-    /// @param inputs The inputs for the protocol and ERC721 transfer, encoded
-    /// @param protocol The protocol to pass the calldata to
-    /// @return success True on success of the command, false on failure
-    /// @return output The outputs or error messages, if any, from the command
-    function callAndTransfer721(bytes calldata inputs, address protocol)
-        internal
-        returns (bool success, bytes memory output)
-    {
-        // equivalent: abi.decode(inputs, (uint256, bytes, address, address, uint256))
-        (uint256 value, bytes calldata data) = getValueAndData(inputs);
-        address recipient;
-        address token;
-        uint256 id;
-        assembly {
-            // 0x00 and 0x20 offsets are value and data, above
-            recipient := calldataload(add(inputs.offset, 0x40))
-            token := calldataload(add(inputs.offset, 0x60))
-            id := calldataload(add(inputs.offset, 0x80))
+    /// @notice Calculates the recipient address for a command
+    /// @param recipient The recipient or recipient-flag for the command
+    /// @return output The resultant recipient for the command
+    function map(address recipient) internal view returns (address) {
+        if (recipient == ActionConstants.MSG_SENDER) {
+            return msgSender();
+        } else if (recipient == ActionConstants.ADDRESS_THIS) {
+            return address(this);
+        } else {
+            return recipient;
         }
-        (success, output) = protocol.call{value: value}(data);
-        if (success) ERC721(token).safeTransferFrom(address(this), map(recipient), id);
-    }
-
-    /// @notice Performs a call to purchase an ERC1155, then transfers the ERC1155 to a specified recipient
-    /// @param inputs The inputs for the protocol and ERC1155 transfer, encoded
-    /// @param protocol The protocol to pass the calldata to
-    /// @return success True on success of the command, false on failure
-    /// @return output The outputs or error messages, if any, from the command
-    function callAndTransfer1155(bytes calldata inputs, address protocol)
-        internal
-        returns (bool success, bytes memory output)
-    {
-        // equivalent: abi.decode(inputs, (uint256, bytes, address, address, uint256, uint256))
-        (uint256 value, bytes calldata data) = getValueAndData(inputs);
-        address recipient;
-        address token;
-        uint256 id;
-        uint256 amount;
-        assembly {
-            // 0x00 and 0x20 offsets are value and data, above
-            recipient := calldataload(add(inputs.offset, 0x40))
-            token := calldataload(add(inputs.offset, 0x60))
-            id := calldataload(add(inputs.offset, 0x80))
-            amount := calldataload(add(inputs.offset, 0xa0))
-        }
-        (success, output) = protocol.call{value: value}(data);
-        if (success) ERC1155(token).safeTransferFrom(address(this), map(recipient), id, amount, new bytes(0));
-    }
-
-    /// @notice Helper function to extract `value` and `data` parameters from input bytes string
-    /// @dev The helper assumes that `value` is the first parameter, and `data` is the second
-    /// @param inputs The bytes string beginning with value and data parameters
-    /// @return value The 256 bit integer value
-    /// @return data The data bytes string
-    function getValueAndData(bytes calldata inputs) internal pure returns (uint256 value, bytes calldata data) {
-        assembly {
-            value := calldataload(inputs.offset)
-        }
-        data = inputs.toBytes(1);
     }
 }

@@ -122,7 +122,7 @@ library UniswapV2Library {
     /// @param path The path of the multi-hop trade
     /// @return amount The input amount of the input token
     /// @return pair The first pair in the trade
-    function getAmountInMultihop(address factory, bytes32 initCodeHash, uint256 amountOut, address[] memory path)
+    function getAmountInMultihop(address factory, bytes32 initCodeHash, uint256 amountOut, address[] calldata path)
         internal
         view
         returns (uint256 amount, address pair)
