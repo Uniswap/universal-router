@@ -3,7 +3,8 @@
   "description": "Smart contracts for Universal Router",
   "license": "GPL-2.0-or-later",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "version": "1.6.0",
   "keywords": [
