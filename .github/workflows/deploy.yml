@@ -37,9 +37,15 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies and compile contracts
-        run: |
-          yarn install --immutable --immutable-cache
-          yarn compile
+        run: yarn install --immutable --immutable-cache
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Compile
+        run: yarn compile
 
       - name: Release
         env:
