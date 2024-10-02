@@ -242,7 +242,7 @@ describe('UniversalRouter', () => {
 
         const wethAmount = ethers.utils.parseEther('1')
 
-        planner.addCommand(CommandType.WRAP_ETH, [alice.address, wethAmount])
+        planner.addCommand(CommandType.WRAP_ETH, [router.address, wethAmount])
         planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
           alice.address,
           wethAmount,
