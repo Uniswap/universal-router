@@ -8,6 +8,7 @@ import {
   V3_INIT_CODE_HASH_MAINNET,
   PERMIT2_ADDRESS,
   V3_NFT_POSITION_MANAGER_MAINNET,
+  V4_POSITION_DESCRIPTOR_ADDRESS,
 } from './constants'
 import { deployV4PoolManager, deployV4PositionManager } from './v4Helpers'
 
@@ -22,7 +23,7 @@ export async function deployRouter(v4PoolManager?: string, mockReentrantWETH?: s
     poolInitCodeHash: V3_INIT_CODE_HASH_MAINNET,
     v4PoolManager: poolManager,
     v3NFTPositionManager: V3_NFT_POSITION_MANAGER_MAINNET,
-    v4PositionManager: (await deployV4PositionManager(poolManager, PERMIT2_ADDRESS)).address,
+    v4PositionManager: (await deployV4PositionManager(poolManager, PERMIT2_ADDRESS, V4_POSITION_DESCRIPTOR_ADDRESS)).address,
   }
 
   const routerFactory = await ethers.getContractFactory('UniversalRouter')
