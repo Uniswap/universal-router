@@ -75,7 +75,7 @@ export async function deployV4PoolManager(): Promise<PoolManager> {
 }
 
 export async function initializeV4Pool(poolManager: PoolManager, poolKey: any, sqrtPrice: BigNumber) {
-  await poolManager.initialize(poolKey, sqrtPrice.toString(), '0x')
+  await poolManager.initialize(poolKey, sqrtPrice.toString())
 }
 
 export async function addLiquidityToV4Pool(
