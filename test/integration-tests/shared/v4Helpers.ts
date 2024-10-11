@@ -58,7 +58,11 @@ export const ETH_USDC = {
   tickUpper: ETH_USDC_TICK_UPPER,
 }
 
-export async function deployV4PositionManager(v4PoolManager: string, permit2: string, v4PositionDescriptor: string): Promise<PositionManager> {
+export async function deployV4PositionManager(
+  v4PoolManager: string,
+  permit2: string,
+  v4PositionDescriptor: string
+): Promise<PositionManager> {
   const positionManagerFactory = await ethers.getContractFactory('PositionManager')
   const positionManager = (await positionManagerFactory.deploy(
     v4PoolManager,
