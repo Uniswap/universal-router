@@ -1177,7 +1177,6 @@ describe('V3 to V4 Migration Tests:', () => {
       await expect(
         executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
       ).to.be.revertedWithCustomError(router, 'OnlyMintAllowed')
-
     })
 
     it('decrease v4 does not succeed', async () => {
