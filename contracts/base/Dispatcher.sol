@@ -16,6 +16,7 @@ import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721P
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 import {Actions} from '@uniswap/v4-periphery/src/libraries/Actions.sol';
+import {PoolInitializer} from '@uniswap/v4-periphery/src/base/PoolInitializer.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
@@ -270,6 +271,15 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                     }
 
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
+                } else if (command == Commands.V4_INITIALIZE_POOL) {
+                    bytes4 selector;
+                    assembly {
+                        selector := calldataload(inputs.offset)
+                    }
+                    if (selector != PoolInitializer.initializePool.selector) {
+                        revert InvalidAction(selector);
+                    }
+                    (success, output) = address(V4_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V4_POSITION_CALL) {
                     // should only call modifyLiquidities() to mint
                     bytes4 selector;

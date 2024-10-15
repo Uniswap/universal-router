@@ -29,6 +29,7 @@ import {
   encodeBurn,
   encodeModifyLiquidities,
   encodeERC721PermitV4,
+  encodeInitializePool,
 } from './shared/encodeCall'
 import { executeRouter } from './shared/executeRouter'
 import { USDC_WETH, ETH_USDC } from './shared/v4Helpers'
@@ -969,7 +970,17 @@ describe('V3 to V4 Migration Tests:', () => {
   describe('V4 Commands', () => {
     beforeEach(async () => {
       // initialize new pool on v4
-      await v4PositionManager.connect(bob).initializePool(USDC_WETH.poolKey, USDC_WETH.price, '0x')
+      const initializePoolParams = {
+        key: USDC_WETH.poolKey,
+        sqrtPriceX96: USDC_WETH.price,
+        hookData: '0x',
+      }
+
+      const initializePoolCall = encodeInitializePool(initializePoolParams)
+
+      planner.addCommand(CommandType.V4_INITIALIZE_POOL, [initializePoolCall])
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      planner = new RoutePlanner()
     })
 
     it('mint v4 succeeds', async () => {

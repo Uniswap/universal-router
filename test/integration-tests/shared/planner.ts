@@ -25,7 +25,8 @@ export enum CommandType {
   V4_SWAP = 0x10,
   V3_POSITION_MANAGER_PERMIT = 0x11,
   V3_POSITION_MANAGER_CALL = 0x12,
-  V4_POSITION_MANAGER_CALL = 0x13,
+  V4_INITIALIZE_POOL = 0x13,
+  V4_POSITION_MANAGER_CALL = 0x14,
 
   EXECUTE_SUB_PLAN = 0x21,
 }
@@ -70,6 +71,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.V4_SWAP]: ['bytes', 'bytes[]'],
   [CommandType.V3_POSITION_MANAGER_PERMIT]: ['bytes'],
   [CommandType.V3_POSITION_MANAGER_CALL]: ['bytes'],
+  [CommandType.V4_INITIALIZE_POOL]: ['bytes'],
   [CommandType.V4_POSITION_MANAGER_CALL]: ['bytes'],
 }
 
@@ -109,7 +111,8 @@ export function createCommand(type: CommandType, parameters: any[]): RouterComma
   if (
     type === CommandType.V3_POSITION_MANAGER_CALL ||
     type === CommandType.V3_POSITION_MANAGER_PERMIT ||
-    type === CommandType.V4_POSITION_MANAGER_CALL
+    type === CommandType.V4_POSITION_MANAGER_CALL || 
+    type == CommandType.V4_INITIALIZE_POOL
   ) {
     return { type, encodedInput: parameters[0] }
   } else {
