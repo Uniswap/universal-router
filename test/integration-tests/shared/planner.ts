@@ -28,6 +28,9 @@ export enum CommandType {
   V4_POSITION_MANAGER_CALL = 0x13,
 
   EXECUTE_SUB_PLAN = 0x21,
+
+  PERMIT2_NO_REVERT = 0x8a, // ALLOW_FLAG_REVERT | PERMIT2_PERMIT
+  PERMIT2_PERMIT_BATCH_NO_REVERT = 0x83, // ALLOW_FLAG_REVERT | PERMIT2_PERMIT_BATCH
 }
 
 const ALLOW_REVERT_FLAG = 0x80
@@ -71,6 +74,9 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.V3_POSITION_MANAGER_PERMIT]: ['bytes'],
   [CommandType.V3_POSITION_MANAGER_CALL]: ['bytes'],
   [CommandType.V4_POSITION_MANAGER_CALL]: ['bytes'],
+
+  [CommandType.PERMIT2_NO_REVERT]: [PERMIT_STRUCT, 'bytes'],
+  [CommandType.PERMIT2_PERMIT_BATCH_NO_REVERT]: [PERMIT_BATCH_STRUCT, 'bytes'],
 }
 
 export class RoutePlanner {

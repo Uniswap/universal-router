@@ -279,6 +279,39 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOut1.add(minAmountOut2))
     })
 
+    it('PERMIT2 batch can silently fail', async () => {
+      const v2AmountIn1: BigNumber = expandTo18DecimalsBN(20)
+      const v2AmountIn2: BigNumber = expandTo18DecimalsBN(5)
+
+      const BATCH_PERMIT = {
+        details: [
+          {
+            token: DAI.address,
+            amount: v2AmountIn1,
+            expiration: 0, // expiration of 0 is block.timestamp
+            nonce: 0, // this is his first trade
+          },
+          {
+            token: WETH.address,
+            amount: v2AmountIn2,
+            expiration: 0, // expiration of 0 is block.timestamp
+            nonce: 0, // this is his first trade
+          },
+        ],
+        spender: router.address,
+        sigDeadline: DEADLINE,
+      }
+
+      const sig = await getPermitBatchSignature(BATCH_PERMIT, bob, permit2)
+
+      // transfer funds into DAI-USDC and DAI-USDT pairs to trade
+      planner.addCommand(CommandType.PERMIT2_PERMIT_BATCH, [BATCH_PERMIT, sig])
+
+      planner.addCommand(CommandType.PERMIT2_PERMIT_BATCH_NO_REVERT, [BATCH_PERMIT, sig])
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+    })
+
     it('ERC20 --> ERC20 split V2 and V2 different routes, different input tokens, each two hop, with batch permit', async () => {
       const route1 = [DAI.address, WETH.address, USDC.address]
       const route2 = [WETH.address, DAI.address, USDC.address]
