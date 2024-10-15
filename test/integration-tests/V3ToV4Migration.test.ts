@@ -969,7 +969,7 @@ describe('V3 to V4 Migration Tests:', () => {
   describe('V4 Commands', () => {
     beforeEach(async () => {
       // initialize new pool on v4
-      await v4PositionManager.connect(bob).initializePool(USDC_WETH.poolKey, USDC_WETH.price, '0x')
+      await v4PositionManager.connect(bob).initializePool(USDC_WETH.poolKey, USDC_WETH.price)
     })
 
     it('mint v4 succeeds', async () => {
@@ -1658,11 +1658,10 @@ describe('V3 to V4 Migration Tests:', () => {
           tickSpacing: 10,
           hooks: '0x0000000000000000000000000000000000000000',
         },
-        '79228162514264337593543950336',
-        '0x'
+        '79228162514264337593543950336'
       )
 
-      await v4PositionManager.connect(bob).initializePool(ETH_USDC.poolKey, ETH_USDC.price, '0x')
+      await v4PositionManager.connect(bob).initializePool(ETH_USDC.poolKey, ETH_USDC.price)
     })
     it('migrate with minting succeeds', async () => {
       // Bob max-approves the v3PM to access his USDC and WETH
