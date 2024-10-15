@@ -305,9 +305,11 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       const sig = await getPermitBatchSignature(BATCH_PERMIT, bob, permit2)
 
       // transfer funds into DAI-USDC and DAI-USDT pairs to trade
+      // do not allow revert
       planner.addCommand(CommandType.PERMIT2_PERMIT_BATCH, [BATCH_PERMIT, sig])
 
-      planner.addCommand(CommandType.PERMIT2_PERMIT_BATCH_NO_REVERT, [BATCH_PERMIT, sig])
+      // allow revert
+      planner.addCommand(CommandType.PERMIT2_PERMIT_BATCH, [BATCH_PERMIT, sig], true)
 
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
     })

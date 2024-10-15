@@ -97,7 +97,7 @@ describe('Uniswap V2 Tests:', () => {
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
 
       // 2) permit the router to access funds again, allowing revert
-      planner.addCommand(CommandType.PERMIT2_NO_REVERT, [permit, sig])
+      planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig], true)
 
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
     })
