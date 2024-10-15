@@ -111,7 +111,7 @@ export function createCommand(type: CommandType, parameters: any[]): RouterComma
   if (
     type === CommandType.V3_POSITION_MANAGER_CALL ||
     type === CommandType.V3_POSITION_MANAGER_PERMIT ||
-    type === CommandType.V4_POSITION_MANAGER_CALL || 
+    type === CommandType.V4_POSITION_MANAGER_CALL ||
     type == CommandType.V4_INITIALIZE_POOL
   ) {
     return { type, encodedInput: parameters[0] }
