@@ -12,10 +12,8 @@ import {Commands} from '../libraries/Commands.sol';
 import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
-import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
-import {PoolInitializer} from '@uniswap/v4-periphery/src/base/PoolInitializer.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
@@ -240,9 +238,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                     assembly {
                         selector := calldataload(inputs.offset)
                     }
-                    if (selector != IERC721Permit.permit.selector) {
-                        revert InvalidAction(selector);
-                    }
+                    _checkV3Permit(selector);
 
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V3_POSITION_MANAGER_CALL) {
@@ -251,9 +247,6 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                         selector := calldataload(inputs.offset)
                     }
                     _checkValidV3Action(selector);
-                    // if (!isValidAction(selector)) {
-                    //     revert InvalidAction(selector);
-                    // }
                     uint256 tokenId;
                     assembly {
                         // tokenId is always the first parameter in the valid actions
@@ -263,9 +256,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                     // This can be done in 2 ways:
                     //    1. This contract is permitted for the specific token and the caller is approved for ALL of the owner's tokens
                     //    2. This contract is permitted for ALL of the owner's tokens and the caller is permitted for the specific token
-                    if (!isAuthorizedForToken(msgSender(), tokenId)) {
-                        revert NotAuthorizedForToken(tokenId);
-                    }
+                    _checkIsAuthorizedForToken(msgSender(), tokenId);
 
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V4_INITIALIZE_POOL) {
@@ -273,9 +264,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                     assembly {
                         selector := calldataload(inputs.offset)
                     }
-                    if (selector != PoolInitializer.initializePool.selector) {
-                        revert InvalidAction(selector);
-                    }
+                    _checkV4Initialize(selector);
                     (success, output) = address(V4_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V4_POSITION_CALL) {
                     // should only call modifyLiquidities() to mint

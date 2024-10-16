@@ -3,7 +3,6 @@ pragma solidity ^0.8.24;
 
 import {Constants} from '../libraries/Constants.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
-import {BipsLibrary} from '@uniswap/v4-core/src/libraries/BipsLibrary.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
 import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
@@ -13,10 +12,12 @@ import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 abstract contract Payments is PaymentsImmutables {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for address;
-    using BipsLibrary for uint256;
 
     error InsufficientToken();
     error InsufficientETH();
+    error InvalidBips();
+
+    uint256 internal constant BPS_DENOMINATOR = 10_000;
 
     /// @notice Pays an amount of ETH or ERC20 to a recipient
     /// @param token The token to pay (can be ETH using Constants.ETH)
@@ -39,13 +40,14 @@ abstract contract Payments is PaymentsImmutables {
     /// @param recipient The address that will receive payment
     /// @param bips Portion in bips of whole balance of the contract
     function payPortion(address token, address recipient, uint256 bips) internal {
+        if (bips > BPS_DENOMINATOR) revert InvalidBips();
         if (token == Constants.ETH) {
             uint256 balance = address(this).balance;
-            uint256 amount = balance.calculatePortion(bips);
+            uint256 amount = (balance * bips) / BPS_DENOMINATOR;
             recipient.safeTransferETH(amount);
         } else {
             uint256 balance = ERC20(token).balanceOf(address(this));
-            uint256 amount = balance.calculatePortion(bips);
+            uint256 amount = (balance * bips) / BPS_DENOMINATOR;
             ERC20(token).safeTransfer(recipient, amount);
         }
     }

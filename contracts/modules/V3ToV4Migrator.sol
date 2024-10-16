@@ -5,6 +5,8 @@ import {MigratorImmutables} from '../modules/MigratorImmutables.sol';
 import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
 import {Actions} from '@uniswap/v4-periphery/src/libraries/Actions.sol';
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
+import {PoolInitializer} from '@uniswap/v4-periphery/src/base/PoolInitializer.sol';
+import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
 
 /// @title V3 to V4 Migrator
 /// @notice A contract that migrates liquidity from Uniswap V3 to V4
@@ -16,21 +18,37 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
     error NotAuthorizedForToken(uint256 tokenId);
 
     /// @dev the caller is authorized for the token if its the owner, spender, or operator
-    function isAuthorizedForToken(address caller, uint256 tokenId) internal view returns (bool) {
+    function _checkIsAuthorizedForToken(address caller, uint256 tokenId) internal view {
         address owner = V3_POSITION_MANAGER.ownerOf(tokenId);
-        return caller == owner || V3_POSITION_MANAGER.getApproved(tokenId) == caller
-            || V3_POSITION_MANAGER.isApprovedForAll(owner, caller);
+        if (
+            caller != owner && caller != V3_POSITION_MANAGER.getApproved(tokenId)
+                && !V3_POSITION_MANAGER.isApprovedForAll(owner, caller)
+        ) {
+            revert NotAuthorizedForToken(tokenId);
+        }
     }
 
     /// @dev validate if an action is decreaseLiquidity, collect, or burn
-    function _checkValidV3Action(bytes4 selector) internal view {
+    function _checkValidV3Action(bytes4 selector) internal pure {
         if (
-            !(
-                selector == INonfungiblePositionManager.decreaseLiquidity.selector
-                    || selector == INonfungiblePositionManager.collect.selector
-                    || selector == INonfungiblePositionManager.burn.selector
+            (
+                selector != INonfungiblePositionManager.decreaseLiquidity.selector
+                    && selector != INonfungiblePositionManager.collect.selector
+                    && selector != INonfungiblePositionManager.burn.selector
             )
         ) {
+            revert InvalidAction(selector);
+        }
+    }
+
+    function _checkV3Permit(bytes4 selector) internal pure {
+        if (selector != IERC721Permit.permit.selector) {
+            revert InvalidAction(selector);
+        }
+    }
+
+    function _checkV4Initialize(bytes4 selector) internal pure {
+        if (selector != PoolInitializer.initializePool.selector) {
             revert InvalidAction(selector);
         }
     }

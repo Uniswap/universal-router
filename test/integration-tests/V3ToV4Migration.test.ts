@@ -972,7 +972,7 @@ describe('V3 to V4 Migration Tests:', () => {
       // initialize new pool on v4
       const initializePoolParams = {
         key: USDC_WETH.poolKey,
-        sqrtPriceX96: USDC_WETH.price
+        sqrtPriceX96: USDC_WETH.price,
       }
 
       const initializePoolCall = encodeInitializePool(initializePoolParams)
@@ -1004,7 +1004,6 @@ describe('V3 to V4 Migration Tests:', () => {
       v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
 
       const calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
-      console.log(calldata)
 
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
 
@@ -1298,7 +1297,7 @@ describe('V3 to V4 Migration Tests:', () => {
           tickSpacing: 10,
           hooks: '0x0000000000000000000000000000000000000000',
         },
-        '79228162514264337593543950336',
+        '79228162514264337593543950336'
       )
 
       await v4PositionManager.connect(bob).initializePool(ETH_USDC.poolKey, ETH_USDC.price)
