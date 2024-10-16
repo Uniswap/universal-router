@@ -32,7 +32,7 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
     }
 
     /// @dev check that a call is to the ERC721 permit function
-    function _checkV3PermitCall(bytes calldata inputs) internal view {
+    function _checkV3PermitCall(bytes calldata inputs) internal pure {
         bytes4 selector;
         assembly {
             selector := calldataload(inputs.offset)
