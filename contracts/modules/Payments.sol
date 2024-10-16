@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Constants} from '../libraries/Constants.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
-import {BipsLibrary} from '@uniswap/v4-core/src/libraries/BipsLibrary.sol';
+import {BipsLibrary} from '@uniswap/v4-periphery/src/libraries/BipsLibrary.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
 import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
