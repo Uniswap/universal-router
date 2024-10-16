@@ -3,21 +3,21 @@
 exports[`V3 to V4 Migration Gas Tests V3 Commands burn gas: erc721permit + decreaseLiquidity + collect + burn 1`] = `
 Object {
   "calldataByteLength": 1092,
-  "gasUsed": 256278,
+  "gasUsed": 256271,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V3 Commands collect gas: erc721permit + decreaseLiquidity + collect 1`] = `
 Object {
   "calldataByteLength": 964,
-  "gasUsed": 223926,
+  "gasUsed": 223920,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V3 Commands decrease liquidity gas: erc721permit + decreaseLiquidity 1`] = `
 Object {
   "calldataByteLength": 740,
-  "gasUsed": 202194,
+  "gasUsed": 202191,
 }
 `;
 
@@ -38,21 +38,21 @@ Object {
 exports[`V3 to V4 Migration Gas Tests V4 Commands increase gas: migrate and increase 1`] = `
 Object {
   "calldataByteLength": 2980,
-  "gasUsed": 452916,
+  "gasUsed": 452909,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate and mint 1`] = `
 Object {
   "calldataByteLength": 2500,
-  "gasUsed": 591168,
+  "gasUsed": 591159,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate weth position into eth position with forwarding 1`] = `
 Object {
   "calldataByteLength": 2788,
-  "gasUsed": 595307,
+  "gasUsed": 595300,
 }
 `;
 
