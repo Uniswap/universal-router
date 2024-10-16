@@ -15,7 +15,6 @@ import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol'
 import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
-import {Actions} from '@uniswap/v4-periphery/src/libraries/Actions.sol';
 import {PoolInitializer} from '@uniswap/v4-periphery/src/base/PoolInitializer.sol';
 
 /// @title Decodes and Executes Commands
@@ -26,9 +25,6 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
-    error InvalidAction(bytes4 action);
-    error NotAuthorizedForToken(uint256 tokenId);
-    error OnlyMintAllowed();
 
     /// @notice Executes encoded commands along with provided inputs.
     /// @param commands A set of concatenated commands, each 1 byte in length
@@ -282,29 +278,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                     (success, output) = address(V4_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V4_POSITION_CALL) {
                     // should only call modifyLiquidities() to mint
-                    bytes4 selector;
-                    assembly {
-                        selector := calldataload(inputs.offset)
-                    }
-                    if (selector != V4_POSITION_MANAGER.modifyLiquidities.selector) {
-                        revert InvalidAction(selector);
-                    }
-
-                    bytes calldata slice = inputs[4:];
-                    (bytes calldata actions,) = slice.toBytes(0).decodeActionsRouterParams();
-
-                    uint256 numActions = actions.length;
-
-                    for (uint256 actionIndex = 0; actionIndex < numActions; actionIndex++) {
-                        uint256 action = uint8(actions[actionIndex]);
-
-                        if (
-                            action == Actions.INCREASE_LIQUIDITY || action == Actions.DECREASE_LIQUIDITY
-                                || action == Actions.BURN_POSITION
-                        ) {
-                            revert OnlyMintAllowed();
-                        }
-                    }
+                    _checkV4PositionManagerCall(inputs);
                     (success, output) = address(V4_POSITION_MANAGER).call{value: address(this).balance}(inputs);
                 } else {
                     // placeholder area for commands 0x13-0x20
