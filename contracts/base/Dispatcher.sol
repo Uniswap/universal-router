@@ -12,11 +12,11 @@ import {Commands} from '../libraries/Commands.sol';
 import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
+import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
-import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command

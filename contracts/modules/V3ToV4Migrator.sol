@@ -5,8 +5,6 @@ import {MigratorImmutables} from '../modules/MigratorImmutables.sol';
 import {INonfungiblePositionManager} from '@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol';
 import {Actions} from '@uniswap/v4-periphery/src/libraries/Actions.sol';
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
-import {PoolInitializer} from '@uniswap/v4-periphery/src/base/PoolInitializer.sol';
-import {IERC721Permit} from '@uniswap/v3-periphery/contracts/interfaces/IERC721Permit.sol';
 
 /// @title V3 to V4 Migrator
 /// @notice A contract that migrates liquidity from Uniswap V3 to V4
