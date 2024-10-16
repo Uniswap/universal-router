@@ -234,30 +234,10 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                     _executeActions(inputs);
                     // This contract MUST be approved to spend the token since its going to be doing the call on the position manager
                 } else if (command == Commands.V3_POSITION_MANAGER_PERMIT) {
-                    bytes4 selector;
-                    assembly {
-                        selector := calldataload(inputs.offset)
-                    }
-                    _checkV3Permit(selector);
-
+                    _checkV3PermitCall(inputs);
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V3_POSITION_MANAGER_CALL) {
-                    bytes4 selector;
-                    assembly {
-                        selector := calldataload(inputs.offset)
-                    }
-                    _checkValidV3Action(selector);
-                    uint256 tokenId;
-                    assembly {
-                        // tokenId is always the first parameter in the valid actions
-                        tokenId := calldataload(add(inputs.offset, 0x04))
-                    }
-                    // If any other address that is not the owner wants to call this function, it also needs to be approved (in addition to this contract)
-                    // This can be done in 2 ways:
-                    //    1. This contract is permitted for the specific token and the caller is approved for ALL of the owner's tokens
-                    //    2. This contract is permitted for ALL of the owner's tokens and the caller is permitted for the specific token
-                    _checkIsAuthorizedForToken(msgSender(), tokenId);
-
+                    _checkV3PositionManagerCall(inputs, msgSender());
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V4_INITIALIZE_POOL) {
                     bytes4 selector;
