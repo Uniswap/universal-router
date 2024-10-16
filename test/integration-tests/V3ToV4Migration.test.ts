@@ -30,7 +30,6 @@ import {
   encodeBurn,
   encodeModifyLiquidities,
   encodeERC721PermitV4,
-  encodeInitializePool,
 } from './shared/encodeCall'
 import { executeRouter } from './shared/executeRouter'
 import { USDC_WETH, ETH_USDC } from './shared/v4Helpers'
@@ -974,33 +973,21 @@ describe('V3 to V4 Migration Tests:', () => {
   describe('V4 Commands', () => {
     beforeEach(async () => {
       // initialize new pool on v4
-      const initializePoolParams = {
-        key: USDC_WETH.poolKey,
-        sqrtPriceX96: USDC_WETH.price,
-      }
-
-      const initializePoolCall = encodeInitializePool(initializePoolParams)
-
-      planner.addCommand(CommandType.V4_INITIALIZE_POOL, [initializePoolCall])
+      planner.addCommand(CommandType.V4_INITIALIZE_POOL, [USDC_WETH.poolKey, USDC_WETH.price])
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
       planner = new RoutePlanner()
     })
 
     it('initializes a pool', async () => {
-      const initializePoolParams = {
-        key: {
-          currency0: USDC.address,
-          currency1: WETH.address,
-          fee: FeeAmount.HIGH, // to make it different to USDC_WETH.poolKey
-          tickSpacing: 10,
-          hooks: '0x0000000000000000000000000000000000000000',
-        },
-        sqrtPriceX96: USDC_WETH.price,
+      const poolKey = {
+        currency0: USDC.address,
+        currency1: WETH.address,
+        fee: FeeAmount.HIGH, // to make it different to USDC_WETH.poolKey
+        tickSpacing: 10,
+        hooks: '0x0000000000000000000000000000000000000000',
       }
 
-      const initializePoolCall = encodeInitializePool(initializePoolParams)
-
-      planner.addCommand(CommandType.V4_INITIALIZE_POOL, [initializePoolCall])
+      planner.addCommand(CommandType.V4_INITIALIZE_POOL, [poolKey, USDC_WETH.price])
       let tx = await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
       // check that an initialize event was emitted on the pool manager

@@ -68,16 +68,6 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
         }
     }
 
-    function _checkV4InitializeCall(bytes calldata inputs) internal pure {
-        bytes4 selector;
-        assembly {
-            selector := calldataload(inputs.offset)
-        }
-        if (selector != PoolInitializer.initializePool.selector) {
-            revert InvalidAction(selector);
-        }
-    }
-
     /// @dev check that the v4 position manager call is a safe call
     function _checkV4PositionManagerCall(bytes calldata inputs) internal view {
         bytes4 selector;

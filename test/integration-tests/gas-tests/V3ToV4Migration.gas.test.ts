@@ -264,20 +264,15 @@ describe('V3 to V4 Migration Gas Tests', () => {
 
     describe('initialize pool', () => {
       it('gas: initialize a pool', async () => {
-        const initializePoolParams = {
-          key: {
-            currency0: USDC.address,
-            currency1: WETH.address,
-            fee: FeeAmount.HIGH, // to make it different to USDC_WETH.poolKey
-            tickSpacing: 10,
-            hooks: '0x0000000000000000000000000000000000000000',
-          },
-          sqrtPriceX96: USDC_WETH.price,
+        const poolKey = {
+          currency0: USDC.address,
+          currency1: WETH.address,
+          fee: FeeAmount.HIGH, // to make it different to USDC_WETH.poolKey
+          tickSpacing: 10,
+          hooks: '0x0000000000000000000000000000000000000000',
         }
 
-        const initializePoolCall = encodeInitializePool(initializePoolParams)
-
-        planner.addCommand(CommandType.V4_INITIALIZE_POOL, [initializePoolCall])
+        planner.addCommand(CommandType.V4_INITIALIZE_POOL, [poolKey, USDC_WETH.price])
 
         const { commands, inputs } = planner
         await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))

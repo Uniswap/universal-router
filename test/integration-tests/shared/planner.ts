@@ -38,6 +38,8 @@ const REVERTIBLE_COMMANDS = new Set<CommandType>([CommandType.EXECUTE_SUB_PLAN])
 const PERMIT_STRUCT =
   '((address token,uint160 amount,uint48 expiration,uint48 nonce) details, address spender, uint256 sigDeadline)'
 
+const POOL_KEY_STRUCT = '(address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks)'
+
 const PERMIT_BATCH_STRUCT =
   '((address token,uint160 amount,uint48 expiration,uint48 nonce)[] details, address spender, uint256 sigDeadline)'
 
@@ -71,7 +73,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.V4_SWAP]: ['bytes', 'bytes[]'],
   [CommandType.V3_POSITION_MANAGER_PERMIT]: ['bytes'],
   [CommandType.V3_POSITION_MANAGER_CALL]: ['bytes'],
-  [CommandType.V4_INITIALIZE_POOL]: ['bytes'],
+  [CommandType.V4_INITIALIZE_POOL]: [POOL_KEY_STRUCT, 'uint160'],
   [CommandType.V4_POSITION_MANAGER_CALL]: ['bytes'],
 }
 
@@ -111,8 +113,7 @@ export function createCommand(type: CommandType, parameters: any[]): RouterComma
   if (
     type === CommandType.V3_POSITION_MANAGER_CALL ||
     type === CommandType.V3_POSITION_MANAGER_PERMIT ||
-    type === CommandType.V4_POSITION_MANAGER_CALL ||
-    type == CommandType.V4_INITIALIZE_POOL
+    type === CommandType.V4_POSITION_MANAGER_CALL
   ) {
     return { type, encodedInput: parameters[0] }
   } else {
