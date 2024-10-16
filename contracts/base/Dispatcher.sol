@@ -277,7 +277,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                         sqrtPriceX96 := calldataload(add(inputs.offset, 0xa0))
                     }
                     (success, output) =
-                        address(V4_POOL_MANAGER).call(abi.encodeCall(IPoolManager.initialize, (poolKey, sqrtPriceX96)));
+                        address(poolManager).call(abi.encodeCall(IPoolManager.initialize, (poolKey, sqrtPriceX96)));
                 } else if (command == Commands.V4_POSITION_CALL) {
                     // should only call modifyLiquidities() to mint
                     _checkV4PositionManagerCall(inputs);
