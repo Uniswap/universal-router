@@ -260,8 +260,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
   describe('V4 Commands', () => {
     beforeEach(async () => {
       // initialize new pool on v4
-      await v4PositionManager.connect(bob).initializePool(USDC_WETH.poolKey, USDC_WETH.price, '0x')
-      await v4PositionManager.connect(bob).initializePool(ETH_USDC.poolKey, ETH_USDC.price, '0x')
+      await v4PositionManager.connect(bob).initializePool(USDC_WETH.poolKey, USDC_WETH.price)
+      await v4PositionManager.connect(bob).initializePool(ETH_USDC.poolKey, ETH_USDC.price)
     })
 
     describe('mint', () => {

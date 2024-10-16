@@ -20,7 +20,7 @@ import {
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
-import { RoutePlanner, CommandType, ALLOW_REVERT_FLAG } from './shared/planner'
+import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
 import { executeRouter } from './shared/executeRouter'
 import { getPermitSignature, PermitSingle } from './shared/protocolHelpers/permit2'
@@ -99,7 +99,13 @@ describe('Uniswap V2 Tests:', () => {
       // 2) permit the router to access funds again, allowing revert
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig], true)
 
+      let nonce = (await permit2.allowance(bob.address, DAI.address, router.address)).nonce
+      expect(nonce).to.eq(0)
+
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      nonce = (await permit2.allowance(bob.address, DAI.address, router.address)).nonce
+      expect(nonce).to.eq(1)
     })
 
     it('V2 exactIn, permiting the exact amount', async () => {

@@ -311,7 +311,13 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       // allow revert
       planner.addCommand(CommandType.PERMIT2_PERMIT_BATCH, [BATCH_PERMIT, sig], true)
 
+      let nonce = (await permit2.allowance(bob.address, DAI.address, router.address)).nonce
+      expect(nonce).to.eq(0)
+
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      nonce = (await permit2.allowance(bob.address, DAI.address, router.address)).nonce
+      expect(nonce).to.eq(1)
     })
 
     it('ERC20 --> ERC20 split V2 and V2 different routes, different input tokens, each two hop, with batch permit', async () => {
