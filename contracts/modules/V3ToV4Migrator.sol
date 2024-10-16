@@ -15,18 +15,24 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
     error OnlyMintAllowed();
     error NotAuthorizedForToken(uint256 tokenId);
 
-    /// @dev validate if an action is decreaseLiquidity, collect, or burn
-    function isValidAction(bytes4 selector) internal pure returns (bool) {
-        return selector == INonfungiblePositionManager.decreaseLiquidity.selector
-            || selector == INonfungiblePositionManager.collect.selector
-            || selector == INonfungiblePositionManager.burn.selector;
-    }
-
     /// @dev the caller is authorized for the token if its the owner, spender, or operator
     function isAuthorizedForToken(address caller, uint256 tokenId) internal view returns (bool) {
         address owner = V3_POSITION_MANAGER.ownerOf(tokenId);
         return caller == owner || V3_POSITION_MANAGER.getApproved(tokenId) == caller
             || V3_POSITION_MANAGER.isApprovedForAll(owner, caller);
+    }
+
+    /// @dev validate if an action is decreaseLiquidity, collect, or burn
+    function _checkValidV3Action(bytes4 selector) internal view {
+        if (
+            !(
+                selector == INonfungiblePositionManager.decreaseLiquidity.selector
+                    || selector == INonfungiblePositionManager.collect.selector
+                    || selector == INonfungiblePositionManager.burn.selector
+            )
+        ) {
+            revert InvalidAction(selector);
+        }
     }
 
     function _checkV4PositionManagerCall(bytes calldata inputs) internal view {

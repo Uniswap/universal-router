@@ -250,9 +250,10 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                     assembly {
                         selector := calldataload(inputs.offset)
                     }
-                    if (!isValidAction(selector)) {
-                        revert InvalidAction(selector);
-                    }
+                    _checkValidV3Action(selector);
+                    // if (!isValidAction(selector)) {
+                    //     revert InvalidAction(selector);
+                    // }
                     uint256 tokenId;
                     assembly {
                         // tokenId is always the first parameter in the valid actions
