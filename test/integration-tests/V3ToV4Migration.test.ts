@@ -4,6 +4,7 @@ import { BigNumber } from 'ethers'
 import { UniversalRouter, INonfungiblePositionManager, PositionManager } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, V3_NFT_POSITION_MANAGER } from './shared/mainnetForkHelpers'
+import { abi as POOL_MANAGER_ABI } from '../../artifacts/@uniswap/v4-core/src/PoolManager.sol/PoolManager.json'
 import {
   ZERO_ADDRESS,
   ALICE_ADDRESS,
@@ -33,7 +34,10 @@ import {
 } from './shared/encodeCall'
 import { executeRouter } from './shared/executeRouter'
 import { USDC_WETH, ETH_USDC } from './shared/v4Helpers'
+import { parseEvents } from './shared/parseEvents'
 const { ethers } = hre
+
+const poolManagerInterface = new ethers.utils.Interface(POOL_MANAGER_ABI)
 
 describe('V3 to V4 Migration Tests:', () => {
   let alice: SignerWithAddress
@@ -982,6 +986,36 @@ describe('V3 to V4 Migration Tests:', () => {
       planner = new RoutePlanner()
     })
 
+    it('initializes a pool', async () => {
+      const initializePoolParams = {
+        key: {
+          currency0: USDC.address,
+          currency1: WETH.address,
+          fee: FeeAmount.HIGH, // to make it different to USDC_WETH.poolKey
+          tickSpacing: 10,
+          hooks: '0x0000000000000000000000000000000000000000',
+        },
+        sqrtPriceX96: USDC_WETH.price,
+      }
+
+      const initializePoolCall = encodeInitializePool(initializePoolParams)
+
+      planner.addCommand(CommandType.V4_INITIALIZE_POOL, [initializePoolCall])
+      let tx = await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // check that an initialize event was emitted on the pool manager
+      let receipt = tx.receipt
+      let txEvents = parseEvents(poolManagerInterface, receipt)
+
+      const { name } = txEvents[0]!
+      expect(name).to.eq('Initialize')
+
+      const { currency0, currency1, sqrtPriceX96 } = txEvents[0]!.args
+      expect(currency0).to.eq(USDC_WETH.poolKey.currency0)
+      expect(currency1).to.eq(USDC_WETH.poolKey.currency1)
+      expect(sqrtPriceX96).to.eq(USDC_WETH.price)
+    })
+
     it('mint v4 succeeds', async () => {
       // transfer to v4posm
       await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
@@ -1302,6 +1336,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
       await v4PositionManager.connect(bob).initializePool(ETH_USDC.poolKey, ETH_USDC.price)
     })
+
     it('migrate with minting succeeds', async () => {
       // Bob max-approves the v3PM to access his USDC and WETH
       await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)

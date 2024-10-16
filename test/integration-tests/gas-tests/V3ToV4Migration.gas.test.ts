@@ -27,6 +27,7 @@ import {
   encodeCollect,
   encodeBurn,
   encodeModifyLiquidities,
+  encodeInitializePool,
 } from '../shared/encodeCall'
 const { ethers } = hre
 import { USDC_WETH, ETH_USDC } from '../shared/v4Helpers'
@@ -259,6 +260,28 @@ describe('V3 to V4 Migration Gas Tests', () => {
       // initialize new pool on v4
       await v4PositionManager.connect(bob).initializePool(USDC_WETH.poolKey, USDC_WETH.price)
       await v4PositionManager.connect(bob).initializePool(ETH_USDC.poolKey, ETH_USDC.price)
+    })
+
+    describe('initialize pool', () => {
+      it('gas: initialize a pool', async () => {
+        const initializePoolParams = {
+          key: {
+            currency0: USDC.address,
+            currency1: WETH.address,
+            fee: FeeAmount.HIGH, // to make it different to USDC_WETH.poolKey
+            tickSpacing: 10,
+            hooks: '0x0000000000000000000000000000000000000000',
+          },
+          sqrtPriceX96: USDC_WETH.price,
+        }
+
+        const initializePoolCall = encodeInitializePool(initializePoolParams)
+
+        planner.addCommand(CommandType.V4_INITIALIZE_POOL, [initializePoolCall])
+
+        const { commands, inputs } = planner
+        await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+      })
     })
 
     describe('mint', () => {

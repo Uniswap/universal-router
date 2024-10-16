@@ -28,6 +28,13 @@ Object {
 }
 `;
 
+exports[`V3 to V4 Migration Gas Tests V4 Commands initialize pool gas: initialize a pool 1`] = `
+Object {
+  "calldataByteLength": 484,
+  "gasUsed": 64626,
+}
+`;
+
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate and mint 1`] = `
 Object {
   "calldataByteLength": 2500,
