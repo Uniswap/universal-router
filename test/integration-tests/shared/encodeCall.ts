@@ -10,7 +10,7 @@ const modifyLiquiditiesSignature = 'modifyLiquidities(bytes,uint256)'
 
 const permitSignatureV4 = 'permit(address,uint256,uint256,uint256,bytes)'
 
-const initializePoolSignature = 'initializePool((address,address,uint24,int24,address),uint160,bytes)'
+const initializePoolSignature = 'initializePool((address,address,uint24,int24,address),uint160)'
 
 const DECREASE_LIQUIDITY_STRUCT =
   '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min,uint256 deadline)'
@@ -63,7 +63,6 @@ interface InitializePoolParams {
     hooks: string
   }
   sqrtPriceX96: BigNumber
-  hookData: string
 }
 
 const encodeERC721Permit = (params: ERC721PermitParams): string => {
@@ -125,8 +124,8 @@ const encodeERC721PermitV4 = (params: ERC721PermitParamsV4): string => {
 
 const encodeInitializePool = (params: InitializePoolParams): string => {
   const abi = new ethers.utils.AbiCoder()
-  const { key, sqrtPriceX96, hookData } = params
-  const encodedParams = abi.encode([POOL_KEY_STRUCT, 'uint160', 'bytes'], [key, sqrtPriceX96, hookData])
+  const { key, sqrtPriceX96 } = params
+  const encodedParams = abi.encode([POOL_KEY_STRUCT, 'uint160'], [key, sqrtPriceX96])
   const functionSignature = ethers.utils.id(initializePoolSignature).substring(0, 10)
   const encodedCall = functionSignature + encodedParams.substring(2)
   return encodedCall

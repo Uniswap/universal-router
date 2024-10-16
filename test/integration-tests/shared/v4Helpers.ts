@@ -63,7 +63,8 @@ export async function deployV4PositionManager(v4PoolManager: string, permit2: st
   const positionManager = (await positionManagerFactory.deploy(
     v4PoolManager,
     permit2,
-    50000
+    50000,
+    ZERO_ADDRESS // this is the position descriptor
   )) as unknown as PositionManager
   return positionManager
 }
@@ -75,7 +76,7 @@ export async function deployV4PoolManager(): Promise<PoolManager> {
 }
 
 export async function initializeV4Pool(poolManager: PoolManager, poolKey: any, sqrtPrice: BigNumber) {
-  await poolManager.initialize(poolKey, sqrtPrice.toString(), '0x')
+  await poolManager.initialize(poolKey, sqrtPrice.toString())
 }
 
 export async function addLiquidityToV4Pool(
