@@ -68,7 +68,11 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
         }
     }
 
-    function _checkV4Initialize(bytes4 selector) internal pure {
+    function _checkV4InitializeCall(bytes calldata inputs) internal pure {
+        bytes4 selector;
+        assembly {
+            selector := calldataload(inputs.offset)
+        }
         if (selector != PoolInitializer.initializePool.selector) {
             revert InvalidAction(selector);
         }

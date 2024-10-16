@@ -240,11 +240,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                     _checkV3PositionManagerCall(inputs, msgSender());
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V4_INITIALIZE_POOL) {
-                    bytes4 selector;
-                    assembly {
-                        selector := calldataload(inputs.offset)
-                    }
-                    _checkV4Initialize(selector);
+                    _checkV4InitializeCall(inputs);
                     (success, output) = address(V4_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V4_POSITION_CALL) {
                     // should only call modifyLiquidities() to mint
