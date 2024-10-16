@@ -51,17 +51,6 @@ interface ERC721PermitParamsV4 {
   nonce: number
 }
 
-interface InitializePoolParams {
-  key: {
-    currency0: string
-    currency1: string
-    fee: number
-    tickSpacing: number
-    hooks: string
-  }
-  sqrtPriceX96: BigNumber
-}
-
 const encodeERC721Permit = (params: ERC721PermitParams): string => {
   const abi = new ethers.utils.AbiCoder()
   const { spender, tokenId, deadline, v, r, s } = params
