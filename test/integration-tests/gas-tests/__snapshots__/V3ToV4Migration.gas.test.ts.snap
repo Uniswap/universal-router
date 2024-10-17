@@ -28,37 +28,30 @@ Object {
 }
 `;
 
-exports[`V3 to V4 Migration Gas Tests V4 Commands increase gas: increase 1`] = `
+exports[`V3 to V4 Migration Gas Tests V4 Commands initialize pool gas: initialize a pool 1`] = `
 Object {
-  "calldataByteLength": 2084,
-  "gasUsed": 228073,
-}
-`;
-
-exports[`V3 to V4 Migration Gas Tests V4 Commands increase gas: migrate and increase 1`] = `
-Object {
-  "calldataByteLength": 2980,
-  "gasUsed": 452916,
+  "calldataByteLength": 452,
+  "gasUsed": 58324,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate and mint 1`] = `
 Object {
   "calldataByteLength": 2500,
-  "gasUsed": 591168,
+  "gasUsed": 592670,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate weth position into eth position with forwarding 1`] = `
 Object {
   "calldataByteLength": 2788,
-  "gasUsed": 595307,
+  "gasUsed": 572027,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: mint 1`] = `
 Object {
   "calldataByteLength": 1604,
-  "gasUsed": 437596,
+  "gasUsed": 439098,
 }
 `;
