@@ -1308,26 +1308,12 @@ describe('V3 to V4 Migration Tests:', () => {
   })
 
   describe('Migration', () => {
-    beforeEach(async () => {
-      // initialize new pool on v4
-      await v4PositionManager.connect(bob).initializePool(
-        {
-          currency0: USDC.address,
-          currency1: WETH.address,
-          fee: FeeAmount.LOW,
-          tickSpacing: 10,
-          hooks: '0x0000000000000000000000000000000000000000',
-        },
-        '79228162514264337593543950336'
-      )
-
-      await v4PositionManager.connect(bob).initializePool(ETH_USDC.poolKey, ETH_USDC.price)
-    })
-
-    it('migrate with minting succeeds', async () => {
+    it('migrate with initialize pool and minting succeeds', async () => {
       // Bob max-approves the v3PM to access his USDC and WETH
       await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
       await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+
+      planner.addCommand(CommandType.V4_INITIALIZE_POOL, [USDC_WETH.poolKey, USDC_WETH.price])
 
       // mint the nft to bob on v3
       const tx = await v3NFTPositionManager.mint({
@@ -1406,6 +1392,9 @@ describe('V3 to V4 Migration Tests:', () => {
       // transfer to v4posm
       await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
       await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      // initialize the pool
+      await v4PositionManager.connect(bob).initializePool(USDC_WETH.poolKey, USDC_WETH.price)
 
       v4Planner.addAction(Actions.MINT_POSITION, [
         USDC_WETH.poolKey,
@@ -1534,10 +1523,12 @@ describe('V3 to V4 Migration Tests:', () => {
       ).to.be.revertedWithCustomError(router, 'InvalidAction')
     })
 
-    it('migrate a weth position into an eth position by forwarding eth', async () => {
+    it('migrate a weth position into an eth position by forwarding eth, with initialize pool', async () => {
       // Bob max-approves the v3PM to access his USDC and WETH
       await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
       await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+
+      planner.addCommand(CommandType.V4_INITIALIZE_POOL, [ETH_USDC.poolKey, ETH_USDC.price])
 
       // mint the nft to bob on v3
       const tx = await v3NFTPositionManager.mint({

@@ -45,7 +45,7 @@ Object {
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate weth position into eth position with forwarding 1`] = `
 Object {
   "calldataByteLength": 2788,
-  "gasUsed": 596508,
+  "gasUsed": 572027,
 }
 `;
 
