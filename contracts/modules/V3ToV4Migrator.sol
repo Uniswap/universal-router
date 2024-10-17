@@ -30,6 +30,9 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
     }
 
     /// @dev check that the v4 position manager call is a safe call
+    /// of the position-altering Actions, we only allow Actions.MINT
+    /// this is because, if a user could be tricked into approving the UniversalRouter for
+    /// their position, an attacker could take their fees, or drain their entire position
     function _checkV4PositionManagerCall(bytes calldata inputs) internal view {
         bytes4 selector;
         assembly {
@@ -39,9 +42,11 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
             revert InvalidAction(selector);
         }
 
+        // slice is `abi.encode(bytes unlockData, uint256 deadline)`
         bytes calldata slice = inputs[4:];
-        // first bytes(0) extracts the unlockData parameter from modifyLiquidities
-        // second bytes(0) extracts the actions parameter from unlockData
+        // the first bytes(0) extracts the unlockData parameter from modifyLiquidities
+        // unlockData = `abi.encode(bytes actions, bytes[] params)`
+        // the second bytes(0) extracts the actions parameter from unlockData
         bytes calldata actions = slice.toBytes(0).toBytes(0);
 
         uint256 numActions = actions.length;

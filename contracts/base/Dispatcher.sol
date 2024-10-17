@@ -278,12 +278,12 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                     }
                     (success, output) =
                         address(poolManager).call(abi.encodeCall(IPoolManager.initialize, (poolKey, sqrtPriceX96)));
-                } else if (command == Commands.V4_POSITION_CALL) {
+                } else if (command == Commands.V4_POSITION_MANAGER_CALL) {
                     // should only call modifyLiquidities() to mint
                     _checkV4PositionManagerCall(inputs);
                     (success, output) = address(V4_POSITION_MANAGER).call{value: address(this).balance}(inputs);
                 } else {
-                    // placeholder area for commands 0x13-0x20
+                    // placeholder area for commands 0x15-0x20
                     revert InvalidCommandType(command);
                 }
             }
