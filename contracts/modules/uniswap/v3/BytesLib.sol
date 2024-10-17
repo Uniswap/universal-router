@@ -4,8 +4,11 @@
 pragma solidity ^0.8.0;
 
 import {Constants} from '../../../libraries/Constants.sol';
+import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 
 library BytesLib {
+    using CalldataDecoder for bytes;
+
     error SliceOutOfBounds();
 
     /// @notice Returns the address starting at byte 0
@@ -59,17 +62,6 @@ library BytesLib {
         if (_bytes.length < length + relativeOffset) revert SliceOutOfBounds();
     }
 
-    /// @notice Decode the `_arg`-th element in `_bytes` as `bytes`
-    /// @param _bytes The input bytes string to extract a bytes string from
-    /// @param _arg The index of the argument to extract
-    function toBytes(bytes calldata _bytes, uint256 _arg) internal pure returns (bytes calldata res) {
-        (uint256 length, uint256 offset) = toLengthOffset(_bytes, _arg);
-        assembly {
-            res.length := length
-            res.offset := offset
-        }
-    }
-
     /// @notice Decode the `_arg`-th element in `_bytes` as `address[]`
     /// @param _bytes The input bytes string to extract an address array from
     /// @param _arg The index of the argument to extract
@@ -81,14 +73,9 @@ library BytesLib {
         }
     }
 
-    /// @notice Decode the `_arg`-th element in `_bytes` as `bytes[]`
-    /// @param _bytes The input bytes string to extract a bytes array from
-    /// @param _arg The index of the argument to extract
-    function toBytesArray(bytes calldata _bytes, uint256 _arg) internal pure returns (bytes[] calldata res) {
-        (uint256 length, uint256 offset) = toLengthOffset(_bytes, _arg);
-        assembly {
-            res.length := length
-            res.offset := offset
-        }
+    /// @notice Equivalent to abi.decode(bytes, bytes[])
+    /// @param _bytes The input bytes string to extract an parameters from
+    function decodeCommandsAndInputs(bytes calldata _bytes) internal pure returns (bytes calldata, bytes[] calldata) {
+        return _bytes.decodeActionsRouterParams();
     }
 }

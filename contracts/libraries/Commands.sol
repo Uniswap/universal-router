@@ -9,8 +9,9 @@ library Commands {
     bytes1 internal constant COMMAND_TYPE_MASK = 0x3f;
 
     // Command Types. Maximum supported command at this moment is 0x3f.
+    // The commands are executed in nested if blocks to minimise gas consumption
 
-    // Command Types where value<0x08, executed in the first nested-if block
+    // Command Types where value<=0x07, executed in the first nested-if block
     uint256 constant V3_SWAP_EXACT_IN = 0x00;
     uint256 constant V3_SWAP_EXACT_OUT = 0x01;
     uint256 constant PERMIT2_TRANSFER_FROM = 0x02;
@@ -19,10 +20,6 @@ library Commands {
     uint256 constant TRANSFER = 0x05;
     uint256 constant PAY_PORTION = 0x06;
     // COMMAND_PLACEHOLDER = 0x07;
-
-    // The commands are executed in nested if blocks to minimise gas consumption
-    // The following constant defines one of the boundaries where the if blocks split commands
-    uint256 constant FIRST_IF_BOUNDARY = 0x08;
 
     // Command Types where 0x08<=value<=0x0f, executed in the second nested-if block
     uint256 constant V2_SWAP_EXACT_IN = 0x08;
@@ -34,24 +31,15 @@ library Commands {
     uint256 constant BALANCE_CHECK_ERC20 = 0x0e;
     // COMMAND_PLACEHOLDER = 0x0f;
 
-    // The commands are executed in nested if blocks to minimise gas consumption
-    // The following constant defines one of the boundaries where the if blocks split commands
-    uint256 constant SECOND_IF_BOUNDARY = 0x10;
-
+    // Command Types where 0x10<=value<=0x20, executed in the third nested-if block
     uint256 constant V4_SWAP = 0x10;
     uint256 constant V3_POSITION_MANAGER_PERMIT = 0x11;
     uint256 constant V3_POSITION_MANAGER_CALL = 0x12;
-    uint256 constant V4_POSITION_CALL = 0x13;
+    uint256 constant V4_INITIALIZE_POOL = 0x13;
+    uint256 constant V4_POSITION_MANAGER_CALL = 0x14;
+    // COMMAND_PLACEHOLDER = 0x15 -> 0x20
 
-    // The commands are executed in nested if blocks to minimise gas consumption
-    // The following constant defines one of the boundaries where the if blocks split commands
-    uint256 constant THIRD_IF_BOUNDARY = 0x18;
-
-    // The commands are executed in nested if blocks to minimise gas consumption
-    // The following constant defines one of the boundaries where the if blocks split commands
-    uint256 constant FOURTH_IF_BOUNDARY = 0x20;
-
-    // Command Types where 0x20<=value
+    // Command Types where 0x21<=value<=0x3f
     uint256 constant EXECUTE_SUB_PLAN = 0x21;
-    // COMMAND_PLACEHOLDER for 0x23 to 0x3f (all unused)
+    // COMMAND_PLACEHOLDER for 0x22 to 0x3f
 }

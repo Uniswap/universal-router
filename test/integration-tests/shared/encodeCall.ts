@@ -8,6 +8,8 @@ const burnFunctionSignature = 'burn(uint256)'
 
 const modifyLiquiditiesSignature = 'modifyLiquidities(bytes,uint256)'
 
+const permitSignatureV4 = 'permit(address,uint256,uint256,uint256,bytes)'
+
 const DECREASE_LIQUIDITY_STRUCT =
   '(uint256 tokenId,uint256 liquidity,uint256 amount0Min,uint256 amount1Min,uint256 deadline)'
 const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint256 amount0Max,uint256 amount1Max)'
@@ -39,6 +41,14 @@ interface CollectParams {
 interface ModifyLiquiditiesParams {
   unlockData: string
   deadline: string
+}
+
+interface ERC721PermitParamsV4 {
+  spender: string
+  tokenId: ethers.BigNumber
+  deadline: string
+  signature: string
+  nonce: number
 }
 
 const encodeERC721Permit = (params: ERC721PermitParams): string => {
@@ -86,4 +96,23 @@ const encodeModifyLiquidities = (params: ModifyLiquiditiesParams): string => {
   return encodedCall
 }
 
-export { encodeERC721Permit, encodeDecreaseLiquidity, encodeCollect, encodeBurn, encodeModifyLiquidities }
+const encodeERC721PermitV4 = (params: ERC721PermitParamsV4): string => {
+  const abi = new ethers.utils.AbiCoder()
+  const { spender, tokenId, deadline, nonce, signature } = params
+  const encodedParams = abi.encode(
+    ['address', 'uint256', 'uint256', 'uint256', 'bytes'],
+    [spender, tokenId, deadline, nonce, signature]
+  )
+  const functionSignature = ethers.utils.id(permitSignatureV4).substring(0, 10)
+  const encodedCall = functionSignature + encodedParams.substring(2)
+  return encodedCall
+}
+
+export {
+  encodeERC721Permit,
+  encodeDecreaseLiquidity,
+  encodeCollect,
+  encodeBurn,
+  encodeModifyLiquidities,
+  encodeERC721PermitV4,
+}
