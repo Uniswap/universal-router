@@ -74,7 +74,7 @@ describe('Uniswap V2 Tests:', () => {
 
     beforeEach(async () => {
       // cancel the permit on DAI
-      await permit2.approve(DAI.address, ADDRESS_ZERO, 0, 0)
+      await permit2.approve(DAI.address, router.address, 0, 0)
     })
 
     it('V2 exactIn, permiting the exact amount', async () => {

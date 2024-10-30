@@ -14,6 +14,8 @@ import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
+import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
+import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
@@ -239,12 +241,21 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                 } else if (command == Commands.V3_POSITION_MANAGER_CALL) {
                     _checkV3PositionManagerCall(inputs, msgSender());
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
-                } else if (command == Commands.V4_POSITION_CALL) {
+                } else if (command == Commands.V4_INITIALIZE_POOL) {
+                    PoolKey calldata poolKey;
+                    uint160 sqrtPriceX96;
+                    assembly {
+                        poolKey := inputs.offset
+                        sqrtPriceX96 := calldataload(add(inputs.offset, 0xa0))
+                    }
+                    (success, output) =
+                        address(poolManager).call(abi.encodeCall(IPoolManager.initialize, (poolKey, sqrtPriceX96)));
+                } else if (command == Commands.V4_POSITION_MANAGER_CALL) {
                     // should only call modifyLiquidities() to mint
-                    // do not permit or approve this contract over a v4 position or someone could use this command to decrease, burn, or transfer your position
+                    _checkV4PositionManagerCall(inputs);
                     (success, output) = address(V4_POSITION_MANAGER).call{value: address(this).balance}(inputs);
                 } else {
-                    // placeholder area for commands 0x13-0x20
+                    // placeholder area for commands 0x15-0x20
                     revert InvalidCommandType(command);
                 }
             }
