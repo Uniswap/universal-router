@@ -9,11 +9,22 @@ import {
   PERMIT2_ADDRESS,
   V3_NFT_POSITION_MANAGER_MAINNET,
   V4_POSITION_DESCRIPTOR_ADDRESS,
+  WETH,
 } from './constants'
 import { deployV4PoolManager, deployV4PositionManager } from './v4Helpers'
 
-export async function deployRouter(v4PoolManager?: string, mockReentrantWETH?: string): Promise<UniversalRouter> {
-  const poolManager: string = v4PoolManager ?? (await deployV4PoolManager()).address
+export async function deployRouter(
+  owner?: string,
+  v4PoolManager?: string,
+  mockReentrantWETH?: string
+): Promise<UniversalRouter> {
+  const poolManager: string =
+    v4PoolManager ??
+    (owner !== undefined
+      ? (await deployV4PoolManager(owner)).address
+      : (() => {
+          throw new Error('Either v4PoolManager must be set or owner must be provided')
+        })())
   const routerParameters = {
     permit2: PERMIT2_ADDRESS,
     weth9: mockReentrantWETH ?? '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
@@ -23,8 +34,9 @@ export async function deployRouter(v4PoolManager?: string, mockReentrantWETH?: s
     poolInitCodeHash: V3_INIT_CODE_HASH_MAINNET,
     v4PoolManager: poolManager,
     v3NFTPositionManager: V3_NFT_POSITION_MANAGER_MAINNET,
-    v4PositionManager: (await deployV4PositionManager(poolManager, PERMIT2_ADDRESS, V4_POSITION_DESCRIPTOR_ADDRESS))
-      .address,
+    v4PositionManager: (
+      await deployV4PositionManager(poolManager, PERMIT2_ADDRESS, V4_POSITION_DESCRIPTOR_ADDRESS, WETH)
+    ).address,
   }
 
   const routerFactory = await ethers.getContractFactory('UniversalRouter')

@@ -31,27 +31,27 @@ Object {
 exports[`V3 to V4 Migration Gas Tests V4 Commands initialize pool gas: initialize a pool 1`] = `
 Object {
   "calldataByteLength": 452,
-  "gasUsed": 58324,
+  "gasUsed": 58320,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate and mint 1`] = `
 Object {
   "calldataByteLength": 2500,
-  "gasUsed": 592661,
+  "gasUsed": 592479,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate weth position into eth position with forwarding 1`] = `
 Object {
   "calldataByteLength": 2788,
-  "gasUsed": 572020,
+  "gasUsed": 571140,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: mint 1`] = `
 Object {
   "calldataByteLength": 1604,
-  "gasUsed": 439098,
+  "gasUsed": 438916,
 }
 `;

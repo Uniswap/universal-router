@@ -27,7 +27,7 @@ describe('Check Ownership', () => {
         params: [ALICE_ADDRESS],
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
-      router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
+      router = (await deployUniversalRouter(alice.address)).connect(alice) as UniversalRouter
       usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
       aliceUSDCBalance = await usdcContract.balanceOf(ALICE_ADDRESS)
       planner = new RoutePlanner()
