@@ -10,7 +10,7 @@ import deployUniversalRouter from '../shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from '../shared/planner'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 const { ethers } = hre
-import WETH_ABI from '../../../artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
+import WETH_ABI from '../../../artifacts/@uniswap/v4-periphery/src/interfaces/external/IWETH9.sol/IWETH9.json'
 import { BigNumber } from 'ethers'
 import { ADDRESS_THIS } from '@uniswap/router-sdk'
 
@@ -32,7 +32,7 @@ describe('Payments Gas Tests', () => {
     bob = (await ethers.getSigners())[1]
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, new ethers.utils.Interface(WETH_ABI.abi), alice)
-    router = (await deployUniversalRouter()).connect(alice) as UniversalRouter
+    router = (await deployUniversalRouter(alice.address)).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
   })
 

@@ -59,7 +59,7 @@ describe('Uniswap UX Tests gas:', () => {
     usdcContract = ERC20__factory.connect(USDC.address, alice)
 
     permit2 = PERMIT2.connect(alice) as IPermit2
-    router = (await deployUniversalRouter()).connect(bob) as UniversalRouter
+    router = (await deployUniversalRouter(bob.address)).connect(bob) as UniversalRouter
 
     planner = new RoutePlanner()
 
@@ -466,7 +466,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch SwapRouter03
-        const router2 = (await deployUniversalRouter()).connect(bob) as UniversalRouter
+        const router2 = (await deployUniversalRouter(bob.address)).connect(bob) as UniversalRouter
         const router2ApprovalTx = (await approveSwapRouter02(bob, USDC, router2.address))!
         totalGas = totalGas.add(router2ApprovalTx.gasUsed)
 
@@ -477,7 +477,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch SwapRouter04
-        const router3 = (await deployUniversalRouter()).connect(bob) as UniversalRouter
+        const router3 = (await deployUniversalRouter(bob.address)).connect(bob) as UniversalRouter
         const router3ApprovalTx = (await approveSwapRouter02(bob, USDC, router3.address))!
         totalGas = totalGas.add(router3ApprovalTx.gasUsed)
 
@@ -506,7 +506,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch Universal Router v2
-        const router2 = (await deployUniversalRouter()).connect(bob) as UniversalRouter
+        const router2 = (await deployUniversalRouter(bob.address)).connect(bob) as UniversalRouter
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
@@ -520,7 +520,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch Universal Router v3
-        const router3 = (await deployUniversalRouter()).connect(bob) as UniversalRouter
+        const router3 = (await deployUniversalRouter(bob.address)).connect(bob) as UniversalRouter
 
         // Do 5 simple swaps
         for (let i = 0; i < 5; i++) {
@@ -552,7 +552,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch Universal Router v2
-        const router2 = (await deployUniversalRouter()).connect(bob) as UniversalRouter
+        const router2 = (await deployUniversalRouter(bob.address)).connect(bob) as UniversalRouter
         MAX_PERMIT.spender = router2.address
         let calldata2 = await getPermitSignature(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata2])
@@ -565,7 +565,7 @@ describe('Uniswap UX Tests gas:', () => {
         }
 
         // Launch Universal Router v3
-        const router3 = (await deployUniversalRouter()).connect(bob) as UniversalRouter
+        const router3 = (await deployUniversalRouter(bob.address)).connect(bob) as UniversalRouter
         MAX_PERMIT.spender = router3.address
         let calldata3 = await getPermitSignature(MAX_PERMIT, bob, permit2)
         planner.addCommand(CommandType.PERMIT2_PERMIT, [MAX_PERMIT, calldata3])

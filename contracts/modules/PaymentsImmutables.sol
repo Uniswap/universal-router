@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.24;
 
-import {IWETH9} from '../interfaces/external/IWETH9.sol';
+import {IWETH9} from '@uniswap/v4-periphery/src/interfaces/external/IWETH9.sol';
 import {IPermit2} from 'permit2/src/interfaces/IPermit2.sol';
 
 struct PaymentsParameters {
