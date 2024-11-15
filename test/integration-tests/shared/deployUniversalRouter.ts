@@ -18,13 +18,15 @@ export async function deployRouter(
   v4PoolManager?: string,
   mockReentrantWETH?: string
 ): Promise<UniversalRouter> {
-  const poolManager: string =
-    v4PoolManager ??
-    (owner !== undefined
-      ? (await deployV4PoolManager(owner)).address
-      : (() => {
-          throw new Error('Either v4PoolManager must be set or owner must be provided')
-        })())
+  let poolManager: string
+
+  if (v4PoolManager) {
+    poolManager = v4PoolManager
+  } else if (owner !== undefined) {
+    poolManager = (await deployV4PoolManager(owner)).address
+  } else {
+    throw new Error('Either v4PoolManager must be set or owner must be provided')
+  }
   const routerParameters = {
     permit2: PERMIT2_ADDRESS,
     weth9: mockReentrantWETH ?? '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
