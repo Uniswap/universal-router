@@ -77,6 +77,37 @@ describe('Uniswap V2 Tests:', () => {
       await permit2.approve(DAI.address, router.address, 0, 0)
     })
 
+    it('Permit2 can silently fail', async () => {
+      const amountInDAI = expandTo18DecimalsBN(100)
+
+      // bob signs a permit to allow the router to access his DAI
+      permit = {
+        details: {
+          token: DAI.address,
+          amount: amountInDAI,
+          expiration: 0, // expiration of 0 is block.timestamp
+          nonce: 0, // this is his first trade
+        },
+        spender: router.address,
+        sigDeadline: DEADLINE,
+      }
+      const sig = await getPermitSignature(permit, bob, permit2)
+
+      // 1) permit the router to access funds, not allowing revert
+      planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
+
+      // 2) permit the router to access funds again, allowing revert
+      planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig], true)
+
+      let nonce = (await permit2.allowance(bob.address, DAI.address, router.address)).nonce
+      expect(nonce).to.eq(0)
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      nonce = (await permit2.allowance(bob.address, DAI.address, router.address)).nonce
+      expect(nonce).to.eq(1)
+    })
+
     it('V2 exactIn, permiting the exact amount', async () => {
       const amountInDAI = expandTo18DecimalsBN(100)
       const minAmountOutWETH = expandTo18DecimalsBN(0.02)

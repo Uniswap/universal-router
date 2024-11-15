@@ -33,7 +33,11 @@ export enum CommandType {
 
 const ALLOW_REVERT_FLAG = 0x80
 
-const REVERTIBLE_COMMANDS = new Set<CommandType>([CommandType.EXECUTE_SUB_PLAN])
+const REVERTIBLE_COMMANDS = new Set<CommandType>([
+  CommandType.EXECUTE_SUB_PLAN,
+  CommandType.PERMIT2_PERMIT,
+  CommandType.PERMIT2_PERMIT_BATCH,
+])
 
 const PERMIT_STRUCT =
   '((address token,uint160 amount,uint48 expiration,uint48 nonce) details, address spender, uint256 sigDeadline)'
