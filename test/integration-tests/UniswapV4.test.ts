@@ -87,8 +87,8 @@ describe('Uniswap V4 Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
-    v4PoolManager = (await deployV4PoolManager()).connect(bob) as PoolManager
-    router = (await deployUniversalRouter(v4PoolManager.address)).connect(bob) as UniversalRouter
+    v4PoolManager = (await deployV4PoolManager(bob.address)).connect(bob) as PoolManager
+    router = (await deployUniversalRouter(undefined, v4PoolManager.address)).connect(bob) as UniversalRouter
     v4PositionManager = (await ethers.getContractAt('PositionManager', await router.V4_POSITION_MANAGER())).connect(
       bob
     ) as PositionManager
@@ -134,7 +134,6 @@ describe('Uniswap V4 Tests:', () => {
           zeroForOne: true,
           amountIn: amountInUSDC,
           amountOutMinimum: minAmountOutNative,
-          sqrtPriceLimitX96: 0,
           hookData: '0x',
         },
       ])
@@ -336,7 +335,6 @@ describe('Uniswap V4 Tests:', () => {
           zeroForOne: true,
           amountOut: amountOutNative,
           amountInMaximum: maxAmountInUSDC,
-          sqrtPriceLimitX96: 0,
           hookData: '0x',
         },
       ])
@@ -422,7 +420,6 @@ describe('Uniswap V4 Tests:', () => {
           zeroForOne: true,
           amountIn: amountInNative,
           amountOutMinimum: minAmountOutUSDC,
-          sqrtPriceLimitX96: 0,
           hookData: '0x',
         },
       ])
@@ -512,7 +509,6 @@ describe('Uniswap V4 Tests:', () => {
           zeroForOne: true,
           amountOut: amountOutUSDC,
           amountInMaximum: maxAmountInNative,
-          sqrtPriceLimitX96: 0,
           hookData: '0x',
         },
       ])
@@ -613,7 +609,6 @@ describe('Uniswap V4 Tests:', () => {
           zeroForOne: false,
           amountIn: amountInUSDC,
           amountOutMinimum: minAmountOutNative,
-          sqrtPriceLimitX96: 0,
           hookData: '0x',
         },
       ])
@@ -700,7 +695,6 @@ describe('Uniswap V4 Tests:', () => {
           zeroForOne: false,
           amountOut: amountOutNative,
           amountInMaximum: maxAmountInUSDC,
-          sqrtPriceLimitX96: 0,
           hookData: '0x',
         },
       ])

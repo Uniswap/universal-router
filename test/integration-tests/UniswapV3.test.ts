@@ -51,7 +51,7 @@ describe('Uniswap V3 Tests:', () => {
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
-    router = (await deployUniversalRouter()) as UniversalRouter
+    router = (await deployUniversalRouter(bob.address)) as UniversalRouter
     planner = new RoutePlanner()
 
     // alice gives bob some tokens
