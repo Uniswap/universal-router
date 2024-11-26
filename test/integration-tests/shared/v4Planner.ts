@@ -34,7 +34,6 @@ export enum Actions {
   TAKE_PORTION = 0x10,
   // TAKE_PAIR = 0x11,
 
-
   CLOSE_CURRENCY = 0x12,
   // CLEAR_OR_TAKE = 0x13,
   SWEEP = 0x14,
