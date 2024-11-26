@@ -1,0 +1,57 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`V3 to V4 Migration Gas Tests V3 Commands burn gas: erc721permit + decreaseLiquidity + collect + burn 1`] = `
+Object {
+  "calldataByteLength": 1092,
+  "gasUsed": 256840,
+}
+`;
+
+exports[`V3 to V4 Migration Gas Tests V3 Commands collect gas: erc721permit + decreaseLiquidity + collect 1`] = `
+Object {
+  "calldataByteLength": 964,
+  "gasUsed": 224482,
+}
+`;
+
+exports[`V3 to V4 Migration Gas Tests V3 Commands decrease liquidity gas: erc721permit + decreaseLiquidity 1`] = `
+Object {
+  "calldataByteLength": 740,
+  "gasUsed": 202577,
+}
+`;
+
+exports[`V3 to V4 Migration Gas Tests V3 Commands erc721permit gas: erc721permit 1`] = `
+Object {
+  "calldataByteLength": 484,
+  "gasUsed": 66250,
+}
+`;
+
+exports[`V3 to V4 Migration Gas Tests V4 Commands initialize pool gas: initialize a pool 1`] = `
+Object {
+  "calldataByteLength": 452,
+  "gasUsed": 59133,
+}
+`;
+
+exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate and mint 1`] = `
+Object {
+  "calldataByteLength": 2500,
+  "gasUsed": 597186,
+}
+`;
+
+exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate weth position into eth position with forwarding 1`] = `
+Object {
+  "calldataByteLength": 2788,
+  "gasUsed": 574417,
+}
+`;
+
+exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: mint 1`] = `
+Object {
+  "calldataByteLength": 1604,
+  "gasUsed": 443077,
+}
+`;

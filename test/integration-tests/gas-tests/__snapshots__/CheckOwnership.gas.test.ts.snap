@@ -1,0 +1,8 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Check Ownership Gas gas: balance check ERC20 1`] = `
+Object {
+  "calldataByteLength": 356,
+  "gasUsed": 37977,
+}
+`;
