@@ -6,8 +6,16 @@ via_ir = true
 solc_version = '0.8.26'
 evm_version = "cancun"
 
-optimizer_runs = 1
+optimizer_runs = 44444444
 fs_permissions = [{ access = "read", path = "./script/deployParameters/"}]
+
+additional_compiler_profiles = [
+  { name = "manager", via_ir = true, optimizer_runs = 1 },
+]
+
+compilation_restrictions = [
+  { paths = "lib/v4-periphery/src/PositionManager.sol", optimizer_runs = 1 },
+]
 
 [fmt]
 line_length = 120
