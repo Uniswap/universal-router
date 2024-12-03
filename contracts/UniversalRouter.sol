@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 // Command implementations
 import {Dispatcher} from './base/Dispatcher.sol';
-import {RouterParameters} from './base/RouterImmutables.sol';
+import {RouterParameters} from './types/RouterParameters.sol';
 import {PaymentsImmutables, PaymentsParameters} from './modules/PaymentsImmutables.sol';
 import {UniswapImmutables, UniswapParameters} from './modules/uniswap/UniswapImmutables.sol';
 import {V4SwapRouter} from './modules/uniswap/v4/V4SwapRouter.sol';

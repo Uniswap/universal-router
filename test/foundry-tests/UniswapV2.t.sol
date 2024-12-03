@@ -10,7 +10,7 @@ import {UniversalRouter} from '../../contracts/UniversalRouter.sol';
 import {Payments} from '../../contracts/modules/Payments.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
-import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
+import {RouterParameters} from '../../contracts/types/RouterParameters.sol';
 
 abstract contract UniswapV2Test is Test {
     address constant RECIPIENT = address(10);

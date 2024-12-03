@@ -2,7 +2,7 @@
 pragma solidity ^0.8.15;
 
 import {DeployUniversalRouter} from '../DeployUniversalRouter.s.sol';
-import {RouterParameters} from 'contracts/base/RouterImmutables.sol';
+import {RouterParameters} from 'contracts/types/RouterParameters.sol';
 
 contract DeployMainnet is DeployUniversalRouter {
     function setUp() public override {
