@@ -12,34 +12,38 @@ export enum Actions {
   DECREASE_LIQUIDITY = 0x01,
   MINT_POSITION = 0x02,
   BURN_POSITION = 0x03,
+  INCREASE_LIQUIDITY_FROM_DELTAS = 0x04,
+  MINT_POSITION_FROM_DELTAS = 0x05,
+
   // swapping
-  SWAP_EXACT_IN_SINGLE = 0x04,
-  SWAP_EXACT_IN = 0x05,
-  SWAP_EXACT_OUT_SINGLE = 0x06,
-  SWAP_EXACT_OUT = 0x07,
+  SWAP_EXACT_IN_SINGLE = 0x06,
+  SWAP_EXACT_IN = 0x07,
+  SWAP_EXACT_OUT_SINGLE = 0x08,
+  SWAP_EXACT_OUT = 0x09,
   // donate
-  // DONATE = 0x08,
+  // DONATE = 0x0a,
 
   // closing deltas on the pool manager
   // settling
-  SETTLE = 0x09,
-  SETTLE_ALL = 0x10,
-  // SETTLE_PAIR = 0x11,
+  SETTLE = 0x0b,
+  SETTLE_ALL = 0x0c,
+  // SETTLE_PAIR = 0x0d,
   // taking
-  TAKE = 0x12,
-  TAKE_ALL = 0x13,
-  TAKE_PORTION = 0x14,
-  // TAKE_PAIR = 0x15,
+  TAKE = 0x0e,
+  TAKE_ALL = 0x0f,
+  TAKE_PORTION = 0x10,
+  // TAKE_PAIR = 0x11,
 
-  SETTLE_TAKE_PAIR = 0x16,
+  CLOSE_CURRENCY = 0x12,
+  // CLEAR_OR_TAKE = 0x13,
+  SWEEP = 0x14,
 
-  CLOSE_CURRENCY = 0x17,
-  // CLEAR_OR_TAKE = 0x18,
-  SWEEP = 0x19,
+  WRAP = 0x15,
+  UNWRAP = 0x16,
 
   // minting/burning 6909s to close deltas
-  // MINT_6909 = 0x20,
-  // BURN_6909 = 0x21,
+  // MINT_6909 = 0x17,
+  // BURN_6909 = 0x18,
 }
 
 const POOL_KEY_STRUCT = '(address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks)'
@@ -64,6 +68,8 @@ const ABI_DEFINITION: { [key in Actions]: string[] } = {
   [Actions.DECREASE_LIQUIDITY]: ['uint256', 'uint256', 'uint128', 'uint128', 'bytes'],
   [Actions.MINT_POSITION]: [POOL_KEY_STRUCT, 'int24', 'int24', 'uint256', 'uint128', 'uint128', 'address', 'bytes'],
   [Actions.BURN_POSITION]: ['uint256', 'uint128', 'uint128', 'bytes'],
+  [Actions.INCREASE_LIQUIDITY_FROM_DELTAS]: ['uint256', 'uint128', 'uint128', 'bytes'],
+  [Actions.MINT_POSITION_FROM_DELTAS]: [POOL_KEY_STRUCT, 'int24', 'int24', 'uint128', 'uint128', 'address', 'bytes'],
 
   // Swapping commands
   [Actions.SWAP_EXACT_IN_SINGLE]: [SWAP_EXACT_IN_SINGLE_STRUCT],
@@ -77,9 +83,12 @@ const ABI_DEFINITION: { [key in Actions]: string[] } = {
   [Actions.TAKE]: ['address', 'address', 'uint256'],
   [Actions.TAKE_ALL]: ['address', 'uint256'],
   [Actions.TAKE_PORTION]: ['address', 'address', 'uint256'],
-  [Actions.SETTLE_TAKE_PAIR]: ['address', 'address'],
+
   [Actions.CLOSE_CURRENCY]: ['address'],
   [Actions.SWEEP]: ['address', 'address'],
+
+  [Actions.WRAP]: ['uint256'],
+  [Actions.UNWRAP]: ['uint256'],
 }
 
 export class V4Planner {

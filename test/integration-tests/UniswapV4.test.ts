@@ -137,7 +137,8 @@ describe('Uniswap V4 Tests:', () => {
           hookData: '0x',
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [usdcContract.address, wethContract.address])
+      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
       const { usdcBalanceBefore, usdcBalanceAfter, wethBalanceBefore, wethBalanceAfter } = await executeRouter(
@@ -164,7 +165,8 @@ describe('Uniswap V4 Tests:', () => {
           amountOutMinimum: minAmountOutNative,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, wethContract.address])
+      v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -192,7 +194,8 @@ describe('Uniswap V4 Tests:', () => {
           amountOutMinimum: minAmountOutNative,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, wethContract.address])
+      v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -222,7 +225,8 @@ describe('Uniswap V4 Tests:', () => {
       ])
       // take 1% of the output to alice, then settle and take the rest to the caller
       v4Planner.addAction(Actions.TAKE_PORTION, [WETH.address, alice.address, ONE_PERCENT_BIPS])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, wethContract.address])
+      v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -303,7 +307,8 @@ describe('Uniswap V4 Tests:', () => {
       ])
       // take 1% of the output to alice, then settle and take the rest to the caller
       v4Planner.addAction(Actions.TAKE_PORTION, [ETH_ADDRESS, alice.address, ONE_PERCENT_BIPS])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, ETH_ADDRESS])
+      v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [ETH_ADDRESS, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -338,7 +343,8 @@ describe('Uniswap V4 Tests:', () => {
           hookData: '0x',
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [usdcContract.address, wethContract.address])
+      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -366,7 +372,8 @@ describe('Uniswap V4 Tests:', () => {
           amountInMaximum: maxAmountInUSDC,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [usdcContract.address, wethContract.address])
+      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -394,7 +401,8 @@ describe('Uniswap V4 Tests:', () => {
           amountInMaximum: maxAmountInDAI,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [daiContract.address, wethContract.address])
+      v4Planner.addAction(Actions.SETTLE_ALL, [daiContract.address, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -423,7 +431,8 @@ describe('Uniswap V4 Tests:', () => {
           hookData: '0x',
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [ETH_ADDRESS, usdcContract.address])
+      v4Planner.addAction(Actions.SETTLE_ALL, [ETH_ADDRESS, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [usdcContract.address, 0])
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
       const { usdcBalanceBefore, usdcBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
@@ -452,7 +461,8 @@ describe('Uniswap V4 Tests:', () => {
           amountOutMinimum: minAmountOutUSDC,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, usdcContract.address])
+      v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [usdcContract.address, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -482,7 +492,8 @@ describe('Uniswap V4 Tests:', () => {
           amountOutMinimum: minAmountOutDAI,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, daiContract.address])
+      v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [daiContract.address, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -512,7 +523,8 @@ describe('Uniswap V4 Tests:', () => {
           hookData: '0x',
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [ETH_ADDRESS, usdcContract.address])
+      v4Planner.addAction(Actions.SETTLE_ALL, [ETH_ADDRESS, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [usdcContract.address, 0])
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
       // sweep excess ETH leftover back to the caller!
       planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, MSG_SENDER, 0])
@@ -544,7 +556,8 @@ describe('Uniswap V4 Tests:', () => {
           amountInMaximum: maxAmountInNative,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [ETH_ADDRESS, currencyOut])
+      v4Planner.addAction(Actions.SETTLE_ALL, [ETH_ADDRESS, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [currencyOut, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
       // sweep excess ETH leftover back to the caller!
@@ -577,7 +590,8 @@ describe('Uniswap V4 Tests:', () => {
           amountInMaximum: maxAmountInNative,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [ETH_ADDRESS, daiContract.address])
+      v4Planner.addAction(Actions.SETTLE_ALL, [ETH_ADDRESS, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [daiContract.address, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
       // sweep excess ETH leftover back to the caller!
@@ -612,7 +626,8 @@ describe('Uniswap V4 Tests:', () => {
           hookData: '0x',
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [usdcContract.address, ETH_ADDRESS])
+      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [ETH_ADDRESS, 0])
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
       const { usdcBalanceBefore, usdcBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
@@ -640,7 +655,8 @@ describe('Uniswap V4 Tests:', () => {
           amountOutMinimum: minAmountOutNative,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, ETH_ADDRESS])
+      v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [ETH_ADDRESS, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -669,7 +685,8 @@ describe('Uniswap V4 Tests:', () => {
           amountOutMinimum: minAmountOutNative,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [currencyIn, ETH_ADDRESS])
+      v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [ETH_ADDRESS, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -698,7 +715,8 @@ describe('Uniswap V4 Tests:', () => {
           hookData: '0x',
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [usdcContract.address, ETH_ADDRESS])
+      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [ETH_ADDRESS, 0])
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
       const { usdcBalanceBefore, usdcBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
@@ -726,7 +744,8 @@ describe('Uniswap V4 Tests:', () => {
           amountInMaximum: maxAmountInUSDC,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [usdcContract.address, currencyOut])
+      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [currencyOut, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -755,7 +774,8 @@ describe('Uniswap V4 Tests:', () => {
           amountInMaximum: maxAmountInDAI,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_TAKE_PAIR, [daiContract.address, currencyOut])
+      v4Planner.addAction(Actions.SETTLE_ALL, [daiContract.address, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [currencyOut, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 

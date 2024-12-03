@@ -27,7 +27,6 @@ import {
   encodeCollect,
   encodeBurn,
   encodeModifyLiquidities,
-  encodeInitializePool,
 } from '../shared/encodeCall'
 const { ethers } = hre
 import { USDC_WETH, ETH_USDC } from '../shared/v4Helpers'
