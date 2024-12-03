@@ -3,7 +3,7 @@ pragma solidity ^0.8.15;
 
 import 'forge-std/console2.sol';
 import 'forge-std/Script.sol';
-import {RouterParameters} from 'contracts/base/RouterImmutables.sol';
+import {RouterParameters} from 'contracts/types/RouterParameters.sol';
 import {UnsupportedProtocol} from 'contracts/deploy/UnsupportedProtocol.sol';
 import {UniversalRouter} from 'contracts/UniversalRouter.sol';
 

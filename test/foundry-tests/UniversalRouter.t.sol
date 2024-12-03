@@ -8,7 +8,7 @@ import {Constants} from '../../contracts/libraries/Constants.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {MockERC20} from './mock/MockERC20.sol';
 import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
-import {RouterParameters} from '../../contracts/base/RouterImmutables.sol';
+import {RouterParameters} from '../../contracts/types/RouterParameters.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {IERC165} from '@openzeppelin/contracts/utils/introspection/IERC165.sol';
