@@ -1,8 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`Foundation Gas Tests Buy a mental worlds NFT from Foundation gas: token id 32 of mental worlds 1`] = `
-Object {
-  "calldataByteLength": 612,
-  "gasUsed": 182987,
-}
-`;

@@ -1,8 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`NFT20 Buy 3 alphabetties from NFT20 gas: purchases token ids 129, 193, 278 of Alphabetties 1`] = `
-Object {
-  "calldataByteLength": 836,
-  "gasUsed": 392225,
-}
-`;

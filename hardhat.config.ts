@@ -1,17 +1,18 @@
 import 'hardhat-typechain'
 import '@nomiclabs/hardhat-ethers'
 import '@nomicfoundation/hardhat-chai-matchers'
+import '@nomicfoundation/hardhat-foundry'
 import dotenv from 'dotenv'
 dotenv.config()
 
 const DEFAULT_COMPILER_SETTINGS = {
-  version: '0.8.17',
+  version: '0.8.26',
   settings: {
     viaIR: true,
-    evmVersion: 'istanbul',
+    evmVersion: 'cancun',
     optimizer: {
       enabled: true,
-      runs: 1_000_000,
+      runs: 1,
     },
     metadata: {
       bytecodeHash: 'none',
@@ -29,7 +30,7 @@ export default {
       chainId: 1,
       forking: {
         url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-        blockNumber: 15360000,
+        blockNumber: 20010000,
       },
     },
     mainnet: {
