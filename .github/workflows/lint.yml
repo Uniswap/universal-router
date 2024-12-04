@@ -19,8 +19,11 @@ jobs:
       - name: Set up node
         uses: actions/setup-node@v1
         with:
-          node-version: 16.x
+          node-version: 18.x
           registry-url: https://registry.npmjs.org
+
+      - name: Install Yarn
+        run: npm install -g yarn
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -37,4 +40,4 @@ jobs:
         id: build
 
       - name: Run linter
-        run: yarn run prettier
+        run: yarn run lint:check
