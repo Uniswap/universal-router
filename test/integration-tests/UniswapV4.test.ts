@@ -3,7 +3,7 @@ import { BigNumber } from 'ethers'
 import { expect } from './shared/expect'
 import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { resetFork, WETH, DAI, USDC, PERMIT2 } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, USDC, PERMIT2, USD_ETH_PRICE } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   DEADLINE,
@@ -45,9 +45,6 @@ describe('Uniswap V4 Tests:', () => {
   let v4Planner: V4Planner
   let v4PoolManager: PoolManager
   let v4PositionManager: PositionManager
-
-  // current market ETH price at block
-  const USD_ETH_PRICE = 3820
 
   // USD-pegged -> (W)NATIVE trades
   // exact in trade
@@ -115,6 +112,7 @@ describe('Uniswap V4 Tests:', () => {
     await permit2.approve(DAI.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
     await permit2.approve(WETH.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
     await permit2.approve(USDC.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
+
     // bob initializes 3 v4 pools
     await initializeV4Pool(v4PoolManager, USDC_WETH.poolKey, USDC_WETH.price)
     await initializeV4Pool(v4PoolManager, DAI_USDC.poolKey, DAI_USDC.price)

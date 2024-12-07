@@ -4,7 +4,7 @@ import { expect } from './shared/expect'
 import { BigNumber } from 'ethers'
 import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { resetFork, WETH, DAI, USDC, USDT, PERMIT2 } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, USDC, USDT, PERMIT2, USD_ETH_PRICE } from './shared/mainnetForkHelpers'
 import {
   ADDRESS_THIS,
   ALICE_ADDRESS,
@@ -50,9 +50,6 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
   let v4Planner: V4Planner
   let v4PoolManager: PoolManager
   let v4PositionManager: PositionManager
-
-  // current market ETH price at block
-  const USD_ETH_PRICE = 3820
 
   beforeEach(async () => {
     await resetFork()
@@ -169,6 +166,252 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       )
       const { amount1: wethTraded } = v3SwapEventArgs!
       expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethTraded.mul(-1))
+    })
+
+    it('V3, then V4', async () => {
+      // DAI -v3-> USDC -v4-> WETH
+      const v3Tokens = [DAI.address, USDC.address]
+      const v3AmountIn: BigNumber = expandTo18DecimalsBN(1234)
+      const v3AmountOutMin = 0
+      const v4AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE * 1.01))
+
+      planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+        ADDRESS_THIS, // the router is the recipient of the v3 trade
+        v3AmountIn,
+        v3AmountOutMin,
+        encodePathExactInput(v3Tokens),
+        SOURCE_MSG_SENDER, // the user pays for the input of the v3 trade
+      ])
+
+      // prep the v4 swap
+      // settle USDC that are in the router, into v4, to get a positive delta
+      v4Planner.addAction(Actions.SETTLE, [USDC.address, CONTRACT_BALANCE, false])
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn: USDC.address,
+          path: encodeMultihopExactInPath([USDC_WETH.poolKey], USDC.address),
+          amountIn: OPEN_DELTA,
+          amountOutMinimum: v4AmountOutMin,
+        },
+      ])
+      v4Planner.addAction(Actions.TAKE_ALL, [WETH.address, 0])
+
+      // add the v4 commands to the UR calldata
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { daiBalanceBefore, daiBalanceAfter, wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(v4AmountOutMin)
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(v3AmountIn)
+      expect(await usdcContract.balanceOf(router.address)).to.be.eq(0)
+    })
+
+    it('V2, then V4', async () => {
+      // DAI -v2-> USDC -v4-> WETH
+      const v2Tokens = [DAI.address, USDC.address]
+      const v2AmountIn: BigNumber = expandTo18DecimalsBN(1234)
+      const v2AmountOutMin = 0
+      const v4AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE * 1.01))
+
+      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+        ADDRESS_THIS, // the router is the recipient of the v3 trade
+        v2AmountIn,
+        v2AmountOutMin,
+        v2Tokens,
+        SOURCE_MSG_SENDER, // the user pays for the input of the v3 trade
+      ])
+
+      // prep the v4 swap
+      // settle USDC that are in the router, into v4, to get a positive delta
+      v4Planner.addAction(Actions.SETTLE, [USDC.address, CONTRACT_BALANCE, false])
+      v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+        {
+          currencyIn: USDC.address,
+          path: encodeMultihopExactInPath([USDC_WETH.poolKey], USDC.address),
+          amountIn: OPEN_DELTA,
+          amountOutMinimum: v4AmountOutMin,
+        },
+      ])
+      v4Planner.addAction(Actions.TAKE_ALL, [WETH.address, 0])
+
+      // add the v4 commands to the UR calldata
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { daiBalanceBefore, daiBalanceAfter, wethBalanceBefore, wethBalanceAfter } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(v4AmountOutMin)
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(v2AmountIn)
+      expect(await usdcContract.balanceOf(router.address)).to.be.eq(0)
+    })
+
+    it('V4, then V3', async () => {
+      // DAI -v4-> USDC -v3-> WETH
+      const v4AmountIn: BigNumber = expandTo18DecimalsBN(1234)
+      const v4AmountOutMin = 0
+      const v3Tokens = [USDC.address, WETH.address]
+      const v3AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE * 1.01))
+
+      v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
+        {
+          poolKey: DAI_USDC.poolKey,
+          zeroForOne: true,
+          amountIn: v4AmountIn,
+          amountOutMinimum: v4AmountOutMin,
+          sqrtPriceLimitX96: 0,
+          hookData: '0x',
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_ALL, [daiContract.address, MAX_UINT160])
+      // take all of the available tokens (open_delta), with the router (address(this)) as the recipient
+      v4Planner.addAction(Actions.TAKE, [usdcContract.address, ADDRESS_THIS, OPEN_DELTA])
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+        MSG_SENDER, // the recipient of the output is the caller
+        CONTRACT_BALANCE, // the router's balance is the input amount
+        v3AmountOutMin,
+        encodePathExactInput(v3Tokens),
+        SOURCE_ROUTER, // the USDC is in the router
+      ])
+
+      const { daiBalanceBefore, daiBalanceAfter, wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } =
+        await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      const { amount1: wethTraded } = v3SwapEventArgs!
+
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethTraded.mul(-1))
+      expect(wethTraded.mul(-1)).to.be.gte(v4AmountOutMin)
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(v4AmountIn)
+      expect(await usdcContract.balanceOf(router.address)).to.be.eq(0)
+    })
+
+    it('ETH into V4, then V3', async () => {
+      // ETH -v4-> USDC -v3-> DAI
+      const v4AmountIn: BigNumber = expandTo18DecimalsBN(1.2)
+      const v4AmountOutMin = 0
+      const v3Tokens = [USDC.address, DAI.address]
+      const v3AmountOutMin = expandTo18DecimalsBN(1.2 * USD_ETH_PRICE * 0.99)
+
+      v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
+        {
+          poolKey: ETH_USDC.poolKey,
+          zeroForOne: true,
+          amountIn: v4AmountIn,
+          amountOutMinimum: v4AmountOutMin,
+          sqrtPriceLimitX96: 0,
+          hookData: '0x',
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_ALL, [ETH_ADDRESS, MAX_UINT160])
+      // take all of the available tokens (open_delta), with the router (address(this)) as the recipient
+      v4Planner.addAction(Actions.TAKE, [usdcContract.address, ADDRESS_THIS, OPEN_DELTA])
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+        MSG_SENDER, // the recipient of the output is the caller
+        CONTRACT_BALANCE, // the router's balance is the input amount
+        v3AmountOutMin,
+        encodePathExactInput(v3Tokens),
+        SOURCE_ROUTER, // the USDC is in the router
+      ])
+
+      const { daiBalanceBefore, daiBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent, v3SwapEventArgs } =
+        await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract, v4AmountIn)
+      const { amount0: daiTraded } = v3SwapEventArgs!
+
+      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.eq(v4AmountIn.add(gasSpent))
+      expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.eq(daiTraded.mul(-1))
+      expect(daiTraded.mul(-1)).to.be.gte(v3AmountOutMin)
+    })
+
+    it('ETH wrap, WETH into V4, then V3, ', async () => {
+      // ETH -> WETH -v4-> USDC -v3-> DAI
+      const v4AmountIn: BigNumber = expandTo18DecimalsBN(1.2)
+      const v4AmountOutMin = 0
+      const v3Tokens = [USDC.address, DAI.address]
+      const v3AmountOutMin = expandTo18DecimalsBN(1.2 * USD_ETH_PRICE * 0.99)
+
+      // wrap ETH into WETH
+      planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, v4AmountIn])
+      // swap WETH to USDC
+      v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          zeroForOne: false,
+          amountIn: v4AmountIn,
+          amountOutMinimum: v4AmountOutMin,
+          sqrtPriceLimitX96: 0,
+          hookData: '0x',
+        },
+      ])
+      // settle the whole open WETH delta, where the payer is the router (payerIsUser = false)
+      v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, false])
+      // take all of the available tokens (open_delta), with the router (address(this)) as the recipient
+      v4Planner.addAction(Actions.TAKE, [usdcContract.address, ADDRESS_THIS, OPEN_DELTA])
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
+        MSG_SENDER, // the recipient of the output is the caller
+        CONTRACT_BALANCE, // the router's balance is the input amount
+        v3AmountOutMin,
+        encodePathExactInput(v3Tokens),
+        SOURCE_ROUTER, // the USDC is in the router
+      ])
+
+      const { daiBalanceBefore, daiBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent, v3SwapEventArgs } =
+        await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract, v4AmountIn)
+      const { amount0: daiTraded } = v3SwapEventArgs!
+
+      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.eq(v4AmountIn.add(gasSpent))
+      expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.eq(daiTraded.mul(-1))
+      expect(daiTraded.mul(-1)).to.be.gte(v3AmountOutMin)
+    })
+
+    it('V4, then V2', async () => {
+      // DAI -v4-> USDC -v2-> WETH
+      const v4AmountIn: BigNumber = expandTo18DecimalsBN(1234)
+      const v4AmountOutMin = 0
+      const v2Tokens = [USDC.address, WETH.address]
+      const v2AmountOutMin = expandTo18DecimalsBN(1234 / (USD_ETH_PRICE * 1.01))
+
+      v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
+        {
+          poolKey: DAI_USDC.poolKey,
+          zeroForOne: true,
+          amountIn: v4AmountIn,
+          amountOutMinimum: v4AmountOutMin,
+          sqrtPriceLimitX96: 0,
+          hookData: '0x',
+        },
+      ])
+      v4Planner.addAction(Actions.SETTLE_ALL, [daiContract.address, MAX_UINT160])
+      // take all of the available tokens (open_delta), with the v2 pair as the recipient
+      v4Planner.addAction(Actions.TAKE, [usdcContract.address, Pair.getAddress(USDC, WETH), OPEN_DELTA])
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, v2AmountOutMin, v2Tokens, SOURCE_MSG_SENDER])
+
+      const { daiBalanceBefore, daiBalanceAfter, wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs } =
+        await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      const { amount1Out: wethTraded } = v2SwapEventArgs!
+
+      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethTraded)
+      expect(wethTraded).to.be.gte(v4AmountOutMin)
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(v4AmountIn)
+      expect(await usdcContract.balanceOf(router.address)).to.be.eq(0)
     })
   })
 
