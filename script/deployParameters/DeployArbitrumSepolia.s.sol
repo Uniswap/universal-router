@@ -13,9 +13,9 @@ contract DeployArbitrumSepolia is DeployUniversalRouter {
             v3Factory: 0x248AB79Bbb9bC29bB72f7Cd42F17e054Fc40188e,
             pairInitCodeHash: BYTES32_ZERO,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
-            v4PoolManager: 0xfb3e0c6f74eb1a21cc1da29aec80d2dfe6c9a317,
+            v4PoolManager: 0xFB3e0C6F74eB1a21CC1Da29aeC80D2Dfe6C9a317,
             v3NFTPositionManager: 0x6b2937Bde17889EDCf8fbD8dE31C3C2a70Bc4d65,
-            v4PositionManager: 0xac631556d3d4019c95769033b5e719dd77124bac
+            v4PositionManager: 0xAc631556d3d4019C95769033B5E719dD77124BAc
         });
 
         unsupported = UNSUPPORTED_PROTOCOL;
