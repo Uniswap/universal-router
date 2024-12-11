@@ -18,6 +18,6 @@ contract DeployArbitrumSepolia is DeployUniversalRouter {
             v4PositionManager: 0xAc631556d3d4019C95769033B5E719dD77124BAc
         });
 
-        unsupported = UNSUPPORTED_PROTOCOL;
+        unsupported = 0xDC0e6B43312B508e431735bc4d97FBbBf3293148;
     }
 }
