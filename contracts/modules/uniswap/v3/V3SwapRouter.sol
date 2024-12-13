@@ -5,6 +5,7 @@ import {V3Path} from './V3Path.sol';
 import {BytesLib} from './BytesLib.sol';
 import {SafeCast} from '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import {IUniswapV3Pool} from '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
+import { IUniswapV3Factory } from '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
 import {IUniswapV3SwapCallback} from '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
 import {Constants} from '../../../libraries/Constants.sol';
 import {Permit2Payments} from '../../Permit2Payments.sol';
@@ -159,19 +160,8 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
 
     function computePoolAddress(address tokenA, address tokenB, uint24 fee) private view returns (address pool) {
         if (tokenA > tokenB) (tokenA, tokenB) = (tokenB, tokenA);
-        pool = address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            hex'ff',
-                            UNISWAP_V3_FACTORY,
-                            keccak256(abi.encode(tokenA, tokenB, fee)),
-                            UNISWAP_V3_POOL_INIT_CODE_HASH
-                        )
-                    )
-                )
-            )
-        );
+        IUniswapV3Factory v3factory = IUniswapV3Factory(UNISWAP_V3_FACTORY);
+
+        pool = v3factory.getPool(tokenA, tokenB, fee);
     }
 }
