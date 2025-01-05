@@ -114,7 +114,7 @@ Whereas in contrast `CRYPTOPUNKS` has just 3 parameters encoded:
 - `address` The recipient of the punk
 - `uint256` The amount of ETH to pay for the punk
 
-Encoding parameters in a bytes string in this way gives us maximum flexiblity to be able to support many commands which require different datatypes in a gas-efficient way.
+Encoding parameters in a bytes string in this way gives us maximum flexibility to be able to support many commands which require different datatypes in a gas-efficient way.
 
 For a more detailed breakdown of which parameters you should provide for each command take a look at the `Dispatcher.dispatch` function, or alternatively at the `ABI_DEFINITION` mapping in `planner.ts`.
 
