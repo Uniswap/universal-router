@@ -1,8 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`Element Market gas tests gas: purchases open order 1`] = `
-Object {
-  "calldataByteLength": 964,
-  "gasUsed": 123947,
-}
-`;

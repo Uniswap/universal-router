@@ -1,5 +1,7 @@
 solmate/=lib/solmate/
 permit2/=lib/permit2/
 forge-std/=lib/forge-std/src/
-@openzeppelin/=node_modules/@openzeppelin
-@uniswap=node_modules/@uniswap
+@uniswap/v3-core/=node_modules/@uniswap/v3-core/
+@uniswap/v2-core/=node_modules/@uniswap/v2-core/
+@uniswap/v3-periphery/=lib/v3-periphery/
+@uniswap/v4-periphery/=lib/v4-periphery/

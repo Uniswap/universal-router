@@ -84,49 +84,12 @@ Each command is a `bytes1` containing the following 8 bits:
    ├──────┼───────────────────────────────┤
    │ 0x0d │  PERMIT2_TRANSFER_FROM_BATCH  │
    ├──────┼───────────────────────────────┤
-   │ 0x0e │  -------                      │
-   ├──────┼───────────────────────────────┤
-   │ 0x0f │  -------                      │
-   ├──────┼───────────────────────────────┤
-   │ 0x10 │  SEAPORT_V1_5                 │
-   ├──────┼───────────────────────────────┤
-   │ 0x11 │  LOOKS_RARE_721               │
-   ├──────┼───────────────────────────────┤
-   │ 0x12 │  NFTX                         │
-   ├──────┼───────────────────────────────┤
-   │ 0x13 │  CRYPTOPUNKS                  │
-   ├──────┼───────────────────────────────┤
-   │ 0x14 │  LOOKS_RARE_1155              │
-   ├──────┼───────────────────────────────┤
-   │ 0x15 │  OWNER_CHECK_721              │
-   ├──────┼───────────────────────────────┤
-   │ 0x16 │  OWNER_CHECK_1155             │
-   ├──────┼───────────────────────────────┤
-   │ 0x17 │  SWEEP_ERC721                 │
-   ├──────┼───────────────────────────────┤
-   │ 0x18 │  X2Y2_721                     │
-   ├──────┼───────────────────────────────┤
-   │ 0x19 │  SUDOSWAP                     │
-   ├──────┼───────────────────────────────┤
-   │ 0x1a │  NFT20                        │
-   ├──────┼───────────────────────────────┤
-   │ 0x1b │  X2Y2_1155                    │
-   ├──────┼───────────────────────────────┤
-   │ 0x1c │  FOUNDATION                   │
-   ├──────┼───────────────────────────────┤
-   │ 0x1d │  SWEEP_ERC1155                │
-   ├──────┼───────────────────────────────┤
-   │ 0x1e │  ELEMENT_MARKET               │
-   ├──────┼───────────────────────────────┤
-   │ 0x1f │  -------                      │
-   ├──────┼───────────────────────────────┤
-   │ 0x20 │  SEAPORT_V1_4                 │
+   │ 0x0e-│  -------                      │
+   │ 0x20 │                               │
    ├──────┼───────────────────────────────┤
    │ 0x21 │  EXECUTE_SUB_PLAN             │
    ├──────┼───────────────────────────────┤
-   │ 0x22 │  APPROVE_ERC20                │
-   ├──────┼───────────────────────────────┤
-   │ 0x23-│  -------                      │
+   │ 0x22-│  -------                      │
    │ 0x3f │                               │
    └──────┴───────────────────────────────┘
 ```
@@ -151,7 +114,7 @@ Whereas in contrast `CRYPTOPUNKS` has just 3 parameters encoded:
 - `address` The recipient of the punk
 - `uint256` The amount of ETH to pay for the punk
 
-Encoding parameters in a bytes string in this way gives us maximum flexiblity to be able to support many commands which require different datatypes in a gas-efficient way.
+Encoding parameters in a bytes string in this way gives us maximum flexibility to be able to support many commands which require different datatypes in a gas-efficient way.
 
 For a more detailed breakdown of which parameters you should provide for each command take a look at the `Dispatcher.dispatch` function, or alternatively at the `ABI_DEFINITION` mapping in `planner.ts`.
 
@@ -180,7 +143,6 @@ INFURA_API_KEY='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 
 ```console
 yarn install
-yarn symlink
 yarn compile
 yarn test
 ```
