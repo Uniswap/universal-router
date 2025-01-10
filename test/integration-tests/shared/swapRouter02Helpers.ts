@@ -6,30 +6,43 @@ import { encodeSqrtRatioX96, FeeAmount, nearestUsableTick, Pool, TickMath, TICK_
 import { getV2PoolReserves, WETH, DAI, USDC, USDT } from './mainnetForkHelpers'
 import { BigNumber } from 'ethers'
 
-const feeAmount = FeeAmount.MEDIUM
 const sqrtRatioX96 = encodeSqrtRatioX96(1, 1)
 const liquidity = 1_000_000
 
 // v3
 export const makePool = (token0: Token, token1: Token, liquidity: number) => {
-  return new Pool(token0, token1, feeAmount, sqrtRatioX96, liquidity, TickMath.getTickAtSqrtRatio(sqrtRatioX96), [
+  const feeTier = getFeeTier(token0.address, token1.address)
+  return new Pool(token0, token1, feeTier, sqrtRatioX96, liquidity, TickMath.getTickAtSqrtRatio(sqrtRatioX96), [
     {
-      index: nearestUsableTick(TickMath.MIN_TICK, TICK_SPACINGS[feeAmount]),
+      index: nearestUsableTick(TickMath.MIN_TICK, TICK_SPACINGS[feeTier]),
       liquidityNet: liquidity,
       liquidityGross: liquidity,
     },
     {
-      index: nearestUsableTick(TickMath.MAX_TICK, TICK_SPACINGS[feeAmount]),
+      index: nearestUsableTick(TickMath.MAX_TICK, TICK_SPACINGS[feeTier]),
       liquidityNet: -liquidity,
       liquidityGross: liquidity,
     },
   ])
 }
 
+export function getFeeTier(tokenA: string, tokenB: string): FeeAmount {
+  const [token0, token1] = tokenA < tokenB ? [tokenA, tokenB] : [tokenB, tokenA]
+
+  if (token0 == DAI.address && token1 == WETH.address) return FeeAmount.MEDIUM
+  if (token0 == USDC.address && token1 == WETH.address) return FeeAmount.LOW
+  if (token0 == WETH.address && token1 == USDT.address) return FeeAmount.LOW
+  if (token0 == DAI.address && token1 == USDC.address) return FeeAmount.LOWEST
+  if (token0 == DAI.address && token1 == USDT.address) return FeeAmount.LOWEST
+  if (token0 == USDC.address && token1 == USDT.address) return FeeAmount.LOWEST
+  else return FeeAmount.MEDIUM
+}
+
 export const pool_DAI_WETH = makePool(DAI, WETH, liquidity)
 export const pool_DAI_USDC = makePool(USDC, DAI, liquidity)
 export const pool_USDC_WETH = makePool(USDC, WETH, liquidity)
 export const pool_USDC_USDT = makePool(USDC, USDT, liquidity)
+export const pool_DAI_USDT = makePool(DAI, USDT, liquidity)
 export const pool_WETH_USDT = makePool(USDT, WETH, liquidity)
 
 // v2
@@ -44,22 +57,28 @@ export const makePair = async (alice: SignerWithAddress, token0: Token, token1: 
 const FEE_SIZE = 3
 
 // v3
-export function encodePath(path: string[], fees: FeeAmount[]): string {
-  if (path.length != fees.length + 1) {
-    throw new Error('path/fee lengths do not match')
-  }
-
+export function encodePath(path: string[]): string {
   let encoded = '0x'
-  for (let i = 0; i < fees.length; i++) {
+  for (let i = 0; i < path.length - 1; i++) {
     // 20 byte encoding of the address
     encoded += path[i].slice(2)
     // 3 byte encoding of the fee
-    encoded += fees[i].toString(16).padStart(2 * FEE_SIZE, '0')
+    encoded += getFeeTier(path[i], path[i + 1])
+      .toString(16)
+      .padStart(2 * FEE_SIZE, '0')
   }
   // encode the final token
   encoded += path[path.length - 1].slice(2)
 
   return encoded.toLowerCase()
+}
+
+export function encodePathExactInput(tokens: string[]): string {
+  return encodePath(tokens)
+}
+
+export function encodePathExactOutput(tokens: string[]): string {
+  return encodePath(tokens.slice().reverse())
 }
 
 export function expandTo18Decimals(n: number): BigintIsh {

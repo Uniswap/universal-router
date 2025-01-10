@@ -1,10 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber } from 'ethers'
 import hre from 'hardhat'
-import PERMIT2_COMPILE from '../../../../artifacts/permit2/src/Permit2.sol/Permit2.json'
-import { Permit2 } from '../../../../typechain'
-
-const { ethers } = hre
+import { IPermit2 } from '../../../../typechain'
 
 const chainId: number = hre.network.config.chainId ? hre.network.config.chainId : 1
 
@@ -62,8 +59,6 @@ export const PERMIT2_PERMIT_BATCH_TYPE = {
   ],
 }
 
-export const PERMIT2_INTERFACE = new ethers.utils.Interface(PERMIT2_COMPILE.abi)
-
 export function getEip712Domain(chainId: number, verifyingContract: string) {
   return {
     name: 'Permit2',
@@ -86,7 +81,7 @@ export async function signPermit(
 export async function getPermitSignature(
   permit: PermitSingle,
   signer: SignerWithAddress,
-  permit2: Permit2
+  permit2: IPermit2
 ): Promise<string> {
   // look up the correct nonce for this permit
   const nextNonce = (await permit2.allowance(signer.address, permit.details.token, permit.spender)).nonce
@@ -97,7 +92,7 @@ export async function getPermitSignature(
 export async function getPermitBatchSignature(
   permit: PermitBatch,
   signer: SignerWithAddress,
-  permit2: Permit2
+  permit2: IPermit2
 ): Promise<string> {
   for (const i in permit.details) {
     const nextNonce = (await permit2.allowance(signer.address, permit.details[i].token, permit.spender)).nonce

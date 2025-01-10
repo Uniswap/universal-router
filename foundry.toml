@@ -3,9 +3,19 @@ src = 'contracts'
 out = 'out'
 libs = ['lib']
 via_ir = true
-solc_version = '0.8.17'
-optimizer_runs = 1_000_000
+solc_version = '0.8.26'
+evm_version = "cancun"
+
+optimizer_runs = 44444444
 fs_permissions = [{ access = "read", path = "./script/deployParameters/"}]
+
+additional_compiler_profiles = [
+  { name = "manager", via_ir = true, optimizer_runs = 30000 },
+]
+
+compilation_restrictions = [
+  { paths = "lib/v4-periphery/src/PositionManager.sol", optimizer_runs = 30000 },
+]
 
 [fmt]
 line_length = 120
@@ -13,5 +23,12 @@ quote_style = 'single'
 
 [profile.lite.optimizer_details.yulDetails]
 optimizerSteps = ''
+
+[rpc_endpoints]
+sepolia = "https://rpc.sepolia.org"
+unichain_sepolia = "https://sepolia.unichain.org"
+base_sepolia = "https://sepolia.base.org"
+op_sepolia = "https://sepolia.optimism.io"
+arbitrum_sepolia = "https://sepolia-rollup.arbitrum.io/rpc"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

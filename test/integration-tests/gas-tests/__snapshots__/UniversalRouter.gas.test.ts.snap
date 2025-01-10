@@ -1,24 +1,3 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UniversalRouter Gas Tests gas: bytecode size 1`] = `17917`;
-
-exports[`UniversalRouter Gas Tests trading for NFTs gas: ERC20 --> ETH --> Seaport NFT 1`] = `
-Object {
-  "calldataByteLength": 2468,
-  "gasUsed": 252709,
-}
-`;
-
-exports[`UniversalRouter Gas Tests trading for NFTs gas: ETH --> Seaport NFT 1`] = `
-Object {
-  "calldataByteLength": 2020,
-  "gasUsed": 152100,
-}
-`;
-
-exports[`UniversalRouter Gas Tests trading for NFTs gas: WETH --> ETH --> Seaport NFT 1`] = `
-Object {
-  "calldataByteLength": 2308,
-  "gasUsed": 186879,
-}
-`;
+exports[`UniversalRouter Gas Tests gas: bytecode size 1`] = `14284`;
