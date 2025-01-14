@@ -1,16 +1,16 @@
 import type { Contract } from '@ethersproject/contracts'
-import { UniversalRouter, Permit2 } from '../../../typechain'
+import { UniversalRouter } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, DAI, WETH } from '../shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE, ETH_ADDRESS, ONE_PERCENT_BIPS } from '../shared/constants'
 import { expandTo18DecimalsBN } from '../shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import hre from 'hardhat'
-import deployUniversalRouter, { deployPermit2 } from '../shared/deployUniversalRouter'
+import deployUniversalRouter from '../shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from '../shared/planner'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 const { ethers } = hre
-import WETH_ABI from '../../../artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
+import WETH_ABI from '../../../artifacts/@uniswap/v4-periphery/src/interfaces/external/IWETH9.sol/IWETH9.json'
 import { BigNumber } from 'ethers'
 import { ADDRESS_THIS } from '@uniswap/router-sdk'
 
@@ -18,7 +18,6 @@ describe('Payments Gas Tests', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let router: UniversalRouter
-  let permit2: Permit2
   let daiContract: Contract
   let wethContract: Contract
   let planner: RoutePlanner
@@ -33,8 +32,7 @@ describe('Payments Gas Tests', () => {
     bob = (await ethers.getSigners())[1]
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice)
     wethContract = new ethers.Contract(WETH.address, new ethers.utils.Interface(WETH_ABI.abi), alice)
-    permit2 = (await deployPermit2()).connect(alice) as Permit2
-    router = (await deployUniversalRouter(permit2)).connect(alice) as UniversalRouter
+    router = (await deployUniversalRouter(alice.address)).connect(alice) as UniversalRouter
     planner = new RoutePlanner()
   })
 
@@ -128,14 +126,6 @@ describe('Payments Gas Tests', () => {
       planner.addCommand(CommandType.SWEEP, [DAI.address, alice.address, 1])
       const { commands, inputs } = planner
 
-      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
-    })
-
-    it('gas: APPROVE_ERC20', async () => {
-      const SEAPORT_V2_ID: number = 1
-      planner.addCommand(CommandType.APPROVE_ERC20, [DAI.address, SEAPORT_V2_ID])
-
-      const { commands, inputs } = planner
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })
   })

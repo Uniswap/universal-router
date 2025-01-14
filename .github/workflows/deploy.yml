@@ -34,11 +34,20 @@ jobs:
         with:
           cache: yarn
           node-version: 18
+          registry-url: 'https://registry.npmjs.org'
 
-      - name: Install dependencies and compile contracts
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install dependencies
         run: |
           yarn install --immutable --immutable-cache
-          yarn compile
+          git submodule update --init --recursive
+
+      - name: Compile
+        run: yarn compile
 
       - name: Release
         env:

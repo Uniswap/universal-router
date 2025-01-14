@@ -24,8 +24,11 @@ jobs:
     # Must Insall node modules for forge to reference in remappings
       - uses: actions/setup-node@v1
         with:
-          node-version: 16.x
+          node-version: 18.x
           registry-url: https://registry.npmjs.org
+
+      - name: Install Yarn
+        run: npm install -g yarn
 
       - id: yarn-cache
         run: echo "::set-output name=dir::$(yarn cache dir)"
@@ -43,7 +46,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - name: Run Forge build
         run: |
@@ -53,7 +56,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          forge test --isolate -vvv
         id: test
         env:
           FORK_URL: https://mainnet.infura.io/v3/${{ secrets.INFURA_API_KEY }}
