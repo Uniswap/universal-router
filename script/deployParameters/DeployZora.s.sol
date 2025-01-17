@@ -7,7 +7,7 @@ import {RouterParameters} from 'contracts/types/RouterParameters.sol';
 contract DeployWorldchain is DeployUniversalRouter {
     function setUp() public override {
         params = RouterParameters({
-            permit2: 0x000000000022d473030f116ddee9f6b43ac78ba3,
+            permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
             weth9: 0x4200000000000000000000000000000000000006,
             v2Factory: 0x0F797dC7efaEA995bB916f268D919d0a1950eE3C,
             v3Factory: 0x7145F8aeef1f6510E92164038E1B6F8cB2c42Cbb,
