@@ -20,6 +20,9 @@ export const GALA = new Token(1, '0x15D4c048F83bd7e37d49eA4C83a07267Ec4203dA', 8
 export const SWAP_ROUTER_V2 = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
 export const V2_FACTORY = 0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f
 
+// current market ETH price at block 20010000
+export const USD_ETH_PRICE = 3820
+
 export const approveSwapRouter02 = async (
   alice: SignerWithAddress,
   currency: Currency,
