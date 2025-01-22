@@ -14,7 +14,7 @@ contract DeployWorldchain is DeployUniversalRouter {
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: address(0),
-            v3NFTPositionManager: 0x7145F8aeef1f6510E92164038E1B6F8cB2c42Cbb,
+            v3NFTPositionManager: 0xbC91e8DfA3fF18De43853372A3d7dfe585137D78,
             v4PositionManager: address(0)
         });
     }
