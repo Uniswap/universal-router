@@ -4,7 +4,7 @@ pragma solidity ^0.8.15;
 import {DeployUniversalRouter} from '../DeployUniversalRouter.s.sol';
 import {RouterParameters} from 'contracts/types/RouterParameters.sol';
 
-contract DeployWorldchain is DeployUniversalRouter {
+contract DeployZora is DeployUniversalRouter {
     function setUp() public override {
         params = RouterParameters({
             permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
