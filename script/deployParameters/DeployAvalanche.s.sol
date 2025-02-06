@@ -13,9 +13,9 @@ contract DeployAvalanche is DeployUniversalRouter {
             v3Factory: 0x740b1c1de25031C31FF4fC9A62f554A55cdC1baD,
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
-            v4PoolManager: address(0),
+            v4PoolManager: 0x06380C0e0912312B5150364B9DC4542BA0DbBc85,
             v3NFTPositionManager: 0x655C406EBFa14EE2006250925e54ec43AD184f8B,
-            v4PositionManager: address(0)
+            v4PositionManager: 0xB74b1F14d2754AcfcbBe1a221023a5cf50Ab8ACD
         });
 
         unsupported = 0x5302086A3a25d473aAbBd0356eFf8Dd811a4d89B;

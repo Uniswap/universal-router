@@ -13,9 +13,9 @@ contract DeployBase is DeployUniversalRouter {
             v3Factory: 0x33128a8fC17869897dcE68Ed026d694621f6FDfD,
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
-            v4PoolManager: address(0),
+            v4PoolManager: 0x498581fF718922c3f8e6A244956aF099B2652b2b,
             v3NFTPositionManager: 0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1,
-            v4PositionManager: address(0)
+            v4PositionManager: 0x7C5f5A4bBd8fD63184577525326123B519429bDc
         });
 
         unsupported = 0x9E18Efb3BE848940b0C92D300504Fb08C287FE85;
