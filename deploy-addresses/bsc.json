@@ -1,6 +1,7 @@
 {
-  "UniversalRouter": "0x5Dc88340E1c5c6366864Ee415d6034cadd1A9897",
+  "UniversalRouterV1": "0x5Dc88340E1c5c6366864Ee415d6034cadd1A9897",
   "UniversalRouterV1_2": "0xeC8B0F7Ffe3ae75d7FfAb09429e3675bb63503e4",
+  "UnsupportedProtocol": "0x5302086A3a25d473aAbBd0356eFf8Dd811a4d89B",
   "UniversalRouterV1_2_V2Support": "0x4Dae2f939ACf50408e13d58534Ff8c2776d45265",
-  "UnsupportedProtocol": "0x5302086A3a25d473aAbBd0356eFf8Dd811a4d89B"
+  "UniversalRouterV2": "0x1906c1d672b88cd1b9ac7593301ca990f94eae07"
 }
