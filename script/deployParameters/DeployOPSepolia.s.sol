@@ -11,7 +11,7 @@ contract DeployOPSepolia is DeployUniversalRouter {
             weth9: 0x4200000000000000000000000000000000000006,
             v2Factory: UNSUPPORTED_PROTOCOL,
             v3Factory: 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24,
-            pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
+            pairInitCodeHash: BYTES32_ZERO,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: 0xf7F5aB3DcA35e17dE187b459159BC643853B3c67,
             v3NFTPositionManager: 0x27F971cb582BF9E50F397e4d29a5C7A34f11faA2,
