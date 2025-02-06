@@ -14,16 +14,16 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     error V2TooMuchRequested();
     error V2InvalidPath();
 
-    function _v2Swap(address[] calldata path, address recipient, address pair) private {
+    function _v2Swap(UniswapV2Library.route[] calldata path, address recipient, address pair) private {
         unchecked {
-            if (path.length < 2) revert V2InvalidPath();
+            if (path.length < 1) revert V2InvalidPath();
 
             // cached to save on duplicate operations
-            (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
+            (address token0,) = UniswapV2Library.sortTokens(path[0].from, path[0].to);
             uint256 finalPairIndex = path.length - 1;
             uint256 penultimatePairIndex = finalPairIndex - 1;
             for (uint256 i; i < finalPairIndex; i++) {
-                (address input, address output) = (path[i], path[i + 1]);
+                (address input, address output) = (path[i].from, path[i].to);
                 (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
                 (uint256 reserveInput, uint256 reserveOutput) =
                     input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
@@ -34,7 +34,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                 address nextPair;
                 (nextPair, token0) = i < penultimatePairIndex
                     ? UniswapV2Library.pairAndToken0For(
-                        UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, output, path[i + 2]
+                        UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, output, path[i + 1].to
                     )
                     : (recipient, address(0));
                 IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
@@ -53,15 +53,15 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         address recipient,
         uint256 amountIn,
         uint256 amountOutMinimum,
-        address[] calldata path,
+        UniswapV2Library.route[] calldata path,
         address payer
     ) internal {
         address firstPair =
-            UniswapV2Library.pairFor(UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, path[0], path[1]);
+            UniswapV2Library.pairFor(UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, path[0].from, path[0].to);
         if (
             amountIn != Constants.ALREADY_PAID // amountIn of 0 to signal that the pair already has the tokens
         ) {
-            payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
+            payOrPermit2Transfer(path[0].from, payer, firstPair, amountIn);
         }
 
         ERC20 tokenOut = ERC20(path[path.length - 1]);
@@ -83,14 +83,14 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         address recipient,
         uint256 amountOut,
         uint256 amountInMaximum,
-        address[] calldata path,
+        UniswapV2Library.route[] calldata path,
         address payer
     ) internal {
         (uint256 amountIn, address firstPair) =
             UniswapV2Library.getAmountInMultihop(UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, amountOut, path);
         if (amountIn > amountInMaximum) revert V2TooMuchRequested();
 
-        payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
+        payOrPermit2Transfer(path[0].from, payer, firstPair, amountIn);
         _v2Swap(path, recipient, firstPair);
     }
 }
