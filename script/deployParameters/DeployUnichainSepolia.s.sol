@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.24;
 
 import {DeployUniversalRouter} from '../DeployUniversalRouter.s.sol';
 import {RouterParameters} from 'contracts/types/RouterParameters.sol';
@@ -17,7 +17,5 @@ contract DeployUnichainSepolia is DeployUniversalRouter {
             v3NFTPositionManager: 0xB7F724d6dDDFd008eFf5cc2834edDE5F9eF0d075,
             v4PositionManager: 0x12A98709BB5D0641D61458f85dcAFbE17AC2d05c
         });
-
-        unsupported = 0x76870DEbef0BE25589A5CddCe9B1D99276C73B4e;
     }
 }
