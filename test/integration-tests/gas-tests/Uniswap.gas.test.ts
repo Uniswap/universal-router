@@ -48,6 +48,8 @@ import {
   USDC_WETH,
   encodeMultihopExactOutPath,
   ETH_USDC,
+  DAI_USDT,
+  DAI_WETH,
 } from '../shared/v4Helpers'
 const { ethers } = hre
 
@@ -59,6 +61,7 @@ describe('Uniswap Gas Tests', () => {
   let daiContract: Contract
   let wethContract: Contract
   let usdcContract: Contract
+  let usdtContract: Contract
   let planner: RoutePlanner
   let v4Planner: V4Planner
   // 6 pairs for gas tests with high numbers of trades
@@ -79,6 +82,7 @@ describe('Uniswap Gas Tests', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
+    usdtContract = new ethers.Contract(USDT.address, TOKEN_ABI, bob)
     permit2 = PERMIT2.connect(bob) as IPermit2
     v4PoolManager = (await deployV4PoolManager(bob.address)).connect(bob) as PoolManager
     router = (await deployUniversalRouter(undefined, v4PoolManager.address)).connect(bob) as UniversalRouter
@@ -90,13 +94,15 @@ describe('Uniswap Gas Tests', () => {
     pair_USDC_WETH = await makePair(bob, USDC, WETH)
 
     // alice gives bob some tokens
-    await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100000))
+    await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(200000))
     await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100))
     await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(50000000))
+    await usdtContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(50000000))
     // Bob max-approves the permit2 contract to access his DAI and WETH
     await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
     await wethContract.connect(bob).approve(permit2.address, MAX_UINT)
     await usdcContract.connect(bob).approve(permit2.address, MAX_UINT)
+    await usdtContract.connect(bob).approve(permit2.address, MAX_UINT)
   })
 
   describe('Trade on UniswapV2', () => {
@@ -583,6 +589,20 @@ describe('Uniswap Gas Tests', () => {
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
         })
 
+        it('gas: exactIn, one trade, four hops', async () => {
+          const amountOutMin: number = 3 * 10 ** 6
+          addV3ExactInTrades(planner, 1, amountOutMin, MSG_SENDER, [
+            DAI.address,
+            WETH.address,
+            USDT.address,
+            USDC.address,
+            WETH.address,
+          ])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
         it('gas: exactOut, one trade, one hop', async () => {
           const tokens = [DAI.address, WETH.address]
           const path = encodePathExactOutput(tokens)
@@ -700,7 +720,7 @@ describe('Uniswap Gas Tests', () => {
       const amountIn = 1000
       const amountInUSDC: BigNumber = expandTo6DecimalsBN(amountIn)
       const amountInDAI: BigNumber = expandTo18DecimalsBN(amountIn)
-
+      const amountInUSDT: BigNumber = expandTo6DecimalsBN(amountIn)
       const minAmountOutNative: BigNumber = expandTo18DecimalsBN(amountIn / Math.floor(USD_ETH_PRICE * 1.01))
 
       const amountInNative: BigNumber = expandTo18DecimalsBN(1.23)
@@ -724,19 +744,25 @@ describe('Uniswap Gas Tests', () => {
         await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
         await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
         await permit2.approve(USDC.address, router.address, MAX_UINT160, DEADLINE)
+        await permit2.approve(USDT.address, router.address, MAX_UINT160, DEADLINE)
 
         // for setting up pools, bob gives position manager approval on permit2
         await permit2.approve(DAI.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
         await permit2.approve(WETH.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
         await permit2.approve(USDC.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
+        await permit2.approve(USDT.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
 
         await initializeV4Pool(v4PoolManager, USDC_WETH.poolKey, USDC_WETH.price)
         await initializeV4Pool(v4PoolManager, DAI_USDC.poolKey, DAI_USDC.price)
         await initializeV4Pool(v4PoolManager, ETH_USDC.poolKey, ETH_USDC.price)
+        await initializeV4Pool(v4PoolManager, DAI_WETH.poolKey, DAI_WETH.price)
+        await initializeV4Pool(v4PoolManager, DAI_USDT.poolKey, DAI_USDT.price)
 
         await addLiquidityToV4Pool(v4PositionManager, USDC_WETH, expandTo18DecimalsBN(2).toString(), bob)
         await addLiquidityToV4Pool(v4PositionManager, DAI_USDC, expandTo18DecimalsBN(400).toString(), bob)
         await addLiquidityToV4Pool(v4PositionManager, ETH_USDC, expandTo18DecimalsBN(0.1).toString(), bob)
+        await addLiquidityToV4Pool(v4PositionManager, DAI_WETH, expandTo18DecimalsBN(2).toString(), bob)
+        await addLiquidityToV4Pool(v4PositionManager, DAI_USDT, expandTo18DecimalsBN(100).toString(), bob)
       })
 
       describe('ERC20 --> ERC20', () => {
@@ -769,6 +795,49 @@ describe('Uniswap Gas Tests', () => {
               path: encodeMultihopExactInPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyIn),
               amountIn: amountInDAI,
               amountOutMinimum: minAmountOutNative,
+            },
+          ])
+          v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+          v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
+
+          planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactIn, one trade, three hops', async () => {
+          // USDT -> DAI -> USDC -> WETH
+          let currencyIn = usdtContract.address
+          v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+            {
+              currencyIn,
+              path: encodeMultihopExactInPath([DAI_USDT.poolKey, DAI_USDC.poolKey, USDC_WETH.poolKey], currencyIn),
+              amountIn: amountInUSDT,
+              amountOutMinimum: 0,
+            },
+          ])
+          v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+          v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
+
+          planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactIn, one trade, four hops', async () => {
+          // USDC -> WETH -> DAI -> USDC -> WETH
+          let currencyIn = usdcContract.address
+          v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+            {
+              currencyIn,
+              path: encodeMultihopExactInPath(
+                [USDC_WETH.poolKey, DAI_WETH.poolKey, DAI_USDC.poolKey, USDC_WETH.poolKey],
+                currencyIn
+              ),
+              amountIn: expandTo6DecimalsBN(100), // 100 USDC
+              amountOutMinimum: 0,
             },
           ])
           v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
