@@ -147,6 +147,20 @@ Object {
 }
 `;
 
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Universal Router. ERC20 --> ERC20 gas: exactIn, one trade, five hops 1`] = `
+Object {
+  "calldataByteLength": 644,
+  "gasUsed": 314161,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV2 with Universal Router. ERC20 --> ERC20 gas: exactIn, one trade, four hops 1`] = `
+Object {
+  "calldataByteLength": 612,
+  "gasUsed": 290766,
+}
+`;
+
 exports[`Uniswap Gas Tests Trade on UniswapV2 with Universal Router. ERC20 --> ERC20 gas: exactIn, one trade, one hop 1`] = `
 Object {
   "calldataByteLength": 516,
@@ -280,6 +294,13 @@ Object {
 }
 `;
 
+exports[`Uniswap Gas Tests Trade on UniswapV3 with Universal Router. ERC20 --> ERC20 gas: exactIn, one trade, five hops 1`] = `
+Object {
+  "calldataByteLength": 612,
+  "gasUsed": 350910,
+}
+`;
+
 exports[`Uniswap Gas Tests Trade on UniswapV3 with Universal Router. ERC20 --> ERC20 gas: exactIn, one trade, four hops 1`] = `
 Object {
   "calldataByteLength": 580,
@@ -329,10 +350,24 @@ Object {
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV3 with Universal Router. ERC20 --> ETH gas: exactIn swap 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV3 with Universal Router. ERC20 --> ETH gas: exactIn swap 1 hop 1`] = `
 Object {
   "calldataByteLength": 644,
   "gasUsed": 122956,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV3 with Universal Router. ERC20 --> ETH gas: exactIn swap 2 hop 1`] = `
+Object {
+  "calldataByteLength": 676,
+  "gasUsed": 199305,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV3 with Universal Router. ERC20 --> ETH gas: exactIn swap 3 hop 1`] = `
+Object {
+  "calldataByteLength": 676,
+  "gasUsed": 276260,
 }
 `;
 
@@ -354,6 +389,13 @@ exports[`Uniswap Gas Tests Trade on UniswapV3 with Universal Router. ETH --> ERC
 Object {
   "calldataByteLength": 772,
   "gasUsed": 125752,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV4 with Universal Router ERC20 --> ERC20 gas: exactIn, one trade, five hops 1`] = `
+Object {
+  "calldataByteLength": 2052,
+  "gasUsed": 299863,
 }
 `;
 
@@ -392,6 +434,13 @@ Object {
 }
 `;
 
+exports[`Uniswap Gas Tests Trade on UniswapV4 with Universal Router ERC20 --> ERC20 gas: exactOut, one trade, three hops 1`] = `
+Object {
+  "calldataByteLength": 1604,
+  "gasUsed": 253612,
+}
+`;
+
 exports[`Uniswap Gas Tests Trade on UniswapV4 with Universal Router ERC20 --> ERC20 gas: exactOut, one trade, two hops 1`] = `
 Object {
   "calldataByteLength": 1380,
@@ -399,10 +448,24 @@ Object {
 }
 `;
 
-exports[`Uniswap Gas Tests Trade on UniswapV4 with Universal Router ERC20 --> ETH gas: exactIn swap 1`] = `
+exports[`Uniswap Gas Tests Trade on UniswapV4 with Universal Router ERC20 --> ETH gas: exactIn swap 1 hop 1`] = `
 Object {
   "calldataByteLength": 1156,
   "gasUsed": 147691,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV4 with Universal Router ERC20 --> ETH gas: exactIn swap 2 hop 1`] = `
+Object {
+  "calldataByteLength": 1380,
+  "gasUsed": 181298,
+}
+`;
+
+exports[`Uniswap Gas Tests Trade on UniswapV4 with Universal Router ERC20 --> ETH gas: exactIn swap 3 hop 1`] = `
+Object {
+  "calldataByteLength": 1604,
+  "gasUsed": 243955,
 }
 `;
 

@@ -264,6 +264,32 @@ describe('Uniswap Gas Tests', () => {
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
         })
 
+        it('gas: exactIn, one trade, four hops', async () => {
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            MSG_SENDER,
+            amountIn,
+            minAmountOut,
+            [DAI.address, USDC.address, USDT.address, WETH.address, DAI.address],
+            SOURCE_MSG_SENDER,
+          ])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactIn, one trade, five hops', async () => {
+          planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
+            MSG_SENDER,
+            amountIn,
+            minAmountOut,
+            [DAI.address, USDC.address, USDT.address, WETH.address, USDC.address, DAI.address],
+            SOURCE_MSG_SENDER,
+          ])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
         it('gas: exactIn, one trade, three hops, no deadline', async () => {
           planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
             MSG_SENDER,
@@ -603,6 +629,21 @@ describe('Uniswap Gas Tests', () => {
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
         })
 
+        it('gas: exactIn, one trade, five hops', async () => {
+          const amountOutMin: number = 3 * 10 ** 6
+          addV3ExactInTrades(planner, 1, amountOutMin, MSG_SENDER, [
+            DAI.address,
+            WETH.address,
+            USDT.address,
+            USDC.address,
+            WETH.address,
+            DAI.address,
+          ])
+          const { commands, inputs } = planner
+
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
         it('gas: exactOut, one trade, one hop', async () => {
           const tokens = [DAI.address, WETH.address]
           const path = encodePathExactOutput(tokens)
@@ -654,9 +695,29 @@ describe('Uniswap Gas Tests', () => {
       })
 
       describe('ERC20 --> ETH', () => {
-        it('gas: exactIn swap', async () => {
+        it('gas: exactIn swap 1 hop', async () => {
           const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
           addV3ExactInTrades(planner, 1, amountOutMin, router.address)
+          planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactIn swap 2 hop', async () => {
+          const tokens = [DAI.address, USDC.address, WETH.address]
+          const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
+          addV3ExactInTrades(planner, 1, amountOutMin, router.address, tokens)
+          planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactIn swap 3 hop', async () => {
+          const tokens = [DAI.address, USDC.address, USDT.address, WETH.address]
+          const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
+          addV3ExactInTrades(planner, 1, amountOutMin, router.address, tokens)
           planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
 
           const { commands, inputs } = planner
@@ -849,6 +910,29 @@ describe('Uniswap Gas Tests', () => {
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
         })
 
+        it('gas: exactIn, one trade, five hops', async () => {
+          // USDC -> WETH -> DAI -> USDC -> WETH -> DAI
+          let currencyIn = usdcContract.address
+          v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+            {
+              currencyIn,
+              path: encodeMultihopExactInPath(
+                [USDC_WETH.poolKey, DAI_WETH.poolKey, DAI_USDC.poolKey, USDC_WETH.poolKey, DAI_WETH.poolKey],
+                currencyIn
+              ),
+              amountIn: expandTo6DecimalsBN(100), // 100 USDC
+              amountOutMinimum: 0,
+            },
+          ])
+          v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+          v4Planner.addAction(Actions.TAKE_ALL, [daiContract.address, 0])
+
+          planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
         it('gas: exactOut, one trade, one hop', async () => {
           // USDC -> WETH
           let currencyOut = wethContract.address
@@ -888,10 +972,30 @@ describe('Uniswap Gas Tests', () => {
           const { commands, inputs } = planner
           await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
         })
+
+        it('gas: exactOut, one trade, three hops', async () => {
+          // USDT -> DAI -> USDC -> WETH
+          let currencyOut = wethContract.address
+          v4Planner.addAction(Actions.SWAP_EXACT_OUT, [
+            {
+              currencyOut,
+              path: encodeMultihopExactOutPath([DAI_USDT.poolKey, DAI_USDC.poolKey, USDC_WETH.poolKey], currencyOut),
+              amountOut: amountOutNative,
+              amountInMaximum: maxAmountInUSDC,
+            },
+          ])
+          v4Planner.addAction(Actions.SETTLE_ALL, [usdtContract.address, MAX_UINT])
+          v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
+
+          planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
       })
 
       describe('ERC20 --> ETH', () => {
-        it('gas: exactIn swap', async () => {
+        it('gas: exactIn swap 1 hop', async () => {
           // USDC -> ETH
           let currencyIn = usdcContract.address
           v4Planner.addAction(Actions.SWAP_EXACT_IN, [
@@ -899,6 +1003,46 @@ describe('Uniswap Gas Tests', () => {
               currencyIn,
               path: encodeMultihopExactInPath([ETH_USDC.poolKey], currencyIn),
               amountIn: amountInUSDC,
+              amountOutMinimum: minAmountOutNative,
+            },
+          ])
+          v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+          v4Planner.addAction(Actions.TAKE_ALL, [ETH_ADDRESS, 0])
+
+          planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactIn swap 2 hop', async () => {
+          // DAI -> USDC -> ETH
+          let currencyIn = daiContract.address
+          v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+            {
+              currencyIn,
+              path: encodeMultihopExactInPath([DAI_USDC.poolKey, ETH_USDC.poolKey], currencyIn),
+              amountIn: amountInDAI,
+              amountOutMinimum: minAmountOutNative,
+            },
+          ])
+          v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
+          v4Planner.addAction(Actions.TAKE_ALL, [ETH_ADDRESS, 0])
+
+          planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+          const { commands, inputs } = planner
+          await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+        })
+
+        it('gas: exactIn swap 3 hop', async () => {
+          // USDT -> DAI -> USDC -> ETH
+          let currencyIn = usdtContract.address
+          v4Planner.addAction(Actions.SWAP_EXACT_IN, [
+            {
+              currencyIn,
+              path: encodeMultihopExactInPath([DAI_USDT.poolKey, DAI_USDC.poolKey, ETH_USDC.poolKey], currencyIn),
+              amountIn: amountInUSDT,
               amountOutMinimum: minAmountOutNative,
             },
           ])
