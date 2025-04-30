@@ -9,6 +9,7 @@ import {Payments} from '../modules/Payments.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
 import {V3ToV4Migrator} from '../modules/V3ToV4Migrator.sol';
 import {Commands} from '../libraries/Commands.sol';
+import {CalldataCallTargetDecoder} from '../libraries/CalldataCallTargetDecoder.sol';
 import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
@@ -25,6 +26,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
+    error CallTargetPermit2();
 
     /// @notice Executes encoded commands along with provided inputs.
     /// @param commands A set of concatenated commands, each 1 byte in length
@@ -278,6 +280,15 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
             if (command == Commands.EXECUTE_SUB_PLAN) {
                 (bytes calldata _commands, bytes[] calldata _inputs) = inputs.decodeCommandsAndInputs();
                 (success, output) = (address(this)).call(abi.encodeCall(Dispatcher.execute, (_commands, _inputs)));
+            } else if (command == Commands.CALL_TARGET) {
+                // CALL_TARGET: Call target contract with data
+                (address target, uint256 value, bytes calldata data) = CalldataCallTargetDecoder.decodeCallTarget(
+                    inputs
+                );
+                // Call target cannot be PERMIT2 to avoid arbitrary token transfers
+                if (target == address(PERMIT2)) revert CallTargetPermit2();
+
+                (success, output) = payable(target).call{value: value}(data);
             } else {
                 // placeholder area for commands 0x22-0x3f
                 revert InvalidCommandType(command);
