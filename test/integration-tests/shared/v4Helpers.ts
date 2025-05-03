@@ -2,7 +2,7 @@ import hre from 'hardhat'
 const { ethers } = hre
 
 import { PositionManager, PoolManager } from '../../../typechain'
-import { DAI, USDC, WETH } from './mainnetForkHelpers'
+import { DAI, USDC, USDT, WETH } from './mainnetForkHelpers'
 import { ADDRESS_ZERO, FeeAmount } from '@uniswap/v3-sdk'
 import { MAX_UINT128, MAX_UINT160, ZERO_ADDRESS } from './constants'
 import { Actions, V4Planner } from './v4Planner'
@@ -56,6 +56,38 @@ export const ETH_USDC = {
   price: ETH_USDC_PRICE,
   tickLower: ETH_USDC_TICK_LOWER,
   tickUpper: ETH_USDC_TICK_UPPER,
+}
+
+const DAI_WETH_PRICE = BigNumber.from('4896787582607307705832460779520')
+const DAI_WETH_TICK_LOWER = 82400
+const DAI_WETH_TICK_UPPER = 82500
+export const DAI_WETH = {
+  poolKey: {
+    currency0: DAI.address,
+    currency1: WETH.address,
+    fee: FeeAmount.LOW,
+    tickSpacing: 10,
+    hooks: ZERO_ADDRESS,
+  },
+  price: DAI_WETH_PRICE,
+  tickLower: DAI_WETH_TICK_LOWER,
+  tickUpper: DAI_WETH_TICK_UPPER,
+}
+
+const DAI_USDT_PRICE = BigNumber.from('79227835492130174795940')
+const DAI_USDT_TICK_LOWER = -276330
+const DAI_USDT_TICK_UPPER = -276320
+export const DAI_USDT = {
+  poolKey: {
+    currency0: DAI.address,
+    currency1: USDT.address,
+    fee: FeeAmount.LOWEST,
+    tickSpacing: 10,
+    hooks: ZERO_ADDRESS,
+  },
+  price: DAI_USDT_PRICE,
+  tickLower: DAI_USDT_TICK_LOWER,
+  tickUpper: DAI_USDT_TICK_UPPER,
 }
 
 export async function deployV4PositionManager(
