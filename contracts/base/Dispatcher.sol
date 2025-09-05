@@ -281,13 +281,18 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                 (bytes calldata _commands, bytes[] calldata _inputs) = inputs.decodeCommandsAndInputs();
                 (success, output) = (address(this)).call(abi.encodeCall(Dispatcher.execute, (_commands, _inputs)));
             } else if (command == Commands.CALL_TARGET) {
-                // CALL_TARGET: Call target contract with data
+                // CALL_TARGET: Call target contract with value and data
+
+                // equivalent: abi.decode(inputs, (address, uint256, bytes))
                 (address target, uint256 value, bytes calldata data) = CalldataCallTargetDecoder.decodeCallTarget(
                     inputs
                 );
                 // Call target cannot be PERMIT2 to avoid arbitrary token transfers
                 if (target == address(PERMIT2)) revert CallTargetPermit2();
 
+                // Call may fail without a revert if Commands.FLAG_ALLOW_REVERT is set
+                // This behavior is similar to other commands that use .call (eg. V3_POSITION_MANAGER_CALL, V4_POSITION_MANAGER_CALL)
+                // This behavior is different other commands that transfer ETH or tokens (eg. TRANSFER)
                 (success, output) = payable(target).call{value: value}(data);
             } else {
                 // placeholder area for commands 0x22-0x3f
