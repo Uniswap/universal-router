@@ -26,7 +26,7 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
-    error CallTargetPermit2();
+    error CallTargetInvalid(address target);
 
     /// @notice Executes encoded commands along with provided inputs.
     /// @param commands A set of concatenated commands, each 1 byte in length
@@ -284,11 +284,24 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                 // CALL_TARGET: Call target contract with value and data
 
                 // equivalent: abi.decode(inputs, (address, uint256, bytes))
-                (address target, uint256 value, bytes calldata data) = CalldataCallTargetDecoder.decodeCallTarget(
-                    inputs
-                );
-                // Call target cannot be PERMIT2 to avoid arbitrary token transfers
-                if (target == address(PERMIT2)) revert CallTargetPermit2();
+                (address target, uint256 value, bytes calldata data) =
+                    CalldataCallTargetDecoder.decodeCallTarget(inputs);
+
+                // Call target cannot be one of the following addresses to reduce the attack surface and enforce proper use of commands
+                // when interacting with protocol specific addresses
+                // - address(this): to enforce use of EXECUTE_SUB_PLAN command for self re-entrancy
+                // - PaymentsImmutables.sol: to avoid arbitrary token transfers
+                // - UniswapImmutables.sol: to have clear protocol interactions with v2,v3 factories
+                // - MigratorImmutables.sol: to have clear protocol interactions with v3,v4 position managers
+                // - ImmutableState.sol (v4-periphery): to have clear protocol interactions with v4 pool actions
+                if (
+                    target == address(this) || target == address(WETH9) || target == address(PERMIT2)
+                        || target == address(UNISWAP_V2_FACTORY) || target == address(UNISWAP_V3_FACTORY)
+                        || target == address(V3_POSITION_MANAGER) || target == address(V4_POSITION_MANAGER)
+                        || target == address(poolManager)
+                ) {
+                    revert CallTargetInvalid(target);
+                }
 
                 // Call may fail without a revert if Commands.FLAG_ALLOW_REVERT is set
                 // This behavior is similar to other commands that use .call (eg. V3_POSITION_MANAGER_CALL, V4_POSITION_MANAGER_CALL)
