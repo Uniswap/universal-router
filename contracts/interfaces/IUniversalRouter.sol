@@ -22,4 +22,40 @@ interface IUniversalRouter {
     /// @param inputs An array of byte strings containing abi encoded inputs for each command
     /// @param deadline The deadline by which the transaction must be executed
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline) external payable;
+
+    /// @notice Executes encoded commands with EIP712 signature verification
+    /// @param commands A set of concatenated commands, each 1 byte in length
+    /// @param inputs An array of byte strings containing abi encoded inputs for each command
+    /// @param intent Application-specific intent identifier
+    /// @param data Application-specific data
+    /// @param verifySender If true, the signature must include msg.sender; if false, uses address(0)
+    /// @param nonce Unordered nonce for replay protection. Use bytes32(type(uint256).max) to skip nonce check
+    /// @param signature EIP712 signature authorizing the execution
+    /// @param deadline The deadline by which the transaction must be executed
+    /// @dev The signer, intent, and data are recovered/stored in transient storage for the duration of execution.
+    /// All commands (including nested sub-commands via EXECUTE_SUB_PLAN) are covered by the signature.
+    /// The signer, intent, and data can be accessed by commands via signedRouteContext().
+    /// External reentrancy is prevented by the isNotLocked modifier on execute(). Internal reentrancy via
+    /// EXECUTE_SUB_PLAN is safe as those sub-commands are part of the signed message. There is no way to change
+    /// the signer mid-execution as executeSigned cannot be called internally.
+    function executeSigned(
+        bytes calldata commands,
+        bytes[] calldata inputs,
+        bytes32 intent,
+        bytes32 data,
+        bool verifySender,
+        bytes32 nonce,
+        bytes calldata signature,
+        uint256 deadline
+    ) external payable;
+
+    /// @notice Returns all signed execution context (signer, intent, data) in a single call
+    /// @return signer The address that signed the current execution, or address(0) if not in a signed execution
+    /// @return intent The intent value from the signed execution, or bytes32(0) if not in a signed execution
+    /// @return data The data value from the signed execution, or bytes32(0) if not in a signed execution
+    /// @dev This reads from transient storage which is only set during executeSigned().
+    /// @dev When consuming this context from a hook, the hook MUST verify that msg.sender is the
+    /// UniversalRouter contract. Otherwise, a malicious contract in the execution chain could abuse the
+    /// legitimate signed context by calling other contracts with it, causing unintended side effects.
+    function signedRouteContext() external view returns (address signer, bytes32 intent, bytes32 data);
 }
