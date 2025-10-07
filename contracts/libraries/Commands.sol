@@ -6,7 +6,7 @@ pragma solidity ^0.8.24;
 library Commands {
     // Masks to extract certain bits of commands
     bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
-    bytes1 internal constant COMMAND_TYPE_MASK = 0x5f;
+    bytes1 internal constant COMMAND_TYPE_MASK = 0x7f;
 
     // Command Types. Maximum supported command at this moment is 0x3f.
     // The commands are executed in nested if blocks to minimise gas consumption
