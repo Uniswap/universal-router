@@ -34,7 +34,10 @@ abstract contract ChainedActions is Payments {
             IERC20(params.inputToken).forceApprove(params.spokePool, inputAmount);
         }
 
-        IV3SpokePool(params.spokePool).depositV3{value: callValue}(
+        IV3SpokePool(params.spokePool)
+        .depositV3{
+            value: callValue
+        }(
             params.depositor,
             params.recipient,
             params.inputToken,
