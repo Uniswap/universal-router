@@ -15,9 +15,9 @@ import {EIP712} from '@openzeppelin/contracts/utils/cryptography/EIP712.sol';
 
 contract UniversalRouter is IUniversalRouter, RouteSigner, Dispatcher {
     constructor(RouterParameters memory params)
-        UniswapImmutables(
-            UniswapParameters(params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash)
-        )
+        UniswapImmutables(UniswapParameters(
+                params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash
+            ))
         V4SwapRouter(params.v4PoolManager)
         PaymentsImmutables(PaymentsParameters(params.permit2, params.weth9))
         MigratorImmutables(MigratorParameters(params.v3NFTPositionManager, params.v4PositionManager))

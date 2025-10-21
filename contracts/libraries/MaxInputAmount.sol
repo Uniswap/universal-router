@@ -7,13 +7,13 @@ library MaxInputAmount {
     bytes32 constant MAX_AMOUNT_IN_SLOT = 0xaf28d9864a81dfdf71cab65f4e5d79a0cf9b083905fb8971425e6cb581b3f692;
 
     function set(uint256 maxAmountIn) internal {
-        assembly ("memory-safe") {
+        assembly ('memory-safe') {
             tstore(MAX_AMOUNT_IN_SLOT, maxAmountIn)
         }
     }
 
     function get() internal view returns (uint256 maxAmountIn) {
-        assembly ("memory-safe") {
+        assembly ('memory-safe') {
             maxAmountIn := tload(MAX_AMOUNT_IN_SLOT)
         }
     }

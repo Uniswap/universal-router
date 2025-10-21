@@ -16,10 +16,19 @@ import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstan
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
+import {ChainedActions} from '../modules/ChainedActions.sol';
 
 /// @title Decodes and Executes Commands
 /// @notice Called by the UniversalRouter contract to efficiently decode and execute a singular command
-abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRouter, V3ToV4Migrator, Lock {
+abstract contract Dispatcher is
+    Payments,
+    V2SwapRouter,
+    V3SwapRouter,
+    V4SwapRouter,
+    V3ToV4Migrator,
+    Lock,
+    ChainedActions
+{
     using BytesLib for bytes;
     using CalldataDecoder for bytes;
 
@@ -106,14 +115,15 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                             permitBatch := add(inputs.offset, calldataload(inputs.offset))
                         }
                         bytes calldata data = inputs.toBytes(1);
-                        (success, output) = address(PERMIT2).call(
-                            abi.encodeWithSignature(
-                                'permit(address,((address,uint160,uint48,uint48)[],address,uint256),bytes)',
-                                msgSender(),
-                                permitBatch,
-                                data
-                            )
-                        );
+                        (success, output) = address(PERMIT2)
+                            .call(
+                                abi.encodeWithSignature(
+                                    'permit(address,((address,uint160,uint48,uint48)[],address,uint256),bytes)',
+                                    msgSender(),
+                                    permitBatch,
+                                    data
+                                )
+                            );
                     } else if (command == Commands.SWEEP) {
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
@@ -192,14 +202,15 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                             permitSingle := inputs.offset
                         }
                         bytes calldata data = inputs.toBytes(6); // PermitSingle takes first 6 slots (0..5)
-                        (success, output) = address(PERMIT2).call(
-                            abi.encodeWithSignature(
-                                'permit(address,((address,uint160,uint48,uint48),address,uint256),bytes)',
-                                msgSender(),
-                                permitSingle,
-                                data
-                            )
-                        );
+                        (success, output) = address(PERMIT2)
+                            .call(
+                                abi.encodeWithSignature(
+                                    'permit(address,((address,uint160,uint48,uint48),address,uint256),bytes)',
+                                    msgSender(),
+                                    permitSingle,
+                                    data
+                                )
+                            );
                     } else if (command == Commands.WRAP_ETH) {
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;
@@ -273,13 +284,20 @@ abstract contract Dispatcher is Payments, V2SwapRouter, V3SwapRouter, V4SwapRout
                     revert InvalidCommandType(command);
                 }
             }
-        } else {
+        } else if (command < Commands.ACROSS_V4_DEPOSIT_V3) {
             // 0x21 <= command
             if (command == Commands.EXECUTE_SUB_PLAN) {
                 (bytes calldata _commands, bytes[] calldata _inputs) = inputs.decodeCommandsAndInputs();
                 (success, output) = (address(this)).call(abi.encodeCall(Dispatcher.execute, (_commands, _inputs)));
             } else {
                 // placeholder area for commands 0x22-0x3f
+                revert InvalidCommandType(command);
+            }
+        } else {
+            if (command == Commands.ACROSS_V4_DEPOSIT_V3) {
+                _acrossV4DepositV3(inputs);
+            } else {
+                // placeholder area for commands 0x41-0x5f
                 revert InvalidCommandType(command);
             }
         }
