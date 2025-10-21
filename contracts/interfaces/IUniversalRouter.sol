@@ -7,7 +7,7 @@ struct AcrossV4DepositV3Params {
     address recipient; // destination recipient
     address inputToken; // ERC20 on origin (WETH if bridging ETH)
     address outputToken; // ERC20 on destination (or 0x0)
-    uint256 inputAmount;
+    uint256 inputAmount; // supports ActionConstants.CONTRACT_BALANCE to use contract's entire balance
     uint256 outputAmount;
     uint256 destinationChainId;
     address exclusiveRelayer; // 0x0 if no exclusivity

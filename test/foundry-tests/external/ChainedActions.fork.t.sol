@@ -6,6 +6,7 @@ import {RouterParameters} from '../../../contracts/types/RouterParameters.sol';
 import {UniversalRouter, Commands} from '../../../contracts/UniversalRouter.sol';
 import {AcrossV4DepositV3Params} from '../../../contracts/interfaces/IUniversalRouter.sol';
 import {IWETH9} from '@uniswap/v4-periphery/src/interfaces/external/IWETH9.sol';
+import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 
 contract ChainedActionsFork is Test {
     address constant ACROSS_SPOKE_POOL = 0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5;
@@ -106,5 +107,61 @@ contract ChainedActionsFork is Test {
         router.execute{value: 1 ether}(commands, inputs, block.timestamp);
         assertEq(address(router).balance, routerBalanceBefore);
         assertEq(WETH9.balanceOf(ACROSS_SPOKE_POOL), spokePoolBalanceBefore + 1 ether);
+    }
+
+    function test_depositERC20WithContractBalance() public onlyForked {
+        uint256 balanceBefore = WETH9.balanceOf(ACROSS_SPOKE_POOL);
+        WETH9.transfer(address(router), 1 ether);
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.ACROSS_V4_DEPOSIT_V3)));
+        AcrossV4DepositV3Params memory params = AcrossV4DepositV3Params({
+            spokePool: ACROSS_SPOKE_POOL,
+            depositor: address(this),
+            recipient: address(this),
+            inputToken: address(WETH9),
+            outputToken: WETH_UNICHAIN,
+            inputAmount: ActionConstants.CONTRACT_BALANCE,
+            outputAmount: 1 ether,
+            destinationChainId: 130,
+            exclusiveRelayer: address(0),
+            quoteTimestamp: uint32(block.timestamp),
+            fillDeadline: uint32(block.timestamp + 1 hours),
+            exclusivityDeadline: 0,
+            message: bytes(''),
+            useNative: false
+        });
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(params);
+        router.execute(commands, inputs, block.timestamp);
+        assertEq(WETH9.balanceOf(address(router)), 0);
+        assertEq(WETH9.balanceOf(ACROSS_SPOKE_POOL), balanceBefore + 1 ether);
+    }
+
+    function test_depositNativeWithContractBalance() public onlyForked {
+        uint256 routerBalanceBefore = address(router).balance;
+        uint256 totalDepositAmount = routerBalanceBefore + 1 ether;
+        // ETH is wrapped as WETH9
+        uint256 spokePoolBalanceBefore = WETH9.balanceOf(ACROSS_SPOKE_POOL);
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.ACROSS_V4_DEPOSIT_V3)));
+        AcrossV4DepositV3Params memory params = AcrossV4DepositV3Params({
+            spokePool: ACROSS_SPOKE_POOL,
+            depositor: address(this),
+            recipient: address(this),
+            inputToken: address(WETH9),
+            outputToken: WETH_UNICHAIN,
+            inputAmount: ActionConstants.CONTRACT_BALANCE,
+            outputAmount: totalDepositAmount,
+            destinationChainId: 130,
+            exclusiveRelayer: address(0),
+            quoteTimestamp: uint32(block.timestamp),
+            fillDeadline: uint32(block.timestamp + 1 hours),
+            exclusivityDeadline: 0,
+            message: bytes(''),
+            useNative: true
+        });
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(params);
+        router.execute{value: 1 ether}(commands, inputs, block.timestamp);
+        assertEq(address(router).balance, 0);
+        assertEq(WETH9.balanceOf(ACROSS_SPOKE_POOL), spokePoolBalanceBefore + totalDepositAmount);
     }
 }
