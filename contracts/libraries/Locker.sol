@@ -10,13 +10,13 @@ library Locker {
 
     function set(address locker) internal {
         // The locker is always msg.sender or address(0) so does not need to be cleaned
-        assembly ("memory-safe") {
+        assembly ('memory-safe') {
             tstore(LOCKER_SLOT, locker)
         }
     }
 
     function get() internal view returns (address locker) {
-        assembly ("memory-safe") {
+        assembly ('memory-safe') {
             locker := tload(LOCKER_SLOT)
         }
     }

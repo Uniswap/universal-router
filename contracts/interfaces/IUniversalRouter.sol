@@ -1,6 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.24;
 
+struct AcrossV4DepositV3Params {
+    address spokePool; // SpokePool on origin chain
+    address depositor; // credited depositor
+    address recipient; // destination recipient
+    address inputToken; // ERC20 on origin (WETH if bridging ETH)
+    address outputToken; // ERC20 on destination (or 0x0)
+    uint256 inputAmount; // supports ActionConstants.CONTRACT_BALANCE to use contract's entire balance
+    uint256 outputAmount;
+    uint256 destinationChainId;
+    address exclusiveRelayer; // 0x0 if no exclusivity
+    uint32 quoteTimestamp;
+    uint32 fillDeadline;
+    uint32 exclusivityDeadline;
+    bytes message;
+    bool useNative; // if true, call is payable with value=inputAmount (inputToken must be WETH)
+}
+
 interface IUniversalRouter {
     /// @notice Thrown when a required command has failed
     error ExecutionFailed(uint256 commandIndex, bytes message);
