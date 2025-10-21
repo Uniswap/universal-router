@@ -44,9 +44,9 @@ contract ReentrantMaliciousContract {
         bytes memory commands = abi.encodePacked(bytes1(0x00));
         bytes[] memory inputs = new bytes[](0);
 
-        router.executeSigned{value: 0}(
-            commands, inputs, bytes32(0), bytes32(0), false, bytes32(0), hex'', block.timestamp + 1000
-        );
+        router.executeSigned{
+            value: 0
+        }(commands, inputs, bytes32(0), bytes32(0), false, bytes32(0), hex'', block.timestamp + 1000);
     }
 }
 

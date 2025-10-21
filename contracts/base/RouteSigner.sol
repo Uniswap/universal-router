@@ -69,7 +69,7 @@ abstract contract RouteSigner is EIP712 {
         }
 
         // Store signer, intent, and data in transient storage
-        assembly ("memory-safe") {
+        assembly ('memory-safe') {
             tstore(ROUTE_SIGNER_SLOT, signer)
             tstore(ROUTE_INTENT_SLOT, intent)
             tstore(ROUTE_DATA_SLOT, data)
@@ -78,7 +78,7 @@ abstract contract RouteSigner is EIP712 {
 
     /// @dev Clears the signature context from transient storage
     function _resetSignatureContext() internal {
-        assembly ("memory-safe") {
+        assembly ('memory-safe') {
             tstore(ROUTE_SIGNER_SLOT, 0)
             tstore(ROUTE_INTENT_SLOT, 0)
             tstore(ROUTE_DATA_SLOT, 0)
@@ -87,7 +87,7 @@ abstract contract RouteSigner is EIP712 {
 
     /// @dev Internal function to read signed route context from transient storage
     function _signedRouteContext() internal view returns (address signer, bytes32 intent, bytes32 data) {
-        assembly ("memory-safe") {
+        assembly ('memory-safe') {
             signer := tload(ROUTE_SIGNER_SLOT)
             intent := tload(ROUTE_INTENT_SLOT)
             data := tload(ROUTE_DATA_SLOT)
