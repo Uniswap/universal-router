@@ -6,7 +6,7 @@ via_ir = true
 solc_version = '0.8.26'
 evm_version = "cancun"
 
-optimizer_runs = 44444444
+optimizer_runs = 4444
 fs_permissions = [{ access = "read", path = "./script/deployParameters/"}]
 
 additional_compiler_profiles = [
