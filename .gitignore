@@ -18,3 +18,7 @@ typechain-types
 #Hardhat files
 cache
 artifacts
+
+# Yarn files
+.yarn/
+.yarnrc.yml
