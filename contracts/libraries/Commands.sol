@@ -42,4 +42,5 @@ library Commands {
     // Command Types where 0x21<=value<=0x3f
     uint256 constant EXECUTE_SUB_PLAN = 0x21;
     // COMMAND_PLACEHOLDER for 0x22 to 0x3f
+    uint256 constant CALL_TARGET = 0x22;
 }
