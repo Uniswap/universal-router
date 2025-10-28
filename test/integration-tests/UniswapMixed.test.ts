@@ -612,6 +612,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath(route1, currencyIn),
+          maxHopSlippage: [],
           amountIn: v4AmountIn1,
           amountOutMinimum: 0,
         },
@@ -621,6 +622,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath(route2, currencyIn),
+          maxHopSlippage: [],
           amountIn: v4AmountIn2,
           amountOutMinimum: 0,
         },
