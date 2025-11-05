@@ -12,6 +12,9 @@
     "rev": "b325bb0905d922ae61fcc7df85ee802e8df5e96c"
   },
   "lib/v4-periphery": {
-    "rev": "444c526b77d804590f0d7bc5a481af5a3277c952"
+    "branch": {
+      "name": "main",
+      "rev": "3779387e5d296f39df543d23524b050f89a62917"
+    }
   }
 }
