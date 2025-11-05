@@ -26,7 +26,7 @@ abstract contract RouteSigner is EIP712 {
 
     /// @notice Mapping of used nonces for replay protection
     /// @dev Unordered nonces allow parallel execution of signed routes
-    mapping(address => mapping(bytes32 => bool)) public noncesUsed;
+    mapping(address user => mapping(bytes32 nonce => bool used)) public noncesUsed;
 
     /// @notice Thrown when a nonce has already been used
     error NonceAlreadyUsed();
