@@ -21,9 +21,6 @@ compilation_restrictions = [
 line_length = 120
 quote_style = 'single'
 
-[lint]
-lint_on_build = false
-
 [profile.lite.optimizer_details.yulDetails]
 optimizerSteps = ''
 
