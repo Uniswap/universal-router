@@ -42,7 +42,8 @@ abstract contract DeployUniversalRouter is Script {
             poolInitCodeHash: params.poolInitCodeHash,
             v4PoolManager: mapUnsupported(params.v4PoolManager),
             v3NFTPositionManager: mapUnsupported(params.v3NFTPositionManager),
-            v4PositionManager: mapUnsupported(params.v4PositionManager)
+            v4PositionManager: mapUnsupported(params.v4PositionManager),
+            spokePool: mapUnsupported(params.spokePool)
         });
 
         logParams();

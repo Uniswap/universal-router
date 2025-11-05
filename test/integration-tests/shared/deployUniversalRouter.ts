@@ -39,6 +39,7 @@ export async function deployRouter(
     v4PositionManager: (
       await deployV4PositionManager(poolManager, PERMIT2_ADDRESS, V4_POSITION_DESCRIPTOR_ADDRESS, WETH)
     ).address,
+    spokePool: '0x0000000000000000000000000000000000000000',
   }
 
   const routerFactory = await ethers.getContractFactory('UniversalRouter')

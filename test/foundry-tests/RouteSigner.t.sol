@@ -44,9 +44,9 @@ contract ReentrantMaliciousContract {
         bytes memory commands = abi.encodePacked(bytes1(0x00));
         bytes[] memory inputs = new bytes[](0);
 
-        router.executeSigned{
-            value: 0
-        }(commands, inputs, bytes32(0), bytes32(0), false, bytes32(0), hex'', block.timestamp + 1000);
+        router.executeSigned{value: 0}(
+            commands, inputs, bytes32(0), bytes32(0), false, bytes32(0), hex'', block.timestamp + 1000
+        );
     }
 }
 
@@ -70,7 +70,8 @@ contract RouteSignerTest is Test {
             poolInitCodeHash: bytes32(0),
             v4PoolManager: address(0),
             v3NFTPositionManager: address(0),
-            v4PositionManager: address(0)
+            v4PositionManager: address(0),
+            spokePool: address(0)
         });
         router = new UniversalRouter(params);
         capturer = new ContextCapture(router);
@@ -598,7 +599,8 @@ contract RouteSignerTest is Test {
             poolInitCodeHash: bytes32(0),
             v4PoolManager: address(0),
             v3NFTPositionManager: address(0),
-            v4PositionManager: address(0)
+            v4PositionManager: address(0),
+            spokePool: address(0)
         });
         UniversalRouter router2 = new UniversalRouter(params);
 

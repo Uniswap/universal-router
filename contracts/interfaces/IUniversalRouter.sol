@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 
 struct AcrossV4DepositV3Params {
-    address spokePool; // SpokePool on origin chain
     address depositor; // credited depositor
     address recipient; // destination recipient
     address inputToken; // ERC20 on origin (WETH if bridging ETH)

@@ -15,7 +15,8 @@ contract DeployUnichain is DeployUniversalRouter {
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: 0x1F98400000000000000000000000000000000004,
             v3NFTPositionManager: 0x943e6e07a7E8E791dAFC44083e54041D743C46E9,
-            v4PositionManager: 0x4529A01c7A0410167c5740C487A8DE60232617bf
+            v4PositionManager: 0x4529A01c7A0410167c5740C487A8DE60232617bf,
+            spokePool: 0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64
         });
     }
 }
