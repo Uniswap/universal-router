@@ -35,6 +35,9 @@ jobs:
         with:
           version: v1.4.3
 
+      - name: Print foundry toml
+        run: cat foundry.toml
+
       - name: Run Forge build
         run: |
           forge --version

@@ -17,6 +17,9 @@ compilation_restrictions = [
   { paths = "lib/v4-periphery/src/PositionManager.sol", optimizer_runs = 30000 },
 ]
 
+[lint]
+lint_on_build = false
+
 [fmt]
 line_length = 120
 quote_style = 'single'
@@ -30,8 +33,5 @@ unichain_sepolia = "https://sepolia.unichain.org"
 base_sepolia = "https://sepolia.base.org"
 op_sepolia = "https://sepolia.optimism.io"
 mainnet = "https://mainnet.infura.io/v3/${INFURA_API_KEY}"
-
-[lint]
-lint_on_build = false
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
