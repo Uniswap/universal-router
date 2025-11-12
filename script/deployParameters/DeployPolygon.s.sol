@@ -15,7 +15,8 @@ contract DeployPolygon is DeployUniversalRouter {
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: 0x67366782805870060151383F4BbFF9daB53e5cD6,
             v3NFTPositionManager: 0xC36442b4a4522E871399CD717aBDD847Ab11FE88,
-            v4PositionManager: 0x1Ec2eBf4F37E7363FDfe3551602425af0B3ceef9
+            v4PositionManager: 0x1Ec2eBf4F37E7363FDfe3551602425af0B3ceef9,
+            spokePool: 0x9295ee1d8C5b022Be115A2AD3c30C72E34e7F096
         });
 
         unsupported = 0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B;

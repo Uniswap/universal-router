@@ -8,7 +8,7 @@ on:
 
 jobs:
   run-linters:
-    name: Run linters 2
+    name: Run linters
     runs-on: ubuntu-latest
 
     steps:
