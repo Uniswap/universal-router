@@ -10,6 +10,12 @@ import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstan
 abstract contract ChainedActions is Payments {
     using SafeERC20 for IERC20;
 
+    IV3SpokePool public immutable SPOKE_POOL;
+
+    constructor(address spokePool) {
+        SPOKE_POOL = IV3SpokePool(spokePool);
+    }
+
     function _acrossV4DepositV3(bytes calldata input) internal {
         AcrossV4DepositV3Params memory params = abi.decode(input, (AcrossV4DepositV3Params));
 
@@ -31,13 +37,10 @@ abstract contract ChainedActions is Payments {
             callValue = inputAmount;
         } else {
             // Approve SpokePool to pull ERC20 from router
-            IERC20(params.inputToken).forceApprove(params.spokePool, inputAmount);
+            IERC20(params.inputToken).forceApprove(address(SPOKE_POOL), inputAmount);
         }
 
-        IV3SpokePool(params.spokePool)
-        .depositV3{
-            value: callValue
-        }(
+        SPOKE_POOL.depositV3{value: callValue}(
             params.depositor,
             params.recipient,
             params.inputToken,

@@ -13,8 +13,8 @@
   },
   "lib/v4-periphery": {
     "branch": {
-      "name": "per-hop-slippage",
-      "rev": "76f8813993a0d32b849e779320327536fe9a0887"
+      "name": "main",
+      "rev": "3779387e5d296f39df543d23524b050f89a62917"
     }
   }
 }

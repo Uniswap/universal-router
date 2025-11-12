@@ -31,7 +31,8 @@ contract ChainedActionsFork is Test {
                 poolInitCodeHash: bytes32(0),
                 v4PoolManager: address(0),
                 v3NFTPositionManager: address(0),
-                v4PositionManager: address(0)
+                v4PositionManager: address(0),
+                spokePool: ACROSS_SPOKE_POOL
             });
             router = new UniversalRouter(params);
 
@@ -59,7 +60,6 @@ contract ChainedActionsFork is Test {
         WETH9.transfer(address(router), 1 ether);
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.ACROSS_V4_DEPOSIT_V3)));
         AcrossV4DepositV3Params memory params = AcrossV4DepositV3Params({
-            spokePool: ACROSS_SPOKE_POOL,
             depositor: address(this),
             recipient: address(this),
             inputToken: address(WETH9),
@@ -87,7 +87,6 @@ contract ChainedActionsFork is Test {
         uint256 spokePoolBalanceBefore = WETH9.balanceOf(ACROSS_SPOKE_POOL);
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.ACROSS_V4_DEPOSIT_V3)));
         AcrossV4DepositV3Params memory params = AcrossV4DepositV3Params({
-            spokePool: ACROSS_SPOKE_POOL,
             depositor: address(this),
             recipient: address(this),
             inputToken: address(WETH9),
@@ -114,7 +113,6 @@ contract ChainedActionsFork is Test {
         WETH9.transfer(address(router), 1 ether);
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.ACROSS_V4_DEPOSIT_V3)));
         AcrossV4DepositV3Params memory params = AcrossV4DepositV3Params({
-            spokePool: ACROSS_SPOKE_POOL,
             depositor: address(this),
             recipient: address(this),
             inputToken: address(WETH9),
@@ -143,7 +141,6 @@ contract ChainedActionsFork is Test {
         uint256 spokePoolBalanceBefore = WETH9.balanceOf(ACROSS_SPOKE_POOL);
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.ACROSS_V4_DEPOSIT_V3)));
         AcrossV4DepositV3Params memory params = AcrossV4DepositV3Params({
-            spokePool: ACROSS_SPOKE_POOL,
             depositor: address(this),
             recipient: address(this),
             inputToken: address(WETH9),

@@ -12,8 +12,9 @@ import {Commands} from './libraries/Commands.sol';
 import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
 import {MigratorImmutables, MigratorParameters} from './modules/MigratorImmutables.sol';
 import {EIP712} from '@openzeppelin/contracts/utils/cryptography/EIP712.sol';
+import {ChainedActions} from './modules/ChainedActions.sol';
 
-contract UniversalRouter is IUniversalRouter, RouteSigner, Dispatcher {
+contract UniversalRouter is IUniversalRouter, ChainedActions, RouteSigner, Dispatcher {
     constructor(RouterParameters memory params)
         UniswapImmutables(UniswapParameters(
                 params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash
@@ -21,6 +22,7 @@ contract UniversalRouter is IUniversalRouter, RouteSigner, Dispatcher {
         V4SwapRouter(params.v4PoolManager)
         PaymentsImmutables(PaymentsParameters(params.permit2, params.weth9))
         MigratorImmutables(MigratorParameters(params.v3NFTPositionManager, params.v4PositionManager))
+        ChainedActions(params.spokePool)
         EIP712('UniversalRouter', '2')
     {}
 

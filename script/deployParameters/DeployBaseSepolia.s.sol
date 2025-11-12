@@ -15,7 +15,8 @@ contract DeployBaseSepolia is DeployUniversalRouter {
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: 0xf7F5aB3DcA35e17dE187b459159BC643853B3c67,
             v3NFTPositionManager: 0x27F971cb582BF9E50F397e4d29a5C7A34f11faA2,
-            v4PositionManager: 0x0B32f74f8365d535783949E014B7754047B64e31
+            v4PositionManager: 0x0B32f74f8365d535783949E014B7754047B64e31,
+            spokePool: 0x82B564983aE7274c86695917BBf8C99ECb6F0F8F
         });
 
         unsupported = 0x76870DEbef0BE25589A5CddCe9B1D99276C73B4e;

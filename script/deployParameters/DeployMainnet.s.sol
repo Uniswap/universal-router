@@ -15,7 +15,8 @@ contract DeployMainnet is DeployUniversalRouter {
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: address(0),
             v3NFTPositionManager: 0xC36442b4a4522E871399CD717aBDD847Ab11FE88,
-            v4PositionManager: address(0)
+            v4PositionManager: address(0),
+            spokePool: 0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5
         });
 
         unsupported = 0x76D631990d505E4e5b432EEDB852A60897824D68;

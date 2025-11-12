@@ -36,7 +36,8 @@ abstract contract UniswapV2Test is Test {
             poolInitCodeHash: bytes32(0),
             v4PoolManager: address(0),
             v3NFTPositionManager: address(0),
-            v4PositionManager: address(0)
+            v4PositionManager: address(0),
+            spokePool: address(0)
         });
         router = new UniversalRouter(params);
 
