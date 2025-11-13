@@ -2,10 +2,6 @@
   "name": "@uniswap/universal-router",
   "description": "Smart contracts for Universal Router",
   "license": "GPL-2.0-or-later",
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
   "version": "2.1.0",
   "keywords": [
     "uniswap",

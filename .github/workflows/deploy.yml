@@ -40,9 +40,7 @@ jobs:
         run: yarn compile
 
       - name: Install npm
-        run: npm install -g npm@latest
+        run: npm install -g npm@11.6.2
 
       - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn publish
+        run: npm publish
