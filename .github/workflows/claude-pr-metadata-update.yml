@@ -1,0 +1,46 @@
+name: "[claude] Generate PR Title & Description"
+
+# Automated PR title and description generation using Claude AI
+#
+# This workflow automatically generates:
+# - Conventional commit-style PR titles based on repository patterns
+# - Comprehensive PR descriptions based on recent merged PR templates
+#
+# Features:
+# - Skips rebases (uses patch-ID to detect actual code changes)
+# - Learns title patterns from recent commits
+# - Learns description templates from recent merged PRs
+# - Conventional commit format enforcement
+# - Preserves user content outside of marked sections
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+# Concurrency: Cancel in-flight runs for the same PR
+concurrency:
+  group: pr-metadata-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  generate-pr-metadata:
+    # Skip conditions:
+    # - Merge queue PRs (handled separately)
+    # - Dependabot PRs (already have proper titles)
+    # - Release PRs (have their own format)
+    if: |
+      !contains(github.head_ref, 'gh-readonly-queue/') &&
+      !contains(github.head_ref, 'gtmq') &&
+      !contains(github.head_ref, 'dependabot/') &&
+      !contains(github.head_ref, 'release/') &&
+      !startsWith(github.event.pull_request.title, 'chore(release):')
+
+    uses: Uniswap/ai-toolkit/.github/workflows/_generate-pr-metadata.yml@9aa3cf98744a2b4e1aac51cd2d26144ea337ab3b
+    with:
+      generation_mode: "description,deferred-title"
+      pr_number: ${{ github.event.pull_request.number }}
+      base_ref: ${{ github.base_ref }}
+      commit_history_count: 30
+      pr_history_count: 10
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

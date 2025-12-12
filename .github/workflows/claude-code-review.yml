@@ -1,0 +1,37 @@
+name: "[claude] Claude Code Review"
+
+concurrency:
+  group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, labeled, unlabeled]
+
+jobs:
+  claude-review-auto:
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.action != 'review_requested' &&
+      !contains(github.head_ref, 'gh-readonly-queue/') &&
+      !startsWith(github.head_ref, 'release/') &&
+      (
+        github.event.pull_request.draft == false ||
+        github.event.action == 'ready_for_review'
+      )
+
+    uses: Uniswap/ai-toolkit/.github/workflows/_claude-code-review.yml@9aa3cf98744a2b4e1aac51cd2d26144ea337ab3b
+    with:
+      pr_number: ${{ github.event.pull_request.number }}
+      base_ref: ${{ github.base_ref }}
+      force_review: false
+      toolkit_ref: 9aa3cf98744a2b4e1aac51cd2d26144ea337ab3b
+      custom_prompt_path: ".claude/prompts/claude-pr-review.md"
+
+      model: "claude-opus-4-5"
+
+      # Standard timeout for most PRs
+      timeout_minutes: 20
+
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
