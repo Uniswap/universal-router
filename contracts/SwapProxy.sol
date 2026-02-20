@@ -27,13 +27,10 @@ contract SwapProxy {
     /// @param commands The encoded UR commands to execute
     /// @param inputs The encoded inputs for each command
     /// @param deadline The transaction deadline
-    function execute(
-        address token,
-        uint256 amount,
-        bytes calldata commands,
-        bytes[] calldata inputs,
-        uint256 deadline
-    ) external payable {
+    function execute(address token, uint256 amount, bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
+        external
+        payable
+    {
         ERC20(token).safeTransferFrom(msg.sender, address(universalRouter), amount);
         universalRouter.execute{value: msg.value}(commands, inputs, deadline);
 

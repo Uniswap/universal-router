@@ -88,10 +88,8 @@ contract SwapProxyTest is Test {
         uint256 maxIn = 2 ether; // overfund to test sweep
         uint256 desiredOut = AMOUNT;
 
-        bytes memory commands = abi.encodePacked(
-            bytes1(uint8(Commands.V2_SWAP_EXACT_OUT)),
-            bytes1(uint8(Commands.SWEEP))
-        );
+        bytes memory commands =
+            abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_OUT)), bytes1(uint8(Commands.SWEEP)));
         address[] memory path = new address[](2);
         path[0] = address(tokenA);
         path[1] = address(tokenB);
