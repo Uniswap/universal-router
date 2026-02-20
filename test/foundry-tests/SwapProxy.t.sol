@@ -161,4 +161,36 @@ contract SwapProxyTest is Test {
     function testImmutableRouterAddress() public {
         assertEq(address(proxy.universalRouter()), address(router));
     }
+
+    function testGasComparisonDirectVsProxy() public {
+        // Setup: also approve Permit2 for direct comparison
+        ERC20(address(tokenA)).approve(address(PERMIT2), type(uint256).max);
+        PERMIT2.approve(address(tokenA), address(router), type(uint160).max, type(uint48).max);
+
+        address[] memory path = new address[](2);
+        path[0] = address(tokenA);
+        path[1] = address(tokenB);
+
+        // Gas via proxy
+        bytes memory proxyCommands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_IN)));
+        bytes[] memory proxyInputs = new bytes[](1);
+        proxyInputs[0] = abi.encode(USER, AMOUNT, 0, path, false);
+
+        uint256 gasBefore = gasleft();
+        proxy.execute(address(tokenA), AMOUNT, proxyCommands, proxyInputs, block.timestamp + 1000);
+        uint256 gasProxy = gasBefore - gasleft();
+
+        // Gas via direct Permit2
+        bytes memory directCommands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_IN)));
+        bytes[] memory directInputs = new bytes[](1);
+        directInputs[0] = abi.encode(USER, AMOUNT, 0, path, true);
+
+        gasBefore = gasleft();
+        router.execute(directCommands, directInputs);
+        uint256 gasDirect = gasBefore - gasleft();
+
+        emit log_named_uint('Gas via proxy', gasProxy);
+        emit log_named_uint('Gas via direct Permit2', gasDirect);
+        emit log_named_uint('Gas overhead', gasProxy > gasDirect ? gasProxy - gasDirect : 0);
+    }
 }
