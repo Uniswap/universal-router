@@ -13,6 +13,7 @@ export enum CommandType {
   SWEEP = 0x04,
   TRANSFER = 0x05,
   PAY_PORTION = 0x06,
+  PAY_PORTION_FULL_PRECISION = 0x07,
 
   V2_SWAP_EXACT_IN = 0x08,
   V2_SWAP_EXACT_OUT = 0x09,
@@ -72,6 +73,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.SWEEP]: ['address', 'address', 'uint256'],
   [CommandType.TRANSFER]: ['address', 'address', 'uint256'],
   [CommandType.PAY_PORTION]: ['address', 'address', 'uint256'],
+  [CommandType.PAY_PORTION_FULL_PRECISION]: ['address', 'address', 'uint256'],
   [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
 
   [CommandType.V4_SWAP]: ['bytes', 'bytes[]'],

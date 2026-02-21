@@ -157,8 +157,18 @@ abstract contract Dispatcher is
                             bips := calldataload(add(inputs.offset, 0x40))
                         }
                         Payments.payPortion(token, map(recipient), bips);
+                    } else if (command == Commands.PAY_PORTION_FULL_PRECISION) {
+                        // equivalent:  abi.decode(inputs, (address, address, uint256))
+                        address token;
+                        address recipient;
+                        uint256 portion;
+                        assembly {
+                            token := calldataload(inputs.offset)
+                            recipient := calldataload(add(inputs.offset, 0x20))
+                            portion := calldataload(add(inputs.offset, 0x40))
+                        }
+                        Payments.payPortionFullPrecision(token, map(recipient), portion);
                     } else {
-                        // placeholder area for command 0x07
                         revert InvalidCommandType(command);
                     }
                 } else {
