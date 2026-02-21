@@ -69,6 +69,7 @@ abstract contract Payments is PaymentsImmutables {
     }
 
     /// @notice Transfers ERC20 tokens from a payer to a recipient using standard ERC20 approvals
+    /// @dev ERC20-only path; native ETH should be handled via msg.value with WRAP_ETH/UNWRAP_WETH.
     /// @param token The ERC20 token to transfer
     /// @param payer The address to transfer from (must have approved this contract)
     /// @param recipient The address that will receive the tokens
