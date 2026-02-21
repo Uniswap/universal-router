@@ -51,7 +51,7 @@ const POOL_KEY_STRUCT = '(address currency0,address currency1,uint24 fee,int24 t
 const PATH_KEY_STRUCT = '(address intermediateCurrency,uint256 fee,int24 tickSpacing,address hooks,bytes hookData)'
 
 const SWAP_EXACT_IN_SINGLE_STRUCT =
-  '(' + POOL_KEY_STRUCT + ' poolKey,bool zeroForOne,uint128 amountIn,uint128 amountOutMinimum,bytes hookData)'
+  '(' + POOL_KEY_STRUCT + ' poolKey,bool zeroForOne,uint128 amountIn,uint128 amountOutMinimum,uint256 maxHopSlippage,bytes hookData)'
 
 const SWAP_EXACT_IN_STRUCT =
   '(address currencyIn,' +
@@ -59,7 +59,7 @@ const SWAP_EXACT_IN_STRUCT =
   '[] path,uint256[] maxHopSlippage,uint128 amountIn,uint128 amountOutMinimum)'
 
 const SWAP_EXACT_OUT_SINGLE_STRUCT =
-  '(' + POOL_KEY_STRUCT + ' poolKey,bool zeroForOne,uint128 amountOut,uint128 amountInMaximum,bytes hookData)'
+  '(' + POOL_KEY_STRUCT + ' poolKey,bool zeroForOne,uint128 amountOut,uint128 amountInMaximum,uint256 maxHopSlippage,bytes hookData)'
 
 const SWAP_EXACT_OUT_STRUCT =
   '(address currencyOut,' +

@@ -73,6 +73,17 @@ library BytesLib {
         }
     }
 
+    /// @notice Decode the `_arg`-th element in `_bytes` as `uint256[]`
+    /// @param _bytes The input bytes string to extract a uint256 array from
+    /// @param _arg The index of the argument to extract
+    function toUint256Array(bytes calldata _bytes, uint256 _arg) internal pure returns (uint256[] calldata res) {
+        (uint256 length, uint256 offset) = toLengthOffset(_bytes, _arg);
+        assembly {
+            res.length := length
+            res.offset := offset
+        }
+    }
+
     /// @notice Equivalent to abi.decode(bytes, bytes[])
     /// @param _bytes The input bytes string to extract an parameters from
     function decodeCommandsAndInputs(bytes calldata _bytes) internal pure returns (bytes calldata, bytes[] calldata) {

@@ -13,10 +13,18 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     error V2TooLittleReceived();
     error V2TooMuchRequested();
     error V2InvalidPath();
+    error V2TooLittleReceivedPerHop(uint256 hopIndex, uint256 minPrice, uint256 price);
+    error V2InvalidHopSlippageLength();
 
-    function _v2Swap(address[] calldata path, address recipient, address pair) private {
+    uint256 private constant PRECISION = 1e36;
+
+    function _v2Swap(address[] calldata path, address recipient, address pair, uint256[] calldata maxHopSlippage)
+        private
+    {
         unchecked {
             if (path.length < 2) revert V2InvalidPath();
+
+            uint256 hopSlippageLength = maxHopSlippage.length;
 
             // cached to save on duplicate operations
             (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
@@ -29,6 +37,11 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                     input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
                 uint256 amountInput = ERC20(input).balanceOf(pair) - reserveInput;
                 uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
+                if (hopSlippageLength != 0) {
+                    uint256 price = amountOutput * PRECISION / amountInput;
+                    uint256 minPrice = maxHopSlippage[i];
+                    if (price < minPrice) revert V2TooLittleReceivedPerHop(i, minPrice, price);
+                }
                 (uint256 amount0Out, uint256 amount1Out) =
                     input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
                 address nextPair;
@@ -49,13 +62,18 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     /// @param amountOutMinimum The minimum desired amount of output tokens
     /// @param path The path of the trade as an array of token addresses
     /// @param payer The address that will be paying the input
+    /// @param maxHopSlippage Per-hop minimum price array (empty to disable)
     function v2SwapExactInput(
         address recipient,
         uint256 amountIn,
         uint256 amountOutMinimum,
         address[] calldata path,
-        address payer
+        address payer,
+        uint256[] calldata maxHopSlippage
     ) internal {
+        if (path.length < 2) revert V2InvalidPath();
+        if (maxHopSlippage.length != 0 && maxHopSlippage.length != path.length - 1) revert V2InvalidHopSlippageLength();
+
         address firstPair = UniswapV2Library.pairFor(
             UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, path[0], path[1]
         );
@@ -68,7 +86,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         ERC20 tokenOut = ERC20(path[path.length - 1]);
         uint256 balanceBefore = tokenOut.balanceOf(recipient);
 
-        _v2Swap(path, recipient, firstPair);
+        _v2Swap(path, recipient, firstPair, maxHopSlippage);
 
         uint256 amountOut = tokenOut.balanceOf(recipient) - balanceBefore;
         if (amountOut < amountOutMinimum) revert V2TooLittleReceived();
@@ -80,19 +98,24 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     /// @param amountInMaximum The maximum desired amount of input tokens
     /// @param path The path of the trade as an array of token addresses
     /// @param payer The address that will be paying the input
+    /// @param maxHopSlippage Per-hop minimum price array (empty to disable)
     function v2SwapExactOutput(
         address recipient,
         uint256 amountOut,
         uint256 amountInMaximum,
         address[] calldata path,
-        address payer
+        address payer,
+        uint256[] calldata maxHopSlippage
     ) internal {
+        if (path.length < 2) revert V2InvalidPath();
+        if (maxHopSlippage.length != 0 && maxHopSlippage.length != path.length - 1) revert V2InvalidHopSlippageLength();
+
         (uint256 amountIn, address firstPair) = UniswapV2Library.getAmountInMultihop(
             UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, amountOut, path
         );
         if (amountIn > amountInMaximum) revert V2TooMuchRequested();
 
         payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
-        _v2Swap(path, recipient, firstPair);
+        _v2Swap(path, recipient, firstPair, maxHopSlippage);
     }
 }

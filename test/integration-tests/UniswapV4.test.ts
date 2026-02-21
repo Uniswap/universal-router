@@ -134,6 +134,7 @@ describe('Uniswap V4 Tests:', () => {
           zeroForOne: true,
           amountIn: amountInUSDC,
           amountOutMinimum: minAmountOutNative,
+          maxHopSlippage: 0,
           hookData: '0x',
         },
       ])
@@ -345,6 +346,7 @@ describe('Uniswap V4 Tests:', () => {
           zeroForOne: true,
           amountOut: amountOutNative,
           amountInMaximum: maxAmountInUSDC,
+          maxHopSlippage: 0,
           hookData: '0x',
         },
       ])
@@ -435,6 +437,7 @@ describe('Uniswap V4 Tests:', () => {
           zeroForOne: true,
           amountIn: amountInNative,
           amountOutMinimum: minAmountOutUSDC,
+          maxHopSlippage: 0,
           hookData: '0x',
         },
       ])
@@ -529,6 +532,7 @@ describe('Uniswap V4 Tests:', () => {
           zeroForOne: true,
           amountOut: amountOutUSDC,
           amountInMaximum: maxAmountInNative,
+          maxHopSlippage: 0,
           hookData: '0x',
         },
       ])
@@ -634,6 +638,7 @@ describe('Uniswap V4 Tests:', () => {
           zeroForOne: false,
           amountIn: amountInUSDC,
           amountOutMinimum: minAmountOutNative,
+          maxHopSlippage: 0,
           hookData: '0x',
         },
       ])
@@ -725,6 +730,7 @@ describe('Uniswap V4 Tests:', () => {
           zeroForOne: false,
           amountOut: amountOutNative,
           amountInMaximum: maxAmountInUSDC,
+          maxHopSlippage: 0,
           hookData: '0x',
         },
       ])

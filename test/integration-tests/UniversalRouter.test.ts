@@ -67,6 +67,7 @@ describe('UniversalRouter', () => {
         1,
         [DAI.address, WETH.address],
         SOURCE_MSG_SENDER,
+        [],
       ])
       const invalidDeadline = 10
 
