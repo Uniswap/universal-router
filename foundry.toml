@@ -5,6 +5,7 @@ libs = ['lib']
 via_ir = true
 solc_version = '0.8.26'
 evm_version = "cancun"
+bytecode_hash = "none"
 
 optimizer_runs = 4444
 fs_permissions = [{ access = "read", path = "./script/deployParameters/"}]
