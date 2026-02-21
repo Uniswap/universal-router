@@ -151,4 +151,47 @@ contract UniversalRouterTest is Test {
         // 1e18 * 1e12 / 1e18 = 1e12
         assertEq(erc20.balanceOf(RECIPIENT), 1e12);
     }
+
+    function testTransferFrom() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.TRANSFER_FROM)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(address(erc20), RECIPIENT, AMOUNT);
+
+        erc20.mint(address(this), AMOUNT);
+        erc20.approve(address(router), AMOUNT);
+        assertEq(erc20.balanceOf(RECIPIENT), 0);
+
+        router.execute(commands, inputs);
+
+        assertEq(erc20.balanceOf(RECIPIENT), AMOUNT);
+        assertEq(erc20.balanceOf(address(this)), 0);
+    }
+
+    function testTransferFromInsufficientAllowance() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.TRANSFER_FROM)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(address(erc20), RECIPIENT, AMOUNT);
+
+        erc20.mint(address(this), AMOUNT);
+        // no approval given
+
+        vm.expectRevert("TRANSFER_FROM_FAILED");
+        router.execute(commands, inputs);
+    }
+
+    function testTransferFromToRouter() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.TRANSFER_FROM)));
+        bytes[] memory inputs = new bytes[](1);
+        // address(2) is ADDRESS_THIS sentinel
+        inputs[0] = abi.encode(address(erc20), address(2), AMOUNT);
+
+        erc20.mint(address(this), AMOUNT);
+        erc20.approve(address(router), AMOUNT);
+        assertEq(erc20.balanceOf(address(router)), 0);
+
+        router.execute(commands, inputs);
+
+        assertEq(erc20.balanceOf(address(router)), AMOUNT);
+        assertEq(erc20.balanceOf(address(this)), 0);
+    }
 }

@@ -68,6 +68,15 @@ abstract contract Payments is PaymentsImmutables {
         }
     }
 
+    /// @notice Transfers ERC20 tokens from a payer to a recipient using standard ERC20 approvals
+    /// @param token The ERC20 token to transfer
+    /// @param payer The address to transfer from (must have approved this contract)
+    /// @param recipient The address that will receive the tokens
+    /// @param amount The amount to transfer
+    function transferFrom(address token, address payer, address recipient, uint256 amount) internal {
+        ERC20(token).safeTransferFrom(payer, recipient, amount);
+    }
+
     /// @notice Sweeps all of the contract's ERC20 or ETH to an address
     /// @param token The token to sweep (can be ETH using Constants.ETH)
     /// @param recipient The address that will receive payment
