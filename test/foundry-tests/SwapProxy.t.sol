@@ -43,7 +43,7 @@ contract SwapProxyTest is Test {
             spokePool: address(0)
         });
         router = new UniversalRouter(params);
-        proxy = new SwapProxy(IUniversalRouter(address(router)));
+        proxy = new SwapProxy();
 
         // Create mock tokens and V2 pair
         tokenA = new MockERC20();
@@ -78,7 +78,9 @@ contract SwapProxyTest is Test {
 
         uint256 balanceBefore = tokenB.balanceOf(USER);
 
-        proxy.execute(address(tokenA), AMOUNT, commands, inputs, block.timestamp + 1000);
+        proxy.execute(
+            IUniversalRouter(address(router)), address(tokenA), AMOUNT, commands, inputs, block.timestamp + 1000
+        );
 
         assertEq(tokenA.balanceOf(USER), BALANCE - AMOUNT);
         assertGt(tokenB.balanceOf(USER), balanceBefore);
@@ -102,7 +104,9 @@ contract SwapProxyTest is Test {
         uint256 tokenABefore = tokenA.balanceOf(USER);
         uint256 tokenBBefore = tokenB.balanceOf(USER);
 
-        proxy.execute(address(tokenA), maxIn, commands, inputs, block.timestamp + 1000);
+        proxy.execute(
+            IUniversalRouter(address(router)), address(tokenA), maxIn, commands, inputs, block.timestamp + 1000
+        );
 
         // User received exact output
         assertGe(tokenB.balanceOf(USER), tokenBBefore + desiredOut);
@@ -124,7 +128,9 @@ contract SwapProxyTest is Test {
         inputs[0] = abi.encode(USER, AMOUNT, 0, path, false);
 
         vm.expectRevert();
-        proxy.execute(address(tokenA), AMOUNT, commands, inputs, block.timestamp + 1000);
+        proxy.execute(
+            IUniversalRouter(address(router)), address(tokenA), AMOUNT, commands, inputs, block.timestamp + 1000
+        );
     }
 
     function testRevertOnExpiredDeadline() public {
@@ -136,7 +142,7 @@ contract SwapProxyTest is Test {
         inputs[0] = abi.encode(USER, AMOUNT, 0, path, false);
 
         vm.expectRevert(IUniversalRouter.TransactionDeadlinePassed.selector);
-        proxy.execute(address(tokenA), AMOUNT, commands, inputs, block.timestamp - 1);
+        proxy.execute(IUniversalRouter(address(router)), address(tokenA), AMOUNT, commands, inputs, block.timestamp - 1);
     }
 
     function testNoTokensStuckInProxy() public {
@@ -147,17 +153,15 @@ contract SwapProxyTest is Test {
         bytes[] memory inputs = new bytes[](1);
         inputs[0] = abi.encode(USER, AMOUNT, 0, path, false);
 
-        proxy.execute(address(tokenA), AMOUNT, commands, inputs, block.timestamp + 1000);
+        proxy.execute(
+            IUniversalRouter(address(router)), address(tokenA), AMOUNT, commands, inputs, block.timestamp + 1000
+        );
 
         // Proxy should never hold tokens
         assertEq(tokenA.balanceOf(address(proxy)), 0);
         assertEq(tokenB.balanceOf(address(proxy)), 0);
         // Router should not hold tokens either
         assertEq(tokenA.balanceOf(address(router)), 0);
-    }
-
-    function testImmutableRouterAddress() public {
-        assertEq(address(proxy.universalRouter()), address(router));
     }
 
     function testGasComparisonDirectVsProxy() public {
@@ -175,7 +179,14 @@ contract SwapProxyTest is Test {
         proxyInputs[0] = abi.encode(USER, AMOUNT, 0, path, false);
 
         uint256 gasBefore = gasleft();
-        proxy.execute(address(tokenA), AMOUNT, proxyCommands, proxyInputs, block.timestamp + 1000);
+        proxy.execute(
+            IUniversalRouter(address(router)),
+            address(tokenA),
+            AMOUNT,
+            proxyCommands,
+            proxyInputs,
+            block.timestamp + 1000
+        );
         uint256 gasProxy = gasBefore - gasleft();
 
         // Gas via direct Permit2

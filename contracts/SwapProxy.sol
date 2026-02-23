@@ -15,30 +15,22 @@ import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
 contract SwapProxy {
     using SafeTransferLib for ERC20;
 
-    IUniversalRouter public immutable universalRouter;
-
-    constructor(IUniversalRouter _universalRouter) {
-        universalRouter = _universalRouter;
-    }
-
     /// @notice Pull ERC20 tokens from msg.sender into the Universal Router, then execute commands
+    /// @param router The Universal Router to execute commands on
     /// @param token The ERC20 token to pull from the caller
     /// @param amount The amount of tokens to transfer into the UR
     /// @param commands The encoded UR commands to execute
     /// @param inputs The encoded inputs for each command
     /// @param deadline The transaction deadline
-    function execute(address token, uint256 amount, bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
-        external
-        payable
-    {
-        ERC20(token).safeTransferFrom(msg.sender, address(universalRouter), amount);
-        universalRouter.execute{value: msg.value}(commands, inputs, deadline);
-
-        uint256 ethBalance = address(this).balance;
-        if (ethBalance > 0) {
-            SafeTransferLib.safeTransferETH(msg.sender, ethBalance);
-        }
+    function execute(
+        IUniversalRouter router,
+        address token,
+        uint256 amount,
+        bytes calldata commands,
+        bytes[] calldata inputs,
+        uint256 deadline
+    ) external payable {
+        ERC20(token).safeTransferFrom(msg.sender, address(router), amount);
+        router.execute{value: msg.value}(commands, inputs, deadline);
     }
-
-    receive() external payable {}
 }
