@@ -1,4 +1,4 @@
-name: "[claude] Claude Code Review"
+name: '[claude] Claude Code Review'
 
 concurrency:
   group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
@@ -26,9 +26,9 @@ jobs:
       base_ref: ${{ github.base_ref }}
       force_review: false
       toolkit_ref: 9aa3cf98744a2b4e1aac51cd2d26144ea337ab3b
-      custom_prompt_path: ".claude/prompts/claude-pr-review.md"
+      custom_prompt_path: '.claude/prompts/claude-pr-review.md'
 
-      model: "claude-opus-4-5"
+      model: 'claude-opus-4-6'
 
       # Standard timeout for most PRs
       timeout_minutes: 20
