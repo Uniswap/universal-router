@@ -688,8 +688,8 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           planOneTokens,
           SOURCE_MSG_SENDER,
-        [],
-      ])
+          [],
+        ])
         // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
         subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
           ADDRESS_THIS,
@@ -697,8 +697,8 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           encodePathExactInput(planOneTokens),
           SOURCE_MSG_SENDER,
-        [],
-      ])
+          [],
+        ])
         // aggregate slippage check
         subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, planOneWethMinOut])
 
@@ -716,8 +716,8 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           wethMinAmountOut2,
           encodePathExactInput(planTwoTokens),
           SOURCE_MSG_SENDER,
-        [],
-      ])
+          [],
+        ])
 
         // add the second subplan to the main planner
         planner.addSubPlan(subplan)
@@ -747,8 +747,8 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           planOneTokens,
           SOURCE_MSG_SENDER,
-        [],
-      ])
+          [],
+        ])
         // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
         subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
           ADDRESS_THIS,
@@ -756,8 +756,8 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           encodePathExactInput(planOneTokens),
           SOURCE_MSG_SENDER,
-        [],
-      ])
+          [],
+        ])
         // aggregate slippage check
         subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, planOneWethMinOut])
 
@@ -775,8 +775,8 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           wethMinAmountOut2,
           encodePathExactInput(planTwoTokens),
           SOURCE_MSG_SENDER,
-        [],
-      ])
+          [],
+        ])
 
         // add the second subplan to the main planner
         planner.addSubPlan(subplan)
@@ -809,8 +809,8 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           planOneTokens,
           SOURCE_MSG_SENDER,
-        [],
-      ])
+          [],
+        ])
         // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
         subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
           ADDRESS_THIS,
@@ -818,8 +818,8 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           encodePathExactInput(planOneTokens),
           SOURCE_MSG_SENDER,
-        [],
-      ])
+          [],
+        ])
         // aggregate slippage check
         subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, planOneWethMinOut])
 
@@ -838,8 +838,8 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           wethMinAmountOut2,
           encodePathExactInput(planTwoTokens),
           SOURCE_MSG_SENDER,
-        [],
-      ])
+          [],
+        ])
 
         // add the second subplan to the main planner
         planner.addSubPlan(subplan)
@@ -869,8 +869,8 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           planOneTokens,
           SOURCE_MSG_SENDER,
-        [],
-      ])
+          [],
+        ])
         // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
         subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
           ADDRESS_THIS,
@@ -878,8 +878,8 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           encodePathExactInput(planOneTokens),
           SOURCE_MSG_SENDER,
-        [],
-      ])
+          [],
+        ])
         // aggregate slippage check
         subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, planOneWethMinOut])
 
@@ -898,8 +898,8 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           wethMinAmountOut2,
           encodePathExactInput(planTwoTokens),
           SOURCE_MSG_SENDER,
-        [],
-      ])
+          [],
+        ])
 
         // add the second subplan to the main planner
         planner.addSubPlan(subplan)

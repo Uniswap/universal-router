@@ -21,7 +21,10 @@ contract MockV3Pool {
         int256 amountSpecified,
         uint160, /* sqrtPriceLimitX96 */
         bytes calldata data
-    ) external returns (int256 amount0Delta, int256 amount1Delta) {
+    )
+        external
+        returns (int256 amount0Delta, int256 amount1Delta)
+    {
         if (amountSpecified > 0) {
             // Exact input
             uint256 input = uint256(amountSpecified);

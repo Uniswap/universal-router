@@ -235,7 +235,14 @@ describe('Uniswap V3 Tests:', () => {
       const tokens = [DAI.address, WETH.address]
       const path = encodePathExactOutput(tokens)
 
-      planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [MSG_SENDER, amountOut, amountInMax, path, SOURCE_MSG_SENDER, []])
+      planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
+        MSG_SENDER,
+        amountOut,
+        amountInMax,
+        path,
+        SOURCE_MSG_SENDER,
+        [],
+      ])
 
       const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(
         planner,
@@ -255,7 +262,14 @@ describe('Uniswap V3 Tests:', () => {
       const tokens = [DAI.address, USDC.address, WETH.address]
       const path = encodePathExactOutput(tokens)
 
-      planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [MSG_SENDER, amountOut, amountInMax, path, SOURCE_MSG_SENDER, []])
+      planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
+        MSG_SENDER,
+        amountOut,
+        amountInMax,
+        path,
+        SOURCE_MSG_SENDER,
+        [],
+      ])
       const { commands, inputs } = planner
 
       const balanceWethBefore = await wethContract.balanceOf(bob.address)
@@ -290,7 +304,14 @@ describe('Uniswap V3 Tests:', () => {
       const tokens = [DAI.address, WETH.address]
       const path = encodePathExactOutput(tokens)
 
-      planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [ADDRESS_THIS, amountOut, amountInMax, path, SOURCE_MSG_SENDER, []])
+      planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
+        ADDRESS_THIS,
+        amountOut,
+        amountInMax,
+        path,
+        SOURCE_MSG_SENDER,
+        [],
+      ])
       planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, amountOut])
 
       const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
