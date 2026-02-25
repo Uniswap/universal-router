@@ -16,13 +16,7 @@ import {ISwapProxy} from './interfaces/ISwapProxy.sol';
 contract SwapProxy is ISwapProxy {
     using SafeTransferLib for ERC20;
 
-    /// @notice Pull ERC20 tokens from msg.sender into the Universal Router, then execute commands
-    /// @param router The Universal Router to execute commands on
-    /// @param token The ERC20 token to pull from the caller
-    /// @param amount The amount of tokens to transfer into the UR
-    /// @param commands The encoded UR commands to execute
-    /// @param inputs The encoded inputs for each command
-    /// @param deadline The transaction deadline
+    /// @inheritdoc ISwapProxy
     function execute(
         IUniversalRouter router,
         address token,
