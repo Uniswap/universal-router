@@ -36,8 +36,6 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
 
-    uint256 private constant PRECISION = 1e36;
-
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         if (amount0Delta <= 0 && amount1Delta <= 0) revert V3InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
         (, address payer, uint256[] memory maxHopSlippage, uint256 hopIndex) =
@@ -61,7 +59,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
                 // Per-hop slippage check for exact-output intermediate hops
                 if (maxHopSlippage.length != 0) {
                     uint256 amountOut = uint256(-(amount0Delta > 0 ? amount1Delta : amount0Delta));
-                    uint256 price = amountOut * PRECISION / amountToPay;
+                    uint256 price = amountOut * Constants.SLIPPAGE_PRECISION / amountToPay;
                     uint256 minPrice = maxHopSlippage[hopIndex];
                     if (price < minPrice) revert V3TooMuchRequestedPerHop(hopIndex, minPrice, price);
                 }
@@ -81,7 +79,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
                 // Per-hop slippage check for the first trading hop (last executed in exact-output)
                 if (maxHopSlippage.length != 0) {
                     uint256 amountOut = uint256(-(amount0Delta > 0 ? amount1Delta : amount0Delta));
-                    uint256 price = amountOut * PRECISION / amountToPay;
+                    uint256 price = amountOut * Constants.SLIPPAGE_PRECISION / amountToPay;
                     uint256 minPrice = maxHopSlippage[hopIndex];
                     if (price < minPrice) revert V3TooMuchRequestedPerHop(hopIndex, minPrice, price);
                 }
@@ -141,7 +139,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
 
             // Per-hop slippage check for exact-input
             if (maxHopSlippage.length != 0) {
-                uint256 price = amountIn * PRECISION / previousAmountIn;
+                uint256 price = amountIn * Constants.SLIPPAGE_PRECISION / previousAmountIn;
                 uint256 minPrice = maxHopSlippage[hopIndex];
                 if (price < minPrice) revert V3TooLittleReceivedPerHop(hopIndex, minPrice, price);
             }

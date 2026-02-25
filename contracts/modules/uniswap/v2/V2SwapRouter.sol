@@ -16,15 +16,11 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     error V2TooLittleReceivedPerHop(uint256 hopIndex, uint256 minPrice, uint256 price);
     error V2InvalidHopSlippageLength();
 
-    uint256 private constant PRECISION = 1e36;
-
     function _v2Swap(address[] calldata path, address recipient, address pair, uint256[] calldata maxHopSlippage)
         private
     {
         unchecked {
             if (path.length < 2) revert V2InvalidPath();
-
-            uint256 hopSlippageLength = maxHopSlippage.length;
 
             // cached to save on duplicate operations
             (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
@@ -37,8 +33,8 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                     input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
                 uint256 amountInput = ERC20(input).balanceOf(pair) - reserveInput;
                 uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
-                if (hopSlippageLength != 0) {
-                    uint256 price = amountOutput * PRECISION / amountInput;
+                if (maxHopSlippage.length != 0) {
+                    uint256 price = amountOutput * Constants.SLIPPAGE_PRECISION / amountInput;
                     uint256 minPrice = maxHopSlippage[i];
                     if (price < minPrice) revert V2TooLittleReceivedPerHop(i, minPrice, price);
                 }
