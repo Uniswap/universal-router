@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
+import {ISwapProxy} from './interfaces/ISwapProxy.sol';
 
 /// @title SwapProxy
 /// @notice Enables 2-tx swap flow (approve + swap) without Permit2 signed messages
@@ -12,7 +13,7 @@ import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
 ///      IMPORTANT: All swap commands MUST use payerIsUser=false.
 ///      All recipient addresses MUST be the user's explicit address, NOT MSG_SENDER,
 ///      because MSG_SENDER resolves to this proxy contract within the UR execution context.
-contract SwapProxy {
+contract SwapProxy is ISwapProxy {
     using SafeTransferLib for ERC20;
 
     /// @notice Pull ERC20 tokens from msg.sender into the Universal Router, then execute commands
