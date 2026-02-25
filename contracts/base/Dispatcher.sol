@@ -263,18 +263,8 @@ abstract contract Dispatcher is
                         }
                         success = (ERC20(token).balanceOf(owner) >= minBalance);
                         if (!success) output = abi.encodePacked(BalanceTooLow.selector);
-                    } else if (command == Commands.TRANSFER_FROM) {
-                        // equivalent: abi.decode(inputs, (address, address, uint256))
-                        address token;
-                        address recipient;
-                        uint256 amount;
-                        assembly {
-                            token := calldataload(inputs.offset)
-                            recipient := calldataload(add(inputs.offset, 0x20))
-                            amount := calldataload(add(inputs.offset, 0x40))
-                        }
-                        Payments.transferFrom(token, msgSender(), map(recipient), amount);
                     } else {
+                        // placeholder area for command 0x0f
                         revert InvalidCommandType(command);
                     }
                 }

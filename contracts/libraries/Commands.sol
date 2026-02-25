@@ -29,7 +29,7 @@ library Commands {
     uint256 constant UNWRAP_WETH = 0x0c;
     uint256 constant PERMIT2_TRANSFER_FROM_BATCH = 0x0d;
     uint256 constant BALANCE_CHECK_ERC20 = 0x0e;
-    uint256 constant TRANSFER_FROM = 0x0f;
+    // COMMAND_PLACEHOLDER = 0x0f;
 
     // Command Types where 0x10<=value<=0x20, executed in the third nested-if block
     uint256 constant V4_SWAP = 0x10;

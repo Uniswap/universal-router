@@ -180,50 +180,6 @@ describe('UniversalRouter', () => {
       })
     })
 
-    describe('TRANSFER_FROM', () => {
-      it('transfers tokens using standard ERC20 approval', async () => {
-        const amount = expandTo18DecimalsBN(10)
-        // Alice approves the router directly (not permit2)
-        await daiContract.approve(router.address, amount)
-        const balanceBefore = await daiContract.balanceOf(alice.address)
-
-        // TRANSFER_FROM: (token, recipient, amount)
-        planner.addCommand(CommandType.TRANSFER_FROM, [DAI.address, router.address, amount])
-        // Then sweep back to alice to confirm tokens arrived in router
-        planner.addCommand(CommandType.SWEEP, [DAI.address, alice.address, 0])
-        const { commands, inputs } = planner
-        await router['execute(bytes,bytes[])'](commands, inputs)
-
-        // Tokens should have round-tripped: alice -> router -> alice
-        const balanceAfter = await daiContract.balanceOf(alice.address)
-        expect(balanceAfter).to.eq(balanceBefore)
-      })
-
-      it('transfers tokens to a third-party recipient', async () => {
-        const amount = expandTo18DecimalsBN(5)
-        const bob = '0x0000000000000000000000000000000000001234'
-        await daiContract.approve(router.address, amount)
-        const aliceBefore = await daiContract.balanceOf(alice.address)
-
-        planner.addCommand(CommandType.TRANSFER_FROM, [DAI.address, bob, amount])
-        const { commands, inputs } = planner
-        await router['execute(bytes,bytes[])'](commands, inputs)
-
-        expect(await daiContract.balanceOf(bob)).to.eq(amount)
-        expect(await daiContract.balanceOf(alice.address)).to.eq(aliceBefore.sub(amount))
-      })
-
-      it('reverts without approval', async () => {
-        const amount = expandTo18DecimalsBN(10)
-        // Revoke any previous router approval
-        await daiContract.approve(router.address, 0)
-
-        planner.addCommand(CommandType.TRANSFER_FROM, [DAI.address, router.address, amount])
-        const { commands, inputs } = planner
-        await expect(router['execute(bytes,bytes[])'](commands, inputs)).to.be.reverted
-      })
-    })
-
     it('reverts if a malicious contract tries to reenter', async () => {
       // create malicious calldata to sweep ETH out of the router
       planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, alice.address, 0])

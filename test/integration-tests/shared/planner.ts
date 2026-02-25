@@ -22,7 +22,6 @@ export enum CommandType {
   UNWRAP_WETH = 0x0c,
   PERMIT2_TRANSFER_FROM_BATCH = 0x0d,
   BALANCE_CHECK_ERC20 = 0x0e,
-  TRANSFER_FROM = 0x0f,
 
   V4_SWAP = 0x10,
   V3_POSITION_MANAGER_PERMIT = 0x11,
@@ -76,7 +75,6 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.PAY_PORTION]: ['address', 'address', 'uint256'],
   [CommandType.PAY_PORTION_FULL_PRECISION]: ['address', 'address', 'uint256'],
   [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
-  [CommandType.TRANSFER_FROM]: ['address', 'address', 'uint256'],
 
   [CommandType.V4_SWAP]: ['bytes', 'bytes[]'],
   [CommandType.V3_POSITION_MANAGER_PERMIT]: ['bytes'],
