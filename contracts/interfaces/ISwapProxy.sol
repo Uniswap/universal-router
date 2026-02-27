@@ -20,5 +20,5 @@ interface ISwapProxy {
         bytes calldata commands,
         bytes[] calldata inputs,
         uint256 deadline
-    ) external payable;
+    ) external;
 }

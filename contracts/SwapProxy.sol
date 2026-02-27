@@ -8,8 +8,9 @@ import {ISwapProxy} from './interfaces/ISwapProxy.sol';
 
 /// @title SwapProxy
 /// @notice Enables 2-tx swap flow (approve + swap) without Permit2 signed messages
-/// @dev Transfers tokens from the user directly into the Universal Router, then
+/// @dev Transfers tokens from the user directly into the Universal Router (UR), then
 ///      executes UR commands with payerIsUser=false so the router uses its own balance.
+///      This contract is to help with token-inputs, ETH-input actions should be sent directly to the UR.
 ///      IMPORTANT: All swap commands MUST use payerIsUser=false.
 ///      All recipient addresses MUST be the user's explicit address, NOT MSG_SENDER,
 ///      because MSG_SENDER resolves to this proxy contract within the UR execution context.
@@ -24,8 +25,8 @@ contract SwapProxy is ISwapProxy {
         bytes calldata commands,
         bytes[] calldata inputs,
         uint256 deadline
-    ) external payable {
+    ) external {
         ERC20(token).safeTransferFrom(msg.sender, address(router), amount);
-        router.execute{value: msg.value}(commands, inputs, deadline);
+        router.execute(commands, inputs, deadline);
     }
 }
