@@ -26,6 +26,8 @@ contract SwapProxy is ISwapProxy {
         bytes[] calldata inputs,
         uint256 deadline
     ) external {
+        // Note: Solmate's SafeTransferLib does not check that the token address contains code.
+        // Transfer calls to empty addresses silently succeed.
         ERC20(token).safeTransferFrom(msg.sender, address(router), amount);
         router.execute(commands, inputs, deadline);
     }
