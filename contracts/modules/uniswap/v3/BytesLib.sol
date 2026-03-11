@@ -50,16 +50,18 @@ library BytesLib {
         pure
         returns (uint256 length, uint256 offset)
     {
-        uint256 relativeOffset;
         assembly {
             // The offset of the `_arg`-th element is `32 * arg`, which stores the offset of the length pointer.
             // shl(5, x) is equivalent to mul(32, x)
             let lengthPtr := add(_bytes.offset, calldataload(add(_bytes.offset, shl(5, _arg))))
             length := calldataload(lengthPtr)
             offset := add(lengthPtr, 0x20)
-            relativeOffset := sub(offset, _bytes.offset)
+            let relativeOffset := sub(offset, _bytes.offset)
+            if lt(_bytes.length, add(shl(5, length), relativeOffset)) {
+                mstore(0, 0x3b99b53d) // SliceOutOfBounds()
+                revert(0x1c, 0x04)
+            }
         }
-        if (_bytes.length < length + relativeOffset) revert SliceOutOfBounds();
     }
 
     /// @notice Decode the `_arg`-th element in `_bytes` as `address[]`

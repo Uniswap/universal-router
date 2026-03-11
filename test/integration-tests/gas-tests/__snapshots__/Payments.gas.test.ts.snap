@@ -3,48 +3,48 @@
 exports[`Payments Gas Tests Individual Command Tests gas: SWEEP with ERC20 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 37311,
+  "gasUsed": 37301,
 }
 `;
 
 exports[`Payments Gas Tests Individual Command Tests gas: SWEEP_WITH_FEE 1`] = `
 Object {
   "calldataByteLength": 516,
-  "gasUsed": 66086,
+  "gasUsed": 66081,
 }
 `;
 
 exports[`Payments Gas Tests Individual Command Tests gas: TRANSFER with ERC20 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 36329,
+  "gasUsed": 36205,
 }
 `;
 
 exports[`Payments Gas Tests Individual Command Tests gas: TRANSFER with ETH 1`] = `
 Object {
   "calldataByteLength": 356,
-  "gasUsed": 31890,
+  "gasUsed": 31764,
 }
 `;
 
 exports[`Payments Gas Tests Individual Command Tests gas: UNWRAP_WETH 1`] = `
 Object {
   "calldataByteLength": 324,
-  "gasUsed": 44942,
+  "gasUsed": 44998,
 }
 `;
 
 exports[`Payments Gas Tests Individual Command Tests gas: UNWRAP_WETH_WITH_FEE 1`] = `
 Object {
   "calldataByteLength": 644,
-  "gasUsed": 51423,
+  "gasUsed": 51432,
 }
 `;
 
 exports[`Payments Gas Tests Individual Command Tests gas: WRAP_ETH 1`] = `
 Object {
   "calldataByteLength": 324,
-  "gasUsed": 53719,
+  "gasUsed": 53675,
 }
 `;
