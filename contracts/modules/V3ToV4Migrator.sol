@@ -93,8 +93,8 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
             uint256 action = uint8(actions[actionIndex]);
 
             if (
-                action == Actions.INCREASE_LIQUIDITY || action == Actions.DECREASE_LIQUIDITY
-                    || action == Actions.BURN_POSITION
+                action == Actions.INCREASE_LIQUIDITY || action == Actions.INCREASE_LIQUIDITY_FROM_DELTAS
+                    || action == Actions.DECREASE_LIQUIDITY || action == Actions.BURN_POSITION
             ) {
                 revert OnlyMintAllowed();
             }
