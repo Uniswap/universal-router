@@ -3,16 +3,18 @@ import { BigNumber } from 'ethers'
 import { expect } from './shared/expect'
 import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
-import { resetFork, WETH, DAI, USDC, PERMIT2 } from './shared/mainnetForkHelpers'
+import { resetFork, WETH, DAI, USDC, USDT, PERMIT2 } from './shared/mainnetForkHelpers'
 import {
   ALICE_ADDRESS,
   DEADLINE,
   ETH_ADDRESS,
   MAX_UINT,
+  MAX_UINT128,
   MAX_UINT160,
   MSG_SENDER,
   ONE_PERCENT_BIPS,
   OPEN_DELTA,
+  ZERO_ADDRESS,
 } from './shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -812,6 +814,190 @@ describe('Uniswap V4 Tests:', () => {
       expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
       expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.eq(amountOutNative.sub(gasSpent))
       expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
+    })
+  })
+
+  describe('Diamond exactOut', () => {
+    let usdtContract: Contract
+
+    // WETH_USDT pool: same price/tick structure as ETH_USDC (18-decimal token0, 6-decimal token1, ~$3820 rate)
+    const WETH_USDT = {
+      poolKey: {
+        currency0: WETH.address,
+        currency1: USDT.address,
+        fee: 500, // FeeAmount.LOW
+        tickSpacing: 10,
+        hooks: ZERO_ADDRESS,
+      },
+      price: BigNumber.from('4899712312116710985145008'),
+      tickLower: -194040,
+      tickUpper: -193620,
+    }
+
+    // DAI_USDT pool: same price/tick structure as DAI_USDC (18-decimal token0, 6-decimal token1, ~$1 rate)
+    const DAI_USDT = {
+      poolKey: {
+        currency0: DAI.address,
+        currency1: USDT.address,
+        fee: 100, // FeeAmount.LOWEST
+        tickSpacing: 10,
+        hooks: ZERO_ADDRESS,
+      },
+      price: BigNumber.from('79227835492130174795940'),
+      tickLower: -276330,
+      tickUpper: -276320,
+    }
+
+    // ETH_WETH pool: native ETH <-> WETH at 1:1 (both 18 decimals)
+    const ETH_WETH = {
+      poolKey: {
+        currency0: ZERO_ADDRESS, // native ETH
+        currency1: WETH.address,
+        fee: 500, // FeeAmount.LOW
+        tickSpacing: 10,
+        hooks: ZERO_ADDRESS,
+      },
+      price: BigNumber.from('79228162514264337593543950336'), // sqrt(1) * 2^96 = 2^96 (1:1 price)
+      tickLower: -1000,
+      tickUpper: 1000,
+    }
+
+    // USDT has non-standard ERC20 (no bool return on transfer/approve), so use a compatible ABI
+    const USDT_ABI = [
+      'function approve(address spender, uint256 amount)',
+      'function transfer(address to, uint256 amount)',
+      'function balanceOf(address account) view returns (uint256)',
+    ]
+
+    beforeEach(async () => {
+      usdtContract = new ethers.Contract(USDT.address, USDT_ABI, bob)
+
+      // alice gives bob some USDT
+      await usdtContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(1000000))
+
+      // Bob approves permit2 for USDT
+      await usdtContract.connect(bob).approve(permit2.address, MAX_UINT)
+
+      // Approve router and position manager for USDT on permit2
+      await permit2.approve(USDT.address, router.address, MAX_UINT160, DEADLINE)
+      await permit2.approve(USDT.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
+
+      // Initialize the three new pools
+      await initializeV4Pool(v4PoolManager, WETH_USDT.poolKey, WETH_USDT.price)
+      await initializeV4Pool(v4PoolManager, DAI_USDT.poolKey, DAI_USDT.price)
+      await initializeV4Pool(v4PoolManager, ETH_WETH.poolKey, ETH_WETH.price)
+
+      // Add liquidity to the new pools
+      await addLiquidityToV4Pool(v4PositionManager, DAI_USDT, expandTo18DecimalsBN(400).toString(), bob)
+      await addLiquidityToV4Pool(v4PositionManager, WETH_USDT, expandTo18DecimalsBN(0.01).toString(), bob)
+      await addLiquidityToV4Pool(v4PositionManager, ETH_WETH, expandTo18DecimalsBN(100).toString(), bob)
+    })
+
+    it('completes a v4 exactOut diamond swap', async () => {
+      // Diamond shape with 5 tokens:
+      //
+      //          USDC
+      //         /    \
+      // DAI --        WETH -- ETH (output)
+      //         \    /
+      //          USDT
+      //
+      // Step 1: Buy the full ETH output using WETH (creates WETH debt)
+      // Steps 2-3: Resolve WETH debt via two paths (USDC and USDT), with OPEN_DELTA on the 2nd
+      // Steps 4-5: Resolve USDC and USDT debts back to DAI (input) using OPEN_DELTA
+      // Step 6-7: Settle DAI, take ETH
+
+      const totalEthOut = expandTo18DecimalsBN(0.001)
+      const partialWethAmount = expandTo18DecimalsBN(0.0005)
+
+      // Step 1: Buy exact ETH output using WETH via ETH_WETH pool
+      // Creates the full output credit and puts WETH into debt
+      // State: +0.001 ETH credit, ~0.001 WETH debt
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT_SINGLE, [
+        {
+          poolKey: ETH_WETH.poolKey,
+          zeroForOne: false, // WETH (token1) -> ETH (token0)
+          amountOut: totalEthOut,
+          amountInMaximum: MAX_UINT128,
+          maxHopSlippage: 0,
+          hookData: '0x',
+        },
+      ])
+
+      // Step 2: Partially resolve WETH debt via USDC path
+      // State: +0.001 ETH credit, ~0.0005 WETH debt remaining, USDC debt
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT_SINGLE, [
+        {
+          poolKey: USDC_WETH.poolKey,
+          zeroForOne: true, // USDC (token0) -> WETH (token1)
+          amountOut: partialWethAmount,
+          amountInMaximum: MAX_UINT128,
+          maxHopSlippage: 0,
+          hookData: '0x',
+        },
+      ])
+
+      // Step 3: Resolve remaining WETH debt via USDT path using OPEN_DELTA
+      // OPEN_DELTA resolves to the precise remaining WETH debt
+      // State: +0.001 ETH credit, WETH netted to 0, USDC debt, USDT debt
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT_SINGLE, [
+        {
+          poolKey: WETH_USDT.poolKey,
+          zeroForOne: false, // USDT (token1) -> WETH (token0)
+          amountOut: OPEN_DELTA, // resolves to exact remaining WETH debt
+          amountInMaximum: MAX_UINT128,
+          maxHopSlippage: 0,
+          hookData: '0x',
+        },
+      ])
+
+      // Step 4: Resolve USDC debt with DAI using OPEN_DELTA
+      // State: +0.001 ETH credit, USDC netted to 0, USDT debt, DAI debt
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT_SINGLE, [
+        {
+          poolKey: DAI_USDC.poolKey,
+          zeroForOne: true, // DAI (token0) -> USDC (token1)
+          amountOut: OPEN_DELTA,
+          amountInMaximum: MAX_UINT128,
+          maxHopSlippage: 0,
+          hookData: '0x',
+        },
+      ])
+
+      // Step 5: Resolve USDT debt with DAI using OPEN_DELTA
+      // State: +0.001 ETH credit, USDC 0, USDT netted to 0, DAI debt
+      v4Planner.addAction(Actions.SWAP_EXACT_OUT_SINGLE, [
+        {
+          poolKey: DAI_USDT.poolKey,
+          zeroForOne: true, // DAI (token0) -> USDT (token1)
+          amountOut: OPEN_DELTA,
+          amountInMaximum: MAX_UINT128,
+          maxHopSlippage: 0,
+          hookData: '0x',
+        },
+      ])
+
+      // Step 6: Settle all DAI debt from msg.sender
+      v4Planner.addAction(Actions.SETTLE_ALL, [daiContract.address, MAX_UINT])
+
+      // Step 7: Take the ETH output
+      v4Planner.addAction(Actions.TAKE_ALL, [ETH_ADDRESS, 0])
+
+      planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
+
+      const { daiBalanceBefore, daiBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
+        planner,
+        bob,
+        router,
+        wethContract,
+        daiContract,
+        usdcContract
+      )
+
+      // Bob received the exact ETH output (accounting for gas)
+      expect(ethBalanceAfter.add(gasSpent).sub(ethBalanceBefore)).to.be.eq(totalEthOut)
+      // Bob spent DAI to cover both the USDC and USDT intermediate debts
+      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.gt(0)
     })
   })
 })
