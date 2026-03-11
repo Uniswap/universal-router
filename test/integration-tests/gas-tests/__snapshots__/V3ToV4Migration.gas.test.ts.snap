@@ -38,20 +38,20 @@ Object {
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate and mint 1`] = `
 Object {
   "calldataByteLength": 2500,
-  "gasUsed": 597804,
+  "gasUsed": 598034,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: migrate weth position into eth position with forwarding 1`] = `
 Object {
   "calldataByteLength": 2788,
-  "gasUsed": 574941,
+  "gasUsed": 575125,
 }
 `;
 
 exports[`V3 to V4 Migration Gas Tests V4 Commands mint gas: mint 1`] = `
 Object {
   "calldataByteLength": 1604,
-  "gasUsed": 443507,
+  "gasUsed": 443737,
 }
 `;
