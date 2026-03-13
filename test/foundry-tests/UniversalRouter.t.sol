@@ -41,6 +41,10 @@ contract UniversalRouterTest is Test {
 
     event ExampleModuleEvent(string message);
 
+    function test_bytecodeSize() public {
+        vm.snapshotValue('poolManager bytecode size', address(router).code.length);
+    }
+
     function testCallModule() public {
         uint256 bytecodeSize;
         address theRouter = address(router);

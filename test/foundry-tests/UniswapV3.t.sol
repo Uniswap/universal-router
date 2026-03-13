@@ -214,7 +214,7 @@ contract UniswapV3Test is Test {
         bytes memory path = abi.encodePacked(address(tokenA), FEE, address(tokenB));
         uint256[] memory slippage = new uint256[](2); // wrong: 1 hop but 2 values
 
-        vm.expectRevert(V3SwapRouter.V3InvalidHopSlippageLength.selector);
+        vm.expectRevert(V3SwapRouter.V3HopSlippageAndPathLengthMismatch.selector);
         _executeV3ExactIn(RECIPIENT, 100 ether, 0, path, slippage);
     }
 
@@ -224,7 +224,7 @@ contract UniswapV3Test is Test {
         bytes memory path = abi.encodePacked(address(tokenB), FEE, address(tokenA));
         uint256[] memory slippage = new uint256[](2); // wrong: 1 hop but 2 values
 
-        vm.expectRevert(V3SwapRouter.V3InvalidHopSlippageLength.selector);
+        vm.expectRevert(V3SwapRouter.V3HopSlippageAndPathLengthMismatch.selector);
         _executeV3ExactOut(RECIPIENT, 90 ether, type(uint256).max, path, slippage);
     }
 

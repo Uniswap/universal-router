@@ -28,7 +28,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
     error V3InvalidCaller();
     error V3TooLittleReceivedPerHop(uint256 hopIndex, uint256 minPrice, uint256 price);
     error V3TooMuchRequestedPerHop(uint256 hopIndex, uint256 minPrice, uint256 price);
-    error V3InvalidHopSlippageLength();
+    error V3HopSlippageAndPathLengthMismatch();
 
     /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
     uint160 internal constant MIN_SQRT_RATIO = 4295128739;
@@ -105,11 +105,11 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
         uint256[] calldata maxHopSlippage
     ) internal {
         // Validate hop slippage array length
-        if (maxHopSlippage.length != 0) {
-            if (path.length <= Constants.ADDR_SIZE) revert V3InvalidHopSlippageLength();
-            uint256 numHops = (path.length - Constants.ADDR_SIZE) / Constants.NEXT_V3_POOL_OFFSET;
-            if (maxHopSlippage.length != numHops) revert V3InvalidHopSlippageLength();
-        }
+        // V3 path: token(20) + [fee(3) + token(20)] * numHops => path.length = (maxHopSlippage.length * 23) + 20
+        if (
+            maxHopSlippage.length != 0
+                && path.length != (maxHopSlippage.length * Constants.NEXT_V3_POOL_OFFSET) + Constants.ADDR_SIZE
+        ) revert V3HopSlippageAndPathLengthMismatch();
 
         // use amountIn == ActionConstants.CONTRACT_BALANCE as a flag to swap the entire balance of the contract
         if (amountIn == ActionConstants.CONTRACT_BALANCE) {
@@ -175,12 +175,11 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
         uint256[] calldata maxHopSlippage
     ) internal {
         // Validate hop slippage array length
-        // V3 path: token(20) + [fee(3) + token(20)]* => numHops = (path.length - 20) / 23
-        if (maxHopSlippage.length != 0) {
-            if (path.length <= Constants.ADDR_SIZE) revert V3InvalidHopSlippageLength();
-            uint256 numHops = (path.length - Constants.ADDR_SIZE) / Constants.NEXT_V3_POOL_OFFSET;
-            if (maxHopSlippage.length != numHops) revert V3InvalidHopSlippageLength();
-        }
+        // V3 path: token(20) + [fee(3) + token(20)] * numHops => path.length = (maxHopSlippage.length * 23) + 20
+        if (
+            maxHopSlippage.length != 0
+                && path.length != (maxHopSlippage.length * Constants.NEXT_V3_POOL_OFFSET) + Constants.ADDR_SIZE
+        ) revert V3HopSlippageAndPathLengthMismatch();
 
         // Convert calldata to memory for abi.encode in _swap
         uint256[] memory maxHopSlippageMemory = maxHopSlippage;
