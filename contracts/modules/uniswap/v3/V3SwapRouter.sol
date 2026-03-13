@@ -28,7 +28,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
     error V3InvalidCaller();
     error V3TooLittleReceivedPerHop(uint256 hopIndex, uint256 minPrice, uint256 price);
     error V3TooMuchRequestedPerHop(uint256 hopIndex, uint256 minPrice, uint256 price);
-    error V3HopSlippageAndPathLengthMismatch();
+    error V3HopPriceAndPathLengthMismatch();
 
     /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
     uint160 internal constant MIN_SQRT_RATIO = 4295128739;
@@ -38,7 +38,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         if (amount0Delta <= 0 && amount1Delta <= 0) revert V3InvalidSwap(); // swaps entirely within 0-liquidity regions are not supported
-        (, address payer, uint256[] memory maxHopSlippage, uint256 hopIndex) =
+        (, address payer, uint256[] memory minHopPriceX36, uint256 hopIndex) =
             abi.decode(data, (bytes, address, uint256[], uint256));
         bytes calldata path = data.toBytes(0);
 
@@ -56,11 +56,11 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
         } else {
             // either initiate the next swap or pay
             if (path.hasMultiplePools()) {
-                // Per-hop slippage check for exact-output intermediate hops
-                if (maxHopSlippage.length != 0) {
+                // Per-hop price check for exact-output intermediate hops
+                if (minHopPriceX36.length != 0) {
                     uint256 amountOut = uint256(-(amount0Delta > 0 ? amount1Delta : amount0Delta));
-                    uint256 price = amountOut * Constants.SLIPPAGE_PRECISION / amountToPay;
-                    uint256 minPrice = maxHopSlippage[hopIndex];
+                    uint256 price = amountOut * Constants.PRICE_PRECISION / amountToPay;
+                    uint256 minPrice = minHopPriceX36[hopIndex];
                     if (price < minPrice) revert V3TooMuchRequestedPerHop(hopIndex, minPrice, price);
                 }
                 // this is an intermediate step so the payer is actually this contract
@@ -71,16 +71,16 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
                     path,
                     payer,
                     false,
-                    maxHopSlippage,
+                    minHopPriceX36,
                     hopIndex > 0 ? hopIndex - 1 : 0
                 );
             } else {
                 if (amountToPay > MaxInputAmount.get()) revert V3TooMuchRequested();
-                // Per-hop slippage check for the first trading hop (last executed in exact-output)
-                if (maxHopSlippage.length != 0) {
+                // Per-hop price check for the first trading hop (last executed in exact-output)
+                if (minHopPriceX36.length != 0) {
                     uint256 amountOut = uint256(-(amount0Delta > 0 ? amount1Delta : amount0Delta));
-                    uint256 price = amountOut * Constants.SLIPPAGE_PRECISION / amountToPay;
-                    uint256 minPrice = maxHopSlippage[hopIndex];
+                    uint256 price = amountOut * Constants.PRICE_PRECISION / amountToPay;
+                    uint256 minPrice = minHopPriceX36[hopIndex];
                     if (price < minPrice) revert V3TooMuchRequestedPerHop(hopIndex, minPrice, price);
                 }
                 // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
@@ -95,21 +95,21 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
     /// @param amountOutMinimum The minimum desired amount of output tokens
     /// @param path The path of the trade as a bytes string
     /// @param payer The address that will be paying the input
-    /// @param maxHopSlippage Per-hop minimum price array (empty to disable)
+    /// @param minHopPriceX36 Per-hop minimum price array in 1e36 precision (empty to disable)
     function v3SwapExactInput(
         address recipient,
         uint256 amountIn,
         uint256 amountOutMinimum,
         bytes calldata path,
         address payer,
-        uint256[] calldata maxHopSlippage
+        uint256[] calldata minHopPriceX36
     ) internal {
-        // Validate hop slippage array length
-        // V3 path: token(20) + [fee(3) + token(20)] * numHops => path.length = (maxHopSlippage.length * 23) + 20
+        // Validate hop price array length
+        // V3 path: token(20) + [fee(3) + token(20)] * numHops => path.length = (minHopPriceX36.length * 23) + 20
         if (
-            maxHopSlippage.length != 0
-                && path.length != (maxHopSlippage.length * Constants.NEXT_V3_POOL_OFFSET) + Constants.ADDR_SIZE
-        ) revert V3HopSlippageAndPathLengthMismatch();
+            minHopPriceX36.length != 0
+                && path.length != (minHopPriceX36.length * Constants.NEXT_V3_POOL_OFFSET) + Constants.ADDR_SIZE
+        ) revert V3HopPriceAndPathLengthMismatch();
 
         // use amountIn == ActionConstants.CONTRACT_BALANCE as a flag to swap the entire balance of the contract
         if (amountIn == ActionConstants.CONTRACT_BALANCE) {
@@ -120,7 +120,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
         uint256 amountOut;
         uint256 hopIndex;
         uint256 previousAmountIn = amountIn;
-        uint256[] memory emptySlippage = new uint256[](0);
+        uint256[] memory emptyHopPrice = new uint256[](0);
         while (true) {
             bool hasMultiplePools = path.hasMultiplePools();
 
@@ -131,16 +131,16 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
                 path.getFirstPool(), // only the first pool is needed
                 payer, // for intermediate swaps, this contract custodies
                 true,
-                emptySlippage, // exact-in callbacks don't need slippage
+                emptyHopPrice, // exact-in callbacks don't need price checks
                 0
             );
 
             amountIn = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
 
-            // Per-hop slippage check for exact-input
-            if (maxHopSlippage.length != 0) {
-                uint256 price = amountIn * Constants.SLIPPAGE_PRECISION / previousAmountIn;
-                uint256 minPrice = maxHopSlippage[hopIndex];
+            // Per-hop price check for exact-input
+            if (minHopPriceX36.length != 0) {
+                uint256 price = amountIn * Constants.PRICE_PRECISION / previousAmountIn;
+                uint256 minPrice = minHopPriceX36[hopIndex];
                 if (price < minPrice) revert V3TooLittleReceivedPerHop(hopIndex, minPrice, price);
             }
 
@@ -165,35 +165,35 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
     /// @param amountInMaximum The maximum desired amount of input tokens
     /// @param path The path of the trade as a bytes string
     /// @param payer The address that will be paying the input
-    /// @param maxHopSlippage Per-hop minimum price array (empty to disable)
+    /// @param minHopPriceX36 Per-hop minimum price array in 1e36 precision (empty to disable)
     function v3SwapExactOutput(
         address recipient,
         uint256 amountOut,
         uint256 amountInMaximum,
         bytes calldata path,
         address payer,
-        uint256[] calldata maxHopSlippage
+        uint256[] calldata minHopPriceX36
     ) internal {
-        // Validate hop slippage array length
-        // V3 path: token(20) + [fee(3) + token(20)] * numHops => path.length = (maxHopSlippage.length * 23) + 20
+        // Validate hop price array length
+        // V3 path: token(20) + [fee(3) + token(20)] * numHops => path.length = (minHopPriceX36.length * 23) + 20
         if (
-            maxHopSlippage.length != 0
-                && path.length != (maxHopSlippage.length * Constants.NEXT_V3_POOL_OFFSET) + Constants.ADDR_SIZE
-        ) revert V3HopSlippageAndPathLengthMismatch();
+            minHopPriceX36.length != 0
+                && path.length != (minHopPriceX36.length * Constants.NEXT_V3_POOL_OFFSET) + Constants.ADDR_SIZE
+        ) revert V3HopPriceAndPathLengthMismatch();
 
         // Convert calldata to memory for abi.encode in _swap
-        uint256[] memory maxHopSlippageMemory = maxHopSlippage;
+        uint256[] memory minHopPriceX36Memory = minHopPriceX36;
 
         MaxInputAmount.set(amountInMaximum);
 
         // For exact-output, the first _swap handles the LAST trading hop.
         // Trading direction: hop 0 (A->B), hop 1 (B->C), ...
         // Execution: last hop first, then callbacks handle earlier hops.
-        // So start hopIndex at maxHopSlippage.length - 1 and decrement in callbacks.
-        uint256 startHopIndex = maxHopSlippageMemory.length > 0 ? maxHopSlippageMemory.length - 1 : 0;
+        // So start hopIndex at minHopPriceX36Memory.length - 1 and decrement in callbacks.
+        uint256 startHopIndex = minHopPriceX36Memory.length > 0 ? minHopPriceX36Memory.length - 1 : 0;
 
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) =
-            _swap(-amountOut.toInt256(), recipient, path, payer, false, maxHopSlippageMemory, startHopIndex);
+            _swap(-amountOut.toInt256(), recipient, path, payer, false, minHopPriceX36Memory, startHopIndex);
 
         uint256 amountOutReceived = zeroForOne ? uint256(-amount1Delta) : uint256(-amount0Delta);
 
@@ -210,7 +210,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
         bytes calldata path,
         address payer,
         bool isExactIn,
-        uint256[] memory maxHopSlippage,
+        uint256[] memory minHopPriceX36,
         uint256 hopIndex
     ) private returns (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) {
         (address tokenIn, uint24 fee, address tokenOut) = path.decodeFirstPool();
@@ -223,7 +223,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
                 zeroForOne,
                 amount,
                 (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1),
-                abi.encode(path, payer, maxHopSlippage, hopIndex)
+                abi.encode(path, payer, minHopPriceX36, hopIndex)
             );
     }
 

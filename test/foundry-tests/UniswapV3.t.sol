@@ -179,7 +179,7 @@ contract UniswapV3Test is Test {
 
     /// @notice This test catches the bug where hop 0 slippage was skipped in exact-output.
     /// Hop 0 (A→B) is the first trading hop but the last executed in exact-output.
-    /// With the bug, maxHopSlippage[0] was never checked.
+    /// With the bug, minHopPriceX36[0] was never checked.
     function testV3ExactOutputMultiHopSlippageFailHop0() public {
         deal(address(tokenA), address(router), 200 ether);
 
@@ -214,7 +214,7 @@ contract UniswapV3Test is Test {
         bytes memory path = abi.encodePacked(address(tokenA), FEE, address(tokenB));
         uint256[] memory slippage = new uint256[](2); // wrong: 1 hop but 2 values
 
-        vm.expectRevert(V3SwapRouter.V3HopSlippageAndPathLengthMismatch.selector);
+        vm.expectRevert(V3SwapRouter.V3HopPriceAndPathLengthMismatch.selector);
         _executeV3ExactIn(RECIPIENT, 100 ether, 0, path, slippage);
     }
 
@@ -224,7 +224,7 @@ contract UniswapV3Test is Test {
         bytes memory path = abi.encodePacked(address(tokenB), FEE, address(tokenA));
         uint256[] memory slippage = new uint256[](2); // wrong: 1 hop but 2 values
 
-        vm.expectRevert(V3SwapRouter.V3HopSlippageAndPathLengthMismatch.selector);
+        vm.expectRevert(V3SwapRouter.V3HopPriceAndPathLengthMismatch.selector);
         _executeV3ExactOut(RECIPIENT, 90 ether, type(uint256).max, path, slippage);
     }
 
@@ -237,11 +237,11 @@ contract UniswapV3Test is Test {
         uint256 amountIn,
         uint256 amountOutMin,
         bytes memory path,
-        uint256[] memory maxHopSlippage
+        uint256[] memory minHopPriceX36
     ) internal {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V3_SWAP_EXACT_IN)));
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(recipient, amountIn, amountOutMin, path, false, maxHopSlippage);
+        inputs[0] = abi.encode(recipient, amountIn, amountOutMin, path, false, minHopPriceX36);
         router.execute(commands, inputs);
     }
 
@@ -250,11 +250,11 @@ contract UniswapV3Test is Test {
         uint256 amountOut,
         uint256 amountInMax,
         bytes memory path,
-        uint256[] memory maxHopSlippage
+        uint256[] memory minHopPriceX36
     ) internal {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V3_SWAP_EXACT_OUT)));
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(recipient, amountOut, amountInMax, path, false, maxHopSlippage);
+        inputs[0] = abi.encode(recipient, amountOut, amountInMax, path, false, minHopPriceX36);
         router.execute(commands, inputs);
     }
 

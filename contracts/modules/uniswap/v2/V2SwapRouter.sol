@@ -14,14 +14,12 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     error V2TooMuchRequested();
     error V2InvalidPath();
     error V2TooLittleReceivedPerHop(uint256 hopIndex, uint256 minPrice, uint256 price);
-    error V2InvalidHopSlippageLength();
+    error V2InvalidHopPriceLength();
 
-    function _v2Swap(address[] calldata path, address recipient, address pair, uint256[] calldata maxHopSlippage)
+    function _v2Swap(address[] calldata path, address recipient, address pair, uint256[] calldata minHopPriceX36)
         private
     {
         unchecked {
-            if (path.length < 2) revert V2InvalidPath();
-
             // cached to save on duplicate operations
             (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
             uint256 finalPairIndex = path.length - 1;
@@ -33,9 +31,9 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                     input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
                 uint256 amountInput = ERC20(input).balanceOf(pair) - reserveInput;
                 uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
-                if (maxHopSlippage.length != 0) {
-                    uint256 price = amountOutput * Constants.SLIPPAGE_PRECISION / amountInput;
-                    uint256 minPrice = maxHopSlippage[i];
+                if (minHopPriceX36.length != 0) {
+                    uint256 price = amountOutput * Constants.PRICE_PRECISION / amountInput;
+                    uint256 minPrice = minHopPriceX36[i];
                     if (price < minPrice) revert V2TooLittleReceivedPerHop(i, minPrice, price);
                 }
                 (uint256 amount0Out, uint256 amount1Out) =
@@ -58,18 +56,18 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     /// @param amountOutMinimum The minimum desired amount of output tokens
     /// @param path The path of the trade as an array of token addresses
     /// @param payer The address that will be paying the input
-    /// @param maxHopSlippage Per-hop minimum price array (empty to disable)
+    /// @param minHopPriceX36 Per-hop minimum price array in 1e36 precision (empty to disable)
     function v2SwapExactInput(
         address recipient,
         uint256 amountIn,
         uint256 amountOutMinimum,
         address[] calldata path,
         address payer,
-        uint256[] calldata maxHopSlippage
+        uint256[] calldata minHopPriceX36
     ) internal {
         if (path.length < 2) revert V2InvalidPath();
-        if (maxHopSlippage.length != 0 && maxHopSlippage.length != path.length - 1) {
-            revert V2InvalidHopSlippageLength();
+        if (minHopPriceX36.length != 0 && minHopPriceX36.length != path.length - 1) {
+            revert V2InvalidHopPriceLength();
         }
 
         address firstPair =
@@ -83,7 +81,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         ERC20 tokenOut = ERC20(path[path.length - 1]);
         uint256 balanceBefore = tokenOut.balanceOf(recipient);
 
-        _v2Swap(path, recipient, firstPair, maxHopSlippage);
+        _v2Swap(path, recipient, firstPair, minHopPriceX36);
 
         uint256 amountOut = tokenOut.balanceOf(recipient) - balanceBefore;
         if (amountOut < amountOutMinimum) revert V2TooLittleReceived();
@@ -95,18 +93,18 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     /// @param amountInMaximum The maximum desired amount of input tokens
     /// @param path The path of the trade as an array of token addresses
     /// @param payer The address that will be paying the input
-    /// @param maxHopSlippage Per-hop minimum price array (empty to disable)
+    /// @param minHopPriceX36 Per-hop minimum price array in 1e36 precision (empty to disable)
     function v2SwapExactOutput(
         address recipient,
         uint256 amountOut,
         uint256 amountInMaximum,
         address[] calldata path,
         address payer,
-        uint256[] calldata maxHopSlippage
+        uint256[] calldata minHopPriceX36
     ) internal {
         if (path.length < 2) revert V2InvalidPath();
-        if (maxHopSlippage.length != 0 && maxHopSlippage.length != path.length - 1) {
-            revert V2InvalidHopSlippageLength();
+        if (minHopPriceX36.length != 0 && minHopPriceX36.length != path.length - 1) {
+            revert V2InvalidHopPriceLength();
         }
 
         (uint256 amountIn, address firstPair) =
@@ -114,6 +112,6 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         if (amountIn > amountInMaximum) revert V2TooMuchRequested();
 
         payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
-        _v2Swap(path, recipient, firstPair, maxHopSlippage);
+        _v2Swap(path, recipient, firstPair, minHopPriceX36);
     }
 }

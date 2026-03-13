@@ -78,9 +78,9 @@ abstract contract Dispatcher is
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         bytes calldata path = inputs.toBytes(3);
-                        uint256[] calldata maxHopSlippage = inputs.toUint256Array(5);
+                        uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, maxHopSlippage);
+                        v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, minHopPriceX36);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool, uint256[]))
                         address recipient;
@@ -95,9 +95,9 @@ abstract contract Dispatcher is
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         bytes calldata path = inputs.toBytes(3);
-                        uint256[] calldata maxHopSlippage = inputs.toUint256Array(5);
+                        uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, maxHopSlippage);
+                        v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, minHopPriceX36);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
                         // equivalent: abi.decode(inputs, (address, address, uint160))
                         address token;
@@ -189,9 +189,9 @@ abstract contract Dispatcher is
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         address[] calldata path = inputs.toAddressArray(3);
-                        uint256[] calldata maxHopSlippage = inputs.toUint256Array(5);
+                        uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, maxHopSlippage);
+                        v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, minHopPriceX36);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, address[], bool, uint256[]))
                         address recipient;
@@ -206,9 +206,9 @@ abstract contract Dispatcher is
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         address[] calldata path = inputs.toAddressArray(3);
-                        uint256[] calldata maxHopSlippage = inputs.toUint256Array(5);
+                        uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, maxHopSlippage);
+                        v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, minHopPriceX36);
                     } else if (command == Commands.PERMIT2_PERMIT) {
                         // equivalent: abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes))
                         IAllowanceTransfer.PermitSingle calldata permitSingle;
