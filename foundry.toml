@@ -33,6 +33,6 @@ sepolia = "https://rpc.sepolia.org"
 unichain_sepolia = "https://sepolia.unichain.org"
 base_sepolia = "https://sepolia.base.org"
 op_sepolia = "https://sepolia.optimism.io"
-mainnet = "https://mainnet.infura.io/v3/${INFURA_API_KEY}"
+mainnet = "${FORK_URL}"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

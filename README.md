@@ -131,10 +131,10 @@ Clone the repository with:
 git clone --recurse-submodules https://github.com/Uniswap/universal-router.git
 ```
 
-2. Create `.env` file with api key
+2. Create `.env` file with your fork/mainnet RPC URL
 
 ```
-INFURA_API_KEY='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+FORK_URL='https://your-mainnet-rpc-url'
 ```
 
 3. Run yarn commands to compile and test
