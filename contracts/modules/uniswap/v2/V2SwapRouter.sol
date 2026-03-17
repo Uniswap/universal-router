@@ -24,6 +24,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
             (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
             uint256 finalPairIndex = path.length - 1;
             uint256 penultimatePairIndex = finalPairIndex - 1;
+            bool minHopPricesActive = minHopPriceX36.length != 0;
             for (uint256 i; i < finalPairIndex; i++) {
                 (address input, address output) = (path[i], path[i + 1]);
                 (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
@@ -31,11 +32,6 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                     input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
                 uint256 amountInput = ERC20(input).balanceOf(pair) - reserveInput;
                 uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
-                if (minHopPriceX36.length != 0) {
-                    uint256 price = amountOutput * Constants.PRICE_PRECISION / amountInput;
-                    uint256 minPrice = minHopPriceX36[i];
-                    if (price < minPrice) revert V2TooLittleReceivedPerHop(i, minPrice, price);
-                }
                 (uint256 amount0Out, uint256 amount1Out) =
                     input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
                 address nextPair;
@@ -44,7 +40,18 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                         UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, output, path[i + 2]
                     )
                     : (recipient, address(0));
-                IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
+
+                // if minHopPrice is being used, we need to check output balance change
+                if (minHopPricesActive) {
+                    uint256 recipientBalance = ERC20(output).balanceOf(nextPair);
+                    IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
+                    amountOutput = ERC20(output).balanceOf(nextPair) - recipientBalance;
+                    uint256 price = amountOutput * Constants.PRICE_PRECISION / amountInput;
+                    uint256 minPrice = minHopPriceX36[i];
+                    if (price < minPrice) revert V2TooLittleReceivedPerHop(i, minPrice, price);
+                } else {
+                    IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
+                }
                 pair = nextPair;
             }
         }
