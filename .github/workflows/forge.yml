@@ -61,4 +61,4 @@ jobs:
           forge test --isolate -vvv
         id: test
         env:
-          FORK_URL: https://mainnet.infura.io/v3/${{ secrets.INFURA_API_KEY }}
+          FORK_URL: ${{ secrets.FORK_URL }}
