@@ -4,21 +4,21 @@ pragma solidity ^0.8.24;
 import {DeployUniversalRouter} from '../DeployUniversalRouter.s.sol';
 import {RouterParameters} from 'contracts/types/RouterParameters.sol';
 
-contract DeployCelo is DeployUniversalRouter {
+contract DeployMonad is DeployUniversalRouter {
     function setUp() public override {
         params = RouterParameters({
             permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
-            weth9: UNSUPPORTED_PROTOCOL,
-            v2Factory: 0x79a530c8e2fA8748B7B40dd3629C0520c2cCf03f,
-            v3Factory: 0xAfE208a311B21f13EF87E33A90049fC17A7acDEc,
+            weth9: 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A,
+            v2Factory: 0x182a927119D56008d921126764bF884221b10f59,
+            v3Factory: 0x204FAca1764B154221e35c0d20aBb3c525710498,
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
-            v4PoolManager: 0x288dc841A52FCA2707c6947B3A777c5E56cd87BC,
-            v3NFTPositionManager: 0x3d79EdAaBC0EaB6F08ED885C05Fc0B014290D95A,
-            v4PositionManager: 0xf7965f3981e4D5BC383BfBCb61501763e9068CA9,
+            v4PoolManager: 0x188d586Ddcf52439676Ca21A244753fA19F9Ea8e,
+            v3NFTPositionManager: 0x7197E214c0b767cFB76Fb734ab638E2c192F4E53,
+            v4PositionManager: 0x5b7eC4a94fF9beDb700fb82aB09d5846972F4016,
             spokePool: UNSUPPORTED_PROTOCOL
         });
 
-        unsupported = 0x5Dc88340E1c5c6366864Ee415d6034cadd1A9897;
+        unsupported = 0x8B844f885672f333Bc0042cB669255f93a4C1E6b;
     }
 }

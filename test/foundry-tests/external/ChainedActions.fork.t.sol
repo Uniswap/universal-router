@@ -40,9 +40,7 @@ contract ChainedActionsFork is Test {
 
             forked = true;
         } catch {
-            console2.log(
-                'Skipping forked tests, no fork RPC found. Add FORK_URL env var to .env to run forked tests.'
-            );
+            console2.log('Skipping forked tests, no fork RPC found. Add FORK_URL env var to .env to run forked tests.');
         }
     }
 
