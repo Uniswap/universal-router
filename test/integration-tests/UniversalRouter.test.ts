@@ -18,12 +18,12 @@ import {
 import { resetFork, WETH, DAI, PERMIT2 } from './shared/mainnetForkHelpers'
 import { CommandType, RoutePlanner } from './shared/planner'
 import { makePair } from './shared/swapRouter02Helpers'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './shared/helpers'
 import hre from 'hardhat'
 
 const { ethers } = hre
-const routerInterface = new ethers.utils.Interface(ROUTER_ABI)
+const routerInterface = new ethers.Interface(ROUTER_ABI)
 
 describe('UniversalRouter', () => {
   let alice: SignerWithAddress
@@ -41,11 +41,11 @@ describe('UniversalRouter', () => {
       params: [ALICE_ADDRESS],
     })
 
-    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as ERC20
-    wethContract = new ethers.Contract(WETH.address, WETH_ABI, alice) as IWETH9
+    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, alice) as unknown as ERC20
+    wethContract = new ethers.Contract(WETH.address, WETH_ABI, alice) as unknown as IWETH9
     pair_DAI_WETH = await makePair(alice, DAI, WETH)
-    permit2 = PERMIT2.connect(alice) as IPermit2
-    router = (await deployUniversalRouter(alice.address)).connect(alice) as UniversalRouter
+    permit2 = PERMIT2.connect(alice) as unknown as IPermit2
+    router = (await deployUniversalRouter(alice.address)).connect(alice) as unknown as UniversalRouter
   })
 
   describe('#execute', () => {
@@ -54,10 +54,12 @@ describe('UniversalRouter', () => {
 
     beforeEach(async () => {
       planner = new RoutePlanner()
-      await daiContract.approve(permit2.address, MAX_UINT)
-      await wethContract.approve(permit2.address, MAX_UINT)
-      await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
-      await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
+      const permit2Address = await permit2.getAddress()
+      const routerAddress = await router.getAddress()
+      await daiContract.approve(permit2Address, MAX_UINT)
+      await wethContract.approve(permit2Address, MAX_UINT)
+      await permit2.approve(DAI.address, routerAddress, MAX_UINT160, DEADLINE)
+      await permit2.approve(WETH.address, routerAddress, MAX_UINT160, DEADLINE)
     })
 
     it('reverts if block.timestamp exceeds the deadline', async () => {
@@ -103,7 +105,7 @@ describe('UniversalRouter', () => {
     })
 
     it('reverts if paying a portion over 100% of contract balance', async () => {
-      await daiContract.transfer(router.address, expandTo18DecimalsBN(1))
+      await daiContract.transfer(await router.getAddress(), expandTo18DecimalsBN(1))
       planner.addCommand(CommandType.PAY_PORTION, [WETH.address, alice.address, 11_000])
       planner.addCommand(CommandType.SWEEP, [WETH.address, alice.address, 1])
       const { commands, inputs } = planner
@@ -120,10 +122,13 @@ describe('UniversalRouter', () => {
       const sweepCalldata = routerInterface.encodeFunctionData('execute(bytes,bytes[])', [commands, inputs])
 
       const reentrantWETH = await (await ethers.getContractFactory('ReenteringWETH')).deploy()
-      router = (await deployUniversalRouter(alice.address, undefined, reentrantWETH.address)).connect(
+      await reentrantWETH.waitForDeployment()
+      const reentrantWETHAddress = await reentrantWETH.getAddress()
+      router = (await deployUniversalRouter(alice.address, undefined, reentrantWETHAddress)).connect(
         alice
-      ) as UniversalRouter
-      await reentrantWETH.setParameters(router.address, sweepCalldata)
+      ) as unknown as UniversalRouter
+      const routerAddr = await router.getAddress()
+      await reentrantWETH.setParameters(routerAddr, sweepCalldata)
 
       planner = new RoutePlanner()
       const value = expandTo18DecimalsBN(1)
