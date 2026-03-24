@@ -1,7 +1,6 @@
-import type { Contract } from '@ethersproject/contracts'
+import { Contract } from 'ethers'
 import { Pair } from '@uniswap/v2-sdk'
 import { expect } from './shared/expect'
-import { BigNumber } from 'ethers'
 import { IPermit2, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, PERMIT2 } from './shared/mainnetForkHelpers'
@@ -18,7 +17,7 @@ import {
   SOURCE_ROUTER,
 } from './shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
@@ -36,8 +35,10 @@ describe('Uniswap V2 Tests:', () => {
   let wethContract: Contract
   let usdcContract: Contract
   let planner: RoutePlanner
+  let permit2Address: string
+  let routerAddress: string
 
-  const amountIn: BigNumber = expandTo18DecimalsBN(5)
+  const amountIn: bigint = expandTo18DecimalsBN(5)
 
   beforeEach(async () => {
     await resetFork()
@@ -50,8 +51,10 @@ describe('Uniswap V2 Tests:', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
-    permit2 = PERMIT2.connect(bob) as IPermit2
-    router = (await deployUniversalRouter(bob.address)) as UniversalRouter
+    permit2 = PERMIT2.connect(bob) as unknown as IPermit2
+    router = (await deployUniversalRouter(bob.address)) as unknown as UniversalRouter
+    permit2Address = await permit2.getAddress()
+    routerAddress = await router.getAddress()
     planner = new RoutePlanner()
 
     // alice gives bob some tokens
@@ -60,13 +63,13 @@ describe('Uniswap V2 Tests:', () => {
     await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(100000))
 
     // Bob max-approves the permit2 contract to access his DAI and WETH
-    await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
-    await wethContract.connect(bob).approve(permit2.address, MAX_UINT)
-    await usdcContract.connect(bob).approve(permit2.address, MAX_UINT)
+    await daiContract.connect(bob).approve(permit2Address, MAX_UINT)
+    await wethContract.connect(bob).approve(permit2Address, MAX_UINT)
+    await usdcContract.connect(bob).approve(permit2Address, MAX_UINT)
 
     // for these tests Bob gives the router max approval on permit2
-    await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
-    await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
+    await permit2.approve(DAI.address, routerAddress, MAX_UINT160, DEADLINE)
+    await permit2.approve(WETH.address, routerAddress, MAX_UINT160, DEADLINE)
   })
 
   describe('Trade on Uniswap with Permit2, giving approval every time', () => {
@@ -74,7 +77,7 @@ describe('Uniswap V2 Tests:', () => {
 
     beforeEach(async () => {
       // cancel the permit on DAI
-      await permit2.approve(DAI.address, router.address, 0, 0)
+      await permit2.approve(DAI.address, routerAddress, 0, 0)
     })
 
     it('Permit2 can silently fail', async () => {
@@ -88,7 +91,7 @@ describe('Uniswap V2 Tests:', () => {
           expiration: 0, // expiration of 0 is block.timestamp
           nonce: 0, // this is his first trade
         },
-        spender: router.address,
+        spender: routerAddress,
         sigDeadline: DEADLINE,
       }
       const sig = await getPermitSignature(permit, bob, permit2)
@@ -99,12 +102,12 @@ describe('Uniswap V2 Tests:', () => {
       // 2) permit the router to access funds again, allowing revert
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig], true)
 
-      let nonce = (await permit2.allowance(bob.address, DAI.address, router.address)).nonce
+      let nonce = (await permit2.allowance(bob.address, DAI.address, routerAddress)).nonce
       expect(nonce).to.eq(0)
 
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
-      nonce = (await permit2.allowance(bob.address, DAI.address, router.address)).nonce
+      nonce = (await permit2.allowance(bob.address, DAI.address, routerAddress)).nonce
       expect(nonce).to.eq(1)
     })
 
@@ -120,7 +123,7 @@ describe('Uniswap V2 Tests:', () => {
           expiration: 0, // expiration of 0 is block.timestamp
           nonce: 0, // this is his first trade
         },
-        spender: router.address,
+        spender: routerAddress,
         sigDeadline: DEADLINE,
       }
       const sig = await getPermitSignature(permit, bob, permit2)
@@ -142,8 +145,8 @@ describe('Uniswap V2 Tests:', () => {
         daiContract,
         usdcContract
       )
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
-      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.gte(minAmountOutWETH)
+      expect(daiBalanceBefore - daiBalanceAfter).to.be.eq(amountInDAI)
     })
 
     it('V2 exactOut, permiting the maxAmountIn', async () => {
@@ -158,7 +161,7 @@ describe('Uniswap V2 Tests:', () => {
           expiration: 0, // expiration of 0 is block.timestamp
           nonce: 0, // this is his first trade
         },
-        spender: router.address,
+        spender: routerAddress,
         sigDeadline: DEADLINE,
       }
       const sig = await getPermitSignature(permit, bob, permit2)
@@ -180,12 +183,12 @@ describe('Uniswap V2 Tests:', () => {
         daiContract,
         usdcContract
       )
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
-      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.eq(amountOutWETH)
+      expect(daiBalanceBefore - daiBalanceAfter).to.be.lte(maxAmountInDAI)
     })
 
     it('V2 exactIn, swapping more than max_uint160 should revert', async () => {
-      const max_uint = BigNumber.from(MAX_UINT160)
+      const max_uint = BigInt(MAX_UINT160)
       const minAmountOutWETH = expandTo18DecimalsBN(0.03)
 
       // second bob signs a permit to allow the router to access his DAI
@@ -196,7 +199,7 @@ describe('Uniswap V2 Tests:', () => {
           expiration: 0, // expiration of 0 is block.timestamp
           nonce: 0, // this is his first trade
         },
-        spender: router.address,
+        spender: routerAddress,
         sigDeadline: DEADLINE,
       }
       const sig = await getPermitSignature(permit, bob, permit2)
@@ -205,7 +208,7 @@ describe('Uniswap V2 Tests:', () => {
       planner.addCommand(CommandType.PERMIT2_PERMIT, [permit, sig])
       planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
         MSG_SENDER,
-        BigNumber.from(MAX_UINT160).add(1),
+        BigInt(MAX_UINT160) + 1n,
         minAmountOutWETH,
         [DAI.address, WETH.address],
         SOURCE_MSG_SENDER,
@@ -236,7 +239,7 @@ describe('Uniswap V2 Tests:', () => {
         daiContract,
         usdcContract
       )
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gt(minAmountOut)
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.gt(minAmountOut)
     })
 
     it('completes a V2 exactOut swap', async () => {
@@ -257,7 +260,7 @@ describe('Uniswap V2 Tests:', () => {
         daiContract,
         usdcContract
       )
-      expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.gt(amountOut)
+      expect(daiBalanceAfter - daiBalanceBefore).to.be.gt(amountOut)
     })
 
     it('exactIn trade, where an output fee is taken', async () => {
@@ -281,14 +284,14 @@ describe('Uniswap V2 Tests:', () => {
       const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
       const wethBalanceAfterBob = await wethContract.balanceOf(bob.address)
 
-      const aliceFee = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
-      const bobEarnings = wethBalanceAfterBob.sub(wethBalanceBeforeBob)
+      const aliceFee = wethBalanceAfterAlice - wethBalanceBeforeAlice
+      const bobEarnings = wethBalanceAfterBob - wethBalanceBeforeBob
 
       expect(bobEarnings).to.be.gt(0)
       expect(aliceFee).to.be.gt(0)
 
       // total fee is 1% of bob's output
-      expect(aliceFee.add(bobEarnings).mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
+      expect(((aliceFee + bobEarnings) * BigInt(ONE_PERCENT_BIPS)) / 10000n).to.eq(aliceFee)
     })
 
     it('completes a V2 exactIn swap with longer path', async () => {
@@ -309,7 +312,7 @@ describe('Uniswap V2 Tests:', () => {
         daiContract,
         usdcContract
       )
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gt(minAmountOut)
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.gt(minAmountOut)
     })
   })
 
@@ -334,7 +337,7 @@ describe('Uniswap V2 Tests:', () => {
       )
       const { amount1Out: wethTraded } = v2SwapEventArgs!
 
-      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(wethTraded.sub(gasSpent))
+      expect(ethBalanceAfter - ethBalanceBefore).to.eq(wethTraded - gasSpent)
     })
 
     it('completes a V2 exactOut swap', async () => {
@@ -358,14 +361,14 @@ describe('Uniswap V2 Tests:', () => {
         usdcContract
       )
       const { amount1Out: wethTraded } = v2SwapEventArgs!
-      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(amountOut.sub(gasSpent))
+      expect(ethBalanceAfter - ethBalanceBefore).to.eq(amountOut - gasSpent)
       expect(wethTraded).to.eq(amountOut)
     })
 
     it('completes a V2 exactOut swap, with ETH fee', async () => {
       const amountOut = expandTo18DecimalsBN(1)
-      const totalPortion = amountOut.mul(ONE_PERCENT_BIPS).div(10000)
-      const actualAmountOut = amountOut.sub(totalPortion)
+      const totalPortion = (amountOut * BigInt(ONE_PERCENT_BIPS)) / 10000n
+      const actualAmountOut = amountOut - totalPortion
 
       planner.addCommand(CommandType.V2_SWAP_EXACT_OUT, [
         ADDRESS_THIS,
@@ -411,8 +414,8 @@ describe('Uniswap V2 Tests:', () => {
       )
       const { amount0Out: daiTraded } = v2SwapEventArgs!
 
-      expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.gt(minAmountOut)
-      expect(daiBalanceAfter.sub(daiBalanceBefore)).to.equal(daiTraded)
+      expect(daiBalanceAfter - daiBalanceBefore).to.be.gt(minAmountOut)
+      expect(daiBalanceAfter - daiBalanceBefore).to.equal(daiTraded)
     })
 
     it('completes a V2 exactOut swap', async () => {
@@ -432,9 +435,9 @@ describe('Uniswap V2 Tests:', () => {
       const { ethBalanceBefore, ethBalanceAfter, daiBalanceBefore, daiBalanceAfter, v2SwapEventArgs, gasSpent } =
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract, value)
       const { amount0Out: daiTraded, amount1In: wethTraded } = v2SwapEventArgs!
-      expect(daiBalanceAfter.sub(daiBalanceBefore)).gt(amountOut) // rounding
-      expect(daiBalanceAfter.sub(daiBalanceBefore)).eq(daiTraded)
-      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.eq(wethTraded.add(gasSpent))
+      expect(daiBalanceAfter - daiBalanceBefore).gt(amountOut) // rounding
+      expect(daiBalanceAfter - daiBalanceBefore).eq(daiTraded)
+      expect(ethBalanceBefore - ethBalanceAfter).to.eq(wethTraded + gasSpent)
     })
   })
 })
