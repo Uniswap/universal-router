@@ -1,28 +1,27 @@
-import { BigNumberish, constants, Signature } from 'ethers'
-import { splitSignature } from 'ethers/lib/utils'
+import { BigNumberish, MaxUint256, Signature, ethers } from 'ethers'
 import { PositionManager } from '../../../typechain'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
 
 export default async function getPermitV4Signature(
   wallet: SignerWithAddress,
   positionManager: PositionManager,
   spender: string,
   tokenId: BigNumberish,
-  deadline: BigNumberish = constants.MaxUint256,
+  deadline: BigNumberish = MaxUint256,
   permitConfig?: { nonce?: BigNumberish; name?: string; chainId?: number; version?: string }
 ): Promise<Signature> {
   const [nonce, name, chainId] = await Promise.all([
     permitConfig?.nonce ?? 0,
     permitConfig?.name ?? positionManager.name(),
-    permitConfig?.chainId ?? wallet.getChainId(),
+    permitConfig?.chainId ?? wallet.provider!.getNetwork().then((n) => Number(n.chainId)),
   ])
 
-  return splitSignature(
-    await wallet._signTypedData(
+  return ethers.Signature.from(
+    await wallet.signTypedData(
       {
         name,
         chainId,
-        verifyingContract: positionManager.address,
+        verifyingContract: await positionManager.getAddress(),
       },
       {
         Permit: [
