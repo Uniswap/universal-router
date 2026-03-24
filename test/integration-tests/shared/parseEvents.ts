@@ -1,7 +1,4 @@
-import { Interface, LogDescription } from '@ethersproject/abi'
-import { TransactionReceipt } from '@ethersproject/abstract-provider'
-import hre from 'hardhat'
-const { ethers } = hre
+import { Interface, LogDescription, TransactionReceipt, id } from 'ethers'
 
 export const V2_EVENTS = new Interface([
   'event Swap(address indexed sender, uint amount0In, uint amount1In, uint amount0Out, uint amount1Out, address indexed to)',
@@ -13,14 +10,14 @@ export const V3_EVENTS = new Interface([
 
 export function parseEvents(iface: Interface, receipt: TransactionReceipt): (LogDescription | undefined)[] {
   return receipt.logs
-    .map((log: { topics: Array<string>; data: string }) => {
+    .map((log: { topics: ReadonlyArray<string>; data: string }) => {
       try {
         return iface.parseLog(log)
       } catch (e) {
         return undefined
       }
     })
-    .filter((n: LogDescription | undefined) => n)
+    .filter((n: LogDescription | undefined | null) => n)
 }
 
 export function findCustomErrorSelector(iface: any, name: string): string | undefined {
@@ -31,7 +28,7 @@ export function findCustomErrorSelector(iface: any, name: string): string | unde
   }
 
   const [customErrorSignature] = customErrorEntry
-  const customErrorSelector = ethers.utils.id(customErrorSignature).slice(0, 10)
+  const customErrorSelector = id(customErrorSignature).slice(0, 10)
 
   return customErrorSelector
 }
