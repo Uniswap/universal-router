@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2018",
+    "target": "es2020",
     "module": "commonjs",
     "strict": true,
     "esModuleInterop": true,
@@ -8,9 +8,9 @@
     "outDir": "dist",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "lib": ["esnext.string"],
+    "lib": ["es2020", "esnext.string"],
     "typeRoots": ["./typechain", "./node_modules/@types"],
-    "types": ["@nomiclabs/hardhat-ethers"]
+    "types": ["@nomicfoundation/hardhat-ethers/types", "@nomicfoundation/hardhat-chai-matchers"]
   },
   "include": ["./test"],
   "files": ["./hardhat.config.ts"]
