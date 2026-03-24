@@ -3,11 +3,11 @@ import { expect } from './shared/expect'
 import { UniversalRouter } from '../../typechain'
 import { resetFork, USDC } from './shared/mainnetForkHelpers'
 import { ALICE_ADDRESS, DEADLINE } from './shared/constants'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
 import hre from 'hardhat'
 import deployUniversalRouter from './shared/deployUniversalRouter'
 import { findCustomErrorSelector } from './shared/parseEvents'
-import { BigNumber, Contract } from 'ethers'
+import { Contract } from 'ethers'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 const { ethers } = hre
 
@@ -17,7 +17,7 @@ describe('Check Ownership', () => {
   let planner: RoutePlanner
 
   describe('checks balance ERC20', () => {
-    let aliceUSDCBalance: BigNumber
+    let aliceUSDCBalance: bigint
     let usdcContract: Contract
 
     beforeEach(async () => {
@@ -27,7 +27,7 @@ describe('Check Ownership', () => {
         params: [ALICE_ADDRESS],
       })
       alice = await ethers.getSigner(ALICE_ADDRESS)
-      router = (await deployUniversalRouter(alice.address)).connect(alice) as UniversalRouter
+      router = (await deployUniversalRouter(alice.address)).connect(alice) as unknown as UniversalRouter
       usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, alice)
       aliceUSDCBalance = await usdcContract.balanceOf(ALICE_ADDRESS)
       planner = new RoutePlanner()
@@ -41,7 +41,7 @@ describe('Check Ownership', () => {
     })
 
     it('reverts for insufficient balance', async () => {
-      const invalidBalance = aliceUSDCBalance.add(1)
+      const invalidBalance = aliceUSDCBalance + 1n
       planner.addCommand(CommandType.BALANCE_CHECK_ERC20, [ALICE_ADDRESS, USDC.address, invalidBalance])
 
       const { commands, inputs } = planner
