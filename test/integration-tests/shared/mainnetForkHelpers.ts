@@ -4,9 +4,9 @@ import { abi as INonfungiblePositionManager_ABI } from '../../../artifacts/@unis
 import { PERMIT2_ADDRESS, V3_NFT_POSITION_MANAGER_MAINNET } from './constants'
 import { abi as V2_PAIR_ABI } from '../../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol/IUniswapV2Pair.json'
 import { Currency, Token, WETH9 } from '@uniswap/sdk-core'
-import { TransactionResponse } from '@ethersproject/abstract-provider'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { BigNumber, constants } from 'ethers'
+import { TransactionResponse } from 'ethers'
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
+import { MaxUint256 } from 'ethers'
 import hre from 'hardhat'
 import { MethodParameters } from '@uniswap/v3-sdk'
 import { Pair } from '@uniswap/v2-sdk'
@@ -32,15 +32,13 @@ export const approveSwapRouter02 = async (
       await (await aliceTokenIn.approve(overrideSwapRouter02Address ?? SWAP_ROUTER_V2, 0)).wait()
     }
 
-    return await (
-      await aliceTokenIn.approve(overrideSwapRouter02Address ?? SWAP_ROUTER_V2, constants.MaxUint256)
-    ).wait()
+    return await (await aliceTokenIn.approve(overrideSwapRouter02Address ?? SWAP_ROUTER_V2, MaxUint256)).wait()
   }
 }
 
 type Reserves = {
-  reserve0: BigNumber
-  reserve1: BigNumber
+  reserve0: bigint
+  reserve1: bigint
 }
 
 export const getV2PoolReserves = async (alice: SignerWithAddress, tokenA: Token, tokenB: Token): Promise<Reserves> => {
@@ -63,9 +61,9 @@ export const approveAndExecuteSwapRouter02 = async (
   const transaction = {
     data: methodParameters.calldata,
     to: SWAP_ROUTER_V2,
-    value: BigNumber.from(methodParameters.value),
+    value: BigInt(methodParameters.value),
     from: alice.address,
-    gasPrice: BigNumber.from(2000000000000),
+    gasPrice: BigInt(2000000000000),
     type: 1,
   }
 
@@ -80,9 +78,9 @@ export const executeSwapRouter02Swap = async (
   const transaction = {
     data: methodParameters.calldata,
     to: SWAP_ROUTER_V2,
-    value: BigNumber.from(methodParameters.value),
+    value: BigInt(methodParameters.value),
     from: alice.address,
-    gasPrice: BigNumber.from(2000000000000),
+    gasPrice: BigInt(2000000000000),
     type: 1,
   }
 
@@ -104,9 +102,9 @@ export const resetFork = async () => {
   })
 }
 
-export const PERMIT2 = new ethers.Contract(PERMIT2_ADDRESS, PERMIT2_ABI) as IPermit2
+export const PERMIT2 = new ethers.Contract(PERMIT2_ADDRESS, PERMIT2_ABI) as unknown as IPermit2
 
 export const V3_NFT_POSITION_MANAGER = new ethers.Contract(
   V3_NFT_POSITION_MANAGER_MAINNET,
   INonfungiblePositionManager_ABI
-) as INonfungiblePositionManager
+) as unknown as INonfungiblePositionManager

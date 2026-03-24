@@ -23,7 +23,7 @@ export async function deployRouter(
   if (v4PoolManager) {
     poolManager = v4PoolManager
   } else if (owner !== undefined) {
-    poolManager = (await deployV4PoolManager(owner)).address
+    poolManager = await (await deployV4PoolManager(owner)).getAddress()
   } else {
     throw new Error('Either v4PoolManager must be set or owner must be provided')
   }
@@ -36,9 +36,9 @@ export async function deployRouter(
     poolInitCodeHash: V3_INIT_CODE_HASH_MAINNET,
     v4PoolManager: poolManager,
     v3NFTPositionManager: V3_NFT_POSITION_MANAGER_MAINNET,
-    v4PositionManager: (
+    v4PositionManager: await (
       await deployV4PositionManager(poolManager, PERMIT2_ADDRESS, V4_POSITION_DESCRIPTOR_ADDRESS, WETH)
-    ).address,
+    ).getAddress(),
     spokePool: '0x0000000000000000000000000000000000000000',
   }
 
