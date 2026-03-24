@@ -1,6 +1,5 @@
-import type { Contract } from '@ethersproject/contracts'
+import { Contract } from 'ethers'
 import { expect } from './shared/expect'
-import { BigNumber, BigNumberish } from 'ethers'
 import { IPermit2, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, PERMIT2 } from './shared/mainnetForkHelpers'
@@ -15,7 +14,7 @@ import {
   SOURCE_ROUTER,
 } from './shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 import hre from 'hardhat'
@@ -34,10 +33,12 @@ describe('Uniswap V3 Tests:', () => {
   let wethContract: Contract
   let usdcContract: Contract
   let planner: RoutePlanner
+  let permit2Address: string
+  let routerAddress: string
 
-  const amountIn: BigNumber = expandTo18DecimalsBN(500)
-  const amountInMax: BigNumber = expandTo18DecimalsBN(5000)
-  const amountOut: BigNumber = expandTo18DecimalsBN(1)
+  const amountIn: bigint = expandTo18DecimalsBN(500)
+  const amountInMax: bigint = expandTo18DecimalsBN(5000)
+  const amountOut: bigint = expandTo18DecimalsBN(1)
 
   beforeEach(async () => {
     await resetFork()
@@ -50,29 +51,31 @@ describe('Uniswap V3 Tests:', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
-    permit2 = PERMIT2.connect(bob) as IPermit2
-    router = (await deployUniversalRouter(bob.address)) as UniversalRouter
+    permit2 = PERMIT2.connect(bob) as unknown as IPermit2
+    router = (await deployUniversalRouter(bob.address)) as unknown as UniversalRouter
     planner = new RoutePlanner()
+    permit2Address = await permit2.getAddress()
+    routerAddress = await router.getAddress()
 
     // alice gives bob some tokens
-    await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100000))
-    await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100))
-    await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(100000))
+    await (daiContract.connect(alice) as Contract).transfer(bob.address, expandTo18DecimalsBN(100000))
+    await (wethContract.connect(alice) as Contract).transfer(bob.address, expandTo18DecimalsBN(100))
+    await (usdcContract.connect(alice) as Contract).transfer(bob.address, expandTo6DecimalsBN(100000))
 
     // Bob max-approves the permit2 contract to access his DAI and WETH
-    await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
-    await wethContract.connect(bob).approve(permit2.address, MAX_UINT)
-    await usdcContract.connect(bob).approve(permit2.address, MAX_UINT)
+    await (daiContract.connect(bob) as Contract).approve(permit2Address, MAX_UINT)
+    await (wethContract.connect(bob) as Contract).approve(permit2Address, MAX_UINT)
+    await (usdcContract.connect(bob) as Contract).approve(permit2Address, MAX_UINT)
 
     // for these tests Bob gives the router max approval on permit2
-    await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
-    await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
+    await permit2.approve(DAI.address, routerAddress, MAX_UINT160, DEADLINE)
+    await permit2.approve(WETH.address, routerAddress, MAX_UINT160, DEADLINE)
   })
 
   const addV3ExactInTrades = (
     planner: RoutePlanner,
-    numTrades: BigNumberish,
-    amountOutMin: BigNumberish,
+    numTrades: number,
+    amountOutMin: bigint | number,
     recipient?: string,
     tokens: string[] = [DAI.address, WETH.address],
     tokenSource: boolean = SOURCE_MSG_SENDER
@@ -102,7 +105,7 @@ describe('Uniswap V3 Tests:', () => {
       const minAmountOutWETH = expandTo18DecimalsBN(0.02)
 
       // first bob approves permit2 to access his DAI
-      await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
+      await (daiContract.connect(bob) as Contract).approve(permit2Address, MAX_UINT)
 
       // second bob signs a permit to allow the router to access his DAI
       permit = {
@@ -112,7 +115,7 @@ describe('Uniswap V3 Tests:', () => {
           expiration: 0, // expiration of 0 is block.timestamp
           nonce: 0, // this is his first trade
         },
-        spender: router.address,
+        spender: routerAddress,
         sigDeadline: DEADLINE,
       }
       const sig = await getPermitSignature(permit, bob, permit2)
@@ -136,8 +139,8 @@ describe('Uniswap V3 Tests:', () => {
         daiContract,
         usdcContract
       )
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutWETH)
-      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.gte(minAmountOutWETH)
+      expect(daiBalanceBefore - daiBalanceAfter).to.be.eq(amountInDAI)
     })
 
     it('V3 exactOut, permiting the exact amount', async () => {
@@ -145,7 +148,7 @@ describe('Uniswap V3 Tests:', () => {
       const amountOutWETH = expandTo18DecimalsBN(1)
 
       // first bob approves permit2 to access his DAI
-      await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
+      await (daiContract.connect(bob) as Contract).approve(permit2Address, MAX_UINT)
 
       // second bob signs a permit to allow the router to access his DAI
       permit = {
@@ -155,7 +158,7 @@ describe('Uniswap V3 Tests:', () => {
           expiration: 0, // expiration of 0 is block.timestamp
           nonce: 0, // this is his first trade
         },
-        spender: router.address,
+        spender: routerAddress,
         sigDeadline: DEADLINE,
       }
       const sig = await getPermitSignature(permit, bob, permit2)
@@ -179,14 +182,14 @@ describe('Uniswap V3 Tests:', () => {
         daiContract,
         usdcContract
       )
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutWETH)
-      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.eq(amountOutWETH)
+      expect(daiBalanceBefore - daiBalanceAfter).to.be.lte(maxAmountInDAI)
     })
   })
 
   describe('ERC20 --> ERC20', () => {
     it('completes a V3 exactIn swap', async () => {
-      const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
+      const amountOutMin: bigint = expandTo18DecimalsBN(0.0005)
       addV3ExactInTrades(planner, 1, amountOutMin)
 
       const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(
@@ -198,8 +201,8 @@ describe('Uniswap V3 Tests:', () => {
         usdcContract
       )
       const { amount1: wethTraded } = v3SwapEventArgs!
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(amountOutMin)
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(wethTraded.mul(-1))
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.gte(amountOutMin)
+      expect(wethBalanceAfter - wethBalanceBefore).to.eq(-wethTraded)
     })
 
     it('completes a V3 exactIn swap with longer path', async () => {
@@ -222,9 +225,9 @@ describe('Uniswap V3 Tests:', () => {
         usdcBalanceAfter,
       } = await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
-      expect(daiBalanceBefore.sub(amountIn)).to.eq(daiBalanceAfter)
+      expect(daiBalanceBefore - amountIn).to.eq(daiBalanceAfter)
       expect(wethBalanceAfter).to.eq(wethBalanceBefore)
-      expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(amountOutMin)
+      expect(usdcBalanceAfter - usdcBalanceBefore).to.be.gte(amountOutMin)
     })
 
     it('completes a V3 exactOut swap', async () => {
@@ -243,7 +246,7 @@ describe('Uniswap V3 Tests:', () => {
         usdcContract
       )
       const { amount0: daiTraded } = v3SwapEventArgs!
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.eq(amountOut)
+      expect(wethBalanceAfter - wethBalanceBefore).to.eq(amountOut)
       expect(daiTraded).to.be.lt(amountInMax)
     })
 
@@ -258,13 +261,13 @@ describe('Uniswap V3 Tests:', () => {
       const balanceWethBefore = await wethContract.balanceOf(bob.address)
       await router.connect(bob)['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
       const balanceWethAfter = await wethContract.balanceOf(bob.address)
-      expect(balanceWethAfter.sub(balanceWethBefore)).to.eq(amountOut)
+      expect(balanceWethAfter - balanceWethBefore).to.eq(amountOut)
     })
   })
 
   describe('ERC20 --> ETH', () => {
     it('completes a V3 exactIn swap', async () => {
-      const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
+      const amountOutMin: bigint = expandTo18DecimalsBN(0.0005)
       addV3ExactInTrades(planner, 1, amountOutMin, ADDRESS_THIS)
       planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, 0])
 
@@ -278,8 +281,8 @@ describe('Uniswap V3 Tests:', () => {
       )
       const { amount1: wethTraded } = v3SwapEventArgs!
 
-      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.gte(amountOutMin.sub(gasSpent))
-      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(wethTraded.mul(-1).sub(gasSpent))
+      expect(ethBalanceAfter - ethBalanceBefore).to.be.gte(amountOutMin - gasSpent)
+      expect(ethBalanceAfter - ethBalanceBefore).to.eq(-wethTraded - gasSpent)
     })
 
     it('completes a V3 exactOut swap', async () => {
@@ -299,14 +302,14 @@ describe('Uniswap V3 Tests:', () => {
         usdcContract
       )
 
-      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.eq(amountOut.sub(gasSpent))
+      expect(ethBalanceAfter - ethBalanceBefore).to.eq(amountOut - gasSpent)
     })
   })
 
   describe('ETH --> ERC20', () => {
     it('completes a V3 exactIn swap', async () => {
       const tokens = [WETH.address, DAI.address]
-      const amountOutMin: BigNumber = expandTo18DecimalsBN(0.0005)
+      const amountOutMin: bigint = expandTo18DecimalsBN(0.0005)
 
       planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, amountIn])
       addV3ExactInTrades(planner, 1, amountOutMin, MSG_SENDER, tokens, SOURCE_ROUTER)
@@ -321,8 +324,8 @@ describe('Uniswap V3 Tests:', () => {
         amountIn
       )
 
-      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.eq(amountIn.add(gasSpent))
-      expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.gte(amountOutMin)
+      expect(ethBalanceBefore - ethBalanceAfter).to.eq(amountIn + gasSpent)
+      expect(daiBalanceAfter - daiBalanceBefore).to.be.gte(amountOutMin)
     })
 
     it('completes a V3 exactOut swap', async () => {
@@ -337,8 +340,8 @@ describe('Uniswap V3 Tests:', () => {
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract, amountInMax)
       const { amount0: daiTraded, amount1: wethTraded } = v3SwapEventArgs!
 
-      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.eq(daiTraded)
-      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.eq(wethTraded.add(gasSpent))
+      expect(daiBalanceBefore - daiBalanceAfter).to.eq(daiTraded)
+      expect(ethBalanceBefore - ethBalanceAfter).to.eq(wethTraded + gasSpent)
     })
   })
 })
