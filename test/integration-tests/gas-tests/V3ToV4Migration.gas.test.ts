@@ -1,7 +1,6 @@
-import type { Contract } from '@ethersproject/contracts'
+import { Contract } from 'ethers'
 import snapshotGasCost from '@uniswap/snapshot-gas-cost'
 import deployUniversalRouter from '../shared/deployUniversalRouter'
-import { BigNumber } from 'ethers'
 import { UniversalRouter, INonfungiblePositionManager, PositionManager } from '../../../typechain'
 import { abi as TOKEN_ABI } from '../../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, V3_NFT_POSITION_MANAGER } from '../shared/mainnetForkHelpers'
@@ -17,7 +16,7 @@ import {
 } from '../shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from '../shared/helpers'
 import getPermitNFTSignature from '../shared/getPermitNFTSignature'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
 import hre from 'hardhat'
 import { RoutePlanner, CommandType } from '../shared/planner'
 import { FeeAmount } from '@uniswap/v3-sdk'
@@ -42,10 +41,12 @@ describe('V3 to V4 Migration Gas Tests', () => {
   let planner: RoutePlanner
   let v4Planner: V4Planner
   let v3NFTPositionManager: INonfungiblePositionManager
+  let routerAddress: string
+  let v3NFTPositionManagerAddress: string
   let v4PositionManagerAddress: string
   let v4PositionManager: PositionManager
 
-  let tokenIdv3: BigNumber
+  let tokenIdv3: bigint
 
   beforeEach(async () => {
     await resetFork()
@@ -58,10 +59,15 @@ describe('V3 to V4 Migration Gas Tests', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
-    v3NFTPositionManager = V3_NFT_POSITION_MANAGER.connect(bob) as INonfungiblePositionManager
-    router = (await deployUniversalRouter(bob.address)).connect(bob) as UniversalRouter
+    v3NFTPositionManager = V3_NFT_POSITION_MANAGER.connect(bob) as unknown as INonfungiblePositionManager
+    router = (await deployUniversalRouter(bob.address)).connect(bob) as unknown as UniversalRouter
+    routerAddress = await router.getAddress()
+    v3NFTPositionManagerAddress = await v3NFTPositionManager.getAddress()
     v4PositionManagerAddress = await router.V4_POSITION_MANAGER()
-    v4PositionManager = (await ethers.getContractAt('PositionManager', v4PositionManagerAddress)) as PositionManager
+    v4PositionManager = (await ethers.getContractAt(
+      'PositionManager',
+      v4PositionManagerAddress
+    )) as unknown as PositionManager
     planner = new RoutePlanner()
     v4Planner = new V4Planner()
 
@@ -74,8 +80,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
   describe('V3 Commands', () => {
     beforeEach(async () => {
       // Bob max-approves the v3PM to access his USDC and WETH
-      await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
-      await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+      await usdcContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
+      await wethContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
 
       // need to mint the nft to bob
       const tx = await v3NFTPositionManager.mint({
@@ -94,17 +100,26 @@ describe('V3 to V4 Migration Gas Tests', () => {
 
       const receipt = await tx.wait()
 
-      const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
+      const iface = v3NFTPositionManager.interface
+      const transferEvent = receipt!.logs
+        .map((log: any) => {
+          try {
+            return iface.parseLog(log)
+          } catch {
+            return null
+          }
+        })
+        .find((parsed: any) => parsed?.name === 'IncreaseLiquidity')
 
       tokenIdv3 = transferEvent?.args?.tokenId
     })
 
     describe('erc721permit', () => {
       it('gas: erc721permit', async () => {
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
 
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -123,9 +138,9 @@ describe('V3 to V4 Migration Gas Tests', () => {
     describe('decrease liquidity', () => {
       it('gas: erc721permit + decreaseLiquidity', async () => {
         // first we need to permit the router to spend the nft
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -159,9 +174,9 @@ describe('V3 to V4 Migration Gas Tests', () => {
     describe('collect', () => {
       it('gas: erc721permit + decreaseLiquidity + collect', async () => {
         // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -206,9 +221,9 @@ describe('V3 to V4 Migration Gas Tests', () => {
     describe('burn', () => {
       it('gas: erc721permit + decreaseLiquidity + collect + burn', async () => {
         // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -267,8 +282,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
     describe('mint', () => {
       it('gas: mint', async () => {
         // transfer to v4posm
-        await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
-        await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+        await usdcContract.connect(bob).transfer(v4PositionManagerAddress, expandTo6DecimalsBN(100000))
+        await wethContract.connect(bob).transfer(v4PositionManagerAddress, expandTo18DecimalsBN(100))
 
         await v4PositionManager.connect(bob).initializePool(USDC_WETH.poolKey, USDC_WETH.price)
 
@@ -298,8 +313,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
 
       it('gas: migrate and mint', async () => {
         // Bob max-approves the v3PM to access his USDC and WETH
-        await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
-        await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+        await usdcContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
+        await wethContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
 
         await v4PositionManager.connect(bob).initializePool(USDC_WETH.poolKey, USDC_WETH.price)
 
@@ -319,13 +334,22 @@ describe('V3 to V4 Migration Gas Tests', () => {
         })
 
         const receipt = await tx.wait()
-        const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
+        const iface = v3NFTPositionManager.interface
+        const transferEvent = receipt!.logs
+          .map((log: any) => {
+            try {
+              return iface.parseLog(log)
+            } catch {
+              return null
+            }
+          })
+          .find((parsed: any) => parsed?.name === 'IncreaseLiquidity')
         let tokenIdv3 = transferEvent?.args?.tokenId
 
         // permit, decrease, collect, burn
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -353,7 +377,7 @@ describe('V3 to V4 Migration Gas Tests', () => {
         // set receiver to v4posm
         const collectParams = {
           tokenId: tokenIdv3,
-          recipient: v4PositionManager.address,
+          recipient: v4PositionManagerAddress,
           amount0Max: MAX_UINT128,
           amount1Max: MAX_UINT128,
         }
@@ -392,8 +416,8 @@ describe('V3 to V4 Migration Gas Tests', () => {
 
       it('gas: migrate weth position into eth position with forwarding', async () => {
         // Bob max-approves the v3PM to access his USDC and WETH
-        await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
-        await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+        await usdcContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
+        await wethContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
 
         await v4PositionManager.connect(bob).initializePool(ETH_USDC.poolKey, USDC_WETH.price)
 
@@ -413,13 +437,22 @@ describe('V3 to V4 Migration Gas Tests', () => {
         })
 
         const receipt = await tx.wait()
-        const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
+        const iface = v3NFTPositionManager.interface
+        const transferEvent = receipt!.logs
+          .map((log: any) => {
+            try {
+              return iface.parseLog(log)
+            } catch {
+              return null
+            }
+          })
+          .find((parsed: any) => parsed?.name === 'IncreaseLiquidity')
         let tokenIdv3 = transferEvent?.args?.tokenId
 
         // permit, decrease, collect, burn
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -447,7 +480,7 @@ describe('V3 to V4 Migration Gas Tests', () => {
         // set receiver to v4posm
         const collectParams = {
           tokenId: tokenIdv3,
-          recipient: router.address,
+          recipient: routerAddress,
           amount0Max: MAX_UINT128,
           amount1Max: MAX_UINT128,
         }
@@ -460,9 +493,9 @@ describe('V3 to V4 Migration Gas Tests', () => {
         planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCollectCall])
         planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
 
-        planner.addCommand(CommandType.UNWRAP_WETH, [router.address, 0])
+        planner.addCommand(CommandType.UNWRAP_WETH, [routerAddress, 0])
 
-        planner.addCommand(CommandType.TRANSFER, [USDC.address, v4PositionManager.address, CONTRACT_BALANCE])
+        planner.addCommand(CommandType.TRANSFER, [USDC.address, v4PositionManagerAddress, CONTRACT_BALANCE])
 
         v4Planner.addAction(Actions.MINT_POSITION, [
           ETH_USDC.poolKey,
