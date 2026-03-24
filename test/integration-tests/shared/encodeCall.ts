@@ -1,5 +1,4 @@
-import { ethers } from 'ethers'
-import { BigNumber } from 'ethers'
+import { AbiCoder, id } from 'ethers'
 
 const permitSignature = 'permit(address,uint256,uint256,uint8,bytes32,bytes32)'
 const decreaseLiquidityFunctionSignature = 'decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))'
@@ -16,7 +15,7 @@ const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint256 amount0Max,ui
 
 interface ERC721PermitParams {
   spender: string
-  tokenId: ethers.BigNumber
+  tokenId: bigint
   deadline: string
   v: number
   r: string
@@ -24,15 +23,15 @@ interface ERC721PermitParams {
 }
 
 interface DecreaseLiquidityParams {
-  tokenId: ethers.BigNumber
-  liquidity: ethers.BigNumber
+  tokenId: bigint
+  liquidity: bigint
   amount0Min: number
   amount1Min: number
   deadline: string
 }
 
 interface CollectParams {
-  tokenId: ethers.BigNumber
+  tokenId: bigint
   recipient: string
   amount0Max: string
   amount1Max: string
@@ -45,65 +44,65 @@ interface ModifyLiquiditiesParams {
 
 interface ERC721PermitParamsV4 {
   spender: string
-  tokenId: ethers.BigNumber
+  tokenId: bigint
   deadline: string
   signature: string
   nonce: number
 }
 
 const encodeERC721Permit = (params: ERC721PermitParams): string => {
-  const abi = new ethers.utils.AbiCoder()
+  const abi = new AbiCoder()
   const { spender, tokenId, deadline, v, r, s } = params
   const encodedParams = abi.encode(
     ['address', 'uint256', 'uint256', 'uint8', 'bytes32', 'bytes32'],
     [spender, tokenId, deadline, v, r, s]
   )
-  const functionSignature = ethers.utils.id(permitSignature).substring(0, 10)
+  const functionSignature = id(permitSignature).substring(0, 10)
   const encodedCall = functionSignature + encodedParams.substring(2)
   return encodedCall
 }
 
 const encodeDecreaseLiquidity = (params: DecreaseLiquidityParams): string => {
-  const abi = new ethers.utils.AbiCoder()
+  const abi = new AbiCoder()
   const encodedParams = abi.encode([DECREASE_LIQUIDITY_STRUCT], [params])
-  const functionSignature = ethers.utils.id(decreaseLiquidityFunctionSignature).substring(0, 10)
+  const functionSignature = id(decreaseLiquidityFunctionSignature).substring(0, 10)
   const encodedCall = functionSignature + encodedParams.substring(2)
   return encodedCall
 }
 
 const encodeCollect = (params: CollectParams): string => {
-  const abi = new ethers.utils.AbiCoder()
+  const abi = new AbiCoder()
   const encodedCollectParams = abi.encode([COLLECT_STRUCT], [params])
-  const functionSignatureCollect = ethers.utils.id(collectFunctionSignature).substring(0, 10)
+  const functionSignatureCollect = id(collectFunctionSignature).substring(0, 10)
   const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
   return encodedCollectCall
 }
 
-const encodeBurn = (params: BigNumber): string => {
-  const abi = new ethers.utils.AbiCoder()
+const encodeBurn = (params: bigint): string => {
+  const abi = new AbiCoder()
   const encodedBurnParams = abi.encode(['uint256'], [params])
-  const functionSignatureBurn = ethers.utils.id(burnFunctionSignature).substring(0, 10)
+  const functionSignatureBurn = id(burnFunctionSignature).substring(0, 10)
   const encodedBurnCall = functionSignatureBurn + encodedBurnParams.substring(2)
   return encodedBurnCall
 }
 
 const encodeModifyLiquidities = (params: ModifyLiquiditiesParams): string => {
-  const abi = new ethers.utils.AbiCoder()
+  const abi = new AbiCoder()
   const { unlockData, deadline } = params
   const encodedParams = abi.encode(['bytes', 'uint256'], [unlockData, deadline])
-  const functionSignature = ethers.utils.id(modifyLiquiditiesSignature).substring(0, 10)
+  const functionSignature = id(modifyLiquiditiesSignature).substring(0, 10)
   const encodedCall = functionSignature + encodedParams.substring(2)
   return encodedCall
 }
 
 const encodeERC721PermitV4 = (params: ERC721PermitParamsV4): string => {
-  const abi = new ethers.utils.AbiCoder()
+  const abi = new AbiCoder()
   const { spender, tokenId, deadline, nonce, signature } = params
   const encodedParams = abi.encode(
     ['address', 'uint256', 'uint256', 'uint256', 'bytes'],
     [spender, tokenId, deadline, nonce, signature]
   )
-  const functionSignature = ethers.utils.id(permitSignatureV4).substring(0, 10)
+  const functionSignature = id(permitSignatureV4).substring(0, 10)
   const encodedCall = functionSignature + encodedParams.substring(2)
   return encodedCall
 }

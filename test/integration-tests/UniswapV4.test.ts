@@ -1,5 +1,4 @@
-import type { Contract } from '@ethersproject/contracts'
-import { BigNumber } from 'ethers'
+import { Contract } from 'ethers'
 import { expect } from './shared/expect'
 import { IPermit2, PoolManager, PositionManager, UniversalRouter } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
@@ -15,7 +14,7 @@ import {
   OPEN_DELTA,
 } from './shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
 import { CommandType, RoutePlanner } from './shared/planner'
 import hre from 'hardhat'
@@ -52,9 +51,9 @@ describe('Uniswap V4 Tests:', () => {
   // USD-pegged -> (W)NATIVE trades
   // exact in trade
   const amountIn = 1000
-  const amountInUSDC: BigNumber = expandTo6DecimalsBN(amountIn)
-  const amountInDAI: BigNumber = expandTo18DecimalsBN(amountIn)
-  const minAmountOutNative: BigNumber = expandTo18DecimalsBN(amountIn / Math.floor(USD_ETH_PRICE * 1.01))
+  const amountInUSDC: bigint = expandTo6DecimalsBN(amountIn)
+  const amountInDAI: bigint = expandTo18DecimalsBN(amountIn)
+  const minAmountOutNative: bigint = expandTo18DecimalsBN(amountIn / Math.floor(USD_ETH_PRICE * 1.01))
 
   // exact out trade
   const amountOut = 0.26
@@ -64,16 +63,23 @@ describe('Uniswap V4 Tests:', () => {
 
   // (W)NATIVE -> USD-pegged trades
   // exact in trade
-  const amountInNative: BigNumber = expandTo18DecimalsBN(1.23)
+  const amountInNative: bigint = expandTo18DecimalsBN(1.23)
   const minAmountOutUSD = Math.floor(USD_ETH_PRICE * 0.99 * 1.23)
-  const minAmountOutUSDC: BigNumber = expandTo6DecimalsBN(minAmountOutUSD)
-  const minAmountOutDAI: BigNumber = expandTo18DecimalsBN(minAmountOutUSD)
+  const minAmountOutUSDC: bigint = expandTo6DecimalsBN(minAmountOutUSD)
+  const minAmountOutDAI: bigint = expandTo18DecimalsBN(minAmountOutUSD)
 
   // exact out trade
   const amountOutUSD = 2345
-  const amountOutUSDC: BigNumber = expandTo6DecimalsBN(amountOutUSD)
-  const amountOutDAI: BigNumber = expandTo18DecimalsBN(amountOutUSD)
-  const maxAmountInNative: BigNumber = expandTo18DecimalsBN(amountOutUSD / Math.floor(USD_ETH_PRICE * 0.99))
+  const amountOutUSDC: bigint = expandTo6DecimalsBN(amountOutUSD)
+  const amountOutDAI: bigint = expandTo18DecimalsBN(amountOutUSD)
+  const maxAmountInNative: bigint = expandTo18DecimalsBN(amountOutUSD / Math.floor(USD_ETH_PRICE * 0.99))
+
+  let permit2Address: string
+  let routerAddress: string
+  let v4PositionManagerAddress: string
+  let usdcAddress: string
+  let wethAddress: string
+  let daiAddress: string
 
   beforeEach(async () => {
     await resetFork()
@@ -86,35 +92,44 @@ describe('Uniswap V4 Tests:', () => {
     daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
     wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
     usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
-    permit2 = PERMIT2.connect(bob) as IPermit2
-    v4PoolManager = (await deployV4PoolManager(bob.address)).connect(bob) as PoolManager
-    router = (await deployUniversalRouter(undefined, v4PoolManager.address)).connect(bob) as UniversalRouter
+    permit2 = PERMIT2.connect(bob) as unknown as IPermit2
+    v4PoolManager = (await deployV4PoolManager(bob.address)).connect(bob) as unknown as PoolManager
+    router = (await deployUniversalRouter(undefined, await v4PoolManager.getAddress())).connect(
+      bob
+    ) as unknown as UniversalRouter
     v4PositionManager = (await ethers.getContractAt('PositionManager', await router.V4_POSITION_MANAGER())).connect(
       bob
-    ) as PositionManager
+    ) as unknown as PositionManager
 
     planner = new RoutePlanner()
     v4Planner = new V4Planner()
 
+    permit2Address = await permit2.getAddress()
+    routerAddress = await router.getAddress()
+    v4PositionManagerAddress = await v4PositionManager.getAddress()
+    usdcAddress = await usdcContract.getAddress()
+    wethAddress = await wethContract.getAddress()
+    daiAddress = await daiContract.getAddress()
+
     // alice gives bob some tokens
-    await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(1000000))
-    await wethContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(1000))
-    await usdcContract.connect(alice).transfer(bob.address, expandTo6DecimalsBN(50000000))
+    await (daiContract.connect(alice) as Contract).transfer(bob.address, expandTo18DecimalsBN(1000000))
+    await (wethContract.connect(alice) as Contract).transfer(bob.address, expandTo18DecimalsBN(1000))
+    await (usdcContract.connect(alice) as Contract).transfer(bob.address, expandTo6DecimalsBN(50000000))
 
     // Bob max-approves the permit2 contract to access his DAI and WETH
-    await daiContract.connect(bob).approve(permit2.address, MAX_UINT)
-    await wethContract.connect(bob).approve(permit2.address, MAX_UINT)
-    await usdcContract.connect(bob).approve(permit2.address, MAX_UINT)
+    await (daiContract.connect(bob) as Contract).approve(permit2Address, MAX_UINT)
+    await (wethContract.connect(bob) as Contract).approve(permit2Address, MAX_UINT)
+    await (usdcContract.connect(bob) as Contract).approve(permit2Address, MAX_UINT)
 
     // for these tests Bob gives the router max approval on permit2
-    await permit2.approve(DAI.address, router.address, MAX_UINT160, DEADLINE)
-    await permit2.approve(WETH.address, router.address, MAX_UINT160, DEADLINE)
-    await permit2.approve(USDC.address, router.address, MAX_UINT160, DEADLINE)
+    await permit2.approve(DAI.address, routerAddress, MAX_UINT160, DEADLINE)
+    await permit2.approve(WETH.address, routerAddress, MAX_UINT160, DEADLINE)
+    await permit2.approve(USDC.address, routerAddress, MAX_UINT160, DEADLINE)
 
     // for setting up pools, bob gives position manager approval on permit2
-    await permit2.approve(DAI.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
-    await permit2.approve(WETH.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
-    await permit2.approve(USDC.address, v4PositionManager.address, MAX_UINT160, DEADLINE)
+    await permit2.approve(DAI.address, v4PositionManagerAddress, MAX_UINT160, DEADLINE)
+    await permit2.approve(WETH.address, v4PositionManagerAddress, MAX_UINT160, DEADLINE)
+    await permit2.approve(USDC.address, v4PositionManagerAddress, MAX_UINT160, DEADLINE)
     // bob initializes 3 v4 pools
     await initializeV4Pool(v4PoolManager, USDC_WETH.poolKey, USDC_WETH.price)
     await initializeV4Pool(v4PoolManager, DAI_USDC.poolKey, DAI_USDC.price)
@@ -137,8 +152,8 @@ describe('Uniswap V4 Tests:', () => {
           hookData: '0x',
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address, MAX_UINT])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
+      v4Planner.addAction(Actions.SETTLE_ALL, [usdcAddress, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethAddress, 0])
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
       const { usdcBalanceBefore, usdcBalanceAfter, wethBalanceBefore, wethBalanceAfter } = await executeRouter(
@@ -150,13 +165,13 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutNative)
-      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.eq(amountInUSDC)
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.gte(minAmountOutNative)
+      expect(usdcBalanceBefore - usdcBalanceAfter).to.be.eq(amountInUSDC)
     })
 
     it('completes a v4 exactIn 1 hop swap', async () => {
       // USDC -> WETH
-      let currencyIn = usdcContract.address
+      let currencyIn = usdcAddress
       v4Planner.addAction(Actions.SWAP_EXACT_IN, [
         {
           currencyIn,
@@ -167,7 +182,7 @@ describe('Uniswap V4 Tests:', () => {
         },
       ])
       v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethAddress, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -180,13 +195,13 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutNative)
-      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.eq(amountInUSDC)
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.gte(minAmountOutNative)
+      expect(usdcBalanceBefore - usdcBalanceAfter).to.be.eq(amountInUSDC)
     })
 
     it('completes a v4 exactIn 2 hop swap', async () => {
       // DAI -> USDC -> WETH
-      let currencyIn = daiContract.address
+      let currencyIn = daiAddress
       v4Planner.addAction(Actions.SWAP_EXACT_IN, [
         {
           currencyIn,
@@ -197,7 +212,7 @@ describe('Uniswap V4 Tests:', () => {
         },
       ])
       v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethAddress, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -210,13 +225,13 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.gte(minAmountOutNative)
-      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.gte(minAmountOutNative)
+      expect(daiBalanceBefore - daiBalanceAfter).to.be.eq(amountInDAI)
     })
 
     it('completes a v4 exactIn 2 hop swap, with take portion on output', async () => {
       // DAI -> USDC -> WETH
-      let currencyIn = daiContract.address
+      let currencyIn = daiAddress
       v4Planner.addAction(Actions.SWAP_EXACT_IN, [
         {
           currencyIn,
@@ -229,11 +244,11 @@ describe('Uniswap V4 Tests:', () => {
       // take 1% of the output to alice, then settle and take the rest to the caller
       v4Planner.addAction(Actions.TAKE_PORTION, [WETH.address, alice.address, ONE_PERCENT_BIPS])
       v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethAddress, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
-      const wethBalanceBeforeAlice = await wethContract.balanceOf(alice.address)
+      const wethBalanceBeforeAlice: bigint = await wethContract.balanceOf(alice.address)
 
       const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
         planner,
@@ -244,21 +259,21 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      const wethBalanceAfterAlice = await wethContract.balanceOf(alice.address)
+      const wethBalanceAfterAlice: bigint = await wethContract.balanceOf(alice.address)
 
-      const aliceFee = wethBalanceAfterAlice.sub(wethBalanceBeforeAlice)
-      const bobEarnings = wethBalanceAfter.sub(wethBalanceBefore)
-      const totalOut = aliceFee.add(bobEarnings)
+      const aliceFee = wethBalanceAfterAlice - wethBalanceBeforeAlice
+      const bobEarnings = wethBalanceAfter - wethBalanceBefore
+      const totalOut = aliceFee + bobEarnings
 
       expect(totalOut).to.be.gte(minAmountOutNative)
-      expect(totalOut.mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
+      expect((totalOut * BigInt(ONE_PERCENT_BIPS)) / 10000n).to.eq(aliceFee)
     })
 
     it('completes a v4 exactIn 2 hop swap, with take portion on input', async () => {
       // DAI -> USDC -> WETH
-      let currencyIn = daiContract.address
+      let currencyIn = daiAddress
       // trade is 1% less than previously, so adjust expected output
-      let minOut = minAmountOutNative.mul(99).div(100)
+      let minOut = (minAmountOutNative * 99n) / 100n
 
       // settle the input tokens to the pool manager
       v4Planner.addAction(Actions.SETTLE, [currencyIn, amountInDAI, true])
@@ -275,11 +290,11 @@ describe('Uniswap V4 Tests:', () => {
         },
       ])
       // take the output weth
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, minOut])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethAddress, minOut])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
-      const daiBalanceBeforeAlice = await daiContract.balanceOf(alice.address)
+      const daiBalanceBeforeAlice: bigint = await daiContract.balanceOf(alice.address)
 
       const { daiBalanceBefore, daiBalanceAfter } = await executeRouter(
         planner,
@@ -290,17 +305,17 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      const daiBalanceAfterAlice = await daiContract.balanceOf(alice.address)
+      const daiBalanceAfterAlice: bigint = await daiContract.balanceOf(alice.address)
 
-      const aliceFee = daiBalanceAfterAlice.sub(daiBalanceBeforeAlice)
-      const bobSpent = daiBalanceBefore.sub(daiBalanceAfter)
+      const aliceFee = daiBalanceAfterAlice - daiBalanceBeforeAlice
+      const bobSpent = daiBalanceBefore - daiBalanceAfter
 
-      expect(bobSpent.mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
+      expect((bobSpent * BigInt(ONE_PERCENT_BIPS)) / 10000n).to.eq(aliceFee)
     })
 
     it('completes a v4 exactIn 2 hop swap, with take portion native', async () => {
       // DAI -> USDC -> ETH
-      let currencyIn = daiContract.address
+      let currencyIn = daiAddress
       v4Planner.addAction(Actions.SWAP_EXACT_IN, [
         {
           currencyIn,
@@ -317,7 +332,7 @@ describe('Uniswap V4 Tests:', () => {
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
-      const ethBalanceBeforeAlice: BigNumber = await ethers.provider.getBalance(alice.address)
+      const ethBalanceBeforeAlice: bigint = await ethers.provider.getBalance(alice.address)
 
       const { ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
         planner,
@@ -328,14 +343,14 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      const ethBalanceAfterAlice: BigNumber = await ethers.provider.getBalance(alice.address)
+      const ethBalanceAfterAlice: bigint = await ethers.provider.getBalance(alice.address)
 
-      const aliceFee = ethBalanceAfterAlice.sub(ethBalanceBeforeAlice)
-      const bobEarnings = ethBalanceAfter.add(gasSpent).sub(ethBalanceBefore)
-      const totalOut = aliceFee.add(bobEarnings)
+      const aliceFee = ethBalanceAfterAlice - ethBalanceBeforeAlice
+      const bobEarnings = ethBalanceAfter + gasSpent - ethBalanceBefore
+      const totalOut = aliceFee + bobEarnings
 
       expect(totalOut).to.be.gte(minAmountOutNative)
-      expect(totalOut.mul(ONE_PERCENT_BIPS).div(10_000)).to.eq(aliceFee)
+      expect((totalOut * BigInt(ONE_PERCENT_BIPS)) / 10000n).to.eq(aliceFee)
     })
 
     it('completes a v4 exactOutSingle swap', async () => {
@@ -348,8 +363,8 @@ describe('Uniswap V4 Tests:', () => {
           hookData: '0x',
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address, MAX_UINT])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
+      v4Planner.addAction(Actions.SETTLE_ALL, [usdcAddress, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethAddress, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -362,13 +377,13 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutNative)
-      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.lte(maxAmountInUSDC)
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.eq(amountOutNative)
+      expect(usdcBalanceBefore - usdcBalanceAfter).to.be.lte(maxAmountInUSDC)
     })
 
     it('completes a v4 exactOut 1 hop swap', async () => {
       // USDC -> WETH
-      let currencyOut = wethContract.address
+      let currencyOut = wethAddress
       v4Planner.addAction(Actions.SWAP_EXACT_OUT, [
         {
           currencyOut,
@@ -378,8 +393,8 @@ describe('Uniswap V4 Tests:', () => {
           amountInMaximum: maxAmountInUSDC,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address, MAX_UINT])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
+      v4Planner.addAction(Actions.SETTLE_ALL, [usdcAddress, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethAddress, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -392,13 +407,13 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutNative)
-      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.lte(maxAmountInUSDC)
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.eq(amountOutNative)
+      expect(usdcBalanceBefore - usdcBalanceAfter).to.be.lte(maxAmountInUSDC)
     })
 
     it('completes a v4 exactOut 2 hop swap', async () => {
       // DAI -> USDC -> WETH
-      let currencyOut = wethContract.address
+      let currencyOut = wethAddress
       v4Planner.addAction(Actions.SWAP_EXACT_OUT, [
         {
           currencyOut,
@@ -408,8 +423,8 @@ describe('Uniswap V4 Tests:', () => {
           amountInMaximum: maxAmountInDAI,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [daiContract.address, MAX_UINT])
-      v4Planner.addAction(Actions.TAKE_ALL, [wethContract.address, 0])
+      v4Planner.addAction(Actions.SETTLE_ALL, [daiAddress, MAX_UINT])
+      v4Planner.addAction(Actions.TAKE_ALL, [wethAddress, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -422,8 +437,8 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(wethBalanceAfter.sub(wethBalanceBefore)).to.be.eq(amountOutNative)
-      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
+      expect(wethBalanceAfter - wethBalanceBefore).to.be.eq(amountOutNative)
+      expect(daiBalanceBefore - daiBalanceAfter).to.be.lte(maxAmountInDAI)
     })
   })
 
@@ -439,7 +454,7 @@ describe('Uniswap V4 Tests:', () => {
         },
       ])
       v4Planner.addAction(Actions.SETTLE_ALL, [ETH_ADDRESS, MAX_UINT])
-      v4Planner.addAction(Actions.TAKE_ALL, [usdcContract.address, 0])
+      v4Planner.addAction(Actions.TAKE_ALL, [usdcAddress, 0])
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
       const { usdcBalanceBefore, usdcBalanceAfter, ethBalanceBefore, ethBalanceAfter, gasSpent } = await executeRouter(
@@ -452,9 +467,9 @@ describe('Uniswap V4 Tests:', () => {
         amountInNative // pass in the ETH to the call
       )
 
-      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
-      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.be.eq(amountInNative.add(gasSpent))
-      expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOutUSDC)
+      expect(await ethers.provider.getBalance(routerAddress)).to.be.eq(0)
+      expect(ethBalanceBefore - ethBalanceAfter).to.be.eq(amountInNative + gasSpent)
+      expect(usdcBalanceAfter - usdcBalanceBefore).to.be.gte(minAmountOutUSDC)
     })
 
     it('completes a v4 exactIn 1 hop swap', async () => {
@@ -470,7 +485,7 @@ describe('Uniswap V4 Tests:', () => {
         },
       ])
       v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
-      v4Planner.addAction(Actions.TAKE_ALL, [usdcContract.address, 0])
+      v4Planner.addAction(Actions.TAKE_ALL, [usdcAddress, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -484,9 +499,9 @@ describe('Uniswap V4 Tests:', () => {
         amountInNative // pass in the ETH to the call
       )
 
-      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
-      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.be.eq(amountInNative.add(gasSpent))
-      expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.gte(minAmountOutUSDC)
+      expect(await ethers.provider.getBalance(routerAddress)).to.be.eq(0)
+      expect(ethBalanceBefore - ethBalanceAfter).to.be.eq(amountInNative + gasSpent)
+      expect(usdcBalanceAfter - usdcBalanceBefore).to.be.gte(minAmountOutUSDC)
     })
 
     it('completes a v4 exactIn 2 hop swap', async () => {
@@ -502,7 +517,7 @@ describe('Uniswap V4 Tests:', () => {
         },
       ])
       v4Planner.addAction(Actions.SETTLE_ALL, [currencyIn, MAX_UINT])
-      v4Planner.addAction(Actions.TAKE_ALL, [daiContract.address, 0])
+      v4Planner.addAction(Actions.TAKE_ALL, [daiAddress, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -516,9 +531,9 @@ describe('Uniswap V4 Tests:', () => {
         amountInNative // pass in the ETH to the call
       )
 
-      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
-      expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.gte(minAmountOutDAI)
-      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.be.eq(amountInNative.add(gasSpent))
+      expect(await ethers.provider.getBalance(routerAddress)).to.be.eq(0)
+      expect(daiBalanceAfter - daiBalanceBefore).to.be.gte(minAmountOutDAI)
+      expect(ethBalanceBefore - ethBalanceAfter).to.be.eq(amountInNative + gasSpent)
     })
 
     it('completes a v4 exactOutSingle swap', async () => {
@@ -533,7 +548,7 @@ describe('Uniswap V4 Tests:', () => {
         },
       ])
       v4Planner.addAction(Actions.SETTLE_ALL, [ETH_ADDRESS, MAX_UINT])
-      v4Planner.addAction(Actions.TAKE_ALL, [usdcContract.address, 0])
+      v4Planner.addAction(Actions.TAKE_ALL, [usdcAddress, 0])
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
       // sweep excess ETH leftover back to the caller!
       planner.addCommand(CommandType.SWEEP, [ETH_ADDRESS, MSG_SENDER, 0])
@@ -549,14 +564,14 @@ describe('Uniswap V4 Tests:', () => {
       )
 
       // no eth left in the router
-      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
-      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.be.lte(maxAmountInNative.add(gasSpent))
-      expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.eq(amountOutUSDC)
+      expect(await ethers.provider.getBalance(routerAddress)).to.be.eq(0)
+      expect(ethBalanceBefore - ethBalanceAfter).to.be.lte(maxAmountInNative + gasSpent)
+      expect(usdcBalanceAfter - usdcBalanceBefore).to.be.eq(amountOutUSDC)
     })
 
     it('completes a v4 exactOut 1 hop swap', async () => {
       // ETH -> USDC
-      let currencyOut = usdcContract.address
+      let currencyOut = usdcAddress
       v4Planner.addAction(Actions.SWAP_EXACT_OUT, [
         {
           currencyOut,
@@ -584,14 +599,14 @@ describe('Uniswap V4 Tests:', () => {
       )
 
       // no eth left in the router
-      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
-      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.be.lte(maxAmountInNative.add(gasSpent))
-      expect(usdcBalanceAfter.sub(usdcBalanceBefore)).to.be.eq(amountOutUSDC)
+      expect(await ethers.provider.getBalance(routerAddress)).to.be.eq(0)
+      expect(ethBalanceBefore - ethBalanceAfter).to.be.lte(maxAmountInNative + gasSpent)
+      expect(usdcBalanceAfter - usdcBalanceBefore).to.be.eq(amountOutUSDC)
     })
 
     it('completes a v4 exactOut 2 hop swap', async () => {
       // ETH -> USDC -> DAI
-      let currencyOut = daiContract.address
+      let currencyOut = daiAddress
       v4Planner.addAction(Actions.SWAP_EXACT_OUT, [
         {
           currencyOut,
@@ -602,7 +617,7 @@ describe('Uniswap V4 Tests:', () => {
         },
       ])
       v4Planner.addAction(Actions.SETTLE_ALL, [ETH_ADDRESS, MAX_UINT])
-      v4Planner.addAction(Actions.TAKE_ALL, [daiContract.address, 0])
+      v4Planner.addAction(Actions.TAKE_ALL, [daiAddress, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
       // sweep excess ETH leftover back to the caller!
@@ -619,9 +634,9 @@ describe('Uniswap V4 Tests:', () => {
       )
 
       // no eth left in the router
-      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
-      expect(ethBalanceBefore.sub(ethBalanceAfter)).to.be.lte(maxAmountInNative.add(gasSpent))
-      expect(daiBalanceAfter.sub(daiBalanceBefore)).to.be.eq(amountOutDAI)
+      expect(await ethers.provider.getBalance(routerAddress)).to.be.eq(0)
+      expect(ethBalanceBefore - ethBalanceAfter).to.be.lte(maxAmountInNative + gasSpent)
+      expect(daiBalanceAfter - daiBalanceBefore).to.be.eq(amountOutDAI)
     })
   })
 
@@ -637,7 +652,7 @@ describe('Uniswap V4 Tests:', () => {
           hookData: '0x',
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address, MAX_UINT])
+      v4Planner.addAction(Actions.SETTLE_ALL, [usdcAddress, MAX_UINT])
       v4Planner.addAction(Actions.TAKE_ALL, [ETH_ADDRESS, 0])
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -650,14 +665,14 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
-      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.eq(amountInUSDC)
-      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.gte(minAmountOutNative.sub(gasSpent))
+      expect(await ethers.provider.getBalance(routerAddress)).to.be.eq(0)
+      expect(usdcBalanceBefore - usdcBalanceAfter).to.be.eq(amountInUSDC)
+      expect(ethBalanceAfter - ethBalanceBefore).to.be.gte(minAmountOutNative - gasSpent)
     })
 
     it('completes a v4 exactIn 1 hop swap', async () => {
       // USDC -> ETH
-      let currencyIn = usdcContract.address
+      let currencyIn = usdcAddress
       v4Planner.addAction(Actions.SWAP_EXACT_IN, [
         {
           currencyIn,
@@ -681,14 +696,14 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
-      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.eq(amountInUSDC)
-      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.gte(minAmountOutNative.sub(gasSpent))
+      expect(await ethers.provider.getBalance(routerAddress)).to.be.eq(0)
+      expect(usdcBalanceBefore - usdcBalanceAfter).to.be.eq(amountInUSDC)
+      expect(ethBalanceAfter - ethBalanceBefore).to.be.gte(minAmountOutNative - gasSpent)
     })
 
     it('completes a v4 exactIn 2 hop swap', async () => {
       // DAI -> USDC -> ETH
-      let currencyIn = daiContract.address
+      let currencyIn = daiAddress
       v4Planner.addAction(Actions.SWAP_EXACT_IN, [
         {
           currencyIn,
@@ -712,9 +727,9 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
-      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.eq(amountInDAI)
-      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.gte(minAmountOutNative.sub(gasSpent))
+      expect(await ethers.provider.getBalance(routerAddress)).to.be.eq(0)
+      expect(daiBalanceBefore - daiBalanceAfter).to.be.eq(amountInDAI)
+      expect(ethBalanceAfter - ethBalanceBefore).to.be.gte(minAmountOutNative - gasSpent)
     })
 
     it('completes a v4 exactOutSingle swap', async () => {
@@ -728,7 +743,7 @@ describe('Uniswap V4 Tests:', () => {
           hookData: '0x',
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address, MAX_UINT])
+      v4Planner.addAction(Actions.SETTLE_ALL, [usdcAddress, MAX_UINT])
       v4Planner.addAction(Actions.TAKE_ALL, [ETH_ADDRESS, 0])
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
 
@@ -741,9 +756,9 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
-      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.lte(maxAmountInUSDC)
-      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.eq(amountOutNative.sub(gasSpent))
+      expect(await ethers.provider.getBalance(routerAddress)).to.be.eq(0)
+      expect(usdcBalanceBefore - usdcBalanceAfter).to.be.lte(maxAmountInUSDC)
+      expect(ethBalanceAfter - ethBalanceBefore).to.be.eq(amountOutNative - gasSpent)
     })
 
     it('completes a v4 exactOut 1 hop swap', async () => {
@@ -758,7 +773,7 @@ describe('Uniswap V4 Tests:', () => {
           amountInMaximum: maxAmountInUSDC,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [usdcContract.address, MAX_UINT])
+      v4Planner.addAction(Actions.SETTLE_ALL, [usdcAddress, MAX_UINT])
       v4Planner.addAction(Actions.TAKE_ALL, [currencyOut, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
@@ -772,9 +787,9 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
-      expect(usdcBalanceBefore.sub(usdcBalanceAfter)).to.be.lte(maxAmountInUSDC)
-      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.eq(amountOutNative.sub(gasSpent))
+      expect(await ethers.provider.getBalance(routerAddress)).to.be.eq(0)
+      expect(usdcBalanceBefore - usdcBalanceAfter).to.be.lte(maxAmountInUSDC)
+      expect(ethBalanceAfter - ethBalanceBefore).to.be.eq(amountOutNative - gasSpent)
     })
 
     it('completes a v4 exactOut 2 hop swap', async () => {
@@ -789,7 +804,7 @@ describe('Uniswap V4 Tests:', () => {
           amountInMaximum: maxAmountInDAI,
         },
       ])
-      v4Planner.addAction(Actions.SETTLE_ALL, [daiContract.address, MAX_UINT])
+      v4Planner.addAction(Actions.SETTLE_ALL, [daiAddress, MAX_UINT])
       v4Planner.addAction(Actions.TAKE_ALL, [currencyOut, 0])
 
       planner.addCommand(CommandType.V4_SWAP, [v4Planner.actions, v4Planner.params])
@@ -803,9 +818,9 @@ describe('Uniswap V4 Tests:', () => {
         usdcContract
       )
 
-      expect(await ethers.provider.getBalance(router.address)).to.be.eq(0)
-      expect(ethBalanceAfter.sub(ethBalanceBefore)).to.be.eq(amountOutNative.sub(gasSpent))
-      expect(daiBalanceBefore.sub(daiBalanceAfter)).to.be.lte(maxAmountInDAI)
+      expect(await ethers.provider.getBalance(routerAddress)).to.be.eq(0)
+      expect(ethBalanceAfter - ethBalanceBefore).to.be.eq(amountOutNative - gasSpent)
+      expect(daiBalanceBefore - daiBalanceAfter).to.be.lte(maxAmountInDAI)
     })
   })
 })

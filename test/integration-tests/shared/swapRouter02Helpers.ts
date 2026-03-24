@@ -1,10 +1,9 @@
 import JSBI from 'jsbi'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
 import { BigintIsh, CurrencyAmount, Token } from '@uniswap/sdk-core'
 import { Pair } from '@uniswap/v2-sdk'
 import { encodeSqrtRatioX96, FeeAmount, nearestUsableTick, Pool, TickMath, TICK_SPACINGS } from '@uniswap/v3-sdk'
 import { getV2PoolReserves, WETH, DAI, USDC, USDT } from './mainnetForkHelpers'
-import { BigNumber } from 'ethers'
 
 const sqrtRatioX96 = encodeSqrtRatioX96(1, 1)
 const liquidity = 1_000_000
@@ -48,8 +47,8 @@ export const pool_WETH_USDT = makePool(USDT, WETH, liquidity)
 // v2
 export const makePair = async (alice: SignerWithAddress, token0: Token, token1: Token) => {
   const reserves = await getV2PoolReserves(alice, token0, token1)
-  let reserve0: CurrencyAmount<Token> = CurrencyAmount.fromRawAmount(token0, JSBI.BigInt(reserves.reserve0))
-  let reserve1: CurrencyAmount<Token> = CurrencyAmount.fromRawAmount(token1, JSBI.BigInt(reserves.reserve1))
+  let reserve0: CurrencyAmount<Token> = CurrencyAmount.fromRawAmount(token0, JSBI.BigInt(reserves.reserve0.toString()))
+  let reserve1: CurrencyAmount<Token> = CurrencyAmount.fromRawAmount(token1, JSBI.BigInt(reserves.reserve1.toString()))
 
   return new Pair(reserve0, reserve1)
 }
@@ -82,5 +81,5 @@ export function encodePathExactOutput(tokens: string[]): string {
 }
 
 export function expandTo18Decimals(n: number): BigintIsh {
-  return JSBI.BigInt(BigNumber.from(n).mul(BigNumber.from(10).pow(18)).toString())
+  return JSBI.BigInt((BigInt(n) * 10n ** 18n).toString())
 }

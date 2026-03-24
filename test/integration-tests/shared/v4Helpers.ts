@@ -6,11 +6,10 @@ import { DAI, USDC, WETH } from './mainnetForkHelpers'
 import { ADDRESS_ZERO, FeeAmount } from '@uniswap/v3-sdk'
 import { MAX_UINT128, MAX_UINT160, ZERO_ADDRESS } from './constants'
 import { Actions, V4Planner } from './v4Planner'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { BigNumber } from 'ethers'
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
 import { expandTo18DecimalsBN } from './helpers'
 
-const USDC_WETH_PRICE = BigNumber.from('1282621508889261311518273674430423')
+const USDC_WETH_PRICE = BigInt('1282621508889261311518273674430423')
 const USDC_WETH_TICK_LOWER = 193800
 const USDC_WETH_TICK_UPPER = 193900
 export const USDC_WETH = {
@@ -26,7 +25,7 @@ export const USDC_WETH = {
   tickUpper: USDC_WETH_TICK_UPPER,
 }
 
-const DAI_USDC_PRICE = BigNumber.from('79227835492130174795940')
+const DAI_USDC_PRICE = BigInt('79227835492130174795940')
 const DAI_USDC_TICK_LOWER = -276330
 const DAI_USDC_TICK_UPPER = -276320
 export const DAI_USDC = {
@@ -42,7 +41,7 @@ export const DAI_USDC = {
   tickUpper: DAI_USDC_TICK_UPPER,
 }
 
-const ETH_USDC_PRICE = BigNumber.from('4899712312116710985145008')
+const ETH_USDC_PRICE = BigInt('4899712312116710985145008')
 const ETH_USDC_TICK_UPPER = -193620
 const ETH_USDC_TICK_LOWER = -194040
 export const ETH_USDC = {
@@ -81,7 +80,7 @@ export async function deployV4PoolManager(owner: string): Promise<PoolManager> {
   return poolManager
 }
 
-export async function initializeV4Pool(poolManager: PoolManager, poolKey: any, sqrtPrice: BigNumber) {
+export async function initializeV4Pool(poolManager: PoolManager, poolKey: any, sqrtPrice: bigint) {
   await poolManager.initialize(poolKey, sqrtPrice.toString())
 }
 

@@ -1,5 +1,5 @@
-import 'hardhat-typechain'
-import '@nomiclabs/hardhat-ethers'
+import '@typechain/hardhat'
+import '@nomicfoundation/hardhat-ethers'
 import '@nomicfoundation/hardhat-chai-matchers'
 import '@nomicfoundation/hardhat-foundry'
 import dotenv from 'dotenv'
@@ -23,6 +23,10 @@ const DEFAULT_COMPILER_SETTINGS = {
 export default {
   paths: {
     sources: './contracts',
+  },
+  typechain: {
+    outDir: 'typechain',
+    target: 'ethers-v6',
   },
   networks: {
     hardhat: {
