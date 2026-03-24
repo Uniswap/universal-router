@@ -1,6 +1,5 @@
-import type { Contract } from '@ethersproject/contracts'
+import { Contract, AbiCoder, id as ethersId } from 'ethers'
 import { expect } from './shared/expect'
-import { BigNumber } from 'ethers'
 import { UniversalRouter, INonfungiblePositionManager, PositionManager } from '../../typechain'
 import { abi as TOKEN_ABI } from '../../artifacts/solmate/src/tokens/ERC20.sol/ERC20.json'
 import { resetFork, WETH, DAI, USDC, V3_NFT_POSITION_MANAGER } from './shared/mainnetForkHelpers'
@@ -15,7 +14,7 @@ import {
   CONTRACT_BALANCE,
 } from './shared/constants'
 import { expandTo18DecimalsBN, expandTo6DecimalsBN } from './shared/helpers'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
 import deployUniversalRouter from './shared/deployUniversalRouter'
 import { RoutePlanner, CommandType } from './shared/planner'
 import { V4Planner, Actions } from './shared/v4Planner'
@@ -36,23 +35,32 @@ import { USDC_WETH, ETH_USDC } from './shared/v4Helpers'
 import { parseEvents } from './shared/parseEvents'
 const { ethers } = hre
 
-const poolManagerInterface = new ethers.utils.Interface(POOL_MANAGER_ABI)
+const poolManagerInterface = new ethers.Interface(POOL_MANAGER_ABI)
+
+type Erc20Contract = Contract & {
+  connect: (signer: SignerWithAddress) => Erc20Contract
+  transfer: (to: string, value: bigint | string) => Promise<unknown>
+  approve: (spender: string, value: bigint | string) => Promise<unknown>
+  balanceOf: (account: string) => Promise<bigint>
+}
 
 describe('V3 to V4 Migration Tests:', () => {
   let alice: SignerWithAddress
   let bob: SignerWithAddress
   let eve: SignerWithAddress
   let router: UniversalRouter
-  let daiContract: Contract
-  let wethContract: Contract
-  let usdcContract: Contract
+  let daiContract: Erc20Contract
+  let wethContract: Erc20Contract
+  let usdcContract: Erc20Contract
   let planner: RoutePlanner
   let v4Planner: V4Planner
   let v3NFTPositionManager: INonfungiblePositionManager
+  let routerAddress: string
+  let v3NFTPositionManagerAddress: string
   let v4PositionManagerAddress: string
   let v4PositionManager: PositionManager
 
-  let tokenIdv3: BigNumber
+  let tokenIdv3: bigint
 
   beforeEach(async () => {
     await resetFork()
@@ -63,16 +71,21 @@ describe('V3 to V4 Migration Tests:', () => {
     alice = await ethers.getSigner(ALICE_ADDRESS)
     bob = (await ethers.getSigners())[1]
     eve = (await ethers.getSigners())[2]
-    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob)
-    wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob)
-    usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob)
-    v3NFTPositionManager = V3_NFT_POSITION_MANAGER.connect(bob) as INonfungiblePositionManager
-    router = (await deployUniversalRouter(bob.address)) as UniversalRouter
+    daiContract = new ethers.Contract(DAI.address, TOKEN_ABI, bob) as unknown as Erc20Contract
+    wethContract = new ethers.Contract(WETH.address, TOKEN_ABI, bob) as unknown as Erc20Contract
+    usdcContract = new ethers.Contract(USDC.address, TOKEN_ABI, bob) as unknown as Erc20Contract
+    v3NFTPositionManager = V3_NFT_POSITION_MANAGER.connect(bob) as unknown as INonfungiblePositionManager
+    router = (await deployUniversalRouter(bob.address)) as unknown as UniversalRouter
     v4PositionManagerAddress = await router.V4_POSITION_MANAGER()
-    v4PositionManager = (await ethers.getContractAt('PositionManager', v4PositionManagerAddress)) as PositionManager
+    v4PositionManager = (await ethers.getContractAt(
+      'PositionManager',
+      v4PositionManagerAddress
+    )) as unknown as PositionManager
 
     planner = new RoutePlanner()
     v4Planner = new V4Planner()
+    routerAddress = await router.getAddress()
+    v3NFTPositionManagerAddress = await v3NFTPositionManager.getAddress()
 
     // alice gives bob some tokens
     await daiContract.connect(alice).transfer(bob.address, expandTo18DecimalsBN(100000))
@@ -83,8 +96,8 @@ describe('V3 to V4 Migration Tests:', () => {
   describe('V3 Commands', () => {
     beforeEach(async () => {
       // Bob max-approves the v3PM to access his USDC and WETH
-      await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
-      await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+      await usdcContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
+      await wethContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
 
       let bobUSDCBalanceBefore = await usdcContract.balanceOf(bob.address)
       let bobWETHBalanceBefore = await wethContract.balanceOf(bob.address)
@@ -107,24 +120,33 @@ describe('V3 to V4 Migration Tests:', () => {
       let bobUSDCBalanceAfter = await usdcContract.balanceOf(bob.address)
       let bobWETHBalanceAfter = await wethContract.balanceOf(bob.address)
 
-      let usdcSpent = bobUSDCBalanceBefore.sub(bobUSDCBalanceAfter)
-      let wethSpent = bobWETHBalanceBefore.sub(bobWETHBalanceAfter)
+      let usdcSpent = bobUSDCBalanceBefore - bobUSDCBalanceAfter
+      let wethSpent = bobWETHBalanceBefore - bobWETHBalanceAfter
 
       // check that the USDC and WETH were spent
       expect(usdcSpent > 0 || wethSpent > 0)
       const receipt = await tx.wait()
 
-      const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
+      const iface = v3NFTPositionManager.interface
+      const transferEvent = receipt!.logs
+        .map((log: any) => {
+          try {
+            return iface.parseLog(log)
+          } catch {
+            return null
+          }
+        })
+        .find((parsed: any) => parsed?.name === 'IncreaseLiquidity')
 
       tokenIdv3 = transferEvent?.args?.tokenId
     })
 
     describe('erc721permit', () => {
       it('erc721 permit succeeds', async () => {
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
 
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -141,7 +163,7 @@ describe('V3 to V4 Migration Tests:', () => {
         // bob permits the router to spend token
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
-        expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(router.address)
+        expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(routerAddress)
       })
 
       it('need to call permit when executing V3_POSITION_MANAGER_PERMIT command', async () => {
@@ -168,9 +190,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       it('only owner of the token can generate a signature to permit another address', async () => {
         // eve is not the owner of the token
-        const { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        const { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -189,9 +211,9 @@ describe('V3 to V4 Migration Tests:', () => {
       })
 
       it('other address can call permit on behalf of someone as long as owner of the token generated the signature properly', async () => {
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -208,16 +230,16 @@ describe('V3 to V4 Migration Tests:', () => {
         // eve can permit the router for bob using bob's signature
         await executeRouter(planner, eve, router, wethContract, daiContract, usdcContract)
 
-        expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(router.address)
+        expect((await v3NFTPositionManager.positions(tokenIdv3)).operator).to.eq(routerAddress)
       })
     })
 
     describe('decrease liquidity', () => {
       it('decrease liquidity succeeds', async () => {
         // first we need to permit the router to spend the nft
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -280,9 +302,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       it('cannot call decrease liquidity with improper function selector', async () => {
         // first we need to permit the router to spend the nft
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -308,11 +330,9 @@ describe('V3 to V4 Migration Tests:', () => {
           deadline: MAX_UINT,
         }
 
-        const abi = new ethers.utils.AbiCoder()
+        const abi = new AbiCoder()
         const encodedParams = abi.encode([BAD_DECREASE_LIQUIDITY_STRUCT], [decreaseParams])
-        const functionSignature = ethers.utils
-          .id('decreaseLiquidity((uint256,uint128,uint256,uint256))')
-          .substring(0, 10)
+        const functionSignature = ethersId('decreaseLiquidity((uint256,uint128,uint256,uint256))').substring(0, 10)
         const encodedCall = functionSignature + encodedParams.substring(2)
 
         planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedCall])
@@ -323,9 +343,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       it('fails if decrease liquidity call fails', async () => {
         // first we need to permit the router to spend the nft
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -355,9 +375,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       it('cannot call decrease liquidity if not authorized', async () => {
         // bob creates a signature for the router to spend the token
-        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -405,9 +425,9 @@ describe('V3 to V4 Migration Tests:', () => {
         await v3NFTPositionManager.connect(eve).setApprovalForAll(bob.address, true)
 
         // eve creates a signature for the router to spend the token
-        let { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -436,7 +456,7 @@ describe('V3 to V4 Migration Tests:', () => {
         await v3NFTPositionManager.transferFrom(bob.address, eve.address, tokenIdv3)
 
         // eve approves the router to spend all of her tokens
-        await v3NFTPositionManager.connect(eve).setApprovalForAll(router.address, true)
+        await v3NFTPositionManager.connect(eve).setApprovalForAll(routerAddress, true)
 
         // eve creates a signature for bob to spend the token
         let { v, r, s } = await getPermitNFTSignature(eve, v3NFTPositionManager, bob.address, tokenIdv3, MAX_UINT)
@@ -472,9 +492,9 @@ describe('V3 to V4 Migration Tests:', () => {
         let bobToken1BalanceBefore = await wethContract.balanceOf(bob.address)
 
         // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -530,9 +550,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       it('collecting the correct amount', async () => {
         // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -561,8 +581,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
-        let bobToken0BalanceBefore: BigNumber = await usdcContract.balanceOf(bob.address)
-        let bobToken1BalanceBefore: BigNumber = await wethContract.balanceOf(bob.address)
+        let bobToken0BalanceBefore = await usdcContract.balanceOf(bob.address)
+        let bobToken1BalanceBefore = await wethContract.balanceOf(bob.address)
 
         position = await v3NFTPositionManager.positions(tokenIdv3)
         let owed0Before = position.tokensOwed0
@@ -595,26 +615,26 @@ describe('V3 to V4 Migration Tests:', () => {
         expect(owed0After).to.eq(0)
         expect(owed1After).to.eq(0)
 
-        let bobToken0BalanceAfter: BigNumber = await usdcContract.balanceOf(bob.address)
-        let bobToken1BalanceAfter: BigNumber = await wethContract.balanceOf(bob.address)
+        let bobToken0BalanceAfter = await usdcContract.balanceOf(bob.address)
+        let bobToken1BalanceAfter = await wethContract.balanceOf(bob.address)
 
         // bob is the recipient - he should have received the owed tokens
-        expect(bobToken0BalanceAfter.sub(bobToken0BalanceBefore)).to.be.eq(owed0Before)
-        expect(bobToken1BalanceAfter.sub(bobToken1BalanceBefore)).to.be.eq(owed1Before)
+        expect(bobToken0BalanceAfter - bobToken0BalanceBefore).to.be.eq(owed0Before)
+        expect(bobToken1BalanceAfter - bobToken1BalanceBefore).to.be.eq(owed1Before)
       })
 
       it('collect succeeds with router as recipient', async () => {
-        let routerToken0BalanceBefore = await usdcContract.balanceOf(router.address)
-        let routerToken1BalanceBefore = await wethContract.balanceOf(router.address)
+        let routerToken0BalanceBefore = await usdcContract.balanceOf(routerAddress)
+        let routerToken1BalanceBefore = await wethContract.balanceOf(routerAddress)
 
         // router should have no balance of the tokens
         expect(routerToken0BalanceBefore).to.be.eq(0)
         expect(routerToken1BalanceBefore).to.be.eq(0)
 
         // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -641,7 +661,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         const collectParams = {
           tokenId: tokenIdv3,
-          recipient: router.address,
+          recipient: routerAddress,
           amount0Max: MAX_UINT128,
           amount1Max: MAX_UINT128,
         }
@@ -653,8 +673,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
         await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
-        let routerToken0BalanceAfter = await usdcContract.balanceOf(router.address)
-        let routerToken1BalanceAfter = await wethContract.balanceOf(router.address)
+        let routerToken0BalanceAfter = await usdcContract.balanceOf(routerAddress)
+        let routerToken1BalanceAfter = await wethContract.balanceOf(routerAddress)
 
         // router is the recipient - router should have received the owed tokens
         // (there is sweep function if necessary)
@@ -664,9 +684,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       it('cannot call collect with improper signature', async () => {
         // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -699,9 +719,9 @@ describe('V3 to V4 Migration Tests:', () => {
           amount1Max: MAX_UINT128,
         }
 
-        const abi = new ethers.utils.AbiCoder()
+        const abi = new AbiCoder()
         const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
-        const functionSignatureCollect = ethers.utils.id('collect((uint256,address,uint128))').substring(0, 10)
+        const functionSignatureCollect = ethersId('collect((uint256,address,uint128))').substring(0, 10)
         const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
 
         planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
@@ -714,9 +734,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       it('cannot call collect with improper params', async () => {
         // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -744,9 +764,9 @@ describe('V3 to V4 Migration Tests:', () => {
         const COLLECT_STRUCT = '(uint256 tokenId,address recipient,uint256 amount0Max)'
         const collectParams = { tokenId: tokenIdv3, recipient: bob.address, amount0Max: MAX_UINT128 }
 
-        const abi = new ethers.utils.AbiCoder()
+        const abi = new AbiCoder()
         const encodedCollectParams = abi.encode([COLLECT_STRUCT], [collectParams])
-        const functionSignatureCollect = ethers.utils.id('collect((uint256,address,uint128,uint128))').substring(0, 10)
+        const functionSignatureCollect = ethersId('collect((uint256,address,uint128,uint128))').substring(0, 10)
         const encodedCollectCall = functionSignatureCollect + encodedCollectParams.substring(2)
 
         planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedDecreaseCall])
@@ -759,9 +779,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       it('cannot call collect if the router is not approved for that tokenid', async () => {
         // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -792,7 +812,7 @@ describe('V3 to V4 Migration Tests:', () => {
 
         // not approved on the collect call
         const collectParams = {
-          tokenId: BigNumber.from(1),
+          tokenId: 1n,
           recipient: bob.address,
           amount0Max: MAX_UINT128,
           amount1Max: MAX_UINT128,
@@ -810,9 +830,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       it('address cannot call collect if unapproved for that tokenid', async () => {
         // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -865,9 +885,9 @@ describe('V3 to V4 Migration Tests:', () => {
     describe('burn liquidity', () => {
       it('burn succeeds', async () => {
         // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -914,9 +934,9 @@ describe('V3 to V4 Migration Tests:', () => {
 
       it('burn fails if you arent approved spender of nft', async () => {
         // first we need to permit the router to spend the nft
-        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+        let { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
         const erc721PermitParams = {
-          spender: router.address,
+          spender: routerAddress,
           tokenId: tokenIdv3,
           deadline: MAX_UINT,
           v: v,
@@ -1005,8 +1025,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
     it('mint v4 succeeds', async () => {
       // transfer to v4posm
-      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
-      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+      await usdcContract.connect(bob).transfer(v4PositionManagerAddress, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManagerAddress, expandTo18DecimalsBN(100))
 
       v4Planner.addAction(Actions.MINT_POSITION, [
         USDC_WETH.poolKey,
@@ -1029,8 +1049,8 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
 
       // assert that the posm holds tokens before executeRouter
-      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(expandTo6DecimalsBN(100000))
-      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(expandTo18DecimalsBN(100))
+      expect(await usdcContract.balanceOf(v4PositionManagerAddress)).to.eq(expandTo6DecimalsBN(100000))
+      expect(await wethContract.balanceOf(v4PositionManagerAddress)).to.eq(expandTo18DecimalsBN(100))
 
       // bob does not own a position
       expect(await v4PositionManager.balanceOf(bob.address)).to.eq(0)
@@ -1042,8 +1062,8 @@ describe('V3 to V4 Migration Tests:', () => {
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
       // bob successfully sweeped his usdc and weth from the v4 position manager
-      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
-      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await wethContract.balanceOf(v4PositionManagerAddress)).to.eq(0)
+      expect(await usdcContract.balanceOf(v4PositionManagerAddress)).to.eq(0)
       expect(await usdcContract.balanceOf(bob.address)).to.be.gt(bobUSDCBalanceBefore)
       expect(await wethContract.balanceOf(bob.address)).to.be.gt(bobWETHBalanceBefore)
 
@@ -1054,8 +1074,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
     it('an address can mint on behalf of another address', async () => {
       // transfer to v4posm
-      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
-      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+      await usdcContract.connect(bob).transfer(v4PositionManagerAddress, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManagerAddress, expandTo18DecimalsBN(100))
 
       // mint params for bob
       v4Planner.addAction(Actions.MINT_POSITION, [
@@ -1098,8 +1118,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
     it('erc721 permit on v4 fails with invalid selector', async () => {
       // transfer to v4posm
-      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
-      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+      await usdcContract.connect(bob).transfer(v4PositionManagerAddress, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManagerAddress, expandTo18DecimalsBN(100))
 
       // mint position first
       v4Planner.addAction(Actions.MINT_POSITION, [
@@ -1127,17 +1147,17 @@ describe('V3 to V4 Migration Tests:', () => {
       // router is not approved to spend the token
       expect(await v4PositionManager.getApproved(expectedTokenId)).to.eq(ZERO_ADDRESS)
 
-      const { compact } = await getPermitV4Signature(
+      const { compact } = (await getPermitV4Signature(
         bob,
         v4PositionManager,
-        router.address,
+        routerAddress,
         expectedTokenId,
         MAX_UINT,
         { nonce: 1 }
-      )
+      )) as unknown as { compact: string }
 
       const erc721PermitParams = {
-        spender: router.address,
+        spender: routerAddress,
         tokenId: expectedTokenId,
         deadline: MAX_UINT,
         nonce: 1,
@@ -1155,8 +1175,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
     it('increase v4 fails', async () => {
       // transfer to v4posm
-      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
-      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+      await usdcContract.connect(bob).transfer(v4PositionManagerAddress, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManagerAddress, expandTo18DecimalsBN(100))
       // mint position first
       v4Planner.addAction(Actions.MINT_POSITION, [
         USDC_WETH.poolKey,
@@ -1187,8 +1207,8 @@ describe('V3 to V4 Migration Tests:', () => {
       // increase position second
       planner = new RoutePlanner()
       v4Planner = new V4Planner()
-      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(10000))
-      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(10))
+      await usdcContract.connect(bob).transfer(v4PositionManagerAddress, expandTo6DecimalsBN(10000))
+      await wethContract.connect(bob).transfer(v4PositionManagerAddress, expandTo18DecimalsBN(10))
 
       v4Planner.addAction(Actions.INCREASE_LIQUIDITY, [expectedTokenId, '6000000', MAX_UINT128, MAX_UINT128, '0x'])
 
@@ -1202,8 +1222,8 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
 
       // assert that the posm holds tokens before executeRouter
-      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(expandTo6DecimalsBN(10000))
-      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(expandTo18DecimalsBN(10))
+      expect(await usdcContract.balanceOf(v4PositionManagerAddress)).to.eq(expandTo6DecimalsBN(10000))
+      expect(await wethContract.balanceOf(v4PositionManagerAddress)).to.eq(expandTo18DecimalsBN(10))
 
       await expect(
         executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
@@ -1213,8 +1233,8 @@ describe('V3 to V4 Migration Tests:', () => {
     it('decrease v4 does not succeed', async () => {
       // first mint the v4 nft
       // transfer to v4posm
-      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
-      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+      await usdcContract.connect(bob).transfer(v4PositionManagerAddress, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManagerAddress, expandTo18DecimalsBN(100))
 
       v4Planner.addAction(Actions.MINT_POSITION, [
         USDC_WETH.poolKey,
@@ -1261,8 +1281,8 @@ describe('V3 to V4 Migration Tests:', () => {
     it('burn v4 does not succeed', async () => {
       // first mint the v4 nft
       // transfer to v4posm
-      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
-      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+      await usdcContract.connect(bob).transfer(v4PositionManagerAddress, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManagerAddress, expandTo18DecimalsBN(100))
 
       v4Planner.addAction(Actions.MINT_POSITION, [
         USDC_WETH.poolKey,
@@ -1310,8 +1330,8 @@ describe('V3 to V4 Migration Tests:', () => {
   describe('Migration', () => {
     it('migrate with initialize pool and minting succeeds', async () => {
       // Bob max-approves the v3PM to access his USDC and WETH
-      await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
-      await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+      await usdcContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
+      await wethContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
 
       planner.addCommand(CommandType.V4_INITIALIZE_POOL, [USDC_WETH.poolKey, USDC_WETH.price])
 
@@ -1337,14 +1357,23 @@ describe('V3 to V4 Migration Tests:', () => {
       expect(await v4PositionManager.balanceOf(bob.address)).to.eq(0)
 
       const receipt = await tx.wait()
-      const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
+      const iface = v3NFTPositionManager.interface
+      const transferEvent = receipt!.logs
+        .map((log: any) => {
+          try {
+            return iface.parseLog(log)
+          } catch {
+            return null
+          }
+        })
+        .find((parsed: any) => parsed?.name === 'IncreaseLiquidity')
       tokenIdv3 = transferEvent?.args?.tokenId
 
       // permit, decrease, collect, burn
       const encodedErc721PermitCall = await permit()
       const encodedDecreaseCall = await decreaseLiquidity()
       // set receiver to v4posm
-      const encodedCollectCall = collect(v4PositionManager.address)
+      const encodedCollectCall = collect(v4PositionManagerAddress)
       const encodedBurnCall = encodeBurn(tokenIdv3)
 
       planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
@@ -1377,8 +1406,8 @@ describe('V3 to V4 Migration Tests:', () => {
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
       // bob successfully sweeped his usdc and weth from the v4 position manager
-      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
-      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await wethContract.balanceOf(v4PositionManagerAddress)).to.eq(0)
+      expect(await usdcContract.balanceOf(v4PositionManagerAddress)).to.eq(0)
 
       // bob does not own a v3position
       expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
@@ -1390,8 +1419,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
     it('migrate with increasing does not succeed', async () => {
       // transfer to v4posm
-      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
-      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+      await usdcContract.connect(bob).transfer(v4PositionManagerAddress, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManagerAddress, expandTo18DecimalsBN(100))
 
       // initialize the pool
       await v4PositionManager.connect(bob).initializePool(USDC_WETH.poolKey, USDC_WETH.price)
@@ -1427,15 +1456,15 @@ describe('V3 to V4 Migration Tests:', () => {
       expect(await v4PositionManager.balanceOf(bob.address)).to.eq(1)
 
       // bob successfully sweeped his usdc and weth from the v4 position manager
-      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
-      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await wethContract.balanceOf(v4PositionManagerAddress)).to.eq(0)
+      expect(await usdcContract.balanceOf(v4PositionManagerAddress)).to.eq(0)
 
       // migrate with increasing
       planner = new RoutePlanner()
       v4Planner = new V4Planner()
       // Bob max-approves the v3PM to access his USDC and WETH
-      await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
-      await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+      await usdcContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
+      await wethContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
 
       // mint the nft to bob on v3
       const tx = await v3NFTPositionManager.mint({
@@ -1453,7 +1482,16 @@ describe('V3 to V4 Migration Tests:', () => {
       })
 
       const receipt = await tx.wait()
-      const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
+      const iface = v3NFTPositionManager.interface
+      const transferEvent = receipt!.logs
+        .map((log: any) => {
+          try {
+            return iface.parseLog(log)
+          } catch {
+            return null
+          }
+        })
+        .find((parsed: any) => parsed?.name === 'IncreaseLiquidity')
       tokenIdv3 = transferEvent?.args?.tokenId
 
       // bob owns a v3position
@@ -1463,7 +1501,7 @@ describe('V3 to V4 Migration Tests:', () => {
       let encodedErc721PermitCall = await permit()
       const encodedDecreaseCall = await decreaseLiquidity()
       // set receiver to v4posm
-      const encodedCollectCall = collect(v4PositionManager.address)
+      const encodedCollectCall = collect(v4PositionManagerAddress)
       const encodedBurnCall = encodeBurn(tokenIdv3)
 
       planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
@@ -1472,12 +1510,12 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
 
       // need to permit the router to spend the nft first
-      let { compact } = await getPermitV4Signature(bob, v4PositionManager, router.address, expectedTokenId, MAX_UINT, {
+      let { compact } = (await getPermitV4Signature(bob, v4PositionManager, routerAddress, expectedTokenId, MAX_UINT, {
         nonce: 1,
-      })
+      })) as unknown as { compact: string }
 
       let erc721PermitParams = {
-        spender: router.address,
+        spender: routerAddress,
         tokenId: expectedTokenId,
         deadline: MAX_UINT,
         nonce: 1,
@@ -1503,7 +1541,9 @@ describe('V3 to V4 Migration Tests:', () => {
       // Need to "un-permit" the router (permit address 0) so that the router can no longer spend the nft
       // if the router is not unpermitted, anyone can call V4_POSITION_MANAGER_CALL and decrease / burn the position
       compact = (
-        await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, { nonce: 2 })
+        (await getPermitV4Signature(bob, v4PositionManager, ZERO_ADDRESS, expectedTokenId, MAX_UINT, {
+          nonce: 2,
+        })) as unknown as { compact: string }
       ).compact
 
       erc721PermitParams = {
@@ -1525,8 +1565,8 @@ describe('V3 to V4 Migration Tests:', () => {
 
     it('migrate a weth position into an eth position by forwarding eth, with initialize pool', async () => {
       // Bob max-approves the v3PM to access his USDC and WETH
-      await usdcContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
-      await wethContract.connect(bob).approve(v3NFTPositionManager.address, MAX_UINT)
+      await usdcContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
+      await wethContract.connect(bob).approve(v3NFTPositionManagerAddress, MAX_UINT)
 
       planner.addCommand(CommandType.V4_INITIALIZE_POOL, [ETH_USDC.poolKey, ETH_USDC.price])
 
@@ -1552,14 +1592,23 @@ describe('V3 to V4 Migration Tests:', () => {
       expect(await v4PositionManager.balanceOf(bob.address)).to.eq(0)
 
       const receipt = await tx.wait()
-      const transferEvent = receipt.events?.find((event) => event.event === 'IncreaseLiquidity')
+      const iface = v3NFTPositionManager.interface
+      const transferEvent = receipt!.logs
+        .map((log: any) => {
+          try {
+            return iface.parseLog(log)
+          } catch {
+            return null
+          }
+        })
+        .find((parsed: any) => parsed?.name === 'IncreaseLiquidity')
       tokenIdv3 = transferEvent?.args?.tokenId
 
       // permit, decrease, collect, burn
       const encodedErc721PermitCall = await permit()
       const encodedDecreaseCall = await decreaseLiquidity()
       // set receiver to v4posm
-      const encodedCollectCall = collect(router.address)
+      const encodedCollectCall = collect(routerAddress)
       const encodedBurnCall = encodeBurn(tokenIdv3)
 
       planner.addCommand(CommandType.V3_POSITION_MANAGER_PERMIT, [encodedErc721PermitCall])
@@ -1568,10 +1617,10 @@ describe('V3 to V4 Migration Tests:', () => {
       planner.addCommand(CommandType.V3_POSITION_MANAGER_CALL, [encodedBurnCall])
 
       // unwrap weth to eth and set router as recipient
-      planner.addCommand(CommandType.UNWRAP_WETH, [router.address, 0])
+      planner.addCommand(CommandType.UNWRAP_WETH, [routerAddress, 0])
 
       // transfer usdc to v4 position manager
-      planner.addCommand(CommandType.TRANSFER, [USDC.address, v4PositionManager.address, CONTRACT_BALANCE])
+      planner.addCommand(CommandType.TRANSFER, [USDC.address, v4PositionManagerAddress, CONTRACT_BALANCE])
 
       v4Planner.addAction(Actions.MINT_POSITION, [
         ETH_USDC.poolKey,
@@ -1599,8 +1648,8 @@ describe('V3 to V4 Migration Tests:', () => {
       await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
 
       // bob successfully sweeped his usdc and weth from the v4 position manager
-      expect(await wethContract.balanceOf(v4PositionManager.address)).to.eq(0)
-      expect(await usdcContract.balanceOf(v4PositionManager.address)).to.eq(0)
+      expect(await wethContract.balanceOf(v4PositionManagerAddress)).to.eq(0)
+      expect(await usdcContract.balanceOf(v4PositionManagerAddress)).to.eq(0)
 
       // bob does not own a v3position
       expect(await v3NFTPositionManager.balanceOf(bob.address)).to.eq(0)
@@ -1612,10 +1661,10 @@ describe('V3 to V4 Migration Tests:', () => {
   })
 
   async function permit(): Promise<string> {
-    const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, router.address, tokenIdv3, MAX_UINT)
+    const { v, r, s } = await getPermitNFTSignature(bob, v3NFTPositionManager, routerAddress, tokenIdv3, MAX_UINT)
 
     const erc721PermitParams = {
-      spender: router.address,
+      spender: routerAddress,
       tokenId: tokenIdv3,
       deadline: MAX_UINT,
       v: v,
