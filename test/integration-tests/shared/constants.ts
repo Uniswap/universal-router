@@ -1,5 +1,4 @@
-import hre from 'hardhat'
-const { ethers } = hre
+import { ethers } from 'ethers'
 
 // Router Helpers
 export const MAX_UINT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
@@ -10,8 +9,8 @@ export const CONTRACT_BALANCE = '0x800000000000000000000000000000000000000000000
 export const OPEN_DELTA = 0
 export const ALREADY_PAID = 0
 export const ALICE_ADDRESS = '0x28c6c06298d514db089934071355e5743bf21d60'
-export const ETH_ADDRESS = ethers.constants.AddressZero
-export const ZERO_ADDRESS = ethers.constants.AddressZero
+export const ETH_ADDRESS = ethers.ZeroAddress
+export const ZERO_ADDRESS = ethers.ZeroAddress
 export const ONE_PERCENT_BIPS = 100
 export const MSG_SENDER: string = '0x0000000000000000000000000000000000000001'
 export const ADDRESS_THIS: string = '0x0000000000000000000000000000000000000002'
