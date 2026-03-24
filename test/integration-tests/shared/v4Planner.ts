@@ -1,4 +1,6 @@
-import { defaultAbiCoder } from 'ethers/lib/utils'
+import { AbiCoder } from 'ethers'
+
+const defaultAbiCoder = AbiCoder.defaultAbiCoder()
 
 /**
  * Actions
