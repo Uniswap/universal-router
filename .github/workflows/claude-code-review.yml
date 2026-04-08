@@ -20,7 +20,7 @@ jobs:
         github.event.action == 'ready_for_review'
       )
 
-    uses: Uniswap/ai-toolkit/.github/workflows/_claude-code-review.yml@45880f79482d5c4a0c7d48d39e1ac2c5fc783f85
+    uses: Uniswap/ai-toolkit/.github/workflows/_claude-code-review.yml@b229e128e6a60bc6a495e80bda9f13d6bafdfc5e
     with:
       pr_number: ${{ github.event.pull_request.number }}
       base_ref: ${{ github.base_ref }}
