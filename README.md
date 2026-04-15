@@ -144,7 +144,7 @@ INFURA_API_KEY='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 ```console
 yarn install
 yarn compile
-yarn test
+yarn test:hardhat
 ```
 
 If you run into an issue on `yarn compile` where it cannot find the dependencies in the lib folder try to clone all the submodules with:
