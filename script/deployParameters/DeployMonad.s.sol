@@ -14,6 +14,7 @@ contract DeployMonad is DeployUniversalRouter {
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: 0x188d586Ddcf52439676Ca21A244753fA19F9Ea8e,
+            permissionsAdapterFactory: address(0), // ToDo: Add permissions adapter factory
             v3NFTPositionManager: 0x7197E214c0b767cFB76Fb734ab638E2c192F4E53,
             v4PositionManager: 0x5b7eC4a94fF9beDb700fb82aB09d5846972F4016,
             spokePool: UNSUPPORTED_PROTOCOL
