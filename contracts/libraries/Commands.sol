@@ -19,7 +19,7 @@ library Commands {
     uint256 constant SWEEP = 0x04;
     uint256 constant TRANSFER = 0x05;
     uint256 constant PAY_PORTION = 0x06;
-    // COMMAND_PLACEHOLDER = 0x07;
+    uint256 constant PAY_PORTION_FULL_PRECISION = 0x07;
 
     // Command Types where 0x08<=value<=0x0f, executed in the second nested-if block
     uint256 constant V2_SWAP_EXACT_IN = 0x08;

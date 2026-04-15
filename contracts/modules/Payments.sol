@@ -17,6 +17,7 @@ abstract contract Payments is PaymentsImmutables {
 
     error InsufficientToken();
     error InsufficientETH();
+    error InvalidPortion();
 
     /// @notice Pays an amount of ETH or ERC20 to a recipient
     /// @param token The token to pay (can be ETH using Constants.ETH)
@@ -46,6 +47,23 @@ abstract contract Payments is PaymentsImmutables {
         } else {
             uint256 balance = ERC20(token).balanceOf(address(this));
             uint256 amount = balance.calculatePortion(bips);
+            ERC20(token).safeTransfer(recipient, amount);
+        }
+    }
+
+    /// @notice Pays a proportion of the contract's ETH or ERC20 to a recipient with 1e18 precision
+    /// @param token The token to pay (can be ETH using Constants.ETH)
+    /// @param recipient The address that will receive payment
+    /// @param portion Portion of whole balance of the contract, where 1e18 represents 100%
+    function payPortionFullPrecision(address token, address recipient, uint256 portion) internal {
+        if (portion > 1e18) revert InvalidPortion();
+        if (token == Constants.ETH) {
+            uint256 balance = address(this).balance;
+            uint256 amount = balance * portion / 1e18;
+            recipient.safeTransferETH(amount);
+        } else {
+            uint256 balance = ERC20(token).balanceOf(address(this));
+            uint256 amount = balance * portion / 1e18;
             ERC20(token).safeTransfer(recipient, amount);
         }
     }

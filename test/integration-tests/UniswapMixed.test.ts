@@ -121,9 +121,10 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         v3AmountOutMin,
         encodePathExactInput(v3Tokens),
         SOURCE_MSG_SENDER,
+        [],
       ])
       // amountIn of 0 because the USDC is already in the pair
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, v2AmountOutMin, v2Tokens, SOURCE_MSG_SENDER])
+      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, v2AmountOutMin, v2Tokens, SOURCE_MSG_SENDER, []])
 
       const { wethBalanceBefore, wethBalanceAfter, v2SwapEventArgs } = await executeRouter(
         planner,
@@ -150,6 +151,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         v2AmountOutMin,
         v2Tokens,
         SOURCE_MSG_SENDER,
+        [],
       ])
       planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
         MSG_SENDER,
@@ -157,6 +159,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         v3AmountOutMin,
         encodePathExactInput(v3Tokens),
         SOURCE_ROUTER,
+        [],
       ])
 
       const { wethBalanceBefore, wethBalanceAfter, v3SwapEventArgs } = await executeRouter(
@@ -186,9 +189,9 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM, [DAI.address, Pair.getAddress(DAI, USDT), v2AmountIn2])
 
       // 2) trade route1 and return tokens to bob
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, minAmountOut1, route1, SOURCE_MSG_SENDER])
+      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, minAmountOut1, route1, SOURCE_MSG_SENDER, []])
       // 3) trade route2 and return tokens to bob
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, minAmountOut2, route2, SOURCE_MSG_SENDER])
+      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, minAmountOut2, route2, SOURCE_MSG_SENDER, []])
 
       const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
         planner,
@@ -228,9 +231,9 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       planner.addCommand(CommandType.PERMIT2_TRANSFER_FROM_BATCH, [BATCH_TRANSFER])
 
       // 2) trade route1 and return tokens to bob
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, minAmountOut1, route1, SOURCE_MSG_SENDER])
+      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, minAmountOut1, route1, SOURCE_MSG_SENDER, []])
       // 3) trade route2 and return tokens to bob
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, minAmountOut2, route2, SOURCE_MSG_SENDER])
+      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [MSG_SENDER, 0, minAmountOut2, route2, SOURCE_MSG_SENDER, []])
 
       const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
         planner,
@@ -258,6 +261,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         minAmountOut1,
         route1,
         SOURCE_MSG_SENDER,
+        [],
       ])
       // 2) trade route2 and return tokens to bob
       planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
@@ -266,6 +270,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         minAmountOut2,
         route2,
         SOURCE_MSG_SENDER,
+        [],
       ])
 
       const { wethBalanceBefore, wethBalanceAfter } = await executeRouter(
@@ -359,6 +364,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         minAmountOut1,
         route1,
         SOURCE_MSG_SENDER,
+        [],
       ])
       // 3) trade route2 and return tokens to bob
       planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [
@@ -367,6 +373,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         minAmountOut2,
         route2,
         SOURCE_MSG_SENDER,
+        [],
       ])
 
       const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(
@@ -440,6 +447,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         minAmountOut1WETH,
         encodePathExactInput(route1),
         SOURCE_ROUTER,
+        [],
       ])
       // 3) trade route2 and return tokens to bob
       planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
@@ -448,6 +456,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         minAmountOut1USDC.add(minAmountOut2USDC),
         encodePathExactInput(route2),
         SOURCE_ROUTER,
+        [],
       ])
 
       const { usdcBalanceBefore, usdcBalanceAfter } = await executeRouter(
@@ -468,7 +477,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       const minAmountOut = expandTo18DecimalsBN(0.0005)
 
       // V2 trades DAI for USDC, sending the tokens back to the router for v3 trade
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [ADDRESS_THIS, v2AmountIn, 0, tokens, SOURCE_MSG_SENDER])
+      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [ADDRESS_THIS, v2AmountIn, 0, tokens, SOURCE_MSG_SENDER, []])
       // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
       planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
         ADDRESS_THIS,
@@ -476,6 +485,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         0,
         encodePathExactInput(tokens),
         SOURCE_MSG_SENDER,
+        [],
       ])
       // aggregate slippage check
       planner.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, minAmountOut])
@@ -502,13 +512,14 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       const value = v2AmountIn.add(v3AmountIn)
 
       planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, value])
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [ADDRESS_THIS, v2AmountIn, 0, tokens, SOURCE_ROUTER])
+      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [ADDRESS_THIS, v2AmountIn, 0, tokens, SOURCE_ROUTER, []])
       planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
         ADDRESS_THIS,
         v3AmountIn,
         0,
         encodePathExactInput(tokens),
         SOURCE_MSG_SENDER,
+        [],
       ])
       // aggregate slippage check
       planner.addCommand(CommandType.SWEEP, [USDC.address, MSG_SENDER, 0.0005 * 10 ** 6])
@@ -533,13 +544,14 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
       const v2AmountIn: BigNumber = expandTo18DecimalsBN(20)
       const v3AmountIn: BigNumber = expandTo18DecimalsBN(30)
 
-      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [ADDRESS_THIS, v2AmountIn, 0, tokens, SOURCE_MSG_SENDER])
+      planner.addCommand(CommandType.V2_SWAP_EXACT_IN, [ADDRESS_THIS, v2AmountIn, 0, tokens, SOURCE_MSG_SENDER, []])
       planner.addCommand(CommandType.V3_SWAP_EXACT_IN, [
         ADDRESS_THIS,
         v3AmountIn,
         0,
         encodePathExactInput(tokens),
         SOURCE_MSG_SENDER,
+        [],
       ])
       // aggregate slippage check
       planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, expandTo18DecimalsBN(0.0005)])
@@ -573,6 +585,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         maxAmountIn,
         [DAI.address, WETH.address],
         SOURCE_MSG_SENDER,
+        [],
       ])
       planner.addCommand(CommandType.V3_SWAP_EXACT_OUT, [
         ADDRESS_THIS,
@@ -580,6 +593,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         maxAmountIn,
         path,
         SOURCE_MSG_SENDER,
+        [],
       ])
       // aggregate slippage check
       planner.addCommand(CommandType.UNWRAP_WETH, [MSG_SENDER, fullAmountOut])
@@ -612,7 +626,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath(route1, currencyIn),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountIn: v4AmountIn1,
           amountOutMinimum: 0,
         },
@@ -622,7 +636,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath(route2, currencyIn),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountIn: v4AmountIn2,
           amountOutMinimum: 0,
         },
@@ -674,6 +688,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           planOneTokens,
           SOURCE_MSG_SENDER,
+          [],
         ])
         // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
         subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
@@ -682,6 +697,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           encodePathExactInput(planOneTokens),
           SOURCE_MSG_SENDER,
+          [],
         ])
         // aggregate slippage check
         subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, planOneWethMinOut])
@@ -700,6 +716,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           wethMinAmountOut2,
           encodePathExactInput(planTwoTokens),
           SOURCE_MSG_SENDER,
+          [],
         ])
 
         // add the second subplan to the main planner
@@ -730,6 +747,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           planOneTokens,
           SOURCE_MSG_SENDER,
+          [],
         ])
         // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
         subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
@@ -738,6 +756,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           encodePathExactInput(planOneTokens),
           SOURCE_MSG_SENDER,
+          [],
         ])
         // aggregate slippage check
         subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, planOneWethMinOut])
@@ -756,6 +775,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           wethMinAmountOut2,
           encodePathExactInput(planTwoTokens),
           SOURCE_MSG_SENDER,
+          [],
         ])
 
         // add the second subplan to the main planner
@@ -789,6 +809,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           planOneTokens,
           SOURCE_MSG_SENDER,
+          [],
         ])
         // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
         subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
@@ -797,6 +818,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           encodePathExactInput(planOneTokens),
           SOURCE_MSG_SENDER,
+          [],
         ])
         // aggregate slippage check
         subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, planOneWethMinOut])
@@ -816,6 +838,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           wethMinAmountOut2,
           encodePathExactInput(planTwoTokens),
           SOURCE_MSG_SENDER,
+          [],
         ])
 
         // add the second subplan to the main planner
@@ -846,6 +869,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           planOneTokens,
           SOURCE_MSG_SENDER,
+          [],
         ])
         // V3 trades USDC for WETH, trading the whole balance, with a recipient of Alice
         subplan.addCommand(CommandType.V3_SWAP_EXACT_IN, [
@@ -854,6 +878,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           0,
           encodePathExactInput(planOneTokens),
           SOURCE_MSG_SENDER,
+          [],
         ])
         // aggregate slippage check
         subplan.addCommand(CommandType.SWEEP, [WETH.address, MSG_SENDER, planOneWethMinOut])
@@ -873,6 +898,7 @@ describe('Uniswap V2, V3, and V4 Tests:', () => {
           wethMinAmountOut2,
           encodePathExactInput(planTwoTokens),
           SOURCE_MSG_SENDER,
+          [],
         ])
 
         // add the second subplan to the main planner
