@@ -6,9 +6,12 @@ import {Permit2Payments} from '../../Permit2Payments.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
 import {Currency} from '@uniswap/v4-core/src/types/Currency.sol';
 import {PermissionedV4Router} from '@uniswap/v4-periphery/src/hooks/permissionedPools/PermissionedV4Router.sol';
-import {IPermissionsAdapterFactory} from
-    '@uniswap/v4-periphery/src/hooks/permissionedPools/interfaces/IPermissionsAdapterFactory.sol';
-import {IPermissionsAdapter} from '@uniswap/v4-periphery/src/hooks/permissionedPools/interfaces/IPermissionsAdapter.sol';
+import {
+    IPermissionsAdapterFactory
+} from '@uniswap/v4-periphery/src/hooks/permissionedPools/interfaces/IPermissionsAdapterFactory.sol';
+import {
+    IPermissionsAdapter
+} from '@uniswap/v4-periphery/src/hooks/permissionedPools/interfaces/IPermissionsAdapter.sol';
 
 /// @title Router for Uniswap v4 Trades
 abstract contract V4SwapRouter is PermissionedV4Router, Permit2Payments {
