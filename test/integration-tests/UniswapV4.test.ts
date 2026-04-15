@@ -162,7 +162,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath([USDC_WETH.poolKey], currencyIn),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountIn: amountInUSDC,
           amountOutMinimum: minAmountOutNative,
         },
@@ -192,7 +192,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyIn),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountIn: amountInDAI,
           amountOutMinimum: minAmountOutNative,
         },
@@ -222,7 +222,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyIn),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountIn: amountInDAI,
           amountOutMinimum: minAmountOutNative,
         },
@@ -270,7 +270,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyIn),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountIn: OPEN_DELTA,
           amountOutMinimum: minOut,
         },
@@ -306,7 +306,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath([DAI_USDC.poolKey, ETH_USDC.poolKey], currencyIn),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountIn: amountInDAI,
           amountOutMinimum: minAmountOutNative,
         },
@@ -375,7 +375,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyOut,
           path: encodeMultihopExactOutPath([USDC_WETH.poolKey], currencyOut),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountOut: amountOutNative,
           amountInMaximum: maxAmountInUSDC,
         },
@@ -405,7 +405,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyOut,
           path: encodeMultihopExactOutPath([DAI_USDC.poolKey, USDC_WETH.poolKey], currencyOut),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountOut: amountOutNative,
           amountInMaximum: maxAmountInDAI,
         },
@@ -467,7 +467,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath([ETH_USDC.poolKey], currencyIn),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountIn: amountInNative,
           amountOutMinimum: minAmountOutUSDC,
         },
@@ -499,7 +499,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath([ETH_USDC.poolKey, DAI_USDC.poolKey], currencyIn),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountIn: amountInNative,
           amountOutMinimum: minAmountOutDAI,
         },
@@ -565,7 +565,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyOut,
           path: encodeMultihopExactOutPath([ETH_USDC.poolKey], currencyOut),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountOut: amountOutUSDC,
           amountInMaximum: maxAmountInNative,
         },
@@ -600,7 +600,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyOut,
           path: encodeMultihopExactOutPath([ETH_USDC.poolKey, DAI_USDC.poolKey], currencyOut),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountOut: amountOutDAI,
           amountInMaximum: maxAmountInNative,
         },
@@ -667,7 +667,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath([ETH_USDC.poolKey], currencyIn),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountIn: amountInUSDC,
           amountOutMinimum: minAmountOutNative,
         },
@@ -698,7 +698,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyIn,
           path: encodeMultihopExactInPath([DAI_USDC.poolKey, ETH_USDC.poolKey], currencyIn),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountIn: amountInDAI,
           amountOutMinimum: minAmountOutNative,
         },
@@ -759,7 +759,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyOut,
           path: encodeMultihopExactOutPath([ETH_USDC.poolKey], currencyOut),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountOut: amountOutNative,
           amountInMaximum: maxAmountInUSDC,
         },
@@ -790,7 +790,7 @@ describe('Uniswap V4 Tests:', () => {
         {
           currencyOut,
           path: encodeMultihopExactOutPath([DAI_USDC.poolKey, ETH_USDC.poolKey], currencyOut),
-          maxHopSlippage: [],
+          minHopPriceX36: [],
           amountOut: amountOutNative,
           amountInMaximum: maxAmountInDAI,
         },

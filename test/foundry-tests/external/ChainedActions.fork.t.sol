@@ -17,7 +17,7 @@ contract ChainedActionsFork is Test {
     bool forked;
 
     function setUp() public {
-        try vm.envString('INFURA_API_KEY') returns (string memory) {
+        try vm.envString('FORK_URL') returns (string memory) {
             console2.log('Forked Ethereum mainnet');
             // Fork mainnet at a specific block for consistency
             vm.createSelectFork(vm.rpcUrl('mainnet'), 23_000_000);
@@ -41,9 +41,7 @@ contract ChainedActionsFork is Test {
 
             forked = true;
         } catch {
-            console2.log(
-                'Skipping forked tests, no infura key found. Add INFURA_API_KEY env var to .env to run forked tests.'
-            );
+            console2.log('Skipping forked tests, no fork RPC found. Add FORK_URL env var to .env to run forked tests.');
         }
     }
 

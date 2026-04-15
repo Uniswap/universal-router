@@ -67,6 +67,7 @@ describe('UniversalRouter', () => {
         1,
         [DAI.address, WETH.address],
         SOURCE_MSG_SENDER,
+        [],
       ])
       const invalidDeadline = 10
 
@@ -111,6 +112,72 @@ describe('UniversalRouter', () => {
         router,
         'InvalidBips'
       )
+    })
+
+    describe('PAY_PORTION_FULL_PRECISION', () => {
+      it('pays a portion of router balance with 1e18 precision', async () => {
+        const amount = expandTo18DecimalsBN(100)
+        // Transfer DAI to the router first (simulating tokens already in the router)
+        await daiContract.transfer(router.address, amount)
+        const balanceBefore = await daiContract.balanceOf(alice.address)
+
+        // Pay 33.333...% (1/3) of balance to alice — impossible with 10_000 bips
+        const oneThird = ethers.BigNumber.from('333333333333333333') // 0.333...e18
+        planner.addCommand(CommandType.PAY_PORTION_FULL_PRECISION, [DAI.address, alice.address, oneThird])
+        const { commands, inputs } = planner
+        await router['execute(bytes,bytes[])'](commands, inputs)
+
+        const balanceAfter = await daiContract.balanceOf(alice.address)
+        const received = balanceAfter.sub(balanceBefore)
+        // 100e18 * 333333333333333333 / 1e18 = 33.333333333333333300e18
+        expect(received).to.eq(ethers.BigNumber.from('33333333333333333300'))
+      })
+
+      it('pays full balance when portion is 1e18 (100%)', async () => {
+        const amount = expandTo18DecimalsBN(50)
+        await daiContract.transfer(router.address, amount)
+        const balanceBefore = await daiContract.balanceOf(alice.address)
+
+        const fullPortion = ethers.BigNumber.from('1000000000000000000') // 1e18
+        planner.addCommand(CommandType.PAY_PORTION_FULL_PRECISION, [DAI.address, alice.address, fullPortion])
+        const { commands, inputs } = planner
+        await router['execute(bytes,bytes[])'](commands, inputs)
+
+        const balanceAfter = await daiContract.balanceOf(alice.address)
+        expect(balanceAfter.sub(balanceBefore)).to.eq(amount)
+      })
+
+      it('reverts if portion exceeds 1e18', async () => {
+        await daiContract.transfer(router.address, expandTo18DecimalsBN(1))
+        const overPortion = ethers.BigNumber.from('1000000000000000001') // 1e18 + 1
+        planner.addCommand(CommandType.PAY_PORTION_FULL_PRECISION, [DAI.address, alice.address, overPortion])
+        const { commands, inputs } = planner
+        await expect(router['execute(bytes,bytes[])'](commands, inputs)).to.be.revertedWithCustomError(
+          router,
+          'InvalidPortion'
+        )
+      })
+
+      it('pays ETH with full precision', async () => {
+        const value = expandTo18DecimalsBN(1)
+        planner.addCommand(CommandType.WRAP_ETH, [ADDRESS_THIS, value])
+        planner.addCommand(CommandType.UNWRAP_WETH, [ADDRESS_THIS, 0])
+        // Pay 50% of ETH balance
+        const halfPortion = ethers.BigNumber.from('500000000000000000') // 0.5e18
+        planner.addCommand(CommandType.PAY_PORTION_FULL_PRECISION, [ETH_ADDRESS, alice.address, halfPortion])
+        const { commands, inputs } = planner
+
+        const balanceBefore = await ethers.provider.getBalance(alice.address)
+        const tx = await router['execute(bytes,bytes[])'](commands, inputs, { value })
+        const receipt = await tx.wait()
+        const gasCost = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+        const balanceAfter = await ethers.provider.getBalance(alice.address)
+
+        // Sent 1 ETH, got back 0.5 ETH, minus gas
+        const netChange = balanceAfter.sub(balanceBefore).add(gasCost)
+        // netChange = received - sent = 0.5 - 1.0 = -0.5
+        expect(netChange).to.eq(expandTo18DecimalsBN(1).div(2).sub(value))
+      })
     })
 
     it('reverts if a malicious contract tries to reenter', async () => {

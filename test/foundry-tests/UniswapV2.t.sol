@@ -8,6 +8,7 @@ import {IUniswapV2Factory} from '@uniswap/v2-core/contracts/interfaces/IUniswapV
 import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import {UniversalRouter} from '../../contracts/UniversalRouter.sol';
 import {Payments} from '../../contracts/modules/Payments.sol';
+import {V2SwapRouter} from '../../contracts/modules/uniswap/v2/V2SwapRouter.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {RouterParameters} from '../../contracts/types/RouterParameters.sol';
@@ -66,7 +67,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token0();
         path[1] = token1();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, true);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, true, new uint256[](0));
 
         router.execute(commands, inputs);
         assertEq(ERC20(token0()).balanceOf(FROM), BALANCE - AMOUNT);
@@ -79,7 +80,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token1();
         path[1] = token0();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, true);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, true, new uint256[](0));
 
         router.execute(commands, inputs);
         assertEq(ERC20(token1()).balanceOf(FROM), BALANCE - AMOUNT);
@@ -93,7 +94,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token0();
         path[1] = token1();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, false);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, false, new uint256[](0));
 
         router.execute(commands, inputs);
         assertGt(ERC20(token1()).balanceOf(FROM), BALANCE);
@@ -106,7 +107,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token1();
         path[1] = token0();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, false);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, false, new uint256[](0));
 
         router.execute(commands, inputs);
         assertGt(ERC20(token0()).balanceOf(FROM), BALANCE);
@@ -118,7 +119,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token0();
         path[1] = token1();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, true);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, true, new uint256[](0));
 
         router.execute(commands, inputs);
         assertLt(ERC20(token0()).balanceOf(FROM), BALANCE);
@@ -131,7 +132,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token1();
         path[1] = token0();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, true);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, true, new uint256[](0));
 
         router.execute(commands, inputs);
         assertLt(ERC20(token1()).balanceOf(FROM), BALANCE);
@@ -145,7 +146,7 @@ abstract contract UniswapV2Test is Test {
         path[0] = token0();
         path[1] = token1();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, false);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, false, new uint256[](0));
 
         router.execute(commands, inputs);
         assertGe(ERC20(token1()).balanceOf(FROM), BALANCE + AMOUNT);
@@ -158,10 +159,73 @@ abstract contract UniswapV2Test is Test {
         path[0] = token1();
         path[1] = token0();
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, false);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, false, new uint256[](0));
 
         router.execute(commands, inputs);
         assertGe(ERC20(token0()).balanceOf(FROM), BALANCE + AMOUNT);
+    }
+
+    function testExactInputInvalidHopSlippageLength() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_IN)));
+        address[] memory path = new address[](2);
+        path[0] = token0();
+        path[1] = token1();
+        // path has 2 tokens = 1 hop, but we pass 2 slippage values (wrong length)
+        uint256[] memory hopSlippage = new uint256[](2);
+        hopSlippage[0] = 0;
+        hopSlippage[1] = 0;
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, true, hopSlippage);
+
+        vm.expectRevert(V2SwapRouter.V2InvalidHopPriceLength.selector);
+        router.execute(commands, inputs);
+    }
+
+    function testExactOutputInvalidHopSlippageLength() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_OUT)));
+        address[] memory path = new address[](2);
+        path[0] = token0();
+        path[1] = token1();
+        // path has 2 tokens = 1 hop, but we pass 2 slippage values (wrong length)
+        uint256[] memory hopSlippage = new uint256[](2);
+        hopSlippage[0] = 0;
+        hopSlippage[1] = 0;
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, true, hopSlippage);
+
+        vm.expectRevert(V2SwapRouter.V2InvalidHopPriceLength.selector);
+        router.execute(commands, inputs);
+    }
+
+    function testExactInputWithHopSlippagePass() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_IN)));
+        address[] memory path = new address[](2);
+        path[0] = token0();
+        path[1] = token1();
+        // Set minPrice to 0 (any price is acceptable)
+        uint256[] memory hopSlippage = new uint256[](1);
+        hopSlippage[0] = 0;
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, true, hopSlippage);
+
+        router.execute(commands, inputs);
+        assertEq(ERC20(token0()).balanceOf(FROM), BALANCE - AMOUNT);
+        assertGt(ERC20(token1()).balanceOf(FROM), BALANCE);
+    }
+
+    function testExactInputWithHopSlippageFail() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_IN)));
+        address[] memory path = new address[](2);
+        path[0] = token0();
+        path[1] = token1();
+        // Set an impossibly high minPrice so it reverts
+        uint256[] memory hopSlippage = new uint256[](1);
+        hopSlippage[0] = type(uint256).max;
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, true, hopSlippage);
+
+        vm.expectRevert();
+        router.execute(commands, inputs);
     }
 
     function token0() internal virtual returns (address);

@@ -25,4 +25,7 @@ library Constants {
 
     /// @dev The minimum length of an encoding that contains 2 or more pools
     uint256 internal constant MULTIPLE_V3_POOLS_MIN_LENGTH = V3_POP_OFFSET + NEXT_V3_POOL_OFFSET;
+
+    /// @dev Precision multiplier for per-hop price calculations
+    uint256 internal constant PRICE_PRECISION = 1e36;
 }

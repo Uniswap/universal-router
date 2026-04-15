@@ -58,7 +58,7 @@ const SWAP_EXACT_IN_SINGLE_STRUCT =
 const SWAP_EXACT_IN_STRUCT =
   '(address currencyIn,' +
   PATH_KEY_STRUCT +
-  '[] path,uint256[] maxHopSlippage,uint128 amountIn,uint128 amountOutMinimum)'
+  '[] path,uint256[] minHopPriceX36,uint128 amountIn,uint128 amountOutMinimum)'
 
 const SWAP_EXACT_OUT_SINGLE_STRUCT =
   '(' +
@@ -68,7 +68,7 @@ const SWAP_EXACT_OUT_SINGLE_STRUCT =
 const SWAP_EXACT_OUT_STRUCT =
   '(address currencyOut,' +
   PATH_KEY_STRUCT +
-  '[] path,uint256[] maxHopSlippage,uint128 amountOut,uint128 amountInMaximum)'
+  '[] path,uint256[] minHopPriceX36,uint128 amountOut,uint128 amountInMaximum)'
 
 const ABI_DEFINITION: { [key in Actions]: string[] } = {
   // Liquidity commands

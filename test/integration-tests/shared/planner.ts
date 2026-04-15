@@ -13,6 +13,7 @@ export enum CommandType {
   SWEEP = 0x04,
   TRANSFER = 0x05,
   PAY_PORTION = 0x06,
+  PAY_PORTION_FULL_PRECISION = 0x07,
 
   V2_SWAP_EXACT_IN = 0x08,
   V2_SWAP_EXACT_OUT = 0x09,
@@ -61,10 +62,10 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.PERMIT2_TRANSFER_FROM_BATCH]: [PERMIT2_TRANSFER_FROM_BATCH_STRUCT],
 
   // Uniswap Actions
-  [CommandType.V3_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
-  [CommandType.V3_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'bytes', 'bool'],
-  [CommandType.V2_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'address[]', 'bool'],
-  [CommandType.V2_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'address[]', 'bool'],
+  [CommandType.V3_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'bytes', 'bool', 'uint256[]'],
+  [CommandType.V3_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'bytes', 'bool', 'uint256[]'],
+  [CommandType.V2_SWAP_EXACT_IN]: ['address', 'uint256', 'uint256', 'address[]', 'bool', 'uint256[]'],
+  [CommandType.V2_SWAP_EXACT_OUT]: ['address', 'uint256', 'uint256', 'address[]', 'bool', 'uint256[]'],
 
   // Token Actions and Checks
   [CommandType.WRAP_ETH]: ['address', 'uint256'],
@@ -72,6 +73,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.SWEEP]: ['address', 'address', 'uint256'],
   [CommandType.TRANSFER]: ['address', 'address', 'uint256'],
   [CommandType.PAY_PORTION]: ['address', 'address', 'uint256'],
+  [CommandType.PAY_PORTION_FULL_PRECISION]: ['address', 'address', 'uint256'],
   [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
 
   [CommandType.V4_SWAP]: ['bytes', 'bytes[]'],

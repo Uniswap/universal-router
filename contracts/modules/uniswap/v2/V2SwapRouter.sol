@@ -13,15 +13,18 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     error V2TooLittleReceived();
     error V2TooMuchRequested();
     error V2InvalidPath();
+    error V2TooLittleReceivedPerHop(uint256 hopIndex, uint256 minPrice, uint256 price);
+    error V2InvalidHopPriceLength();
 
-    function _v2Swap(address[] calldata path, address recipient, address pair) private {
+    function _v2Swap(address[] calldata path, address recipient, address pair, uint256[] calldata minHopPriceX36)
+        private
+    {
         unchecked {
-            if (path.length < 2) revert V2InvalidPath();
-
             // cached to save on duplicate operations
             (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
             uint256 finalPairIndex = path.length - 1;
             uint256 penultimatePairIndex = finalPairIndex - 1;
+            bool minHopPriceEnabled = minHopPriceX36.length != 0;
             for (uint256 i; i < finalPairIndex; i++) {
                 (address input, address output) = (path[i], path[i + 1]);
                 (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
@@ -37,7 +40,18 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                         UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, output, path[i + 2]
                     )
                     : (recipient, address(0));
-                IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
+
+                // if minHopPrice is being used, we need to check output balance change
+                if (minHopPriceEnabled && minHopPriceX36[i] != 0) {
+                    uint256 recipientBalance = ERC20(output).balanceOf(nextPair);
+                    IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
+                    amountOutput = ERC20(output).balanceOf(nextPair) - recipientBalance;
+                    uint256 price = amountOutput * Constants.PRICE_PRECISION / amountInput;
+                    uint256 minPrice = minHopPriceX36[i];
+                    if (price < minPrice) revert V2TooLittleReceivedPerHop(i, minPrice, price);
+                } else {
+                    IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
+                }
                 pair = nextPair;
             }
         }
@@ -49,16 +63,22 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     /// @param amountOutMinimum The minimum desired amount of output tokens
     /// @param path The path of the trade as an array of token addresses
     /// @param payer The address that will be paying the input
+    /// @param minHopPriceX36 Per-hop minimum price array in 1e36 precision (empty to disable)
     function v2SwapExactInput(
         address recipient,
         uint256 amountIn,
         uint256 amountOutMinimum,
         address[] calldata path,
-        address payer
+        address payer,
+        uint256[] calldata minHopPriceX36
     ) internal {
-        address firstPair = UniswapV2Library.pairFor(
-            UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, path[0], path[1]
-        );
+        if (path.length < 2) revert V2InvalidPath();
+        if (minHopPriceX36.length != 0 && minHopPriceX36.length != path.length - 1) {
+            revert V2InvalidHopPriceLength();
+        }
+
+        address firstPair =
+            UniswapV2Library.pairFor(UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, path[0], path[1]);
         if (
             amountIn != Constants.ALREADY_PAID // amountIn of 0 to signal that the pair already has the tokens
         ) {
@@ -68,7 +88,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         ERC20 tokenOut = ERC20(path[path.length - 1]);
         uint256 balanceBefore = tokenOut.balanceOf(recipient);
 
-        _v2Swap(path, recipient, firstPair);
+        _v2Swap(path, recipient, firstPair, minHopPriceX36);
 
         uint256 amountOut = tokenOut.balanceOf(recipient) - balanceBefore;
         if (amountOut < amountOutMinimum) revert V2TooLittleReceived();
@@ -80,19 +100,25 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     /// @param amountInMaximum The maximum desired amount of input tokens
     /// @param path The path of the trade as an array of token addresses
     /// @param payer The address that will be paying the input
+    /// @param minHopPriceX36 Per-hop minimum price array in 1e36 precision (empty to disable)
     function v2SwapExactOutput(
         address recipient,
         uint256 amountOut,
         uint256 amountInMaximum,
         address[] calldata path,
-        address payer
+        address payer,
+        uint256[] calldata minHopPriceX36
     ) internal {
-        (uint256 amountIn, address firstPair) = UniswapV2Library.getAmountInMultihop(
-            UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, amountOut, path
-        );
+        if (path.length < 2) revert V2InvalidPath();
+        if (minHopPriceX36.length != 0 && minHopPriceX36.length != path.length - 1) {
+            revert V2InvalidHopPriceLength();
+        }
+
+        (uint256 amountIn, address firstPair) =
+            UniswapV2Library.getAmountInMultihop(UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, amountOut, path);
         if (amountIn > amountInMaximum) revert V2TooMuchRequested();
 
         payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
-        _v2Swap(path, recipient, firstPair);
+        _v2Swap(path, recipient, firstPair, minHopPriceX36);
     }
 }

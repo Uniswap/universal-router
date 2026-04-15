@@ -9,13 +9,13 @@ contract DeploySoneium is DeployUniversalRouter {
         params = RouterParameters({
             permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
             weth9: 0x4200000000000000000000000000000000000006,
-            v2Factory: UNSUPPORTED_PROTOCOL,
-            v3Factory: UNSUPPORTED_PROTOCOL,
-            pairInitCodeHash: BYTES32_ZERO,
-            poolInitCodeHash: BYTES32_ZERO,
+            v2Factory: 0x97FeBbC2AdBD5644ba22736E962564B23F5828CE,
+            v3Factory: 0x42aE7Ec7ff020412639d443E245D936429Fbe717,
+            pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
+            poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: 0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32,
             permissionsAdapterFactory: address(0), // ToDo: Add permissions adapter factory
-            v3NFTPositionManager: 0x8702463e73f74d0b6765aBceb314Ef07aCb92650,
+            v3NFTPositionManager: 0x56C1205B0244332011C1E866F4eA5384EB6Bfa2c,
             v4PositionManager: 0x1b35d13a2E2528f192637F14B05f0Dc0e7dEB566,
             spokePool: 0x3baD7AD0728f9917d1Bf08af5782dCbD516cDd96
         });

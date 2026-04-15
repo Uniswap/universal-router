@@ -5,6 +5,8 @@ import '@nomicfoundation/hardhat-foundry'
 import dotenv from 'dotenv'
 dotenv.config()
 
+const FORK_URL = process.env.FORK_URL ?? ''
+
 const DEFAULT_COMPILER_SETTINGS = {
   version: '0.8.26',
   settings: {
@@ -29,12 +31,12 @@ export default {
       allowUnlimitedContractSize: false,
       chainId: 1,
       forking: {
-        url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+        url: FORK_URL,
         blockNumber: 20010000,
       },
     },
     mainnet: {
-      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      url: FORK_URL,
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
