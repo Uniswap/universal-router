@@ -33,6 +33,7 @@ jobs:
       !contains(github.head_ref, 'gtmq') &&
       !contains(github.head_ref, 'dependabot/') &&
       !contains(github.head_ref, 'release/') &&
+      !contains(github.head_ref, 'chore/sync-ai-toolkit-workflows') &&
       !startsWith(github.event.pull_request.title, 'chore(release):')
 
     uses: Uniswap/ai-toolkit/.github/workflows/_generate-pr-metadata.yml@b229e128e6a60bc6a495e80bda9f13d6bafdfc5e
