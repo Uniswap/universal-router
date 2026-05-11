@@ -92,10 +92,10 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
         for (uint256 actionIndex = 0; actionIndex < numActions; actionIndex++) {
             uint256 action = uint8(actions[actionIndex]);
 
-            if (
-                action == Actions.INCREASE_LIQUIDITY || action == Actions.INCREASE_LIQUIDITY_FROM_DELTAS
-                    || action == Actions.DECREASE_LIQUIDITY || action == Actions.BURN_POSITION
-            ) {
+            // Use an allowlist: only MINT_POSITION and settlement actions (>= SETTLE) are safe.
+            // All other position-altering or swap actions are blocked to prevent fee theft
+            // and position drainage when the UR is approved as an operator.
+            if (action != Actions.MINT_POSITION && action < Actions.SETTLE) {
                 revert OnlyMintAllowed();
             }
         }
