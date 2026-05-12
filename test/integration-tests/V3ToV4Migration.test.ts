@@ -1305,6 +1305,106 @@ describe('V3 to V4 Migration Tests:', () => {
         executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
       ).to.be.revertedWithCustomError(router, 'OnlyMintAllowed')
     })
+
+    it('sweep-only v4 payload does not succeed without mint (BBP #721)', async () => {
+      // A SWEEP-only V4_POSITION_MANAGER_CALL payload must be blocked because it can
+      // drain migrated V3 principal to an attacker without minting a V4 position.
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      await expect(
+        executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      ).to.be.revertedWithCustomError(router, 'OnlyMintAllowed')
+    })
+
+    it('settlement-only v4 payload with TAKE does not succeed without mint (BBP #721)', async () => {
+      // TAKE-only payloads must also be blocked (same root cause as SWEEP-only).
+      v4Planner.addAction(Actions.TAKE, [USDC.address, bob.address, '1000000'])
+      v4Planner.addAction(Actions.TAKE, [WETH.address, bob.address, '1000000000000000000'])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      await expect(
+        executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      ).to.be.revertedWithCustomError(router, 'OnlyMintAllowed')
+    })
+
+    it('increase_liquidity_from_deltas v4 does not succeed (BBP #719)', async () => {
+      // first mint the v4 nft
+      await usdcContract.connect(bob).transfer(v4PositionManager.address, expandTo6DecimalsBN(100000))
+      await wethContract.connect(bob).transfer(v4PositionManager.address, expandTo18DecimalsBN(100))
+
+      v4Planner.addAction(Actions.MINT_POSITION, [
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
+        '6000000',
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.SETTLE, [USDC.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SETTLE, [WETH.address, OPEN_DELTA, SOURCE_ROUTER])
+      v4Planner.addAction(Actions.SWEEP, [USDC.address, bob.address])
+      v4Planner.addAction(Actions.SWEEP, [WETH.address, bob.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      let expectedTokenId = await v4PositionManager.nextTokenId()
+
+      await executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+
+      // try to use INCREASE_LIQUIDITY_FROM_DELTAS (0x04) — must be blocked by the allowlist
+      planner = new RoutePlanner()
+      v4Planner = new V4Planner()
+
+      v4Planner.addAction(Actions.INCREASE_LIQUIDITY_FROM_DELTAS, [expectedTokenId, MAX_UINT128, MAX_UINT128, '0x'])
+
+      v4Planner.addAction(Actions.CLOSE_CURRENCY, [USDC.address])
+      v4Planner.addAction(Actions.CLOSE_CURRENCY, [WETH.address])
+
+      calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      await expect(
+        executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      ).to.be.revertedWithCustomError(router, 'OnlyMintAllowed')
+    })
+
+    it('mint_position_from_deltas v4 does not succeed (BBP #719)', async () => {
+      // try to use MINT_POSITION_FROM_DELTAS (0x05) — must be blocked by the allowlist
+      v4Planner.addAction(Actions.MINT_POSITION_FROM_DELTAS, [
+        USDC_WETH.poolKey,
+        USDC_WETH.tickLower,
+        USDC_WETH.tickUpper,
+        MAX_UINT128,
+        MAX_UINT128,
+        bob.address,
+        '0x',
+      ])
+
+      v4Planner.addAction(Actions.CLOSE_CURRENCY, [USDC.address])
+      v4Planner.addAction(Actions.CLOSE_CURRENCY, [WETH.address])
+
+      let calldata = encodeModifyLiquidities({ unlockData: v4Planner.finalize(), deadline: MAX_UINT })
+
+      planner.addCommand(CommandType.V4_POSITION_MANAGER_CALL, [calldata])
+
+      await expect(
+        executeRouter(planner, bob, router, wethContract, daiContract, usdcContract)
+      ).to.be.revertedWithCustomError(router, 'OnlyMintAllowed')
+    })
   })
 
   describe('Migration', () => {

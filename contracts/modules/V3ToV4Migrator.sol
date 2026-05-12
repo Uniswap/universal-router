@@ -68,9 +68,11 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
     }
 
     /// @dev check that the v4 position manager call is a safe call
-    /// of the position-altering Actions, we only allow Actions.MINT
-    /// this is because, if a user could be tricked into approving the UniversalRouter for
-    /// their position, an attacker could take their fees, or drain their entire position
+    /// Only MINT_POSITION and settlement actions (>= SETTLE) are allowed.
+    /// The plan MUST contain at least one MINT_POSITION action to prevent
+    /// settlement-only payloads (e.g. SWEEP) from draining migrated principal.
+    /// This is because, if a user could be tricked into approving the UniversalRouter for
+    /// their position, an attacker could take their fees, or drain their entire position.
     function _checkV4PositionManagerCall(bytes calldata inputs) internal view {
         bytes4 selector;
         assembly {
@@ -88,16 +90,29 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
         bytes calldata actions = slice.toBytes(0).toBytes(0);
 
         uint256 numActions = actions.length;
+        bool hasMint;
 
         for (uint256 actionIndex = 0; actionIndex < numActions; actionIndex++) {
             uint256 action = uint8(actions[actionIndex]);
 
-            if (
-                action == Actions.INCREASE_LIQUIDITY || action == Actions.INCREASE_LIQUIDITY_FROM_DELTAS
-                    || action == Actions.DECREASE_LIQUIDITY || action == Actions.BURN_POSITION
-            ) {
+            if (action == Actions.MINT_POSITION) {
+                hasMint = true;
+            } else if (action < Actions.SETTLE) {
+                // Block all position-altering, swap, and donate actions except MINT_POSITION.
+                // This includes deprecated actions like INCREASE_LIQUIDITY_FROM_DELTAS (0x04)
+                // and MINT_POSITION_FROM_DELTAS (0x05), as well as INCREASE_LIQUIDITY,
+                // DECREASE_LIQUIDITY, BURN_POSITION, and all swap/donate actions.
                 revert OnlyMintAllowed();
             }
+            // Settlement actions (>= SETTLE) are allowed for residual handling:
+            // SETTLE, SETTLE_ALL, SETTLE_PAIR, TAKE, TAKE_ALL, TAKE_PORTION, TAKE_PAIR,
+            // CLOSE_CURRENCY, CLEAR_OR_TAKE, SWEEP, WRAP, UNWRAP
+        }
+
+        // Require at least one MINT_POSITION to prevent settlement-only payloads
+        // (e.g. SWEEP-only) from draining migrated V3 principal without minting a V4 position.
+        if (!hasMint) {
+            revert OnlyMintAllowed();
         }
     }
 }
