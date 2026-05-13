@@ -41,7 +41,7 @@ abstract contract DeployUniversalRouter is Script {
             pairInitCodeHash: params.pairInitCodeHash,
             poolInitCodeHash: params.poolInitCodeHash,
             v4PoolManager: mapUnsupported(params.v4PoolManager),
-            permissionsAdapterFactory: mapUnsupported(params.permissionsAdapterFactory),
+            permissionsAdapterFactory: params.permissionsAdapterFactory, // skip mapUnsupported: address(0) signals permissioned-pools disabled
             v3NFTPositionManager: mapUnsupported(params.v3NFTPositionManager),
             v4PositionManager: mapUnsupported(params.v4PositionManager),
             spokePool: mapUnsupported(params.spokePool)
