@@ -90,9 +90,60 @@ contract V2AggregatorMatrix is AggregatorBase {
         return abi.encode(actions, params);
     }
 
-    /// @dev Cell 2 — exact-out version of Cell 1. amountInMax cap on SETTLE.
+    /// @dev Encodes an exact-out V4 plan. `amountIn` is the pre-computed amount to settle.
+    function _encodeV4SingleSwapPlanExactOut(
+        PoolKey memory key,
+        bool zeroForOne,
+        uint128 amountIn,
+        uint128 amountOut,
+        Currency currencyIn,
+        Currency currencyOut
+    ) internal pure returns (bytes memory) {
+        bytes memory actions = abi.encodePacked(
+            uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_OUT_SINGLE), uint8(Actions.TAKE_ALL)
+        );
+        bytes[] memory params = new bytes[](3);
+        params[0] = abi.encode(currencyIn, uint256(amountIn), /*payerIsUser*/ true);
+        params[1] = abi.encode(
+            IV4Router.ExactOutputSingleParams({
+                poolKey: key,
+                zeroForOne: zeroForOne,
+                amountOut: amountOut,
+                amountInMaximum: amountIn,
+                minHopPriceX36: 0,
+                hookData: bytes('')
+            })
+        );
+        params[2] = abi.encode(currencyOut, uint256(amountOut));
+        return abi.encode(actions, params);
+    }
+
+    /// @dev Cell 2 — Exact-out version of Cell 1. User wants exactly `amountOut` of WETH;
+    ///      the SETTLE action pre-pulls exactly `amountIn` of APE (computed via `hook.quote`).
     function test_v2Agg_beginning_exactOut_v2OnlyInput_success() public onlyForked {
-        vm.skip(true);
+        uint128 amountOut = 0.05 ether; // 0.05 WETH out
+        (PoolKey memory key,) = _initializeV2AggPool(address(APE), address(WETH9));
+
+        bool zeroForOne = address(APE) < address(WETH9);
+        uint128 amountIn = uint128(aggregatorHook.quote(zeroForOne, int256(uint256(amountOut)), key.toId()));
+
+        _fundAndApprove(alice, APE, amountIn);
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encodeV4SingleSwapPlanExactOut(
+            key, zeroForOne, amountIn, amountOut,
+            Currency.wrap(address(APE)), Currency.wrap(address(WETH9))
+        );
+
+        uint256 apeBefore = APE.balanceOf(alice);
+        uint256 wethBefore = WETH9.balanceOf(alice);
+
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+
+        assertEq(APE.balanceOf(alice), apeBefore - amountIn, 'APE not deducted exactly');
+        assertEq(WETH9.balanceOf(alice), wethBefore + amountOut, 'WETH out not exact');
     }
 
     /// @dev Cell 3 — V2(WETH → APE) → V4(APE → ...). APE is V2-only, V4 can't continue.
@@ -165,16 +216,59 @@ contract V2AggregatorMatrix is AggregatorBase {
         vm.skip(true);
     }
 
-    /// @dev Cell 15 — V4(WETH → USDC) → V2Agg(USDC → APE). User receives APE.
+    /// @dev Cell 15 — Single-hop V2Agg(WETH → APE). User receives V2-only APE.
+    ///      Same shape as Cell 1 with direction flipped; proves the End-Output case.
     function test_v2Agg_end_exactIn_v2OnlyOutput_success() public onlyForked {
-        // TODO: SETTLE(WETH) → SWAP(v4Key_WETH_USDC) → SWAP(v2AggKey_USDC_APE)
-        //       → TAKE_ALL(APE, alice, amtMin). Assert alice receives APE.
-        vm.skip(true);
+        uint256 amountIn = 1 ether; // 1 WETH
+        (PoolKey memory key,) = _initializeV2AggPool(address(APE), address(WETH9));
+        _fundAndApprove(alice, WETH9, amountIn);
+
+        // APE < WETH, so swapping WETH→APE is zeroForOne = false
+        bool zeroForOne = address(WETH9) < address(APE);
+        uint256 expectedOut = aggregatorHook.quote(zeroForOne, -int256(amountIn), key.toId());
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encodeV4SingleSwapPlan(
+            key, zeroForOne, uint128(amountIn), 0,
+            Currency.wrap(address(WETH9)), Currency.wrap(address(APE))
+        );
+
+        uint256 wethBefore = WETH9.balanceOf(alice);
+        uint256 apeBefore = APE.balanceOf(alice);
+
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+
+        assertEq(WETH9.balanceOf(alice), wethBefore - amountIn, 'WETH not deducted');
+        assertEq(APE.balanceOf(alice), apeBefore + expectedOut, 'APE not received exactly');
     }
 
-    /// @dev Cell 16 — exact-out version of Cell 15.
+    /// @dev Cell 16 — Exact-out version of Cell 15. User wants exactly N APE for at most M WETH.
     function test_v2Agg_end_exactOut_v2OnlyOutput_success() public onlyForked {
-        vm.skip(true);
+        uint128 amountOut = 100 ether; // 100 APE out
+        (PoolKey memory key,) = _initializeV2AggPool(address(APE), address(WETH9));
+
+        bool zeroForOne = address(WETH9) < address(APE);
+        uint128 amountIn = uint128(aggregatorHook.quote(zeroForOne, int256(uint256(amountOut)), key.toId()));
+
+        _fundAndApprove(alice, WETH9, amountIn);
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encodeV4SingleSwapPlanExactOut(
+            key, zeroForOne, amountIn, amountOut,
+            Currency.wrap(address(WETH9)), Currency.wrap(address(APE))
+        );
+
+        uint256 wethBefore = WETH9.balanceOf(alice);
+        uint256 apeBefore = APE.balanceOf(alice);
+
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+
+        assertEq(WETH9.balanceOf(alice), wethBefore - amountIn, 'WETH not deducted exactly');
+        assertEq(APE.balanceOf(alice), apeBefore + amountOut, 'APE out not exact');
     }
 
     /// @dev Cell 17 — V4(WETH → USDC) → V2Agg(USDC → DAI). DAI is V2-Mostly terminal.
