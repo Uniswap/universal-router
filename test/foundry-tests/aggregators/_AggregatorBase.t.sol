@@ -161,6 +161,20 @@ abstract contract AggregatorBase is Test {
     }
 
     // --------------------------------------------------------------------- //
+    // User funding + Permit2 approval helper
+    // --------------------------------------------------------------------- //
+
+    /// @notice Deals `amount` of `token` to `user`, then wires up Permit2 + router approval
+    ///         so the V4 plan's SETTLE action can pull `token` from `user`.
+    function _fundAndApprove(address user, ERC20 token, uint256 amount) internal {
+        deal(address(token), user, amount);
+        vm.startPrank(user);
+        token.approve(address(PERMIT2), type(uint256).max);
+        PERMIT2.approve(address(token), address(router), type(uint160).max, type(uint48).max);
+        vm.stopPrank();
+    }
+
+    // --------------------------------------------------------------------- //
     // Router setup
     // --------------------------------------------------------------------- //
 

@@ -4,7 +4,12 @@ pragma solidity ^0.8.24;
 import {AggregatorBase} from '../_AggregatorBase.t.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
 import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
-import {PoolId} from '@uniswap/v4-core/src/types/PoolId.sol';
+import {PoolId, PoolIdLibrary} from '@uniswap/v4-core/src/types/PoolId.sol';
+import {Currency} from '@uniswap/v4-core/src/types/Currency.sol';
+import {IV4Router} from '@uniswap/v4-periphery/src/interfaces/IV4Router.sol';
+import {Actions} from '@uniswap/v4-periphery/src/libraries/Actions.sol';
+import {Commands} from '../../../../contracts/libraries/Commands.sol';
+import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
 /// @title  V2AggregatorMatrix
 /// @notice The 24-cell test matrix proving V4_SWAP-against-UniswapV2Aggregator works for every
@@ -23,16 +28,66 @@ import {PoolId} from '@uniswap/v4-core/src/types/PoolId.sol';
 ///
 ///         See the proof document for the full theorem and per-cell reasoning.
 contract V2AggregatorMatrix is AggregatorBase {
+    using PoolIdLibrary for PoolKey;
+
     // --------------------------------------------------------------------- //
     // Position: BEGINNING — V2 hop is the first hop in the route
     // --------------------------------------------------------------------- //
 
-    /// @dev Cell 1 — V2(APE → WETH) → V4(WETH → USDC). User holds APE.
+    /// @dev Cell 1 — Single-hop V2Agg(APE → WETH). User holds APE (V2-only).
+    ///      Action plan: SETTLE(APE, user) → SWAP(v2AggKey) → TAKE_ALL(WETH).
+    ///      Asserts alice's APE drops by `amountIn` and WETH rises by `hook.quote(...)`.
     function test_v2Agg_beginning_exactIn_v2OnlyInput_success() public onlyForked {
-        // TODO: SETTLE(APE, payerIsUser=true, amountIn) → SWAP(v2AggKey_APE_WETH)
-        //       → SWAP(v4Key_WETH_USDC) → TAKE_ALL(USDC, alice, amtMin)
-        //       Assert alice receives USDC; deltas net to zero.
-        vm.skip(true);
+        uint256 amountIn = 100 ether; // 100 APE
+        (PoolKey memory key,) = _initializeV2AggPool(address(APE), address(WETH9));
+        _fundAndApprove(alice, APE, amountIn);
+
+        bool zeroForOne = address(APE) < address(WETH9);
+        uint256 expectedOut = aggregatorHook.quote(zeroForOne, -int256(amountIn), key.toId());
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encodeV4SingleSwapPlan(
+            key, zeroForOne, uint128(amountIn), 0, /*currencyIn*/ Currency.wrap(address(APE)),
+            /*currencyOut*/ Currency.wrap(address(WETH9))
+        );
+
+        uint256 apeBefore = APE.balanceOf(alice);
+        uint256 wethBefore = WETH9.balanceOf(alice);
+
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+
+        assertEq(APE.balanceOf(alice), apeBefore - amountIn, 'APE not deducted');
+        assertEq(WETH9.balanceOf(alice), wethBefore + expectedOut, 'WETH not received exactly');
+    }
+
+    /// @dev Encodes a V4 plan for `SETTLE(currencyIn, user) → SWAP_EXACT_IN_SINGLE → TAKE_ALL(currencyOut)`.
+    function _encodeV4SingleSwapPlan(
+        PoolKey memory key,
+        bool zeroForOne,
+        uint128 amountIn,
+        uint128 amountOutMin,
+        Currency currencyIn,
+        Currency currencyOut
+    ) internal pure returns (bytes memory) {
+        bytes memory actions = abi.encodePacked(
+            uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE_ALL)
+        );
+        bytes[] memory params = new bytes[](3);
+        params[0] = abi.encode(currencyIn, uint256(amountIn), /*payerIsUser*/ true);
+        params[1] = abi.encode(
+            IV4Router.ExactInputSingleParams({
+                poolKey: key,
+                zeroForOne: zeroForOne,
+                amountIn: amountIn,
+                amountOutMinimum: amountOutMin,
+                minHopPriceX36: 0,
+                hookData: bytes('')
+            })
+        );
+        params[2] = abi.encode(currencyOut, uint256(amountOutMin));
+        return abi.encode(actions, params);
     }
 
     /// @dev Cell 2 — exact-out version of Cell 1. amountInMax cap on SETTLE.
