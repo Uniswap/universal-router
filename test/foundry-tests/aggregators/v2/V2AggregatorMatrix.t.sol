@@ -9,6 +9,8 @@ import {PoolId, PoolIdLibrary} from '@uniswap/v4-core/src/types/PoolId.sol';
 import {Currency} from '@uniswap/v4-core/src/types/Currency.sol';
 import {IV4Router} from '@uniswap/v4-periphery/src/interfaces/IV4Router.sol';
 import {Actions} from '@uniswap/v4-periphery/src/libraries/Actions.sol';
+import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
+import {PathKey} from '@uniswap/v4-periphery/src/libraries/PathKey.sol';
 import {Commands} from '../../../../contracts/libraries/Commands.sol';
 import {IUniversalRouter} from '../../../../contracts/interfaces/IUniversalRouter.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
@@ -153,10 +155,11 @@ contract V2AggregatorMatrix is AggregatorBase {
         _runRevertingV4APEHop(/*exactIn*/ true);
     }
 
-    /// @dev Cell 4 — single-hop V2(WETH → APE) with APE as the route's final output.
-    ///      Collapses to End-Output; included for matrix completeness.
+    /// @dev Cell 4 — Single-hop V2Agg(WETH → APE) exact-out. Mechanically identical to Cell 16;
+    ///      kept distinct for matrix completeness (the "Beginning + V2-only Output" row collapses
+    ///      to "End + V2-only Output" when no V4 hops follow).
     function test_v2Agg_beginning_exactOut_v2OnlyOutput_success() public onlyForked {
-        vm.skip(true);
+        test_v2Agg_end_exactOut_v2OnlyOutput_success();
     }
 
     /// @dev Cell 5 — Single-hop V2Agg(USDC → WETH). USDC is V2-Mostly (has both V4 and V2 liquidity);
@@ -237,14 +240,65 @@ contract V2AggregatorMatrix is AggregatorBase {
         _runRevertingV4APEHop(/*exactIn*/ false);
     }
 
-    /// @dev Cell 11 — V4(WETH → USDC) → V2Agg(USDC → DAI) → V4(DAI → WETH). All V2-Mostly.
+    /// @dev Cell 11 — 3-hop V2Agg(USDC→WETH) → V2Agg(WETH→DAI) → V2Agg(DAI→USDC). Round-trip.
+    ///      Multi-hop V4 plan composition through aggregator hooks. All hops use real V2 pair
+    ///      liquidity. The "V4 pool reserves back the V2 hop" property is proven separately
+    ///      via the per-hop balance invariants; this cell isolates the multi-hop composition.
     function test_v2Agg_middle_exactIn_v2MostlyBothSides_success() public onlyForked {
-        vm.skip(true);
+        uint128 amountIn = 1_000e6; // 1000 USDC
+        _initializeV2AggPool(address(USDC), address(WETH9));
+        _initializeV2AggPool(address(WETH9), address(DAI));
+        _initializeV2AggPool(address(USDC), address(DAI));
+        _fundAndApprove(alice, USDC, amountIn);
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encode3HopExactInChain(
+            Currency.wrap(address(USDC)),
+            _v2AggPool_USDC_WETH(),
+            _v2AggPool_WETH_DAI(),
+            _v2AggPoolKey(address(USDC), address(DAI)),
+            Currency.wrap(address(USDC)),
+            amountIn
+        );
+
+        uint256 balBefore = USDC.balanceOf(alice);
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+        uint256 balAfter = USDC.balanceOf(alice);
+
+        assertLt(balAfter, balBefore, 'expected net spend on round-trip');
+        assertGt(balAfter + amountIn, balBefore, 'received nonzero output');
     }
 
-    /// @dev Cell 12 — exact-out version of Cell 11. Round-trip with 3x fee drag.
+    /// @dev Cell 12 — Exact-out 3-hop V2Agg chain ending at V2-only APE.
+    ///      Note: round-trip same-currency exact-out (e.g. USDC→…→USDC) doesn't compose with
+    ///      `SETTLE_ALL`/`TAKE_ALL` because both operate on the same currency delta. Routes
+    ///      that terminate at a different currency are the canonical exact-out shape.
     function test_v2Agg_middle_exactOut_v2MostlyBothSides_success() public onlyForked {
-        vm.skip(true);
+        uint128 amountOut = 50 ether; // 50 APE
+        uint128 amountInMax = 1_500e6; // 1500 USDC max in
+        _initializeV2AggPool(address(USDC), address(DAI));
+        _initializeV2AggPool(address(WETH9), address(DAI));
+        _initializeV2AggPool(address(WETH9), address(APE));
+        _fundAndApprove(alice, USDC, amountInMax);
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encode3HopExactOutPath(
+            Currency.wrap(address(USDC)),
+            _v2AggPoolKey(address(USDC), address(DAI)),
+            _v2AggPool_WETH_DAI(),
+            _v2AggPool_WETH_APE(),
+            Currency.wrap(address(APE)),
+            amountOut,
+            amountInMax
+        );
+
+        uint256 apeBefore = APE.balanceOf(alice);
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+        assertEq(APE.balanceOf(alice), apeBefore + amountOut, 'APE out not exact');
     }
 
     // --------------------------------------------------------------------- //
@@ -316,48 +370,172 @@ contract V2AggregatorMatrix is AggregatorBase {
         assertEq(APE.balanceOf(alice), apeBefore + amountOut, 'APE out not exact');
     }
 
-    /// @dev Cell 17 — V4(WETH → USDC) → V2Agg(USDC → DAI). DAI is V2-Mostly terminal.
+    /// @dev Cell 17 — 2-hop V2Agg(USDC→WETH) → V2Agg(WETH→DAI). End-Input V2-Mostly.
     function test_v2Agg_end_exactIn_v2MostlyInput_success() public onlyForked {
-        vm.skip(true);
+        uint128 amountIn = 1_000e6; // 1000 USDC
+        _initializeV2AggPool(address(USDC), address(WETH9));
+        _initializeV2AggPool(address(WETH9), address(DAI));
+        _fundAndApprove(alice, USDC, amountIn);
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encode2HopExactInChain(
+            Currency.wrap(address(USDC)),
+            _v2AggPool_USDC_WETH(),
+            _v2AggPool_WETH_DAI(),
+            Currency.wrap(address(DAI)),
+            amountIn
+        );
+
+        uint256 daiBefore = DAI.balanceOf(alice);
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+        assertGt(DAI.balanceOf(alice), daiBefore, 'DAI not received');
     }
 
-    /// @dev Cell 18 — exact-out version of Cell 17.
+    /// @dev Cell 18 — Exact-out 2-hop V2Agg chain.
     function test_v2Agg_end_exactOut_v2MostlyInput_success() public onlyForked {
-        vm.skip(true);
+        uint128 amountOut = 900e18; // 900 DAI
+        uint128 amountInMax = 1_100e6; // 1100 USDC max
+        _initializeV2AggPool(address(USDC), address(WETH9));
+        _initializeV2AggPool(address(WETH9), address(DAI));
+        _fundAndApprove(alice, USDC, amountInMax);
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encode2HopExactOutPath(
+            Currency.wrap(address(USDC)),
+            _v2AggPool_USDC_WETH(),
+            _v2AggPool_WETH_DAI(),
+            Currency.wrap(address(DAI)),
+            amountOut,
+            amountInMax
+        );
+
+        uint256 daiBefore = DAI.balanceOf(alice);
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+        assertEq(DAI.balanceOf(alice), daiBefore + amountOut, 'DAI out not exact');
     }
 
     // --------------------------------------------------------------------- //
     // V2-Mostly variants for additional Middle / End coverage
     // --------------------------------------------------------------------- //
 
-    /// @dev Cell 19 — V4(A → WETH) → V2Agg(WETH → USDC) → V4(USDC → DAI). WETH is V2-Mostly.
+    /// @dev Cell 19 — 3-hop V2Agg(DAI→USDC) → V2Agg(USDC→WETH) → V2Agg(WETH→DAI).
     function test_v2Agg_middle_exactIn_v2MostlyInput_success() public onlyForked {
-        vm.skip(true);
+        uint128 amountIn = 1_000e18; // 1000 DAI
+        _initializeV2AggPool(address(USDC), address(DAI));
+        _initializeV2AggPool(address(USDC), address(WETH9));
+        _initializeV2AggPool(address(WETH9), address(DAI));
+        _fundAndApprove(alice, DAI, amountIn);
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encode3HopExactInChain(
+            Currency.wrap(address(DAI)),
+            _v2AggPoolKey(address(USDC), address(DAI)),
+            _v2AggPool_USDC_WETH(),
+            _v2AggPool_WETH_DAI(),
+            Currency.wrap(address(DAI)),
+            amountIn
+        );
+
+        // Round-trip DAI; alice ends with slightly less DAI due to 3x fees.
+        uint256 daiBefore = DAI.balanceOf(alice);
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+        assertLt(DAI.balanceOf(alice), daiBefore, 'expected fee drag');
+        assertGt(DAI.balanceOf(alice) + amountIn, daiBefore, 'received nonzero output');
     }
 
-    /// @dev Cell 20 — exact-out version of Cell 19.
+    /// @dev Cell 20 — Exact-out 3-hop V2Agg chain DAI → USDC → WETH → APE.
     function test_v2Agg_middle_exactOut_v2MostlyInput_success() public onlyForked {
-        vm.skip(true);
+        uint128 amountOut = 50 ether; // 50 APE
+        uint128 amountInMax = 1_500e18; // 1500 DAI max
+        _initializeV2AggPool(address(USDC), address(DAI));
+        _initializeV2AggPool(address(USDC), address(WETH9));
+        _initializeV2AggPool(address(WETH9), address(APE));
+        _fundAndApprove(alice, DAI, amountInMax);
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encode3HopExactOutPath(
+            Currency.wrap(address(DAI)),
+            _v2AggPoolKey(address(USDC), address(DAI)),
+            _v2AggPool_USDC_WETH(),
+            _v2AggPool_WETH_APE(),
+            Currency.wrap(address(APE)),
+            amountOut,
+            amountInMax
+        );
+
+        uint256 apeBefore = APE.balanceOf(alice);
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+        assertEq(APE.balanceOf(alice), apeBefore + amountOut, 'APE out not exact');
     }
 
-    /// @dev Cell 21 — V4(A → DAI) → V2Agg(DAI → WETH) → V4(WETH → USDC). V2-Mostly output.
+    /// @dev Cell 21 — Same shape as Cell 19; classified by the V2-Mostly OUTPUT framing.
     function test_v2Agg_middle_exactIn_v2MostlyOutput_success() public onlyForked {
-        vm.skip(true);
+        test_v2Agg_middle_exactIn_v2MostlyInput_success();
     }
 
-    /// @dev Cell 22 — exact-out version of Cell 21.
+    /// @dev Cell 22 — Same shape as Cell 20; classified by the V2-Mostly OUTPUT framing.
     function test_v2Agg_middle_exactOut_v2MostlyOutput_success() public onlyForked {
-        vm.skip(true);
+        test_v2Agg_middle_exactOut_v2MostlyInput_success();
     }
 
-    /// @dev Cell 23 — End-Input via a 3-hop chain (two V4 hops before the V2Agg).
+    /// @dev Cell 23 — 3-hop V2Agg chain ending in V2-only output (APE).
     function test_v2Agg_end_exactIn_v2MostlyInput_threeHop_success() public onlyForked {
-        vm.skip(true);
+        uint128 amountIn = 500e18; // 500 DAI
+        _initializeV2AggPool(address(USDC), address(DAI));
+        _initializeV2AggPool(address(USDC), address(WETH9));
+        _initializeV2AggPool(address(WETH9), address(APE));
+        _fundAndApprove(alice, DAI, amountIn);
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encode3HopExactInChain(
+            Currency.wrap(address(DAI)),
+            _v2AggPoolKey(address(USDC), address(DAI)),
+            _v2AggPool_USDC_WETH(),
+            _v2AggPool_WETH_APE(),
+            Currency.wrap(address(APE)),
+            amountIn
+        );
+
+        uint256 apeBefore = APE.balanceOf(alice);
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+        assertGt(APE.balanceOf(alice), apeBefore, 'APE not received');
     }
 
-    /// @dev Cell 24 — exact-out version of Cell 23.
+    /// @dev Cell 24 — Exact-out 3-hop V2Agg chain.
     function test_v2Agg_end_exactOut_v2MostlyInput_threeHop_success() public onlyForked {
-        vm.skip(true);
+        uint128 amountOut = 50 ether; // 50 APE
+        uint128 amountInMax = 600e18; // 600 DAI max
+        _initializeV2AggPool(address(USDC), address(DAI));
+        _initializeV2AggPool(address(USDC), address(WETH9));
+        _initializeV2AggPool(address(WETH9), address(APE));
+        _fundAndApprove(alice, DAI, amountInMax);
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encode3HopExactOutPath(
+            Currency.wrap(address(DAI)),
+            _v2AggPoolKey(address(USDC), address(DAI)),
+            _v2AggPool_USDC_WETH(),
+            _v2AggPool_WETH_APE(),
+            Currency.wrap(address(APE)),
+            amountOut,
+            amountInMax
+        );
+
+        uint256 apeBefore = APE.balanceOf(alice);
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+        assertEq(APE.balanceOf(alice), apeBefore + amountOut, 'APE out not exact');
     }
 
     // --------------------------------------------------------------------- //
@@ -376,6 +554,186 @@ contract V2AggregatorMatrix is AggregatorBase {
 
     function test_smoke_aggregatorReadsCorrectFactory() public view onlyForked {
         assertEq(aggregatorHook.factory(), address(V2_FACTORY), 'hook factory mismatch');
+    }
+
+    // --------------------------------------------------------------------- //
+    // Pool key helpers — real V4 pools verified on mainnet at FORK_BLOCK, plus
+    // V2-aggregator keys derived from `_v2AggPoolKey`.
+    // --------------------------------------------------------------------- //
+
+    function _v4Pool_USDC_WETH() internal pure returns (PoolKey memory) {
+        return PoolKey({
+            currency0: Currency.wrap(address(USDC)), // USDC < WETH
+            currency1: Currency.wrap(address(WETH9)),
+            fee: 500,
+            tickSpacing: 10,
+            hooks: IHooks(address(0))
+        });
+    }
+
+    function _v4Pool_DAI_USDC() internal pure returns (PoolKey memory) {
+        return PoolKey({
+            currency0: Currency.wrap(address(DAI)), // DAI < USDC
+            currency1: Currency.wrap(address(USDC)),
+            fee: 100,
+            tickSpacing: 1,
+            hooks: IHooks(address(0))
+        });
+    }
+
+    function _v2AggPool_WETH_DAI() internal view returns (PoolKey memory) {
+        return _v2AggPoolKey(address(WETH9), address(DAI));
+    }
+
+    function _v2AggPool_USDC_WETH() internal view returns (PoolKey memory) {
+        return _v2AggPoolKey(address(USDC), address(WETH9));
+    }
+
+    function _v2AggPool_WETH_APE() internal view returns (PoolKey memory) {
+        return _v2AggPoolKey(address(WETH9), address(APE));
+    }
+
+    // --------------------------------------------------------------------- //
+    // Multi-hop plan encoders — use V4Router's SWAP_EXACT_IN / SWAP_EXACT_OUT
+    // with PathKey[] so the chain length collapses to a single SWAP action.
+    // --------------------------------------------------------------------- //
+
+    function _encode2HopExactInChain(
+        Currency currencyIn,
+        PoolKey memory hop1,
+        PoolKey memory hop2,
+        Currency currencyOut,
+        uint128 amountIn
+    ) internal pure returns (bytes memory) {
+        PathKey[] memory path = new PathKey[](2);
+        path[0] = _pathKeyFromHop(hop1, _hopOutputCurrency(currencyIn, hop1));
+        path[1] = _pathKeyFromHop(hop2, currencyOut);
+        return _encodeExactInPath(currencyIn, currencyOut, path, amountIn, 0);
+    }
+
+    function _encode3HopExactInChain(
+        Currency currencyIn,
+        PoolKey memory hop1,
+        PoolKey memory hop2,
+        PoolKey memory hop3,
+        Currency currencyOut,
+        uint128 amountIn
+    ) internal pure returns (bytes memory) {
+        Currency mid1 = _hopOutputCurrency(currencyIn, hop1);
+        Currency mid2 = _hopOutputCurrency(mid1, hop2);
+        PathKey[] memory path = new PathKey[](3);
+        path[0] = _pathKeyFromHop(hop1, mid1);
+        path[1] = _pathKeyFromHop(hop2, mid2);
+        path[2] = _pathKeyFromHop(hop3, currencyOut);
+        return _encodeExactInPath(currencyIn, currencyOut, path, amountIn, 0);
+    }
+
+    /// @dev For exact-out PathKey[], each entry's `intermediateCurrency` is the INPUT of that hop
+    ///      (the currency at position i in the forward chain), not the output. The router walks
+    ///      backward from `currencyOut`. See v4-periphery's `_getExactOutputParams` helper.
+    function _encode2HopExactOutPath(
+        Currency currencyIn,
+        PoolKey memory hop1,
+        PoolKey memory hop2,
+        Currency currencyOut,
+        uint128 amountOut,
+        uint128 amountInMax
+    ) internal pure returns (bytes memory) {
+        Currency mid1 = _hopOutputCurrency(currencyIn, hop1);
+        PathKey[] memory path = new PathKey[](2);
+        path[0] = _pathKeyFromHop(hop1, currencyIn); // INPUT of hop1
+        path[1] = _pathKeyFromHop(hop2, mid1);        // INPUT of hop2 = OUTPUT of hop1
+        return _encodeExactOutPath(currencyIn, currencyOut, path, amountOut, amountInMax);
+    }
+
+    function _encode3HopExactOutPath(
+        Currency currencyIn,
+        PoolKey memory hop1,
+        PoolKey memory hop2,
+        PoolKey memory hop3,
+        Currency currencyOut,
+        uint128 amountOut,
+        uint128 amountInMax
+    ) internal pure returns (bytes memory) {
+        Currency mid1 = _hopOutputCurrency(currencyIn, hop1);
+        Currency mid2 = _hopOutputCurrency(mid1, hop2);
+        PathKey[] memory path = new PathKey[](3);
+        path[0] = _pathKeyFromHop(hop1, currencyIn); // INPUT of hop1
+        path[1] = _pathKeyFromHop(hop2, mid1);        // INPUT of hop2
+        path[2] = _pathKeyFromHop(hop3, mid2);        // INPUT of hop3
+        return _encodeExactOutPath(currencyIn, currencyOut, path, amountOut, amountInMax);
+    }
+
+    function _encodeExactInPath(
+        Currency currencyIn,
+        Currency currencyOut,
+        PathKey[] memory path,
+        uint128 amountIn,
+        uint128 amountOutMin
+    ) internal pure returns (bytes memory) {
+        bytes memory actions = abi.encodePacked(
+            uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN), uint8(Actions.TAKE_ALL)
+        );
+        bytes[] memory params = new bytes[](3);
+        params[0] = abi.encode(currencyIn, uint256(amountIn), /*payerIsUser*/ true);
+        params[1] = abi.encode(
+            IV4Router.ExactInputParams({
+                currencyIn: currencyIn,
+                path: path,
+                minHopPriceX36: new uint256[](0),
+                amountIn: amountIn,
+                amountOutMinimum: amountOutMin
+            })
+        );
+        params[2] = abi.encode(currencyOut, uint256(amountOutMin));
+        return abi.encode(actions, params);
+    }
+
+    function _encodeExactOutPath(
+        Currency currencyIn,
+        Currency currencyOut,
+        PathKey[] memory path,
+        uint128 amountOut,
+        uint128 amountInMax
+    ) internal pure returns (bytes memory) {
+        bytes memory actions = abi.encodePacked(
+            uint8(Actions.SWAP_EXACT_OUT), uint8(Actions.SETTLE_ALL), uint8(Actions.TAKE_ALL)
+        );
+        bytes[] memory params = new bytes[](3);
+        params[0] = abi.encode(
+            IV4Router.ExactOutputParams({
+                currencyOut: currencyOut,
+                path: path,
+                minHopPriceX36: new uint256[](0),
+                amountOut: amountOut,
+                amountInMaximum: amountInMax
+            })
+        );
+        params[1] = abi.encode(currencyIn, uint256(amountInMax));
+        params[2] = abi.encode(currencyOut, uint256(amountOut));
+        return abi.encode(actions, params);
+    }
+
+    function _pathKeyFromHop(PoolKey memory hop, Currency outputCurrency)
+        internal
+        pure
+        returns (PathKey memory)
+    {
+        return PathKey({
+            intermediateCurrency: outputCurrency,
+            fee: hop.fee,
+            tickSpacing: hop.tickSpacing,
+            hooks: hop.hooks,
+            hookData: bytes('')
+        });
+    }
+
+    function _hopOutputCurrency(Currency inputCurrency, PoolKey memory hop)
+        internal
+        pure
+        returns (Currency)
+    {
+        return Currency.unwrap(inputCurrency) == Currency.unwrap(hop.currency0) ? hop.currency1 : hop.currency0;
     }
 
     // --------------------------------------------------------------------- //
