@@ -5,23 +5,24 @@ import {Test, console2} from 'forge-std/Test.sol';
 import {IPermit2} from 'permit2/src/interfaces/IPermit2.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IUniswapV2Factory} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
-import {IPoolManager} from '@uniswap/v4-periphery/lib/v4-core/src/interfaces/IPoolManager.sol';
-import {IHooks} from '@uniswap/v4-periphery/lib/v4-core/src/interfaces/IHooks.sol';
-import {PoolKey} from '@uniswap/v4-periphery/lib/v4-core/src/types/PoolKey.sol';
-import {PoolId, PoolIdLibrary} from '@uniswap/v4-periphery/lib/v4-core/src/types/PoolId.sol';
-import {Currency} from '@uniswap/v4-periphery/lib/v4-core/src/types/Currency.sol';
-import {Hooks} from '@uniswap/v4-periphery/lib/v4-core/src/libraries/Hooks.sol';
+import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
+import {IHooks} from '@uniswap/v4-core/src/interfaces/IHooks.sol';
+import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
+import {PoolId, PoolIdLibrary} from '@uniswap/v4-core/src/types/PoolId.sol';
+import {Currency} from '@uniswap/v4-core/src/types/Currency.sol';
+import {Hooks} from '@uniswap/v4-core/src/libraries/Hooks.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 import {Actions} from '@uniswap/v4-periphery/src/libraries/Actions.sol';
 import {UniversalRouter} from '../../../contracts/UniversalRouter.sol';
 import {Commands} from '../../../contracts/libraries/Commands.sol';
 import {RouterParameters} from '../../../contracts/types/RouterParameters.sol';
+import {UniswapV2AggregatorMock} from './v2/mocks/UniswapV2AggregatorMock.sol';
 
 /// @title  AggregatorBase
 /// @notice Shared base for aggregator-hook test suites. Brings up a mainnet fork,
-///         deploys a fresh `UniversalRouter`, and deploys an aggregator hook from
-///         a precompiled creation-bytecode artifact (avoids a cross-pragma submodule
-///         dependency on v4-hooks-public).
+///         deploys a fresh `UniversalRouter`, and deploys an in-tree mock of the
+///         `UniswapV2Aggregator` hook (mirrors v4-hooks-public behavior, ^0.8.24
+///         pragma so test code can override / extend it freely).
 abstract contract AggregatorBase is Test {
     using PoolIdLibrary for PoolKey;
 
@@ -29,8 +30,8 @@ abstract contract AggregatorBase is Test {
     // Mainnet addresses
     // --------------------------------------------------------------------- //
 
-    /// @dev Standard fork pin for the V2-aggregator test suite. PoolManager + APE
-    ///      pair both exist and have non-trivial reserves at this block.
+    /// @dev Fork pin shared across the aggregator suites. PoolManager + APE pair
+    ///      both deployed at this block with non-trivial reserves.
     uint256 internal constant FORK_BLOCK = 23_000_000;
 
     address internal constant V4_POOL_MANAGER = 0x000000000004444c5dc75cB358380D2e3dE08A90;
@@ -38,8 +39,7 @@ abstract contract AggregatorBase is Test {
     IPermit2 internal constant PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
     ERC20 internal constant WETH9 = ERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
-    // Token constants — selected to cover both semantics in the 24-cell matrix.
-    ERC20 internal constant APE = ERC20(0x4d224452801ACEd8B2F0aebE155379bb5D594381); // V2-only (V2 pair, no V4 pool at fork pin)
+    ERC20 internal constant APE = ERC20(0x4d224452801ACEd8B2F0aebE155379bb5D594381); // V2-only at FORK_BLOCK
     ERC20 internal constant USDC = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // V2-Mostly
     ERC20 internal constant DAI = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F); // V2-Mostly
 
@@ -55,13 +55,8 @@ abstract contract AggregatorBase is Test {
             | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
     );
 
-    /// @dev Path to the committed creation bytecode for the aggregator hook.
-    ///      Update via the script in `test/foundry-tests/aggregators/README.md`.
-    string internal constant V2_AGGREGATOR_BIN_PATH =
-        'test/foundry-tests/aggregators/v2/precompile/UniswapV2Aggregator.bin';
-
-    /// @dev Canonical (fee, tickSpacing) the SDK will pin for V2-aggregator PoolKeys.
-    ///      Neither participates in routing (the hook reads V2 reserves directly).
+    /// @dev SDK pins these for V2-aggregator PoolKeys. Neither participates in routing
+    ///      (the hook reads V2 reserves directly).
     uint24 internal constant V2_AGG_FEE = 3000;
     int24 internal constant V2_AGG_TICK_SPACING = 60;
     uint160 internal constant SQRT_PRICE_1_1 = 79228162514264337593543950336;
@@ -72,7 +67,7 @@ abstract contract AggregatorBase is Test {
 
     UniversalRouter internal router;
     IPoolManager internal poolManager;
-    address internal aggregatorHook;
+    UniswapV2AggregatorMock internal aggregatorHook;
     bool internal forked;
 
     address internal alice = makeAddr('alice');
@@ -91,7 +86,7 @@ abstract contract AggregatorBase is Test {
 
             router = new UniversalRouter(_routerParameters());
 
-            aggregatorHook = _deployV2Aggregator('1.0.0-test');
+            aggregatorHook = _deployAggregatorMock('1.0.0-test');
         } catch {
             console2.log(
                 'Skipping aggregator fork test, no FORK_URL set. Add FORK_URL to .env and rerun to execute.'
@@ -108,31 +103,24 @@ abstract contract AggregatorBase is Test {
     }
 
     // --------------------------------------------------------------------- //
-    // Hook deployment — precompile pattern
+    // Hook deployment — mock contract via CREATE2 with hook-flag salt
     // --------------------------------------------------------------------- //
 
-    /// @notice Deploys `UniswapV2Aggregator` at an address whose lower 14 bits encode the required permission flags.
-    /// @dev    Reads creation bytecode from `V2_AGGREGATOR_BIN_PATH`, appends abi-encoded constructor args,
-    ///         brute-forces a CREATE2 salt with `_mineHookSalt`, and deploys via assembly create2.
-    /// @return hook  The address of the deployed aggregator hook.
-    function _deployV2Aggregator(string memory hookVersion) internal returns (address hook) {
-        bytes memory creationCode = vm.parseBytes(vm.readFile(V2_AGGREGATOR_BIN_PATH));
+    /// @notice Deploys the in-tree `UniswapV2AggregatorMock` at an address whose lower 14 bits
+    ///         encode the V2 aggregator's permission-flag pattern.
+    function _deployAggregatorMock(string memory hookVersion) internal returns (UniswapV2AggregatorMock hook) {
         bytes memory initCode = abi.encodePacked(
-            creationCode, abi.encode(address(poolManager), address(V2_FACTORY), hookVersion)
+            type(UniswapV2AggregatorMock).creationCode,
+            abi.encode(address(poolManager), address(V2_FACTORY), hookVersion)
         );
-
         (address predicted, bytes32 salt) = _mineHookSalt(address(this), V2_AGGREGATOR_HOOK_FLAGS, initCode);
 
-        assembly ('memory-safe') {
-            hook := create2(0, add(initCode, 0x20), mload(initCode), salt)
-        }
-        require(hook == predicted, 'AggregatorBase: hook create2 mismatch');
-        require(hook != address(0), 'AggregatorBase: hook create2 failed');
+        hook = new UniswapV2AggregatorMock{salt: salt}(poolManager, address(V2_FACTORY), hookVersion);
+        require(address(hook) == predicted, 'AggregatorBase: hook create2 mismatch');
     }
 
     /// @dev Minimal HookMiner — brute-forces a CREATE2 salt whose deployed address has
-    ///      `addr & 0x3FFF == flags`. v4-periphery's HookMiner isn't exposed at the version
-    ///      pinned in `lib/`, so this is inlined to keep test deps minimal.
+    ///      `addr & 0x3FFF == flags`. Kept inline to avoid pulling extra test-only deps.
     function _mineHookSalt(address deployer, uint160 flags, bytes memory initCode)
         internal
         pure
@@ -144,9 +132,7 @@ abstract contract AggregatorBase is Test {
             hookAddress = address(
                 uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, initCodeHash))))
             );
-            if (uint160(hookAddress) & uint160(0x3FFF) == flags) {
-                return (hookAddress, salt);
-            }
+            if (uint160(hookAddress) & uint160(0x3FFF) == flags) return (hookAddress, salt);
         }
         revert('AggregatorBase: no salt found for flags');
     }
@@ -155,7 +141,7 @@ abstract contract AggregatorBase is Test {
     // PoolKey helpers
     // --------------------------------------------------------------------- //
 
-    /// @notice Builds the canonical V2-aggregator `PoolKey` for two tokens, sorted ascending.
+    /// @notice Canonical V2-aggregator `PoolKey` for two tokens (sorted ascending).
     function _v2AggPoolKey(address tokenA, address tokenB) internal view returns (PoolKey memory key) {
         (address c0, address c1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         key = PoolKey({
@@ -163,11 +149,11 @@ abstract contract AggregatorBase is Test {
             currency1: Currency.wrap(c1),
             fee: V2_AGG_FEE,
             tickSpacing: V2_AGG_TICK_SPACING,
-            hooks: IHooks(aggregatorHook)
+            hooks: IHooks(address(aggregatorHook))
         });
     }
 
-    /// @notice Initializes the V4 pool for a (tokenA, tokenB) pair if not already initialized.
+    /// @notice Initializes the V4 pool for a (tokenA, tokenB) pair (one-shot per pair).
     function _initializeV2AggPool(address tokenA, address tokenB) internal returns (PoolKey memory key, PoolId id) {
         key = _v2AggPoolKey(tokenA, tokenB);
         id = key.toId();
@@ -178,8 +164,6 @@ abstract contract AggregatorBase is Test {
     // Router setup
     // --------------------------------------------------------------------- //
 
-    /// @dev RouterParameters needed to construct a fresh UniversalRouter on the fork.
-    ///      Tests don't exercise V3/Across modules; those fields stay zero.
     function _routerParameters() internal view returns (RouterParameters memory params) {
         params = RouterParameters({
             permit2: address(PERMIT2),

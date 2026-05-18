@@ -2,10 +2,9 @@
 pragma solidity ^0.8.24;
 
 import {AggregatorBase} from '../_AggregatorBase.t.sol';
-import {IUniswapV2Aggregator} from './interfaces/IUniswapV2Aggregator.sol';
-import {IPoolManager} from '@uniswap/v4-periphery/lib/v4-core/src/interfaces/IPoolManager.sol';
-import {PoolKey} from '@uniswap/v4-periphery/lib/v4-core/src/types/PoolKey.sol';
-import {PoolId} from '@uniswap/v4-periphery/lib/v4-core/src/types/PoolId.sol';
+import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
+import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
+import {PoolId} from '@uniswap/v4-core/src/types/PoolId.sol';
 
 /// @title  V2AggregatorMatrix
 /// @notice The 24-cell test matrix proving V4_SWAP-against-UniswapV2Aggregator works for every
@@ -171,27 +170,26 @@ contract V2AggregatorMatrix is AggregatorBase {
     // Smoke tests — exercise the harness itself before iterating on test bodies
     // --------------------------------------------------------------------- //
 
-    function test_smoke_aggregatorDeploysWithRequiredFlags() public onlyForked {
-        assertTrue(aggregatorHook != address(0), 'hook not deployed');
+    function test_smoke_aggregatorDeploysWithRequiredFlags() public view onlyForked {
+        assertTrue(address(aggregatorHook) != address(0), 'hook not deployed');
         // Lower 14 bits of the address must match the V2 aggregator permission flag pattern.
         assertEq(
-            uint160(aggregatorHook) & uint160(0x3FFF),
+            uint160(address(aggregatorHook)) & uint160(0x3FFF),
             V2_AGGREGATOR_HOOK_FLAGS,
             'hook address does not encode required permission flags'
         );
     }
 
-    function test_smoke_aggregatorReadsCorrectFactory() public onlyForked {
-        address f = IUniswapV2Aggregator(aggregatorHook).factory();
-        assertEq(f, address(V2_FACTORY), 'hook factory mismatch');
+    function test_smoke_aggregatorReadsCorrectFactory() public view onlyForked {
+        assertEq(aggregatorHook.factory(), address(V2_FACTORY), 'hook factory mismatch');
     }
 
     function test_smoke_aggregatorPoolInitializesAndRegistersPair() public onlyForked {
         (PoolKey memory key, PoolId id) = _initializeV2AggPool(address(WETH9), address(APE));
-        address registeredPair = IUniswapV2Aggregator(aggregatorHook).poolIdToExternalPair(id);
+        address registeredPair = aggregatorHook.poolIdToExternalPair(id);
         address expectedPair = V2_FACTORY.getPair(address(WETH9), address(APE));
         assertEq(registeredPair, expectedPair, 'aggregator did not register expected V2 pair');
         // Silence unused-variable warning while matrix bodies are stubbed.
-        assertTrue(address(key.hooks) == aggregatorHook, 'pool key hook mismatch');
+        assertTrue(address(key.hooks) == address(aggregatorHook), 'pool key hook mismatch');
     }
 }

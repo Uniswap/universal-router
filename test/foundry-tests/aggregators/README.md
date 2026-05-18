@@ -6,38 +6,51 @@ Tests proving Universal Router can route swaps for legacy AMMs (V2, V3, etc.) th
 
 UR is at the EIP-170 24KB contract size limit. The V2 swap module (`V2SwapRouter.sol` + `UniswapV2Library.sol` + V2-specific dispatch + V2 immutables) is the largest immediately-deletable chunk: ~1.5KB recovery. Before deleting it, we must prove that the equivalent flow works via the V4 path against the `UniswapV2Aggregator` hook from [v4-hooks-public](https://github.com/Uniswap/v4-hooks-public).
 
-See the implementation plan and proof of coverage in the `.claude-output/` directory of the repo root.
+See the implementation plan and proof of coverage in `.claude-output/` at the repo root.
 
 ## Directory layout
 
 ```
 aggregators/
-├── README.md                          ← this file
-├── _AggregatorBase.t.sol              ← shared base: fork setup, tokens, hook deploy, plan encoder
+├── README.md                              ← this file
+├── _AggregatorBase.t.sol                  ← shared base: fork setup, tokens, hook deploy, plan encoder
 └── v2/
-    ├── V2AggregatorMatrix.t.sol       ← the 24-cell matrix (Position × Role × Direction)
-    ├── interfaces/
-    │   └── IUniswapV2Aggregator.sol   ← minimal interface for cross-pragma calls
-    └── precompile/
-        └── UniswapV2Aggregator.bin    ← creation bytecode from v4-hooks-public
+    ├── V2AggregatorMatrix.t.sol           ← the 24-cell matrix (Position × Role × Direction)
+    └── mocks/
+        └── UniswapV2AggregatorMock.sol    ← in-tree mock mirroring v4-hooks-public's hook
 ```
 
-## Hook deployment pattern
+## Why an in-tree mock instead of the production hook
 
-`UniswapV2Aggregator` in v4-hooks-public is pinned to `pragma solidity 0.8.29`. UR is pinned to `0.8.26`. To avoid a cross-version compilation mess, we use the **precompile pattern**:
+`UniswapV2Aggregator` in v4-hooks-public is pinned to `pragma solidity 0.8.29`; UR is on `0.8.26`. The cleanest cross-pragma options are:
 
-1. The hook's creation bytecode is committed at `v2/precompile/UniswapV2Aggregator.bin` (extracted from `v4-hooks-public/foundry-out/UniswapV2Aggregator.sol/UniswapV2Aggregator.json`).
-2. `_AggregatorBase.deployV2Aggregator(...)` reads the file via `vm.readFile`, appends abi-encoded constructor args, mines a salt for the hook's permission-flag address pattern, and deploys via `CREATE2`.
-3. Tests interact with the hook via the minimal `IUniswapV2Aggregator` interface in `v2/interfaces/`.
+1. **Submodule v4-hooks-public + protocol-fees** → drags 5+ transitive submodules onto UR for test-only deps.
+2. **Precompile + assembly create2** → opaque; tests can't easily extend hook behavior.
+3. **In-tree mock with the same swap mechanics** → ← we picked this.
 
-To regenerate the precompile after a hook update:
+The mock at `v2/mocks/UniswapV2AggregatorMock.sol` mirrors v4-hooks-public's `UniswapV2Aggregator` behaviorally:
 
-```sh
-cd $V4_HOOKS_PUBLIC_REPO && forge build
-python3 -c "import json; print(json.load(open('foundry-out/UniswapV2Aggregator.sol/UniswapV2Aggregator.json'))['bytecode']['object'])" \
-  | tr -d '\n' \
-  > $UR_REPO/test/foundry-tests/aggregators/v2/precompile/UniswapV2Aggregator.bin
-```
+- Permission flags: `beforeInitialize | beforeAddLiquidity | beforeSwap | beforeSwapReturnsDelta`
+- `_swapOnPair` flow: `sync(out) → take(in, pair) → pair.swap → settle` (identical to production)
+- Returns the same shape of `BeforeSwapDelta` to absorb the swapper's intent and produce the V2 output
+- Rejects native ETH currency (`NativeCurrencyNotSupported`)
+- Reverts on `beforeAddLiquidity` (`LiquidityNotAllowed`) — pure aggregator
+- Enforces one-PoolKey-per-V2-pair via `PairAlreadyHasCanonicalPool`
+
+Intentionally omitted from the mock (out of scope for routing-correctness tests):
+- `IFeeClassifiedHook` / `ProtocolFees` / token-jar wiring
+- `pollTokenJar()` administrative surface
+
+Because the mock is in-tree, tests can:
+- Add custom events / introspection (e.g., observe internal call ordering)
+- Override `_swapOnPair` for edge-case fuzzing
+- Vary constructor args without rebuilding precompiles
+
+When parity to a specific v4-hooks-public commit becomes important (e.g., the audit-pinned version), this directory will also pull in the canonical bytecode via a fork test that compares deployed code hashes.
+
+## Hook address derivation
+
+The mock is deployed via `CREATE2` from the test contract. `_AggregatorBase._mineHookSalt` brute-forces a salt whose deployed address has its lower 14 bits matching `V2_AGGREGATOR_HOOK_FLAGS`. The deployed `aggregatorHook` instance therefore satisfies v4-core's `Hooks.validateHookPermissions` and slots into a real `PoolKey` interchangeably with a production hook deployment.
 
 ## The 24-cell matrix
 
@@ -67,4 +80,4 @@ forge test --match-test test_v2Agg_beginning_exactIn_v2OnlyInput_success -vvv --
 forge test --match-path "test/foundry-tests/aggregators/v2/gas/**" --gas-report --fork-url $FORK_URL
 ```
 
-Fork pin: Ethereum mainnet block `22_500_000`. See `_AggregatorBase.FORK_BLOCK`.
+Fork pin: Ethereum mainnet block `23_000_000` (matches the existing `ChainedActionsFork` suite). See `_AggregatorBase.FORK_BLOCK`.
