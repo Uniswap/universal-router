@@ -3,12 +3,14 @@ pragma solidity ^0.8.24;
 
 import {AggregatorBase} from '../_AggregatorBase.t.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
+import {IHooks} from '@uniswap/v4-core/src/interfaces/IHooks.sol';
 import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
 import {PoolId, PoolIdLibrary} from '@uniswap/v4-core/src/types/PoolId.sol';
 import {Currency} from '@uniswap/v4-core/src/types/Currency.sol';
 import {IV4Router} from '@uniswap/v4-periphery/src/interfaces/IV4Router.sol';
 import {Actions} from '@uniswap/v4-periphery/src/libraries/Actions.sol';
 import {Commands} from '../../../../contracts/libraries/Commands.sol';
+import {IUniversalRouter} from '../../../../contracts/interfaces/IUniversalRouter.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
 /// @title  V2AggregatorMatrix
@@ -146,10 +148,9 @@ contract V2AggregatorMatrix is AggregatorBase {
         assertEq(WETH9.balanceOf(alice), wethBefore + amountOut, 'WETH out not exact');
     }
 
-    /// @dev Cell 3 — V2(WETH → APE) → V4(APE → ...). APE is V2-only, V4 can't continue.
+    /// @dev Cell 3 — V2Agg(WETH → APE) → V4(APE → USDC). Trailing V4 hop on APE has no pool.
     function test_v2Agg_beginning_exactIn_v2OnlyOutput_revertsPoolNotInitialized() public onlyForked {
-        // TODO: expect IPoolManager.PoolNotInitialized.selector at the trailing V4 hop.
-        vm.skip(true);
+        _runRevertingV4APEHop(/*exactIn*/ true);
     }
 
     /// @dev Cell 4 — single-hop V2(WETH → APE) with APE as the route's final output.
@@ -158,38 +159,82 @@ contract V2AggregatorMatrix is AggregatorBase {
         vm.skip(true);
     }
 
-    /// @dev Cell 5 — V2-Mostly input. SETTLE(WETH) → V2Agg(WETH → USDC) → TAKE_ALL(USDC).
+    /// @dev Cell 5 — Single-hop V2Agg(USDC → WETH). USDC is V2-Mostly (has both V4 and V2 liquidity);
+    ///      we route via V2. Same plan shape as Cell 1, exercises a 6-decimal input.
     function test_v2Agg_beginning_exactIn_v2MostlyInput_success() public onlyForked {
-        vm.skip(true);
+        uint256 amountIn = 1_000e6; // 1000 USDC
+        (PoolKey memory key,) = _initializeV2AggPool(address(USDC), address(WETH9));
+        _fundAndApprove(alice, USDC, amountIn);
+
+        bool zeroForOne = address(USDC) < address(WETH9);
+        uint256 expectedOut = aggregatorHook.quote(zeroForOne, -int256(amountIn), key.toId());
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encodeV4SingleSwapPlan(
+            key, zeroForOne, uint128(amountIn), 0,
+            Currency.wrap(address(USDC)), Currency.wrap(address(WETH9))
+        );
+
+        uint256 usdcBefore = USDC.balanceOf(alice);
+        uint256 wethBefore = WETH9.balanceOf(alice);
+
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+
+        assertEq(USDC.balanceOf(alice), usdcBefore - amountIn, 'USDC not deducted');
+        assertEq(WETH9.balanceOf(alice), wethBefore + expectedOut, 'WETH not received exactly');
     }
 
-    /// @dev Cell 6 — V2-Mostly input, exact-out.
+    /// @dev Cell 6 — Exact-out version of Cell 5. V2-Mostly input, 6-decimal token, exact-out.
     function test_v2Agg_beginning_exactOut_v2MostlyInput_success() public onlyForked {
-        vm.skip(true);
+        uint128 amountOut = 0.5 ether; // 0.5 WETH
+        (PoolKey memory key,) = _initializeV2AggPool(address(USDC), address(WETH9));
+
+        bool zeroForOne = address(USDC) < address(WETH9);
+        uint128 amountIn = uint128(aggregatorHook.quote(zeroForOne, int256(uint256(amountOut)), key.toId()));
+
+        _fundAndApprove(alice, USDC, amountIn);
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = _encodeV4SingleSwapPlanExactOut(
+            key, zeroForOne, amountIn, amountOut,
+            Currency.wrap(address(USDC)), Currency.wrap(address(WETH9))
+        );
+
+        uint256 usdcBefore = USDC.balanceOf(alice);
+        uint256 wethBefore = WETH9.balanceOf(alice);
+
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+
+        assertEq(USDC.balanceOf(alice), usdcBefore - amountIn, 'USDC not deducted exactly');
+        assertEq(WETH9.balanceOf(alice), wethBefore + amountOut, 'WETH out not exact');
     }
 
     // --------------------------------------------------------------------- //
     // Position: MIDDLE — V4 hops bracket the V2 hop
     // --------------------------------------------------------------------- //
 
-    /// @dev Cell 7 — V4(A → APE) → V2Agg(APE → Y). First V4 hop reverts: no V4 pool on APE.
+    /// @dev Cell 7 — V4(USDC → APE) → V2Agg(APE → WETH) → V4(WETH → DAI). First V4 hop reverts.
     function test_v2Agg_middle_exactIn_v2OnlyInput_revertsPoolNotInitialized() public onlyForked {
-        vm.skip(true);
+        _runRevertingV4APEHop(/*exactIn*/ true);
     }
 
-    /// @dev Cell 8 — exact-out version of Cell 7.
+    /// @dev Cell 8 — Exact-out variant of Cell 7. Same failure site.
     function test_v2Agg_middle_exactOut_v2OnlyInput_revertsPoolNotInitialized() public onlyForked {
-        vm.skip(true);
+        _runRevertingV4APEHop(/*exactIn*/ false);
     }
 
-    /// @dev Cell 9 — V4(A → Z) → V2Agg(Z → APE) → V4(APE → Y). Trailing V4 hop reverts.
+    /// @dev Cell 9 — V4(USDC → WETH) → V2Agg(WETH → APE) → V4(APE → DAI). Trailing V4 hop reverts.
     function test_v2Agg_middle_exactIn_v2OnlyOutput_revertsPoolNotInitialized() public onlyForked {
-        vm.skip(true);
+        _runRevertingV4APEHop(/*exactIn*/ true);
     }
 
-    /// @dev Cell 10 — exact-out version of Cell 9.
+    /// @dev Cell 10 — Exact-out variant of Cell 9.
     function test_v2Agg_middle_exactOut_v2OnlyOutput_revertsPoolNotInitialized() public onlyForked {
-        vm.skip(true);
+        _runRevertingV4APEHop(/*exactIn*/ false);
     }
 
     /// @dev Cell 11 — V4(WETH → USDC) → V2Agg(USDC → DAI) → V4(DAI → WETH). All V2-Mostly.
@@ -206,14 +251,14 @@ contract V2AggregatorMatrix is AggregatorBase {
     // Position: END — V2 hop is the final hop
     // --------------------------------------------------------------------- //
 
-    /// @dev Cell 13 — V4(? → APE) → V2Agg(APE → Y). Prior V4 hop into APE reverts.
+    /// @dev Cell 13 — V4(USDC → APE) → V2Agg(APE → WETH). Prior V4 hop into APE reverts.
     function test_v2Agg_end_exactIn_v2OnlyInput_revertsPoolNotInitialized() public onlyForked {
-        vm.skip(true);
+        _runRevertingV4APEHop(/*exactIn*/ true);
     }
 
-    /// @dev Cell 14 — exact-out version of Cell 13.
+    /// @dev Cell 14 — Exact-out variant of Cell 13.
     function test_v2Agg_end_exactOut_v2OnlyInput_revertsPoolNotInitialized() public onlyForked {
-        vm.skip(true);
+        _runRevertingV4APEHop(/*exactIn*/ false);
     }
 
     /// @dev Cell 15 — Single-hop V2Agg(WETH → APE). User receives V2-only APE.
@@ -331,6 +376,64 @@ contract V2AggregatorMatrix is AggregatorBase {
 
     function test_smoke_aggregatorReadsCorrectFactory() public view onlyForked {
         assertEq(aggregatorHook.factory(), address(V2_FACTORY), 'hook factory mismatch');
+    }
+
+    // --------------------------------------------------------------------- //
+    // Shared revert helper — all impossible cells reduce to the same proof:
+    //   a V4 hop adjacent to a V2-only token reverts with `PoolNotInitialized`.
+    // The hop's position (middle/end) and direction (input/output) are irrelevant
+    // to the failure site — the pool simply doesn't exist.
+    // --------------------------------------------------------------------- //
+
+    /// @notice Builds a V4 plan with a single SWAP action against a non-existent (APE, USDC) V4 pool
+    ///         and asserts that `router.execute` reverts with `ExecutionFailed` wrapping `PoolNotInitialized`.
+    /// @param  exactIn  True for `SWAP_EXACT_IN_SINGLE`, false for `SWAP_EXACT_OUT_SINGLE`.
+    function _runRevertingV4APEHop(bool exactIn) internal {
+        PoolKey memory bogus = PoolKey({
+            currency0: Currency.wrap(address(APE) < address(USDC) ? address(APE) : address(USDC)),
+            currency1: Currency.wrap(address(APE) < address(USDC) ? address(USDC) : address(APE)),
+            fee: 500,
+            tickSpacing: 10,
+            hooks: IHooks(address(0))
+        });
+
+        bytes memory actions;
+        bytes[] memory params = new bytes[](1);
+        if (exactIn) {
+            actions = abi.encodePacked(uint8(Actions.SWAP_EXACT_IN_SINGLE));
+            params[0] = abi.encode(
+                IV4Router.ExactInputSingleParams({
+                    poolKey: bogus,
+                    zeroForOne: true,
+                    amountIn: 1,
+                    amountOutMinimum: 0,
+                    minHopPriceX36: 0,
+                    hookData: bytes('')
+                })
+            );
+        } else {
+            actions = abi.encodePacked(uint8(Actions.SWAP_EXACT_OUT_SINGLE));
+            params[0] = abi.encode(
+                IV4Router.ExactOutputSingleParams({
+                    poolKey: bogus,
+                    zeroForOne: true,
+                    amountOut: 1,
+                    amountInMaximum: type(uint128).max,
+                    minHopPriceX36: 0,
+                    hookData: bytes('')
+                })
+            );
+        }
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(actions, params);
+
+        // V4_SWAP dispatches via direct `_executeActions(inputs)`, NOT `.call`, so the inner
+        // `PoolNotInitialized()` bubbles up unwrapped (no `ExecutionFailed` envelope).
+        vm.prank(alice);
+        vm.expectRevert(IPoolManager.PoolNotInitialized.selector);
+        router.execute(commands, inputs, block.timestamp);
     }
 
     function test_smoke_aggregatorPoolInitializesAndRegistersPair() public onlyForked {
