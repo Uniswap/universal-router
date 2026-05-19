@@ -38,6 +38,105 @@ contract V2AggregatorMatrix is AggregatorBase {
     // Position: BEGINNING — V2 hop is the first hop in the route
     // --------------------------------------------------------------------- //
 
+    // --------------------------------------------------------------------- //
+    // Plan-structure proofs (V2-only input case) — make the SETTLE → SWAP →
+    // TAKE strategy diff-visible by encoding the plan inline (no helpers) and
+    // by showing the swap reverts if SETTLE is omitted.
+    // --------------------------------------------------------------------- //
+
+    /// @dev Same flow as Cell 1 but encoded INLINE (no helper) so the diff explicitly shows
+    ///      the action sequence we designed for V2-only inputs:
+    ///        actions = [SETTLE, SWAP_EXACT_IN_SINGLE, TAKE_ALL]
+    ///        SETTLE(APE, payerIsUser=true, amountIn)  — Permit2 pulls APE into PM
+    ///        SWAP_EXACT_IN_SINGLE(v2AggKey, ...)      — hook takes APE → V2 pair → WETH back
+    ///        TAKE_ALL(WETH, recipient, amountOutMin)  — deliver WETH to alice
+    function test_planShape_v2OnlyInput_settleSwapTake_inlineEncoded() public onlyForked {
+        uint128 amountIn = 100 ether;
+        (PoolKey memory key,) = _initializeV2AggPool(address(APE), address(WETH9));
+        _fundAndApprove(alice, APE, amountIn);
+
+        bool zeroForOne = address(APE) < address(WETH9);
+
+        // Build the V4 plan literally — no helpers.
+        bytes memory actions =
+            abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE_ALL));
+
+        bytes[] memory params = new bytes[](3);
+        params[0] = abi.encode(
+            Currency.wrap(address(APE)),
+            uint256(amountIn),
+            /*payerIsUser*/
+            true
+        );
+        params[1] = abi.encode(
+            IV4Router.ExactInputSingleParams({
+                poolKey: key,
+                zeroForOne: zeroForOne,
+                amountIn: amountIn,
+                amountOutMinimum: 0,
+                minHopPriceX36: 0,
+                hookData: bytes('')
+            })
+        );
+        params[2] = abi.encode(Currency.wrap(address(WETH9)), uint256(0));
+
+        // Sanity check the action bytes encode the exact 3-action sequence.
+        assertEq(actions.length, 3, 'plan must have 3 actions');
+        assertEq(uint8(actions[0]), uint8(Actions.SETTLE), 'action[0] must be SETTLE');
+        assertEq(uint8(actions[1]), uint8(Actions.SWAP_EXACT_IN_SINGLE), 'action[1] must be SWAP_EXACT_IN_SINGLE');
+        assertEq(uint8(actions[2]), uint8(Actions.TAKE_ALL), 'action[2] must be TAKE_ALL');
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(actions, params);
+
+        uint256 apeBefore = APE.balanceOf(alice);
+        uint256 wethBefore = WETH9.balanceOf(alice);
+
+        vm.prank(alice);
+        router.execute(commands, inputs, block.timestamp);
+
+        // Postconditions: alice spent exactly amountIn APE; alice gained WETH.
+        assertEq(APE.balanceOf(alice), apeBefore - amountIn, 'APE not deducted');
+        assertGt(WETH9.balanceOf(alice), wethBefore, 'WETH not received');
+    }
+
+    /// @dev Negative control: same swap as Cell 1 but with the SETTLE action OMITTED.
+    ///      Proves SETTLE is load-bearing for V2-only inputs — without it, PoolManager
+    ///      holds zero APE (no V4 pool reserves), so the hook's `take(APE, pair, amountIn)`
+    ///      fails when it tries to transfer ERC20 from PM. Any revert is acceptable here;
+    ///      the point is that the swap CANNOT complete without pre-funding PM.
+    function test_planShape_v2OnlyInput_withoutSettle_reverts() public onlyForked {
+        uint128 amountIn = 100 ether;
+        (PoolKey memory key,) = _initializeV2AggPool(address(APE), address(WETH9));
+        _fundAndApprove(alice, APE, amountIn);
+
+        bool zeroForOne = address(APE) < address(WETH9);
+
+        // Plan with NO SETTLE: just SWAP + TAKE_ALL.
+        bytes memory actions = abi.encodePacked(uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE_ALL));
+        bytes[] memory params = new bytes[](2);
+        params[0] = abi.encode(
+            IV4Router.ExactInputSingleParams({
+                poolKey: key,
+                zeroForOne: zeroForOne,
+                amountIn: amountIn,
+                amountOutMinimum: 0,
+                minHopPriceX36: 0,
+                hookData: bytes('')
+            })
+        );
+        params[1] = abi.encode(Currency.wrap(address(WETH9)), uint256(0));
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(actions, params);
+
+        vm.prank(alice);
+        vm.expectRevert(); // PM has zero APE → hook's take(APE) reverts inside the swap
+        router.execute(commands, inputs, block.timestamp);
+    }
+
     /// @dev Cell 1 — Single-hop V2Agg(APE → WETH). User holds APE (V2-only).
     ///      Action plan: SETTLE(APE, user) → SWAP(v2AggKey) → TAKE_ALL(WETH).
     ///      Asserts alice's APE drops by `amountIn` and WETH rises by `hook.quote(...)`.
