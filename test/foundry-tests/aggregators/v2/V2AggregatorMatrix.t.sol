@@ -80,10 +80,16 @@ contract V2AggregatorMatrix is AggregatorBase {
         Currency currencyIn,
         Currency currencyOut
     ) internal pure returns (bytes memory) {
-        bytes memory actions =
-            abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE_ALL));
+        bytes memory actions = abi.encodePacked(
+            uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE_ALL)
+        );
         bytes[] memory params = new bytes[](3);
-        params[0] = abi.encode(currencyIn, uint256(amountIn), /*payerIsUser*/ true);
+        params[0] = abi.encode(
+            currencyIn,
+            uint256(amountIn),
+            /*payerIsUser*/
+            true
+        );
         params[1] = abi.encode(
             IV4Router.ExactInputSingleParams({
                 poolKey: key,
@@ -107,10 +113,16 @@ contract V2AggregatorMatrix is AggregatorBase {
         Currency currencyIn,
         Currency currencyOut
     ) internal pure returns (bytes memory) {
-        bytes memory actions =
-            abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_OUT_SINGLE), uint8(Actions.TAKE_ALL));
+        bytes memory actions = abi.encodePacked(
+            uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_OUT_SINGLE), uint8(Actions.TAKE_ALL)
+        );
         bytes[] memory params = new bytes[](3);
-        params[0] = abi.encode(currencyIn, uint256(amountIn), /*payerIsUser*/ true);
+        params[0] = abi.encode(
+            currencyIn,
+            uint256(amountIn),
+            /*payerIsUser*/
+            true
+        );
         params[1] = abi.encode(
             IV4Router.ExactOutputSingleParams({
                 poolKey: key,
@@ -154,7 +166,9 @@ contract V2AggregatorMatrix is AggregatorBase {
 
     /// @dev Cell 3 — V2Agg(WETH → APE) → V4(APE → USDC). Trailing V4 hop on APE has no pool.
     function test_v2Agg_beginning_exactIn_v2OnlyOutput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop( /*exactIn*/ true);
+        _runRevertingV4APEHop( /*exactIn*/
+            true
+        );
     }
 
     /// @dev Cell 4 — Single-hop V2Agg(WETH → APE) exact-out. Mechanically identical to Cell 16;
@@ -222,22 +236,30 @@ contract V2AggregatorMatrix is AggregatorBase {
 
     /// @dev Cell 7 — V4(USDC → APE) → V2Agg(APE → WETH) → V4(WETH → DAI). First V4 hop reverts.
     function test_v2Agg_middle_exactIn_v2OnlyInput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop( /*exactIn*/ true);
+        _runRevertingV4APEHop( /*exactIn*/
+            true
+        );
     }
 
     /// @dev Cell 8 — Exact-out variant of Cell 7. Same failure site.
     function test_v2Agg_middle_exactOut_v2OnlyInput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop( /*exactIn*/ false);
+        _runRevertingV4APEHop( /*exactIn*/
+            false
+        );
     }
 
     /// @dev Cell 9 — V4(USDC → WETH) → V2Agg(WETH → APE) → V4(APE → DAI). Trailing V4 hop reverts.
     function test_v2Agg_middle_exactIn_v2OnlyOutput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop( /*exactIn*/ true);
+        _runRevertingV4APEHop( /*exactIn*/
+            true
+        );
     }
 
     /// @dev Cell 10 — Exact-out variant of Cell 9.
     function test_v2Agg_middle_exactOut_v2OnlyOutput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop( /*exactIn*/ false);
+        _runRevertingV4APEHop( /*exactIn*/
+            false
+        );
     }
 
     /// @dev Cell 11 — 3-hop V2Agg(USDC→WETH) → V2Agg(WETH→DAI) → V2Agg(DAI→USDC). Round-trip.
@@ -307,12 +329,16 @@ contract V2AggregatorMatrix is AggregatorBase {
 
     /// @dev Cell 13 — V4(USDC → APE) → V2Agg(APE → WETH). Prior V4 hop into APE reverts.
     function test_v2Agg_end_exactIn_v2OnlyInput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop( /*exactIn*/ true);
+        _runRevertingV4APEHop( /*exactIn*/
+            true
+        );
     }
 
     /// @dev Cell 14 — Exact-out variant of Cell 13.
     function test_v2Agg_end_exactOut_v2OnlyInput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop( /*exactIn*/ false);
+        _runRevertingV4APEHop( /*exactIn*/
+            false
+        );
     }
 
     /// @dev Cell 15 — Single-hop V2Agg(WETH → APE). User receives V2-only APE.
@@ -669,10 +695,16 @@ contract V2AggregatorMatrix is AggregatorBase {
         uint128 amountIn,
         uint128 amountOutMin
     ) internal pure returns (bytes memory) {
-        bytes memory actions =
-            abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN), uint8(Actions.TAKE_ALL));
+        bytes memory actions = abi.encodePacked(
+            uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN), uint8(Actions.TAKE_ALL)
+        );
         bytes[] memory params = new bytes[](3);
-        params[0] = abi.encode(currencyIn, uint256(amountIn), /*payerIsUser*/ true);
+        params[0] = abi.encode(
+            currencyIn,
+            uint256(amountIn),
+            /*payerIsUser*/
+            true
+        );
         params[1] = abi.encode(
             IV4Router.ExactInputParams({
                 currencyIn: currencyIn,
@@ -693,8 +725,9 @@ contract V2AggregatorMatrix is AggregatorBase {
         uint128 amountOut,
         uint128 amountInMax
     ) internal pure returns (bytes memory) {
-        bytes memory actions =
-            abi.encodePacked(uint8(Actions.SWAP_EXACT_OUT), uint8(Actions.SETTLE_ALL), uint8(Actions.TAKE_ALL));
+        bytes memory actions = abi.encodePacked(
+            uint8(Actions.SWAP_EXACT_OUT), uint8(Actions.SETTLE_ALL), uint8(Actions.TAKE_ALL)
+        );
         bytes[] memory params = new bytes[](3);
         params[0] = abi.encode(
             IV4Router.ExactOutputParams({

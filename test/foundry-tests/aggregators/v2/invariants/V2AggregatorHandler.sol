@@ -129,8 +129,9 @@ contract V2AggregatorHandler is Test {
         Currency currencyIn,
         Currency currencyOut
     ) internal pure returns (bytes memory) {
-        bytes memory actions =
-            abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE_ALL));
+        bytes memory actions = abi.encodePacked(
+            uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE_ALL)
+        );
         bytes[] memory params = new bytes[](3);
         params[0] = abi.encode(currencyIn, uint256(amountIn), true);
         params[1] = abi.encode(

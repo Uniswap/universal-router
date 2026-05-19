@@ -48,7 +48,12 @@ contract V2AggregatorNative is AggregatorBase {
             abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE_ALL));
         bytes[] memory v4Params = new bytes[](3);
         // After WRAP_ETH, the router holds amountIn of WETH. Settle from router's balance.
-        v4Params[0] = abi.encode(Currency.wrap(address(WETH9)), ActionConstants.CONTRACT_BALANCE, /*payerIsUser*/ false);
+        v4Params[0] = abi.encode(
+            Currency.wrap(address(WETH9)),
+            ActionConstants.CONTRACT_BALANCE,
+            /*payerIsUser*/
+            false
+        );
         v4Params[1] = abi.encode(
             IV4Router.ExactInputSingleParams({
                 poolKey: key,
@@ -85,7 +90,12 @@ contract V2AggregatorNative is AggregatorBase {
         bytes memory v4Actions =
             abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE));
         bytes[] memory v4Params = new bytes[](3);
-        v4Params[0] = abi.encode(Currency.wrap(address(APE)), uint256(amountIn), /*payerIsUser*/ true);
+        v4Params[0] = abi.encode(
+            Currency.wrap(address(APE)),
+            uint256(amountIn),
+            /*payerIsUser*/
+            true
+        );
         v4Params[1] = abi.encode(
             IV4Router.ExactInputSingleParams({
                 poolKey: key,
