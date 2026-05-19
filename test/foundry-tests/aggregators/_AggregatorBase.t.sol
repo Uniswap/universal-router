@@ -88,9 +88,7 @@ abstract contract AggregatorBase is Test {
 
             aggregatorHook = _deployAggregatorMock('1.0.0-test');
         } catch {
-            console2.log(
-                'Skipping aggregator fork test, no FORK_URL set. Add FORK_URL to .env and rerun to execute.'
-            );
+            console2.log('Skipping aggregator fork test, no FORK_URL set. Add FORK_URL to .env and rerun to execute.');
         }
     }
 
@@ -129,9 +127,8 @@ abstract contract AggregatorBase is Test {
         bytes32 initCodeHash = keccak256(initCode);
         for (uint256 i; i < 200_000; ++i) {
             salt = bytes32(i);
-            hookAddress = address(
-                uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, initCodeHash))))
-            );
+            hookAddress =
+                address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, initCodeHash)))));
             if (uint160(hookAddress) & uint160(0x3FFF) == flags) return (hookAddress, salt);
         }
         revert('AggregatorBase: no salt found for flags');

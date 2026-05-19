@@ -64,9 +64,7 @@ contract V2AggregatorFeeOnTransfer is AggregatorBase {
         // pre-fee `amountIn`. SETTLE pulls amountIn from alice → PM receives `amountIn * 0.98`.
         // The router has a +0.98*amountIn credit; OPEN_DELTA picks that up.
         inputs[0] = _planExactInOpenDelta(
-            fotPoolKey, zeroForOne, amountIn,
-            Currency.wrap(address(fotToken)),
-            Currency.wrap(address(vanillaToken))
+            fotPoolKey, zeroForOne, amountIn, Currency.wrap(address(fotToken)), Currency.wrap(address(vanillaToken))
         );
 
         uint256 vanillaBefore = vanillaToken.balanceOf(alice);
@@ -122,7 +120,10 @@ contract V2AggregatorFeeOnTransfer is AggregatorBase {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
         inputs[0] = _planExactOut(
-            fotPoolKey, zeroForOne, amountInMax, amountOut,
+            fotPoolKey,
+            zeroForOne,
+            amountInMax,
+            amountOut,
             Currency.wrap(address(fotToken)),
             Currency.wrap(address(vanillaToken))
         );

@@ -29,9 +29,8 @@ contract V2AggregatorGas is AggregatorBase {
         _fundAndApprove(alice, APE, amountIn);
 
         bool zeroForOne = address(APE) < address(WETH9);
-        bytes memory inputs = _planExactIn(
-            key, zeroForOne, amountIn, Currency.wrap(address(APE)), Currency.wrap(address(WETH9))
-        );
+        bytes memory inputs =
+            _planExactIn(key, zeroForOne, amountIn, Currency.wrap(address(APE)), Currency.wrap(address(WETH9)));
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputsArr = new bytes[](1);
         inputsArr[0] = inputs;
@@ -50,8 +49,7 @@ contract V2AggregatorGas is AggregatorBase {
         _fundAndApprove(alice, APE, amountIn);
 
         bytes memory plan = _planExactOut(
-            key, zeroForOne, amountIn, amountOut,
-            Currency.wrap(address(APE)), Currency.wrap(address(WETH9))
+            key, zeroForOne, amountIn, amountOut, Currency.wrap(address(APE)), Currency.wrap(address(WETH9))
         );
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
@@ -69,9 +67,8 @@ contract V2AggregatorGas is AggregatorBase {
         _fundAndApprove(alice, USDC, amountIn);
 
         bool zeroForOne = address(USDC) < address(WETH9);
-        bytes memory plan = _planExactIn(
-            key, zeroForOne, amountIn, Currency.wrap(address(USDC)), Currency.wrap(address(WETH9))
-        );
+        bytes memory plan =
+            _planExactIn(key, zeroForOne, amountIn, Currency.wrap(address(USDC)), Currency.wrap(address(WETH9)));
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
         inputs[0] = plan;
@@ -183,12 +180,11 @@ contract V2AggregatorGas is AggregatorBase {
         return abi.encode(actions, params);
     }
 
-    function _planMultiHopExactIn(
-        Currency currencyIn,
-        Currency currencyOut,
-        PathKey[] memory path,
-        uint128 amountIn
-    ) internal pure returns (bytes memory) {
+    function _planMultiHopExactIn(Currency currencyIn, Currency currencyOut, PathKey[] memory path, uint128 amountIn)
+        internal
+        pure
+        returns (bytes memory)
+    {
         bytes memory actions =
             abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN), uint8(Actions.TAKE_ALL));
         bytes[] memory params = new bytes[](3);

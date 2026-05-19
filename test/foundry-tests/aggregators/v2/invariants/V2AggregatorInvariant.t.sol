@@ -21,15 +21,7 @@ contract V2AggregatorInvariant is AggregatorBase {
         if (!forked) return;
 
         (PoolKey memory v2AggKey_WETH_APE,) = _initializeV2AggPool(address(WETH9), address(APE));
-        handler = new V2AggregatorHandler(
-            router,
-            PERMIT2,
-            V2_FACTORY,
-            v2AggKey_WETH_APE,
-            WETH9,
-            APE,
-            alice
-        );
+        handler = new V2AggregatorHandler(router, PERMIT2, V2_FACTORY, v2AggKey_WETH_APE, WETH9, APE, alice);
 
         bytes4[] memory selectors = new bytes4[](2);
         selectors[0] = handler.action_swapWethForApeExactIn.selector;
@@ -61,14 +53,12 @@ contract V2AggregatorInvariant is AggregatorBase {
 
     function _readPairK() internal view returns (uint256) {
         address pair = V2_FACTORY.getPair(address(WETH9), address(APE));
-        (uint112 r0, uint112 r1,) =
-            __pairReserves(pair);
+        (uint112 r0, uint112 r1,) = __pairReserves(pair);
         return uint256(r0) * uint256(r1);
     }
 
     function __pairReserves(address pair) private view returns (uint112, uint112, uint32) {
-        (bool ok, bytes memory data) =
-            pair.staticcall(abi.encodeWithSignature('getReserves()'));
+        (bool ok, bytes memory data) = pair.staticcall(abi.encodeWithSignature('getReserves()'));
         require(ok, 'pair getReserves failed');
         return abi.decode(data, (uint112, uint112, uint32));
     }

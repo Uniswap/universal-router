@@ -23,9 +23,7 @@ contract V2AggregatorMultiHop is AggregatorBase {
 
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = _planExactIn(
-            key, zeroForOne, amountIn, Currency.wrap(address(WETH9)), Currency.wrap(address(APE))
-        );
+        inputs[0] = _planExactIn(key, zeroForOne, amountIn, Currency.wrap(address(WETH9)), Currency.wrap(address(APE)));
 
         uint256 apeBefore = APE.balanceOf(alice);
         vm.prank(alice);
@@ -70,9 +68,7 @@ contract V2AggregatorMultiHop is AggregatorBase {
 
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = _planExactIn(
-            key, zeroForOne, amountIn, Currency.wrap(address(WETH9)), Currency.wrap(address(APE))
-        );
+        inputs[0] = _planExactIn(key, zeroForOne, amountIn, Currency.wrap(address(WETH9)), Currency.wrap(address(APE)));
 
         uint256 apeBefore = APE.balanceOf(alice);
         vm.prank(alice);

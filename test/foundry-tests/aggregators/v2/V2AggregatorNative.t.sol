@@ -40,16 +40,12 @@ contract V2AggregatorNative is AggregatorBase {
         (PoolKey memory key,) = _initializeV2AggPool(address(WETH9), address(APE));
         vm.deal(alice, amountIn + 1 ether); // extra for gas
 
-        bytes memory commands = abi.encodePacked(
-            bytes1(uint8(Commands.WRAP_ETH)),
-            bytes1(uint8(Commands.V4_SWAP))
-        );
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.WRAP_ETH)), bytes1(uint8(Commands.V4_SWAP)));
 
         bool zeroForOne = address(WETH9) < address(APE);
 
-        bytes memory v4Actions = abi.encodePacked(
-            uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE_ALL)
-        );
+        bytes memory v4Actions =
+            abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE_ALL));
         bytes[] memory v4Params = new bytes[](3);
         // After WRAP_ETH, the router holds amountIn of WETH. Settle from router's balance.
         v4Params[0] = abi.encode(Currency.wrap(address(WETH9)), ActionConstants.CONTRACT_BALANCE, /*payerIsUser*/ false);
@@ -82,16 +78,12 @@ contract V2AggregatorNative is AggregatorBase {
         (PoolKey memory key,) = _initializeV2AggPool(address(WETH9), address(APE));
         _fundAndApprove(alice, APE, amountIn);
 
-        bytes memory commands = abi.encodePacked(
-            bytes1(uint8(Commands.V4_SWAP)),
-            bytes1(uint8(Commands.UNWRAP_WETH))
-        );
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)), bytes1(uint8(Commands.UNWRAP_WETH)));
 
         bool zeroForOne = address(APE) < address(WETH9);
 
-        bytes memory v4Actions = abi.encodePacked(
-            uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE)
-        );
+        bytes memory v4Actions =
+            abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE));
         bytes[] memory v4Params = new bytes[](3);
         v4Params[0] = abi.encode(Currency.wrap(address(APE)), uint256(amountIn), /*payerIsUser*/ true);
         v4Params[1] = abi.encode(
@@ -105,7 +97,8 @@ contract V2AggregatorNative is AggregatorBase {
             })
         );
         // Take WETH to the router (ADDRESS_THIS) so UNWRAP_WETH can convert it to ETH for alice.
-        v4Params[2] = abi.encode(Currency.wrap(address(WETH9)), ActionConstants.ADDRESS_THIS, ActionConstants.OPEN_DELTA);
+        v4Params[2] =
+            abi.encode(Currency.wrap(address(WETH9)), ActionConstants.ADDRESS_THIS, ActionConstants.OPEN_DELTA);
 
         bytes[] memory inputs = new bytes[](2);
         inputs[0] = abi.encode(v4Actions, v4Params);

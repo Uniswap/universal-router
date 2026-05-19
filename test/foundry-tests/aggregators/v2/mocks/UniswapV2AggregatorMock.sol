@@ -129,8 +129,7 @@ contract UniswapV2AggregatorMock {
         }
 
         bool isExactInput = params.amountSpecified < 0;
-        int128 unspecifiedDelta =
-            isExactInput ? -int128(uint128(amountSettle)) : int128(uint128(amountTake));
+        int128 unspecifiedDelta = isExactInput ? -int128(uint128(amountSettle)) : int128(uint128(amountTake));
         // Cancel core swap math; specified absorbs the swapper's intent
         int128 specifiedDelta = isExactInput ? int128(uint128(amountTake)) : -int128(uint128(amountSettle));
 
@@ -143,16 +142,13 @@ contract UniswapV2AggregatorMock {
 
     /// @dev Pulls input from PoolManager to the pair via `take`, runs `pair.swap`, sends output back to PoolManager.
     ///      For exact-in, uses the actually-arrived balance on the pair (fee-on-transfer aware).
-    function _swapOnPair(
-        address pairAddr,
-        Currency takeCurrency,
-        Currency settleCurrency,
-        SwapParams calldata params
-    ) private returns (uint256 amountTakeUsed, uint256 amountSettle) {
+    function _swapOnPair(address pairAddr, Currency takeCurrency, Currency settleCurrency, SwapParams calldata params)
+        private
+        returns (uint256 amountTakeUsed, uint256 amountSettle)
+    {
         bool zeroForOne = params.zeroForOne;
         (uint112 r0, uint112 r1,) = IUniswapV2Pair(pairAddr).getReserves();
-        (uint256 reserveIn, uint256 reserveOut) =
-            zeroForOne ? (uint256(r0), uint256(r1)) : (uint256(r1), uint256(r0));
+        (uint256 reserveIn, uint256 reserveOut) = zeroForOne ? (uint256(r0), uint256(r1)) : (uint256(r1), uint256(r0));
         if (reserveIn == 0 || reserveOut == 0) revert ExternalPoolTokenMismatch();
 
         uint256 amountOut;
@@ -228,8 +224,7 @@ contract UniswapV2AggregatorMock {
         if (pairAddr == address(0)) revert PoolDoesNotExist();
 
         (uint112 r0, uint112 r1,) = IUniswapV2Pair(pairAddr).getReserves();
-        (uint256 reserveIn, uint256 reserveOut) =
-            zeroForOne ? (uint256(r0), uint256(r1)) : (uint256(r1), uint256(r0));
+        (uint256 reserveIn, uint256 reserveOut) = zeroForOne ? (uint256(r0), uint256(r1)) : (uint256(r1), uint256(r0));
 
         if (amountSpecified < 0) {
             amountUnspecified = _getAmountOut(uint256(-amountSpecified), reserveIn, reserveOut);

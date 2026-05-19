@@ -52,8 +52,13 @@ contract V2AggregatorMatrix is AggregatorBase {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
         inputs[0] = _encodeV4SingleSwapPlan(
-            key, zeroForOne, uint128(amountIn), 0, /*currencyIn*/ Currency.wrap(address(APE)),
-            /*currencyOut*/ Currency.wrap(address(WETH9))
+            key,
+            zeroForOne,
+            uint128(amountIn),
+            0, /*currencyIn*/
+            Currency.wrap(address(APE)),
+            /*currencyOut*/
+            Currency.wrap(address(WETH9))
         );
 
         uint256 apeBefore = APE.balanceOf(alice);
@@ -75,9 +80,8 @@ contract V2AggregatorMatrix is AggregatorBase {
         Currency currencyIn,
         Currency currencyOut
     ) internal pure returns (bytes memory) {
-        bytes memory actions = abi.encodePacked(
-            uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE_ALL)
-        );
+        bytes memory actions =
+            abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.TAKE_ALL));
         bytes[] memory params = new bytes[](3);
         params[0] = abi.encode(currencyIn, uint256(amountIn), /*payerIsUser*/ true);
         params[1] = abi.encode(
@@ -103,9 +107,8 @@ contract V2AggregatorMatrix is AggregatorBase {
         Currency currencyIn,
         Currency currencyOut
     ) internal pure returns (bytes memory) {
-        bytes memory actions = abi.encodePacked(
-            uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_OUT_SINGLE), uint8(Actions.TAKE_ALL)
-        );
+        bytes memory actions =
+            abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_OUT_SINGLE), uint8(Actions.TAKE_ALL));
         bytes[] memory params = new bytes[](3);
         params[0] = abi.encode(currencyIn, uint256(amountIn), /*payerIsUser*/ true);
         params[1] = abi.encode(
@@ -136,8 +139,7 @@ contract V2AggregatorMatrix is AggregatorBase {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
         inputs[0] = _encodeV4SingleSwapPlanExactOut(
-            key, zeroForOne, amountIn, amountOut,
-            Currency.wrap(address(APE)), Currency.wrap(address(WETH9))
+            key, zeroForOne, amountIn, amountOut, Currency.wrap(address(APE)), Currency.wrap(address(WETH9))
         );
 
         uint256 apeBefore = APE.balanceOf(alice);
@@ -152,7 +154,7 @@ contract V2AggregatorMatrix is AggregatorBase {
 
     /// @dev Cell 3 — V2Agg(WETH → APE) → V4(APE → USDC). Trailing V4 hop on APE has no pool.
     function test_v2Agg_beginning_exactIn_v2OnlyOutput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop(/*exactIn*/ true);
+        _runRevertingV4APEHop( /*exactIn*/ true);
     }
 
     /// @dev Cell 4 — Single-hop V2Agg(WETH → APE) exact-out. Mechanically identical to Cell 16;
@@ -175,8 +177,7 @@ contract V2AggregatorMatrix is AggregatorBase {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
         inputs[0] = _encodeV4SingleSwapPlan(
-            key, zeroForOne, uint128(amountIn), 0,
-            Currency.wrap(address(USDC)), Currency.wrap(address(WETH9))
+            key, zeroForOne, uint128(amountIn), 0, Currency.wrap(address(USDC)), Currency.wrap(address(WETH9))
         );
 
         uint256 usdcBefore = USDC.balanceOf(alice);
@@ -202,8 +203,7 @@ contract V2AggregatorMatrix is AggregatorBase {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
         inputs[0] = _encodeV4SingleSwapPlanExactOut(
-            key, zeroForOne, amountIn, amountOut,
-            Currency.wrap(address(USDC)), Currency.wrap(address(WETH9))
+            key, zeroForOne, amountIn, amountOut, Currency.wrap(address(USDC)), Currency.wrap(address(WETH9))
         );
 
         uint256 usdcBefore = USDC.balanceOf(alice);
@@ -222,22 +222,22 @@ contract V2AggregatorMatrix is AggregatorBase {
 
     /// @dev Cell 7 — V4(USDC → APE) → V2Agg(APE → WETH) → V4(WETH → DAI). First V4 hop reverts.
     function test_v2Agg_middle_exactIn_v2OnlyInput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop(/*exactIn*/ true);
+        _runRevertingV4APEHop( /*exactIn*/ true);
     }
 
     /// @dev Cell 8 — Exact-out variant of Cell 7. Same failure site.
     function test_v2Agg_middle_exactOut_v2OnlyInput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop(/*exactIn*/ false);
+        _runRevertingV4APEHop( /*exactIn*/ false);
     }
 
     /// @dev Cell 9 — V4(USDC → WETH) → V2Agg(WETH → APE) → V4(APE → DAI). Trailing V4 hop reverts.
     function test_v2Agg_middle_exactIn_v2OnlyOutput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop(/*exactIn*/ true);
+        _runRevertingV4APEHop( /*exactIn*/ true);
     }
 
     /// @dev Cell 10 — Exact-out variant of Cell 9.
     function test_v2Agg_middle_exactOut_v2OnlyOutput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop(/*exactIn*/ false);
+        _runRevertingV4APEHop( /*exactIn*/ false);
     }
 
     /// @dev Cell 11 — 3-hop V2Agg(USDC→WETH) → V2Agg(WETH→DAI) → V2Agg(DAI→USDC). Round-trip.
@@ -307,12 +307,12 @@ contract V2AggregatorMatrix is AggregatorBase {
 
     /// @dev Cell 13 — V4(USDC → APE) → V2Agg(APE → WETH). Prior V4 hop into APE reverts.
     function test_v2Agg_end_exactIn_v2OnlyInput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop(/*exactIn*/ true);
+        _runRevertingV4APEHop( /*exactIn*/ true);
     }
 
     /// @dev Cell 14 — Exact-out variant of Cell 13.
     function test_v2Agg_end_exactOut_v2OnlyInput_revertsPoolNotInitialized() public onlyForked {
-        _runRevertingV4APEHop(/*exactIn*/ false);
+        _runRevertingV4APEHop( /*exactIn*/ false);
     }
 
     /// @dev Cell 15 — Single-hop V2Agg(WETH → APE). User receives V2-only APE.
@@ -329,8 +329,7 @@ contract V2AggregatorMatrix is AggregatorBase {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
         inputs[0] = _encodeV4SingleSwapPlan(
-            key, zeroForOne, uint128(amountIn), 0,
-            Currency.wrap(address(WETH9)), Currency.wrap(address(APE))
+            key, zeroForOne, uint128(amountIn), 0, Currency.wrap(address(WETH9)), Currency.wrap(address(APE))
         );
 
         uint256 wethBefore = WETH9.balanceOf(alice);
@@ -356,8 +355,7 @@ contract V2AggregatorMatrix is AggregatorBase {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
         inputs[0] = _encodeV4SingleSwapPlanExactOut(
-            key, zeroForOne, amountIn, amountOut,
-            Currency.wrap(address(WETH9)), Currency.wrap(address(APE))
+            key, zeroForOne, amountIn, amountOut, Currency.wrap(address(WETH9)), Currency.wrap(address(APE))
         );
 
         uint256 wethBefore = WETH9.balanceOf(alice);
@@ -642,7 +640,7 @@ contract V2AggregatorMatrix is AggregatorBase {
         Currency mid1 = _hopOutputCurrency(currencyIn, hop1);
         PathKey[] memory path = new PathKey[](2);
         path[0] = _pathKeyFromHop(hop1, currencyIn); // INPUT of hop1
-        path[1] = _pathKeyFromHop(hop2, mid1);        // INPUT of hop2 = OUTPUT of hop1
+        path[1] = _pathKeyFromHop(hop2, mid1); // INPUT of hop2 = OUTPUT of hop1
         return _encodeExactOutPath(currencyIn, currencyOut, path, amountOut, amountInMax);
     }
 
@@ -659,8 +657,8 @@ contract V2AggregatorMatrix is AggregatorBase {
         Currency mid2 = _hopOutputCurrency(mid1, hop2);
         PathKey[] memory path = new PathKey[](3);
         path[0] = _pathKeyFromHop(hop1, currencyIn); // INPUT of hop1
-        path[1] = _pathKeyFromHop(hop2, mid1);        // INPUT of hop2
-        path[2] = _pathKeyFromHop(hop3, mid2);        // INPUT of hop3
+        path[1] = _pathKeyFromHop(hop2, mid1); // INPUT of hop2
+        path[2] = _pathKeyFromHop(hop3, mid2); // INPUT of hop3
         return _encodeExactOutPath(currencyIn, currencyOut, path, amountOut, amountInMax);
     }
 
@@ -671,9 +669,8 @@ contract V2AggregatorMatrix is AggregatorBase {
         uint128 amountIn,
         uint128 amountOutMin
     ) internal pure returns (bytes memory) {
-        bytes memory actions = abi.encodePacked(
-            uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN), uint8(Actions.TAKE_ALL)
-        );
+        bytes memory actions =
+            abi.encodePacked(uint8(Actions.SETTLE), uint8(Actions.SWAP_EXACT_IN), uint8(Actions.TAKE_ALL));
         bytes[] memory params = new bytes[](3);
         params[0] = abi.encode(currencyIn, uint256(amountIn), /*payerIsUser*/ true);
         params[1] = abi.encode(
@@ -696,9 +693,8 @@ contract V2AggregatorMatrix is AggregatorBase {
         uint128 amountOut,
         uint128 amountInMax
     ) internal pure returns (bytes memory) {
-        bytes memory actions = abi.encodePacked(
-            uint8(Actions.SWAP_EXACT_OUT), uint8(Actions.SETTLE_ALL), uint8(Actions.TAKE_ALL)
-        );
+        bytes memory actions =
+            abi.encodePacked(uint8(Actions.SWAP_EXACT_OUT), uint8(Actions.SETTLE_ALL), uint8(Actions.TAKE_ALL));
         bytes[] memory params = new bytes[](3);
         params[0] = abi.encode(
             IV4Router.ExactOutputParams({
@@ -714,11 +710,7 @@ contract V2AggregatorMatrix is AggregatorBase {
         return abi.encode(actions, params);
     }
 
-    function _pathKeyFromHop(PoolKey memory hop, Currency outputCurrency)
-        internal
-        pure
-        returns (PathKey memory)
-    {
+    function _pathKeyFromHop(PoolKey memory hop, Currency outputCurrency) internal pure returns (PathKey memory) {
         return PathKey({
             intermediateCurrency: outputCurrency,
             fee: hop.fee,
@@ -728,11 +720,7 @@ contract V2AggregatorMatrix is AggregatorBase {
         });
     }
 
-    function _hopOutputCurrency(Currency inputCurrency, PoolKey memory hop)
-        internal
-        pure
-        returns (Currency)
-    {
+    function _hopOutputCurrency(Currency inputCurrency, PoolKey memory hop) internal pure returns (Currency) {
         return Currency.unwrap(inputCurrency) == Currency.unwrap(hop.currency0) ? hop.currency1 : hop.currency0;
     }
 
