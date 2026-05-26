@@ -12,12 +12,12 @@ fs_permissions = [{ access = "read", path = "./script/deployParameters/"}]
 
 additional_compiler_profiles = [
   { name = "manager", via_ir = true, optimizer_runs = 30000 },
-  { name = "universal-router", via_ir = true, optimizer_runs = 1000 },
+  { name = "universal-router", via_ir = true, optimizer_runs = 1 },
 ]
 
 compilation_restrictions = [
   { paths = "lib/v4-periphery/src/PositionManager.sol", optimizer_runs = 30000 },
-  { paths = "contracts/UniversalRouter.sol", optimizer_runs = 1000 },
+  { paths = "contracts/UniversalRouter.sol", optimizer_runs = 1 },
 ]
 
 [lint]
