@@ -12,6 +12,7 @@ jobs:
   claude-review-auto:
     if: |
       github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.action != 'review_requested' &&
       !contains(github.head_ref, 'gh-readonly-queue/') &&
       !startsWith(github.head_ref, 'release/') &&
@@ -20,12 +21,12 @@ jobs:
         github.event.action == 'ready_for_review'
       )
 
-    uses: Uniswap/ai-toolkit/.github/workflows/_claude-code-review.yml@9aa3cf98744a2b4e1aac51cd2d26144ea337ab3b
+    uses: Uniswap/ai-toolkit/.github/workflows/_claude-code-review.yml@96ef665ba04221de07e94fcc3ea69fe32c7cf306
     with:
       pr_number: ${{ github.event.pull_request.number }}
       base_ref: ${{ github.base_ref }}
       force_review: false
-      toolkit_ref: 9aa3cf98744a2b4e1aac51cd2d26144ea337ab3b
+      toolkit_ref: 96ef665ba04221de07e94fcc3ea69fe32c7cf306
       custom_prompt_path: '.claude/prompts/claude-pr-review.md'
 
       model: 'claude-opus-4-6'
