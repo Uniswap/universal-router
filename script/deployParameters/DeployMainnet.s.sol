@@ -14,6 +14,7 @@ contract DeployMainnet is DeployUniversalRouter {
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: 0x000000000004444c5dc75cB358380D2e3dE08A90,
+            permissionsAdapterFactory: address(0), // ToDo: Add permissions adapter factory
             v3NFTPositionManager: 0xC36442b4a4522E871399CD717aBDD847Ab11FE88,
             v4PositionManager: 0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e,
             spokePool: 0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5

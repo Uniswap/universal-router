@@ -30,6 +30,7 @@ contract UniversalRouterTest is Test {
             pairInitCodeHash: bytes32(0),
             poolInitCodeHash: bytes32(0),
             v4PoolManager: address(0),
+            permissionsAdapterFactory: address(0),
             v3NFTPositionManager: address(0),
             v4PositionManager: address(0),
             spokePool: address(0)

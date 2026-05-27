@@ -14,6 +14,7 @@ contract DeployLinea is DeployUniversalRouter {
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: 0x248083Fb965359d82b06C1F5322480Dcfc1AD857,
+            permissionsAdapterFactory: address(0), // ToDo: Add permissions adapter factory
             v3NFTPositionManager: 0x4615C383F85D0a2BbED973d83ccecf5CB7121463,
             v4PositionManager: 0xdDCAD5775B2816a87495f207731b3571D7EE3c76,
             spokePool: 0x7E63A5f1a8F0B4d0934B2f2327DAED3F6bb2ee75

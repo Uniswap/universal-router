@@ -38,6 +38,7 @@ contract SwapProxyTest is Test {
             pairInitCodeHash: bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f),
             poolInitCodeHash: bytes32(0),
             v4PoolManager: address(0),
+            permissionsAdapterFactory: address(0),
             v3NFTPositionManager: address(0),
             v4PositionManager: address(0),
             spokePool: address(0)
@@ -74,7 +75,7 @@ contract SwapProxyTest is Test {
         path[1] = address(tokenB);
         bytes[] memory inputs = new bytes[](1);
         // payerIsUser=false, recipient=USER (explicit address, not MSG_SENDER)
-        inputs[0] = abi.encode(USER, AMOUNT, 0, path, false);
+        inputs[0] = abi.encode(USER, AMOUNT, 0, path, false, new uint256[](0));
 
         uint256 balanceBefore = tokenB.balanceOf(USER);
 
@@ -97,7 +98,7 @@ contract SwapProxyTest is Test {
         path[1] = address(tokenB);
         bytes[] memory inputs = new bytes[](2);
         // payerIsUser=false, recipient=USER
-        inputs[0] = abi.encode(USER, desiredOut, maxIn, path, false);
+        inputs[0] = abi.encode(USER, desiredOut, maxIn, path, false, new uint256[](0));
         // sweep leftover tokenA back to USER
         inputs[1] = abi.encode(address(tokenA), USER, 0);
 
@@ -125,7 +126,7 @@ contract SwapProxyTest is Test {
         path[0] = address(tokenA);
         path[1] = address(tokenB);
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(USER, AMOUNT, 0, path, false);
+        inputs[0] = abi.encode(USER, AMOUNT, 0, path, false, new uint256[](0));
 
         vm.expectRevert();
         proxy.execute(
@@ -139,7 +140,7 @@ contract SwapProxyTest is Test {
         path[0] = address(tokenA);
         path[1] = address(tokenB);
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(USER, AMOUNT, 0, path, false);
+        inputs[0] = abi.encode(USER, AMOUNT, 0, path, false, new uint256[](0));
 
         vm.expectRevert(IUniversalRouter.TransactionDeadlinePassed.selector);
         proxy.execute(IUniversalRouter(address(router)), address(tokenA), AMOUNT, commands, inputs, block.timestamp - 1);
@@ -151,7 +152,7 @@ contract SwapProxyTest is Test {
         path[0] = address(tokenA);
         path[1] = address(tokenB);
         bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(USER, AMOUNT, 0, path, false);
+        inputs[0] = abi.encode(USER, AMOUNT, 0, path, false, new uint256[](0));
 
         proxy.execute(
             IUniversalRouter(address(router)), address(tokenA), AMOUNT, commands, inputs, block.timestamp + 1000
@@ -176,7 +177,7 @@ contract SwapProxyTest is Test {
         // Gas via proxy
         bytes memory proxyCommands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_IN)));
         bytes[] memory proxyInputs = new bytes[](1);
-        proxyInputs[0] = abi.encode(USER, AMOUNT, 0, path, false);
+        proxyInputs[0] = abi.encode(USER, AMOUNT, 0, path, false, new uint256[](0));
 
         uint256 gasBefore = gasleft();
         proxy.execute(
@@ -192,7 +193,7 @@ contract SwapProxyTest is Test {
         // Gas via direct Permit2
         bytes memory directCommands = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_IN)));
         bytes[] memory directInputs = new bytes[](1);
-        directInputs[0] = abi.encode(USER, AMOUNT, 0, path, true);
+        directInputs[0] = abi.encode(USER, AMOUNT, 0, path, true, new uint256[](0));
 
         gasBefore = gasleft();
         router.execute(directCommands, directInputs);

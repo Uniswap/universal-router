@@ -11,6 +11,7 @@ struct RouterParameters {
     bytes32 pairInitCodeHash;
     bytes32 poolInitCodeHash;
     address v4PoolManager;
+    address permissionsAdapterFactory;
     // Uniswap v3->v4 migration parameters
     address v3NFTPositionManager;
     address v4PositionManager;

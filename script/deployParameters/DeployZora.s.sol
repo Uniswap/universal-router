@@ -14,6 +14,7 @@ contract DeployZora is DeployUniversalRouter {
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: 0x0575338e4C17006aE181B47900A84404247CA30f,
+            permissionsAdapterFactory: address(0), // ToDo: Add permissions adapter factory
             v3NFTPositionManager: 0xbC91e8DfA3fF18De43853372A3d7dfe585137D78,
             v4PositionManager: 0xf66C7b99e2040f0D9b326B3b7c152E9663543D63,
             spokePool: 0x13fDac9F9b4777705db45291bbFF3c972c6d1d97
