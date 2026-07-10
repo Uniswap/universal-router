@@ -98,9 +98,39 @@ contract LockHolder is IUnlockCallback {
     }
 }
 
+/// @notice Opens the v4 lock itself, then (in the callback) hands off to a DIFFERENT contract that calls
+///         UniversalRouter.execute. This makes the outer lock owner (OuterLockOpener) distinct from the
+///         execute caller / router locker (the LockHolder), exercising the caller-isolation invariant.
+contract OuterLockOpener is IUnlockCallback {
+    IPoolManager public immutable manager;
+
+    LockHolder internal caller;
+    bytes internal commands;
+    bytes[] internal inputs;
+
+    constructor(IPoolManager _manager) {
+        manager = _manager;
+    }
+
+    /// @dev opens the lock as owner, then delegates the UR call to `_caller` inside the callback
+    function openAndDelegate(LockHolder _caller, bytes calldata _commands, bytes[] calldata _inputs) external {
+        caller = _caller;
+        commands = _commands;
+        inputs = _inputs;
+        manager.unlock(hex'');
+    }
+
+    function unlockCallback(bytes calldata) external returns (bytes memory) {
+        require(msg.sender == address(manager), 'only manager');
+        caller.executeDirect(commands, inputs);
+        return hex'';
+    }
+}
+
 contract V4SwapWithinUnlockTest is Test, Deployers {
     UniversalRouter router;
     LockHolder lockHolder;
+    OuterLockOpener outerLockOpener;
     IAllowanceTransfer permit2;
 
     address constant RECIPIENT = address(0xBEEF);
@@ -127,6 +157,7 @@ contract V4SwapWithinUnlockTest is Test, Deployers {
         });
         router = new UniversalRouter(params);
         lockHolder = new LockHolder(IPoolManager(address(manager)), router);
+        outerLockOpener = new OuterLockOpener(IPoolManager(address(manager)));
     }
 
     /// @dev builds a single V4_SWAP command: exact-in currency0 -> currency1, paying the input from the
@@ -161,6 +192,39 @@ contract V4SwapWithinUnlockTest is Test, Deployers {
     function _fundLockHolderAndApprovePermit2() internal {
         MockERC20(Currency.unwrap(currency0)).transfer(address(lockHolder), AMOUNT_IN);
         lockHolder.approvePermit2(Currency.unwrap(currency0), permit2, address(router));
+    }
+
+    /// @dev an intentionally unbalanced plan: swaps currency0 -> currency1 and takes the output, but never
+    ///      settles the currency0 input debt, leaving a dangling delta at unlock close.
+    function _v4SwapCommandMissingSettle() internal view returns (bytes memory commands, bytes[] memory inputs) {
+        IV4Router.ExactInputSingleParams memory sp = IV4Router.ExactInputSingleParams({
+            poolKey: key, zeroForOne: true, amountIn: AMOUNT_IN, amountOutMinimum: 0, minHopPriceX36: 0, hookData: hex''
+        });
+
+        Plan memory plan = Planner.init();
+        plan = plan.add(Actions.SWAP_EXACT_IN_SINGLE, abi.encode(sp));
+        plan = plan.add(Actions.TAKE, abi.encode(currency1, RECIPIENT, ActionConstants.OPEN_DELTA));
+
+        commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        inputs = new bytes[](1);
+        inputs[0] = plan.encode();
+    }
+
+    /// @dev a balanced plan that composes the swap with the *_ALL settle/take variants (payer/recipient bound
+    ///      to msgSender), proving the nested path handles multi-action plans other than the OPEN_DELTA shape.
+    function _v4SwapCommandSettleAllTakeAll() internal view returns (bytes memory commands, bytes[] memory inputs) {
+        IV4Router.ExactInputSingleParams memory sp = IV4Router.ExactInputSingleParams({
+            poolKey: key, zeroForOne: true, amountIn: AMOUNT_IN, amountOutMinimum: 0, minHopPriceX36: 0, hookData: hex''
+        });
+
+        Plan memory plan = Planner.init();
+        plan = plan.add(Actions.SWAP_EXACT_IN_SINGLE, abi.encode(sp));
+        plan = plan.add(Actions.SETTLE_ALL, abi.encode(currency0, type(uint256).max));
+        plan = plan.add(Actions.TAKE_ALL, abi.encode(currency1, uint256(0)));
+
+        commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        inputs = new bytes[](1);
+        inputs[0] = plan.encode();
     }
 
     /// @notice The new behavior: a V4_SWAP runs within an already-open lock via _executeActionsWithoutUnlock.
@@ -264,6 +328,93 @@ contract V4SwapWithinUnlockTest is Test, Deployers {
             MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT),
             recipientBalanceBefore,
             'recipient did not receive output'
+        );
+    }
+
+    /// @notice Security invariant: when a foreign contract owns the lock, output still binds to the execute
+    ///         caller (the router locker), NOT the lock owner. Recipient MSG_SENDER resolves to the LockHolder.
+    function test_v4Swap_withinExistingUnlock_callerIsolation_recipientBindsToExecuteCaller() public {
+        _fundRouter();
+        (bytes memory commands, bytes[] memory inputs) = _v4SwapCommand(ActionConstants.MSG_SENDER, false);
+
+        uint256 lockHolderBalanceBefore = MockERC20(Currency.unwrap(currency1)).balanceOf(address(lockHolder));
+        uint256 openerBalanceBefore = MockERC20(Currency.unwrap(currency1)).balanceOf(address(outerLockOpener));
+        outerLockOpener.openAndDelegate(lockHolder, commands, inputs);
+
+        assertGt(
+            MockERC20(Currency.unwrap(currency1)).balanceOf(address(lockHolder)),
+            lockHolderBalanceBefore,
+            'execute caller did not receive output'
+        );
+        assertEq(
+            MockERC20(Currency.unwrap(currency1)).balanceOf(address(outerLockOpener)),
+            openerBalanceBefore,
+            'lock owner received output'
+        );
+    }
+
+    /// @notice Security invariant: a foreign contract calling execute inside someone else's lock cannot spend the
+    ///         lock owner's funds. Input is pulled from the execute caller (LockHolder), opener stays untouched.
+    function test_v4Swap_withinExistingUnlock_callerIsolation_payerBindsToExecuteCaller() public {
+        _fundLockHolderAndApprovePermit2();
+        (bytes memory commands, bytes[] memory inputs) = _v4SwapCommand(ActionConstants.MSG_SENDER, true);
+
+        uint256 lockHolderInputBefore = MockERC20(Currency.unwrap(currency0)).balanceOf(address(lockHolder));
+        uint256 lockHolderOutputBefore = MockERC20(Currency.unwrap(currency1)).balanceOf(address(lockHolder));
+        uint256 openerInputBefore = MockERC20(Currency.unwrap(currency0)).balanceOf(address(outerLockOpener));
+        uint256 openerOutputBefore = MockERC20(Currency.unwrap(currency1)).balanceOf(address(outerLockOpener));
+        outerLockOpener.openAndDelegate(lockHolder, commands, inputs);
+
+        assertLt(
+            MockERC20(Currency.unwrap(currency0)).balanceOf(address(lockHolder)),
+            lockHolderInputBefore,
+            'execute caller did not pay'
+        );
+        assertGt(
+            MockERC20(Currency.unwrap(currency1)).balanceOf(address(lockHolder)),
+            lockHolderOutputBefore,
+            'execute caller did not receive output'
+        );
+        assertEq(
+            MockERC20(Currency.unwrap(currency0)).balanceOf(address(outerLockOpener)),
+            openerInputBefore,
+            'lock owner input was spent'
+        );
+        assertEq(
+            MockERC20(Currency.unwrap(currency1)).balanceOf(address(outerLockOpener)),
+            openerOutputBefore,
+            'lock owner received output'
+        );
+    }
+
+    /// @notice Security invariant: the nested path cannot leave a dangling delta silently covered by the outer
+    ///         lock; an unsettled input debt reverts the whole unlock with CurrencyNotSettled.
+    function test_v4Swap_withinExistingUnlock_unbalancedDeltaReverts() public {
+        _fundRouter();
+        (bytes memory commands, bytes[] memory inputs) = _v4SwapCommandMissingSettle();
+
+        vm.expectRevert(IPoolManager.CurrencyNotSettled.selector);
+        lockHolder.executeWithinUnlock(commands, inputs);
+    }
+
+    /// @notice The nested path composes a multi-action plan (swap + SETTLE_ALL + TAKE_ALL) correctly.
+    function test_v4Swap_withinExistingUnlock_composedWithSecondAction() public {
+        _fundLockHolderAndApprovePermit2();
+        (bytes memory commands, bytes[] memory inputs) = _v4SwapCommandSettleAllTakeAll();
+
+        uint256 inputBefore = MockERC20(Currency.unwrap(currency0)).balanceOf(address(lockHolder));
+        uint256 outputBefore = MockERC20(Currency.unwrap(currency1)).balanceOf(address(lockHolder));
+        lockHolder.executeWithinUnlock(commands, inputs);
+
+        assertLt(
+            MockERC20(Currency.unwrap(currency0)).balanceOf(address(lockHolder)),
+            inputBefore,
+            'input not settled'
+        );
+        assertGt(
+            MockERC20(Currency.unwrap(currency1)).balanceOf(address(lockHolder)),
+            outputBefore,
+            'output not taken'
         );
     }
 
