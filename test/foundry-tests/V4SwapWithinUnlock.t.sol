@@ -406,16 +406,8 @@ contract V4SwapWithinUnlockTest is Test, Deployers {
         uint256 outputBefore = MockERC20(Currency.unwrap(currency1)).balanceOf(address(lockHolder));
         lockHolder.executeWithinUnlock(commands, inputs);
 
-        assertLt(
-            MockERC20(Currency.unwrap(currency0)).balanceOf(address(lockHolder)),
-            inputBefore,
-            'input not settled'
-        );
-        assertGt(
-            MockERC20(Currency.unwrap(currency1)).balanceOf(address(lockHolder)),
-            outputBefore,
-            'output not taken'
-        );
+        assertLt(MockERC20(Currency.unwrap(currency0)).balanceOf(address(lockHolder)), inputBefore, 'input not settled');
+        assertGt(MockERC20(Currency.unwrap(currency1)).balanceOf(address(lockHolder)), outputBefore, 'output not taken');
     }
 
     /// @notice Documents the constraint the branch works around: a raw nested unlock reverts.
