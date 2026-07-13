@@ -5,7 +5,7 @@ import {Test} from 'forge-std/Test.sol';
 import {Deployers} from '@uniswap/v4-core/test/utils/Deployers.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
 import {IUnlockCallback} from '@uniswap/v4-core/src/interfaces/callback/IUnlockCallback.sol';
-import {Currency} from '@uniswap/v4-core/src/types/Currency.sol';
+import {Currency, CurrencyLibrary} from '@uniswap/v4-core/src/types/Currency.sol';
 import {IHooks} from '@uniswap/v4-core/src/interfaces/IHooks.sol';
 import {MockERC20} from 'solmate/src/test/utils/mocks/MockERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
@@ -408,6 +408,51 @@ contract V4SwapWithinUnlockTest is Test, Deployers {
 
         assertLt(MockERC20(Currency.unwrap(currency0)).balanceOf(address(lockHolder)), inputBefore, 'input not settled');
         assertGt(MockERC20(Currency.unwrap(currency1)).balanceOf(address(lockHolder)), outputBefore, 'output not taken');
+    }
+
+    /// @notice Native ETH as one side of a nested V4_SWAP: swaps native -> currency1 inside an already-open
+    ///         lock. The native input is settled from the router's own ETH balance (payerIsUser = false, so no
+    ///         msg.value forwarding through the LockHolder entrypoint) and the ERC20 output is taken to RECIPIENT.
+    ///         Proves native settlement and take resolve correctly in the nested (reused-lock) path.
+    function test_v4Swap_withinExistingUnlock_nativeEth() public {
+        // stand up a native <-> currency1 pool (native is currency0 == ADDRESS_ZERO)
+        vm.deal(address(this), 1 ether);
+        (nativeKey,) = initPoolAndAddLiquidityETH(
+            CurrencyLibrary.ADDRESS_ZERO, currency1, IHooks(address(0)), 3000, SQRT_PRICE_1_1, 1 ether
+        );
+
+        // pre-fund the router so the nested SETTLE pays the native input from the router's own balance
+        vm.deal(address(router), AMOUNT_IN);
+
+        IV4Router.ExactInputSingleParams memory sp = IV4Router.ExactInputSingleParams({
+            poolKey: nativeKey,
+            zeroForOne: true,
+            amountIn: AMOUNT_IN,
+            amountOutMinimum: 0,
+            minHopPriceX36: 0,
+            hookData: hex''
+        });
+
+        Plan memory plan = Planner.init();
+        plan = plan.add(Actions.SWAP_EXACT_IN_SINGLE, abi.encode(sp));
+        plan = plan.add(Actions.SETTLE, abi.encode(nativeKey.currency0, ActionConstants.OPEN_DELTA, false));
+        plan = plan.add(Actions.TAKE, abi.encode(nativeKey.currency1, RECIPIENT, ActionConstants.OPEN_DELTA));
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = plan.encode();
+
+        uint256 recipientBefore = MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT);
+        uint256 routerEthBefore = address(router).balance;
+
+        lockHolder.executeWithinUnlock(commands, inputs);
+
+        assertLt(address(router).balance, routerEthBefore, 'native input not settled from router balance');
+        assertGt(
+            MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT),
+            recipientBefore,
+            'recipient did not receive erc20 output for native-input nested swap'
+        );
     }
 
     /// @notice Documents the constraint the branch works around: a raw nested unlock reverts.
