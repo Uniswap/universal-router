@@ -252,4 +252,111 @@ contract BalanceSwapProxyTest is Test {
         );
         vm.stopPrank();
     }
+
+    // ---------- Mode 1: signed & relayed ----------
+
+    // Deliberately constructed independently of the contract's constants: if the contract's
+    // typestring drifts from this canonical encoding, these tests must fail.
+    bytes32 constant TEST_TOKEN_PERMISSIONS_TYPEHASH = keccak256('TokenPermissions(address token,uint256 amount)');
+    bytes32 constant TEST_SWAP_INTENT_TYPEHASH = keccak256(
+        'SwapIntent(bytes32 routeHash,address router,address tokenOut,address recipient,uint256 minPriceX36,uint256 minAmount)'
+    );
+    bytes32 constant TEST_PERMIT_WITNESS_TYPEHASH = keccak256(
+        'PermitWitnessTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline,SwapIntent witness)SwapIntent(bytes32 routeHash,address router,address tokenOut,address recipient,uint256 minPriceX36,uint256 minAmount)TokenPermissions(address token,uint256 amount)'
+    );
+
+    function _permit(address token, uint256 cap, uint256 nonce, uint256 deadline)
+        internal
+        pure
+        returns (ISignatureTransfer.PermitTransferFrom memory)
+    {
+        return ISignatureTransfer.PermitTransferFrom({
+            permitted: ISignatureTransfer.TokenPermissions({token: token, amount: cap}),
+            nonce: nonce,
+            deadline: deadline
+        });
+    }
+
+    function _signIntent(
+        ISignatureTransfer.PermitTransferFrom memory permit,
+        IBalanceSwapProxy.SwapIntent memory intent,
+        bytes memory commands,
+        bytes[] memory inputs,
+        uint256 privateKey
+    ) internal view returns (bytes memory sig) {
+        bytes32 witness = keccak256(
+            abi.encode(
+                TEST_SWAP_INTENT_TYPEHASH,
+                keccak256(abi.encode(commands, inputs)),
+                intent.router,
+                intent.tokenOut,
+                intent.recipient,
+                intent.minPriceX36,
+                intent.minAmount
+            )
+        );
+        bytes32 tokenPermissions = keccak256(abi.encode(TEST_TOKEN_PERMISSIONS_TYPEHASH, permit.permitted));
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                '\x19\x01',
+                PERMIT2.DOMAIN_SEPARATOR(),
+                keccak256(
+                    abi.encode(
+                        TEST_PERMIT_WITNESS_TYPEHASH,
+                        tokenPermissions,
+                        address(proxy), // spender is bound to the proxy
+                        permit.nonce,
+                        permit.deadline,
+                        witness
+                    )
+                )
+            )
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        sig = abi.encodePacked(r, s, v);
+    }
+
+    /// @dev Owner signs at "bridge time" with a loose cap; balance is lower than the cap at fill.
+    function testSignedExecutePullsBalanceBelowCap() public {
+        vm.startPrank(OWNER);
+        tokenA.transfer(address(0xDEAD), BALANCE - AMOUNT); // "bridge delivered" AMOUNT
+        tokenA.approve(address(PERMIT2), type(uint256).max); // one-time ERC20 -> Permit2 approval
+        vm.stopPrank();
+
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        IBalanceSwapProxy.SwapIntent memory intent = _intent(address(tokenB), RECIPIENT, 0.9e36, 0);
+        ISignatureTransfer.PermitTransferFrom memory permit =
+            _permit(address(tokenA), type(uint256).max, 1, block.timestamp + 1000);
+        bytes memory sig = _signIntent(permit, intent, commands, inputs, OWNER_KEY);
+        uint256 expectedOut = _expectedOut(AMOUNT, pairAB, address(tokenA));
+
+        // relayed by an arbitrary third party
+        vm.prank(address(0xF177E4));
+        proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
+
+        assertEq(tokenA.balanceOf(OWNER), 0, 'full balance pulled');
+        assertEq(tokenB.balanceOf(RECIPIENT), expectedOut, 'output at signed recipient');
+        assertEq(tokenA.balanceOf(address(router)), 0, 'no residue');
+        assertEq(tokenA.balanceOf(address(proxy)), 0, 'proxy never custodies');
+    }
+
+    /// @dev Balance above the signed cap: pull is capped, excess stays with the owner.
+    function testSignedExecutePullsCapBelowBalance() public {
+        vm.startPrank(OWNER);
+        tokenA.transfer(address(0xDEAD), BALANCE - 2 ether); // owner holds 2 ether
+        tokenA.approve(address(PERMIT2), type(uint256).max);
+        vm.stopPrank();
+
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        IBalanceSwapProxy.SwapIntent memory intent = _intent(address(tokenB), RECIPIENT, 0.9e36, 0);
+        ISignatureTransfer.PermitTransferFrom memory permit =
+            _permit(address(tokenA), AMOUNT, 2, block.timestamp + 1000); // cap = 1 ether
+        bytes memory sig = _signIntent(permit, intent, commands, inputs, OWNER_KEY);
+
+        vm.prank(address(0xF177E4));
+        proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
+
+        assertEq(tokenA.balanceOf(OWNER), 1 ether, 'excess above cap untouched');
+        assertGt(tokenB.balanceOf(RECIPIENT), 0);
+    }
 }
