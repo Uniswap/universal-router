@@ -14,6 +14,7 @@ contract DeployTempo is DeployUniversalRouter {
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: 0x33620f62C5b9B2086dD6b62F4A297A9f30347029,
+            permissionsAdapterFactory: address(0), // ToDo: Add permissions adapter factory
             v3NFTPositionManager: 0xb71C33f096CEabDC0229110e0d76a6382d01C633,
             v4PositionManager: 0x3Fc79444F8EACc1894775493Ff3Fa41f1e35Ce11,
             spokePool: UNSUPPORTED_PROTOCOL
