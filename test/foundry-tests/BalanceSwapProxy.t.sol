@@ -217,4 +217,39 @@ contract BalanceSwapProxyTest is Test {
         );
         vm.stopPrank();
     }
+
+    // ---------- Mode 2b: direct, Permit2 allowance ----------
+
+    function testPermit2AllowanceExecuteSwapsFullBalance() public {
+        vm.startPrank(OWNER);
+        tokenA.transfer(address(0xDEAD), BALANCE - AMOUNT);
+        tokenA.approve(address(PERMIT2), type(uint256).max);
+        PERMIT2.approve(address(tokenA), address(proxy), type(uint160).max, type(uint48).max);
+
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        uint256 expectedOut = _expectedOut(AMOUNT, pairAB, address(tokenA));
+
+        proxy.executeWithPermit2Allowance(
+            address(tokenA), _intent(address(tokenB), RECIPIENT, 0.9e36, 0), commands, inputs, block.timestamp + 1000
+        );
+        vm.stopPrank();
+
+        assertEq(tokenA.balanceOf(OWNER), 0);
+        assertEq(tokenB.balanceOf(RECIPIENT), expectedOut);
+        assertEq(tokenA.balanceOf(address(router)), 0);
+        assertEq(tokenA.balanceOf(address(proxy)), 0);
+    }
+
+    function testPermit2AllowanceRevertsWithoutPermit2Approval() public {
+        vm.startPrank(OWNER);
+        tokenA.transfer(address(0xDEAD), BALANCE - AMOUNT);
+        tokenA.approve(address(PERMIT2), type(uint256).max);
+        // note: no PERMIT2.approve(tokenA, proxy, ...) — the proxy has no allowance
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        vm.expectRevert();
+        proxy.executeWithPermit2Allowance(
+            address(tokenA), _intent(address(tokenB), RECIPIENT, 0, 0), commands, inputs, block.timestamp + 1000
+        );
+        vm.stopPrank();
+    }
 }
