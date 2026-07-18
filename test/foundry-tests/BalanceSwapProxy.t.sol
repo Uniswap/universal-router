@@ -14,6 +14,7 @@ import {IBalanceSwapProxy} from '../../contracts/interfaces/IBalanceSwapProxy.so
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {RouterParameters} from '../../contracts/types/RouterParameters.sol';
 import {MockERC20} from './mock/MockERC20.sol';
+import {MockERC20Decimals} from './mock/MockERC20Decimals.sol';
 import {SignatureVerification} from 'permit2/src/libraries/SignatureVerification.sol';
 
 // NOTE: permit2/src/PermitErrors.sol is pinned to an exact `pragma solidity 0.8.17;`, which is
@@ -554,5 +555,73 @@ contract BalanceSwapProxyTest is Test {
 
         proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
         assertEq(tokenA.balanceOf(OWNER), 0, 'same signature executed after retry');
+    }
+
+    // ---------- floor arithmetic ----------
+
+    /// @dev 6-dec in, 18-dec out: unit price 1.0 => base-unit rate 1e12 => minPriceX36 ~ 1e48.
+    ///      Proves the X36 width expresses extreme decimal asymmetry.
+    function testFloorAcrossDecimalAsymmetry() public {
+        MockERC20Decimals usdc = new MockERC20Decimals(6);
+        address pairU = FACTORY.createPair(address(usdc), address(tokenB));
+        usdc.mint(pairU, 100e6);
+        tokenB.mint(pairU, 100 ether);
+        IUniswapV2Pair(pairU).sync();
+
+        address user = address(0x6DEC);
+        vm.startPrank(user);
+        usdc.mint(user, 1e6); // 1 USDC
+        usdc.approve(address(proxy), type(uint256).max);
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(usdc), address(tokenB), RECIPIENT);
+
+        // floor = 1e6 * 0.9e48 / 1e36 = 0.9e18 — 0.9 tokenB out per 1 USDC in
+        proxy.execute(
+            address(usdc), _intent(address(tokenB), RECIPIENT, 0.9e48, 0), commands, inputs, block.timestamp + 1000
+        );
+        vm.stopPrank();
+        assertGt(tokenB.balanceOf(RECIPIENT), 0.9e18);
+    }
+
+    function testFloorOverflowReverts() public {
+        vm.startPrank(OWNER);
+        tokenA.approve(address(proxy), type(uint256).max);
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        // BALANCE * uint256.max overflows in _checkOutput -> arithmetic panic, not a wrap
+        vm.expectRevert(stdError.arithmeticError);
+        proxy.execute(
+            address(tokenA), _intent(address(tokenB), RECIPIENT, type(uint256).max, 0), commands, inputs,
+            block.timestamp + 1000
+        );
+        vm.stopPrank();
+    }
+
+    // ---------- residue invariant ----------
+
+    /// @dev After any successful signed execution, neither the proxy nor the router holds
+    ///      any of either token. Fuzzed over the delivered amount.
+    function testFuzzSignedNoResidue(uint256 amount) public {
+        amount = bound(amount, 1e6, 50 ether);
+
+        uint256 userKey = 0xFA22;
+        address user = vm.addr(userKey);
+        vm.startPrank(user);
+        tokenA.approve(address(PERMIT2), type(uint256).max);
+        vm.stopPrank();
+        tokenA.mint(user, amount);
+
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        IBalanceSwapProxy.SwapIntent memory intent = _intent(address(tokenB), RECIPIENT, 0, 0);
+        ISignatureTransfer.PermitTransferFrom memory permit =
+            _permit(address(tokenA), type(uint256).max, amount, block.timestamp + 1000); // nonce = amount (unique per run)
+        bytes memory sig = _signIntent(permit, intent, commands, inputs, userKey);
+
+        proxy.executeWithSig(permit, sig, user, intent, commands, inputs);
+
+        assertEq(tokenA.balanceOf(user), 0);
+        assertEq(tokenA.balanceOf(address(proxy)), 0);
+        assertEq(tokenB.balanceOf(address(proxy)), 0);
+        assertEq(tokenA.balanceOf(address(router)), 0);
+        assertEq(tokenB.balanceOf(address(router)), 0);
+        assertGt(tokenB.balanceOf(RECIPIENT), 0);
     }
 }
