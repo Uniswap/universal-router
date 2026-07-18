@@ -9,12 +9,15 @@ import {IUniswapV2Factory} from '@uniswap/v2-core/contracts/interfaces/IUniswapV
 import {IUniswapV2Pair} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 import {UniversalRouter} from '../../contracts/UniversalRouter.sol';
+import {IUniversalRouter} from '../../contracts/interfaces/IUniversalRouter.sol';
 import {BalanceSwapProxy} from '../../contracts/BalanceSwapProxy.sol';
 import {IBalanceSwapProxy} from '../../contracts/interfaces/IBalanceSwapProxy.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {RouterParameters} from '../../contracts/types/RouterParameters.sol';
 import {MockERC20} from './mock/MockERC20.sol';
 import {MockERC20Decimals} from './mock/MockERC20Decimals.sol';
+import {ReenteringERC20} from './mock/ReenteringERC20.sol';
+import {SwapProxy} from '../../contracts/SwapProxy.sol';
 import {SignatureVerification} from 'permit2/src/libraries/SignatureVerification.sol';
 
 // NOTE: permit2/src/PermitErrors.sol is pinned to an exact `pragma solidity 0.8.17;`, which is
@@ -667,5 +670,135 @@ contract BalanceSwapProxyTest is Test {
         assertGt(RECIPIENT.balance - ethBefore, 0.9 ether, 'recipient received native ETH above floor');
         assertEq(WETH9.balanceOf(address(router)), 0, 'no WETH residue');
         assertEq(address(router).balance, 0, 'no ETH residue');
+    }
+
+    // ---------- reentry statelessness ----------
+
+    /// @dev A token hook reenters the proxy mid-execution through a SECOND router (the UR's own
+    ///      lock forbids same-router reentry). Both executions complete independently; nothing
+    ///      is stranded. Proves the proxy carries no cross-call state.
+    function testReentryThroughSecondRouterIsIndependent() public {
+        // second router, same params as setUp
+        RouterParameters memory params = RouterParameters({
+            permit2: address(PERMIT2),
+            weth9: address(WETH9),
+            v2Factory: address(FACTORY),
+            v3Factory: address(0),
+            pairInitCodeHash: bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f),
+            poolInitCodeHash: bytes32(0),
+            v4PoolManager: address(0),
+            permissionsAdapterFactory: address(0),
+            v3NFTPositionManager: address(0),
+            v4PositionManager: address(0),
+            spokePool: address(0)
+        });
+        UniversalRouter router2 = new UniversalRouter(params);
+
+        // outer swap: tokenA -> EVIL (pair funded below)
+        ReenteringERC20 evil = new ReenteringERC20();
+        address pairAE = FACTORY.createPair(address(tokenA), address(evil));
+        tokenA.mint(pairAE, 100 ether);
+        evil.mint(pairAE, 100 ether);
+        IUniswapV2Pair(pairAE).sync();
+
+        // inner swap: EVIL contract itself swaps its tokenB through router2
+        address RECIPIENT2 = address(0x2222);
+        tokenB.mint(address(evil), AMOUNT);
+        vm.prank(address(evil));
+        tokenB.approve(address(proxy), type(uint256).max);
+        (bytes memory innerCommands, bytes[] memory innerInputs) =
+            _v2Route(address(tokenB), address(tokenA), RECIPIENT2);
+        IBalanceSwapProxy.SwapIntent memory innerIntent = IBalanceSwapProxy.SwapIntent({
+            router: address(router2),
+            tokenOut: address(tokenA),
+            recipient: RECIPIENT2,
+            minPriceX36: 0,
+            minAmount: 0
+        });
+        evil.arm(
+            address(proxy),
+            abi.encodeCall(
+                IBalanceSwapProxy.execute,
+                (address(tokenB), innerIntent, innerCommands, innerInputs, block.timestamp + 1000)
+            )
+        );
+
+        // outer execution (direct mode): EVIL's transfer to RECIPIENT triggers the inner call
+        vm.startPrank(OWNER);
+        tokenA.transfer(address(0xDEAD), BALANCE - AMOUNT);
+        tokenA.approve(address(proxy), type(uint256).max);
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(evil), RECIPIENT);
+        proxy.execute(
+            address(tokenA),
+            IBalanceSwapProxy.SwapIntent({
+                router: address(router),
+                tokenOut: address(evil),
+                recipient: RECIPIENT,
+                minPriceX36: 0.9e36,
+                minAmount: 0
+            }),
+            commands,
+            inputs,
+            block.timestamp + 1000
+        );
+        vm.stopPrank();
+
+        // both executions landed; nothing stranded anywhere
+        assertGt(evil.balanceOf(RECIPIENT), 0, 'outer output delivered');
+        assertGt(tokenA.balanceOf(RECIPIENT2), 0, 'inner output delivered');
+        assertEq(tokenA.balanceOf(address(proxy)), 0);
+        assertEq(tokenB.balanceOf(address(proxy)), 0);
+        assertEq(tokenA.balanceOf(address(router)), 0);
+        assertEq(tokenB.balanceOf(address(router2)), 0);
+    }
+
+    // ---------- gas ----------
+
+    function testGasComparisonVsSwapProxyAndDirect() public {
+        SwapProxy swapProxy = new SwapProxy();
+        address user = address(0x6A5);
+        vm.startPrank(user);
+        tokenA.mint(user, 3 * AMOUNT);
+        tokenA.approve(address(proxy), type(uint256).max);
+        tokenA.approve(address(swapProxy), type(uint256).max);
+        tokenA.approve(address(PERMIT2), type(uint256).max);
+        PERMIT2.approve(address(tokenA), address(router), type(uint160).max, type(uint48).max);
+
+        address[] memory path = new address[](2);
+        path[0] = address(tokenA);
+        path[1] = address(tokenB);
+
+        // 1. BalanceSwapProxy direct mode (CONTRACT_BALANCE route) — must leave exactly AMOUNT
+        tokenA.transfer(address(0xDEAD), 2 * AMOUNT);
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), user);
+        uint256 gasBefore = gasleft();
+        proxy.execute(
+            address(tokenA), _intent(address(tokenB), user, 0, 0), commands, inputs, block.timestamp + 1000
+        );
+        uint256 gasBalanceProxy = gasBefore - gasleft();
+
+        // 2. SwapProxy (exact amount)
+        tokenA.mint(user, AMOUNT);
+        bytes[] memory exactInputs = new bytes[](1);
+        exactInputs[0] = abi.encode(user, AMOUNT, 0, path, false, new uint256[](0));
+        gasBefore = gasleft();
+        swapProxy.execute(
+            IUniversalRouter(address(router)), address(tokenA), AMOUNT, commands, exactInputs,
+            block.timestamp + 1000
+        );
+        uint256 gasSwapProxy = gasBefore - gasleft();
+
+        // 3. UR direct via Permit2 allowance (payerIsUser = true)
+        tokenA.mint(user, AMOUNT);
+        bytes[] memory directInputs = new bytes[](1);
+        directInputs[0] = abi.encode(user, AMOUNT, 0, path, true, new uint256[](0));
+        gasBefore = gasleft();
+        router.execute(commands, directInputs, block.timestamp + 1000);
+        uint256 gasDirect = gasBefore - gasleft();
+        vm.stopPrank();
+
+        emit log_named_uint('Gas via BalanceSwapProxy (direct mode)', gasBalanceProxy);
+        emit log_named_uint('Gas via SwapProxy', gasSwapProxy);
+        emit log_named_uint('Gas via direct Permit2', gasDirect);
     }
 }
