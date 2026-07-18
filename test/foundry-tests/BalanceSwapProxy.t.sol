@@ -31,6 +31,7 @@ error SignatureExpired(uint256 signatureDeadline);
 contract BalanceSwapProxyTest is Test {
     uint256 constant AMOUNT = 1 ether;
     uint256 constant BALANCE = 100000 ether;
+    uint256 constant FIXTURE_NONCE = 1;
     IUniswapV2Factory constant FACTORY = IUniswapV2Factory(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f);
     ERC20 constant WETH9 = ERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     IPermit2 constant PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
@@ -49,20 +50,7 @@ contract BalanceSwapProxyTest is Test {
         vm.createSelectFork(vm.envString('FORK_URL'), 20010000);
         OWNER = vm.addr(OWNER_KEY);
 
-        RouterParameters memory params = RouterParameters({
-            permit2: address(PERMIT2),
-            weth9: address(WETH9),
-            v2Factory: address(FACTORY),
-            v3Factory: address(0),
-            pairInitCodeHash: bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f),
-            poolInitCodeHash: bytes32(0),
-            v4PoolManager: address(0),
-            permissionsAdapterFactory: address(0),
-            v3NFTPositionManager: address(0),
-            v4PositionManager: address(0),
-            spokePool: address(0)
-        });
-        router = new UniversalRouter(params);
+        router = new UniversalRouter(_routerParams());
         proxy = new BalanceSwapProxy(PERMIT2);
 
         tokenA = new MockERC20();
@@ -78,6 +66,22 @@ contract BalanceSwapProxyTest is Test {
     }
 
     // ---------- shared helpers ----------
+
+    function _routerParams() internal view returns (RouterParameters memory) {
+        return RouterParameters({
+            permit2: address(PERMIT2),
+            weth9: address(WETH9),
+            v2Factory: address(FACTORY),
+            v3Factory: address(0),
+            pairInitCodeHash: bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f),
+            poolInitCodeHash: bytes32(0),
+            v4PoolManager: address(0),
+            permissionsAdapterFactory: address(0),
+            v3NFTPositionManager: address(0),
+            v4PositionManager: address(0),
+            spokePool: address(0)
+        });
+    }
 
     function _v2Route(address tokenIn_, address tokenOut_, address recipient_)
         internal
@@ -250,15 +254,14 @@ contract BalanceSwapProxyTest is Test {
         );
         vm.stopPrank();
 
-        assertEq(tokenA.balanceOf(OWNER), 0);
-        assertEq(tokenB.balanceOf(RECIPIENT), expectedOut);
-        assertEq(tokenA.balanceOf(address(router)), 0);
-        assertEq(tokenA.balanceOf(address(proxy)), 0);
+        assertEq(tokenA.balanceOf(OWNER), 0, 'full balance consumed');
+        assertEq(tokenB.balanceOf(RECIPIENT), expectedOut, 'recipient got the output');
+        assertEq(tokenA.balanceOf(address(router)), 0, 'no residue in router');
+        assertEq(tokenA.balanceOf(address(proxy)), 0, 'no residue in proxy');
     }
 
     function testPermit2AllowanceRevertsWithoutPermit2Approval() public {
         vm.startPrank(OWNER);
-        tokenA.transfer(address(0xDEAD), BALANCE - AMOUNT);
         tokenA.approve(address(PERMIT2), type(uint256).max);
         // note: no PERMIT2.approve(tokenA, proxy, ...) — the proxy has no allowance
         (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
@@ -380,7 +383,7 @@ contract BalanceSwapProxyTest is Test {
 
     /// @dev Signs a default intent over the canonical A->B route. Returns everything a test
     ///      needs to execute or tamper.
-    function _signedFixture(uint256 cap, uint256 minAmount, uint256 nonce)
+    function _signedFixture(uint256 cap, uint256 minAmount)
         internal
         returns (
             ISignatureTransfer.PermitTransferFrom memory permit,
@@ -397,7 +400,7 @@ contract BalanceSwapProxyTest is Test {
 
         (commands, inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
         intent = _intent(address(tokenB), RECIPIENT, 0.9e36, minAmount);
-        permit = _permit(address(tokenA), cap, nonce, block.timestamp + 1000);
+        permit = _permit(address(tokenA), cap, FIXTURE_NONCE, block.timestamp + 1000);
         sig = _signIntent(permit, intent, commands, inputs, OWNER_KEY);
     }
 
@@ -407,7 +410,7 @@ contract BalanceSwapProxyTest is Test {
             IBalanceSwapProxy.SwapIntent memory intent,,
             bytes[] memory inputs,
             bytes memory sig
-        ) = _signedFixture(type(uint256).max, 0, 10);
+        ) = _signedFixture(type(uint256).max, 0);
 
         // relayer swaps in a different (valid-looking) command byte
         bytes memory tampered = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_OUT)));
@@ -422,7 +425,7 @@ contract BalanceSwapProxyTest is Test {
             bytes memory commands,
             bytes[] memory inputs,
             bytes memory sig
-        ) = _signedFixture(type(uint256).max, 0, 11);
+        ) = _signedFixture(type(uint256).max, 0);
 
         // relayer redirects the swap output to themselves
         address[] memory path = new address[](2);
@@ -440,7 +443,7 @@ contract BalanceSwapProxyTest is Test {
             bytes memory commands,
             bytes[] memory inputs,
             bytes memory sig
-        ) = _signedFixture(type(uint256).max, 0.1 ether, 12);
+        ) = _signedFixture(type(uint256).max, 0.1 ether);
 
         IBalanceSwapProxy.SwapIntent memory tampered;
 
@@ -475,7 +478,7 @@ contract BalanceSwapProxyTest is Test {
             IBalanceSwapProxy.SwapIntent memory intent,
             bytes memory commands,
             bytes[] memory inputs,
-        ) = _signedFixture(type(uint256).max, 0, 13);
+        ) = _signedFixture(type(uint256).max, 0);
 
         bytes memory wrongSig = _signIntent(permit, intent, commands, inputs, 0xBEE1); // not OWNER_KEY
         vm.expectRevert(SignatureVerification.InvalidSigner.selector);
@@ -489,7 +492,7 @@ contract BalanceSwapProxyTest is Test {
             bytes memory commands,
             bytes[] memory inputs,
             bytes memory sig
-        ) = _signedFixture(type(uint256).max, 0, 17);
+        ) = _signedFixture(type(uint256).max, 0);
 
         // a different address with a balance (so _resolveAmount passes and Permit2 verification is reached)
         address notTheSigner = address(0xDA2E);
@@ -506,7 +509,7 @@ contract BalanceSwapProxyTest is Test {
             bytes memory commands,
             bytes[] memory inputs,
             bytes memory sig
-        ) = _signedFixture(0.1 ether, 0.5 ether, 18); // cap 0.1, minAmount 0.5; OWNER holds 1 ether
+        ) = _signedFixture(0.1 ether, 0.5 ether); // cap 0.1, minAmount 0.5; OWNER holds 1 ether
 
         vm.expectRevert(abi.encodeWithSelector(IBalanceSwapProxy.InsufficientBalance.selector, 0.1 ether, 0.5 ether));
         proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
@@ -519,7 +522,7 @@ contract BalanceSwapProxyTest is Test {
             bytes memory commands,
             bytes[] memory inputs,
             bytes memory sig
-        ) = _signedFixture(type(uint256).max, 0, 14);
+        ) = _signedFixture(type(uint256).max, 0);
 
         proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
 
@@ -536,7 +539,7 @@ contract BalanceSwapProxyTest is Test {
             bytes memory commands,
             bytes[] memory inputs,
             bytes memory sig
-        ) = _signedFixture(type(uint256).max, 0, 15);
+        ) = _signedFixture(type(uint256).max, 0);
 
         vm.warp(block.timestamp + 2000); // past permit.deadline
         vm.expectRevert(abi.encodeWithSelector(SignatureExpired.selector, permit.deadline));
@@ -575,7 +578,7 @@ contract BalanceSwapProxyTest is Test {
     /// @dev A floor-revert consumes nothing; the same signature succeeds after the price improves.
     function testSignedFloorRevertPreservesSignature() public {
         (ISignatureTransfer.PermitTransferFrom memory permit,, bytes memory commands, bytes[] memory inputs,) =
-            _signedFixture(type(uint256).max, 0, 16);
+            _signedFixture(type(uint256).max, 0);
 
         // sign a floor just above the currently-achievable rate
         uint256 expectedOut = _expectedOut(AMOUNT, pairAB, address(tokenA));
@@ -716,20 +719,7 @@ contract BalanceSwapProxyTest is Test {
     ///      is stranded. Proves the proxy carries no cross-call state.
     function testReentryThroughSecondRouterIsIndependent() public {
         // second router, same params as setUp
-        RouterParameters memory params = RouterParameters({
-            permit2: address(PERMIT2),
-            weth9: address(WETH9),
-            v2Factory: address(FACTORY),
-            v3Factory: address(0),
-            pairInitCodeHash: bytes32(0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f),
-            poolInitCodeHash: bytes32(0),
-            v4PoolManager: address(0),
-            permissionsAdapterFactory: address(0),
-            v3NFTPositionManager: address(0),
-            v4PositionManager: address(0),
-            spokePool: address(0)
-        });
-        UniversalRouter router2 = new UniversalRouter(params);
+        UniversalRouter router2 = new UniversalRouter(_routerParams());
 
         // outer swap: tokenA -> EVIL (pair funded below)
         ReenteringERC20 evil = new ReenteringERC20();
@@ -761,6 +751,8 @@ contract BalanceSwapProxyTest is Test {
         tokenA.transfer(address(0xDEAD), BALANCE - AMOUNT);
         tokenA.approve(address(proxy), type(uint256).max);
         (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(evil), RECIPIENT);
+        uint256 expectedOuter = _expectedOut(AMOUNT, pairAE, address(tokenA));
+        uint256 expectedInner = _expectedOut(AMOUNT, pairAB, address(tokenB));
         proxy.execute(
             address(tokenA),
             IBalanceSwapProxy.SwapIntent({
@@ -777,12 +769,15 @@ contract BalanceSwapProxyTest is Test {
         vm.stopPrank();
 
         // both executions landed; nothing stranded anywhere
-        assertGt(evil.balanceOf(RECIPIENT), 0, 'outer output delivered');
-        assertGt(tokenA.balanceOf(RECIPIENT2), 0, 'inner output delivered');
+        assertEq(evil.balanceOf(RECIPIENT), expectedOuter, 'outer output delivered');
+        assertEq(tokenA.balanceOf(RECIPIENT2), expectedInner, 'inner output delivered');
         assertEq(tokenA.balanceOf(address(proxy)), 0);
         assertEq(tokenB.balanceOf(address(proxy)), 0);
         assertEq(tokenA.balanceOf(address(router)), 0);
         assertEq(tokenB.balanceOf(address(router2)), 0);
+        assertEq(evil.balanceOf(address(router)), 0);
+        assertEq(tokenA.balanceOf(address(router2)), 0);
+        assertEq(evil.balanceOf(address(proxy)), 0);
     }
 
     // ---------- gas ----------

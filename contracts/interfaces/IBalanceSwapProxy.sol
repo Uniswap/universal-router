@@ -53,6 +53,11 @@ interface IBalanceSwapProxy {
 
     /// @notice Direct mode: pulls msg.sender's full tokenIn balance via a plain ERC20 allowance
     ///         granted to this contract, then executes and enforces the caller-supplied terms.
+    /// @param tokenIn The token pulled from msg.sender via ERC20 allowance
+    /// @param intent The swap terms, supplied directly by the caller
+    /// @param commands The Universal Router commands to execute
+    /// @param inputs The Universal Router inputs for each command
+    /// @param deadline The deadline by which the router execution must occur
     function execute(
         address tokenIn,
         SwapIntent calldata intent,
@@ -63,6 +68,11 @@ interface IBalanceSwapProxy {
 
     /// @notice Direct mode: same as execute(), but pulls via the caller's standing Permit2
     ///         AllowanceTransfer approval (this contract as spender).
+    /// @param tokenIn The token pulled from msg.sender via the caller's Permit2 allowance
+    /// @param intent The swap terms, supplied directly by the caller
+    /// @param commands The Universal Router commands to execute
+    /// @param inputs The Universal Router inputs for each command
+    /// @param deadline The deadline by which the router execution must occur
     function executeWithPermit2Allowance(
         address tokenIn,
         SwapIntent calldata intent,
