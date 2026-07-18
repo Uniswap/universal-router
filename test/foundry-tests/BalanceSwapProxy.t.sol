@@ -162,12 +162,9 @@ contract BalanceSwapProxyTest is Test {
         tokenA.transfer(address(0xDEAD), BALANCE - 0.01 ether); // leave dust
         tokenA.approve(address(proxy), type(uint256).max);
         (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
-        vm.expectRevert(
-            abi.encodeWithSelector(IBalanceSwapProxy.InsufficientBalance.selector, 0.01 ether, 0.5 ether)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IBalanceSwapProxy.InsufficientBalance.selector, 0.01 ether, 0.5 ether));
         proxy.execute(
-            address(tokenA), _intent(address(tokenB), RECIPIENT, 0, 0.5 ether), commands, inputs,
-            block.timestamp + 1000
+            address(tokenA), _intent(address(tokenB), RECIPIENT, 0, 0.5 ether), commands, inputs, block.timestamp + 1000
         );
         vm.stopPrank();
     }
@@ -183,7 +180,10 @@ contract BalanceSwapProxyTest is Test {
 
         // floor == expectedOut exactly: passes
         proxy.execute(
-            address(tokenA), _intent(address(tokenB), RECIPIENT, expectedOut * 1e18, 0), commands, inputs,
+            address(tokenA),
+            _intent(address(tokenB), RECIPIENT, expectedOut * 1e18, 0),
+            commands,
+            inputs,
             block.timestamp + 1000
         );
         assertEq(tokenB.balanceOf(RECIPIENT), expectedOut);
@@ -202,7 +202,10 @@ contract BalanceSwapProxyTest is Test {
             abi.encodeWithSelector(IBalanceSwapProxy.InsufficientOutput.selector, expectedOut, expectedOut + 1)
         );
         proxy.execute(
-            address(tokenA), _intent(address(tokenB), RECIPIENT, (expectedOut + 1) * 1e18, 0), commands, inputs,
+            address(tokenA),
+            _intent(address(tokenB), RECIPIENT, (expectedOut + 1) * 1e18, 0),
+            commands,
+            inputs,
             block.timestamp + 1000
         );
         vm.stopPrank();
@@ -399,8 +402,12 @@ contract BalanceSwapProxyTest is Test {
     }
 
     function testSignedRevertsOnTamperedCommands() public {
-        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,,
-            bytes[] memory inputs, bytes memory sig) = _signedFixture(type(uint256).max, 0, 10);
+        (
+            ISignatureTransfer.PermitTransferFrom memory permit,
+            IBalanceSwapProxy.SwapIntent memory intent,,
+            bytes[] memory inputs,
+            bytes memory sig
+        ) = _signedFixture(type(uint256).max, 0, 10);
 
         // relayer swaps in a different (valid-looking) command byte
         bytes memory tampered = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_OUT)));
@@ -409,8 +416,13 @@ contract BalanceSwapProxyTest is Test {
     }
 
     function testSignedRevertsOnTamperedInputs() public {
-        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
-            bytes memory commands, bytes[] memory inputs, bytes memory sig) = _signedFixture(type(uint256).max, 0, 11);
+        (
+            ISignatureTransfer.PermitTransferFrom memory permit,
+            IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands,
+            bytes[] memory inputs,
+            bytes memory sig
+        ) = _signedFixture(type(uint256).max, 0, 11);
 
         // relayer redirects the swap output to themselves
         address[] memory path = new address[](2);
@@ -422,9 +434,13 @@ contract BalanceSwapProxyTest is Test {
     }
 
     function testSignedRevertsOnTamperedIntentFields() public {
-        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
-            bytes memory commands, bytes[] memory inputs, bytes memory sig) =
-            _signedFixture(type(uint256).max, 0.1 ether, 12);
+        (
+            ISignatureTransfer.PermitTransferFrom memory permit,
+            IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands,
+            bytes[] memory inputs,
+            bytes memory sig
+        ) = _signedFixture(type(uint256).max, 0.1 ether, 12);
 
         IBalanceSwapProxy.SwapIntent memory tampered;
 
@@ -454,8 +470,12 @@ contract BalanceSwapProxyTest is Test {
     }
 
     function testSignedRevertsOnWrongSigner() public {
-        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
-            bytes memory commands, bytes[] memory inputs,) = _signedFixture(type(uint256).max, 0, 13);
+        (
+            ISignatureTransfer.PermitTransferFrom memory permit,
+            IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands,
+            bytes[] memory inputs,
+        ) = _signedFixture(type(uint256).max, 0, 13);
 
         bytes memory wrongSig = _signIntent(permit, intent, commands, inputs, 0xBEE1); // not OWNER_KEY
         vm.expectRevert(SignatureVerification.InvalidSigner.selector);
@@ -463,8 +483,13 @@ contract BalanceSwapProxyTest is Test {
     }
 
     function testSignedRevertsOnWrongOwner() public {
-        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
-            bytes memory commands, bytes[] memory inputs, bytes memory sig) = _signedFixture(type(uint256).max, 0, 17);
+        (
+            ISignatureTransfer.PermitTransferFrom memory permit,
+            IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands,
+            bytes[] memory inputs,
+            bytes memory sig
+        ) = _signedFixture(type(uint256).max, 0, 17);
 
         // a different address with a balance (so _resolveAmount passes and Permit2 verification is reached)
         address notTheSigner = address(0xDA2E);
@@ -475,19 +500,26 @@ contract BalanceSwapProxyTest is Test {
 
     /// @dev Signer contradiction: cap below minAmount can never execute — the capped amount fails the gate.
     function testSignedRevertsWhenCapBelowMinAmount() public {
-        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
-            bytes memory commands, bytes[] memory inputs, bytes memory sig) =
-            _signedFixture(0.1 ether, 0.5 ether, 18); // cap 0.1, minAmount 0.5; OWNER holds 1 ether
+        (
+            ISignatureTransfer.PermitTransferFrom memory permit,
+            IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands,
+            bytes[] memory inputs,
+            bytes memory sig
+        ) = _signedFixture(0.1 ether, 0.5 ether, 18); // cap 0.1, minAmount 0.5; OWNER holds 1 ether
 
-        vm.expectRevert(
-            abi.encodeWithSelector(IBalanceSwapProxy.InsufficientBalance.selector, 0.1 ether, 0.5 ether)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IBalanceSwapProxy.InsufficientBalance.selector, 0.1 ether, 0.5 ether));
         proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
     }
 
     function testSignedRevertsOnReplay() public {
-        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
-            bytes memory commands, bytes[] memory inputs, bytes memory sig) = _signedFixture(type(uint256).max, 0, 14);
+        (
+            ISignatureTransfer.PermitTransferFrom memory permit,
+            IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands,
+            bytes[] memory inputs,
+            bytes memory sig
+        ) = _signedFixture(type(uint256).max, 0, 14);
 
         proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
 
@@ -498,8 +530,13 @@ contract BalanceSwapProxyTest is Test {
     }
 
     function testSignedRevertsOnExpiredDeadline() public {
-        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
-            bytes memory commands, bytes[] memory inputs, bytes memory sig) = _signedFixture(type(uint256).max, 0, 15);
+        (
+            ISignatureTransfer.PermitTransferFrom memory permit,
+            IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands,
+            bytes[] memory inputs,
+            bytes memory sig
+        ) = _signedFixture(type(uint256).max, 0, 15);
 
         vm.warp(block.timestamp + 2000); // past permit.deadline
         vm.expectRevert(abi.encodeWithSelector(SignatureExpired.selector, permit.deadline));
@@ -524,9 +561,7 @@ contract BalanceSwapProxyTest is Test {
         // attacker donates dust and tries to burn the intent
         tokenA.mint(user, 0.01 ether);
         vm.prank(address(0xA77AC4E4));
-        vm.expectRevert(
-            abi.encodeWithSelector(IBalanceSwapProxy.InsufficientBalance.selector, 0.01 ether, 0.5 ether)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IBalanceSwapProxy.InsufficientBalance.selector, 0.01 ether, 0.5 ether));
         proxy.executeWithSig(permit, sig, user, intent, commands, inputs);
 
         // the bridge fills; the SAME signature now executes
@@ -544,8 +579,7 @@ contract BalanceSwapProxyTest is Test {
 
         // sign a floor just above the currently-achievable rate
         uint256 expectedOut = _expectedOut(AMOUNT, pairAB, address(tokenA));
-        IBalanceSwapProxy.SwapIntent memory intent =
-            _intent(address(tokenB), RECIPIENT, (expectedOut + 2) * 1e18, 0);
+        IBalanceSwapProxy.SwapIntent memory intent = _intent(address(tokenB), RECIPIENT, (expectedOut + 2) * 1e18, 0);
         bytes memory sig = _signIntent(permit, intent, commands, inputs, OWNER_KEY);
 
         vm.expectRevert(); // InsufficientOutput
@@ -592,7 +626,10 @@ contract BalanceSwapProxyTest is Test {
         // BALANCE * uint256.max overflows in _checkOutput -> arithmetic panic, not a wrap
         vm.expectRevert(stdError.arithmeticError);
         proxy.execute(
-            address(tokenA), _intent(address(tokenB), RECIPIENT, type(uint256).max, 0), commands, inputs,
+            address(tokenA),
+            _intent(address(tokenB), RECIPIENT, type(uint256).max, 0),
+            commands,
+            inputs,
             block.timestamp + 1000
         );
         vm.stopPrank();
@@ -709,11 +746,7 @@ contract BalanceSwapProxyTest is Test {
         (bytes memory innerCommands, bytes[] memory innerInputs) =
             _v2Route(address(tokenB), address(tokenA), RECIPIENT2);
         IBalanceSwapProxy.SwapIntent memory innerIntent = IBalanceSwapProxy.SwapIntent({
-            router: address(router2),
-            tokenOut: address(tokenA),
-            recipient: RECIPIENT2,
-            minPriceX36: 0,
-            minAmount: 0
+            router: address(router2), tokenOut: address(tokenA), recipient: RECIPIENT2, minPriceX36: 0, minAmount: 0
         });
         evil.arm(
             address(proxy),
@@ -772,9 +805,7 @@ contract BalanceSwapProxyTest is Test {
         tokenA.transfer(address(0xDEAD), 2 * AMOUNT);
         (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), user);
         uint256 gasBefore = gasleft();
-        proxy.execute(
-            address(tokenA), _intent(address(tokenB), user, 0, 0), commands, inputs, block.timestamp + 1000
-        );
+        proxy.execute(address(tokenA), _intent(address(tokenB), user, 0, 0), commands, inputs, block.timestamp + 1000);
         uint256 gasBalanceProxy = gasBefore - gasleft();
 
         // 2. SwapProxy (exact amount)
@@ -783,8 +814,7 @@ contract BalanceSwapProxyTest is Test {
         exactInputs[0] = abi.encode(user, AMOUNT, 0, path, false, new uint256[](0));
         gasBefore = gasleft();
         swapProxy.execute(
-            IUniversalRouter(address(router)), address(tokenA), AMOUNT, commands, exactInputs,
-            block.timestamp + 1000
+            IUniversalRouter(address(router)), address(tokenA), AMOUNT, commands, exactInputs, block.timestamp + 1000
         );
         uint256 gasSwapProxy = gasBefore - gasleft();
 
