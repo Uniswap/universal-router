@@ -624,4 +624,48 @@ contract BalanceSwapProxyTest is Test {
         assertEq(tokenB.balanceOf(address(router)), 0);
         assertGt(tokenB.balanceOf(RECIPIENT), 0);
     }
+
+    // ---------- native output ----------
+
+    /// @dev tokenOut = address(0): route swaps A -> WETH into the router, unwraps to the
+    ///      recipient; the proxy floor-checks the recipient's ETH balance delta.
+    function testSignedNativeOutput() public {
+        // fund a tokenA/WETH pair
+        address pairAW = FACTORY.createPair(address(tokenA), address(WETH9));
+        tokenA.mint(pairAW, 100 ether);
+        vm.deal(address(this), 100 ether);
+        (bool ok,) = address(WETH9).call{value: 100 ether}('');
+        require(ok, 'weth deposit failed');
+        WETH9.transfer(pairAW, 100 ether);
+        IUniswapV2Pair(pairAW).sync();
+
+        vm.startPrank(OWNER);
+        tokenA.transfer(address(0xDEAD), BALANCE - AMOUNT);
+        tokenA.approve(address(PERMIT2), type(uint256).max);
+        vm.stopPrank();
+
+        // route: V2 swap A -> WETH with recipient ADDRESS_THIS (the router), then UNWRAP_WETH to RECIPIENT
+        bytes memory commands =
+            abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_IN)), bytes1(uint8(Commands.UNWRAP_WETH)));
+        address[] memory path = new address[](2);
+        path[0] = address(tokenA);
+        path[1] = address(WETH9);
+        bytes[] memory inputs = new bytes[](2);
+        inputs[0] = abi.encode(
+            ActionConstants.ADDRESS_THIS, ActionConstants.CONTRACT_BALANCE, 0, path, false, new uint256[](0)
+        );
+        inputs[1] = abi.encode(RECIPIENT, 0);
+
+        IBalanceSwapProxy.SwapIntent memory intent = _intent(address(0), RECIPIENT, 0.9e36, 0);
+        ISignatureTransfer.PermitTransferFrom memory permit =
+            _permit(address(tokenA), type(uint256).max, 42, block.timestamp + 1000);
+        bytes memory sig = _signIntent(permit, intent, commands, inputs, OWNER_KEY);
+
+        uint256 ethBefore = RECIPIENT.balance;
+        proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
+
+        assertGt(RECIPIENT.balance - ethBefore, 0.9 ether, 'recipient received native ETH above floor');
+        assertEq(WETH9.balanceOf(address(router)), 0, 'no WETH residue');
+        assertEq(address(router).balance, 0, 'no ETH residue');
+    }
 }
