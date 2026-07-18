@@ -14,6 +14,15 @@ import {IBalanceSwapProxy} from '../../contracts/interfaces/IBalanceSwapProxy.so
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {RouterParameters} from '../../contracts/types/RouterParameters.sol';
 import {MockERC20} from './mock/MockERC20.sol';
+import {SignatureVerification} from 'permit2/src/libraries/SignatureVerification.sol';
+
+// NOTE: permit2/src/PermitErrors.sol is pinned to an exact `pragma solidity 0.8.17;`, which is
+// incompatible with this repo's pinned `solc_version = 0.8.26` (foundry.toml) and fails the
+// build the moment anything imports it. SignatureVerification.sol (imported above) has a
+// permissive `^0.8.17` pragma and compiles fine. These two errors are redeclared locally,
+// verbatim from PermitErrors.sol, so their selectors match exactly without importing that file.
+error InvalidNonce();
+error SignatureExpired(uint256 signatureDeadline);
 
 contract BalanceSwapProxyTest is Test {
     uint256 constant AMOUNT = 1 ether;
@@ -358,5 +367,192 @@ contract BalanceSwapProxyTest is Test {
 
         assertEq(tokenA.balanceOf(OWNER), 1 ether, 'excess above cap untouched');
         assertGt(tokenB.balanceOf(RECIPIENT), 0);
+    }
+
+    // ---------- Mode 1: adversarial relayer, replay, dust-grief, retry ----------
+
+    /// @dev Signs a default intent over the canonical A->B route. Returns everything a test
+    ///      needs to execute or tamper.
+    function _signedFixture(uint256 cap, uint256 minAmount, uint256 nonce)
+        internal
+        returns (
+            ISignatureTransfer.PermitTransferFrom memory permit,
+            IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands,
+            bytes[] memory inputs,
+            bytes memory sig
+        )
+    {
+        vm.startPrank(OWNER);
+        tokenA.transfer(address(0xDEAD), BALANCE - AMOUNT);
+        tokenA.approve(address(PERMIT2), type(uint256).max);
+        vm.stopPrank();
+
+        (commands, inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        intent = _intent(address(tokenB), RECIPIENT, 0.9e36, minAmount);
+        permit = _permit(address(tokenA), cap, nonce, block.timestamp + 1000);
+        sig = _signIntent(permit, intent, commands, inputs, OWNER_KEY);
+    }
+
+    function testSignedRevertsOnTamperedCommands() public {
+        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,,
+            bytes[] memory inputs, bytes memory sig) = _signedFixture(type(uint256).max, 0, 10);
+
+        // relayer swaps in a different (valid-looking) command byte
+        bytes memory tampered = abi.encodePacked(bytes1(uint8(Commands.V2_SWAP_EXACT_OUT)));
+        vm.expectRevert(SignatureVerification.InvalidSigner.selector);
+        proxy.executeWithSig(permit, sig, OWNER, intent, tampered, inputs);
+    }
+
+    function testSignedRevertsOnTamperedInputs() public {
+        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands, bytes[] memory inputs, bytes memory sig) = _signedFixture(type(uint256).max, 0, 11);
+
+        // relayer redirects the swap output to themselves
+        address[] memory path = new address[](2);
+        path[0] = address(tokenA);
+        path[1] = address(tokenB);
+        inputs[0] = abi.encode(address(0xBAD), ActionConstants.CONTRACT_BALANCE, 0, path, false, new uint256[](0));
+        vm.expectRevert(SignatureVerification.InvalidSigner.selector);
+        proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
+    }
+
+    function testSignedRevertsOnTamperedIntentFields() public {
+        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands, bytes[] memory inputs, bytes memory sig) =
+            _signedFixture(type(uint256).max, 0.1 ether, 12);
+
+        IBalanceSwapProxy.SwapIntent memory tampered;
+
+        // lower the floor
+        tampered = intent;
+        tampered.minPriceX36 = 1;
+        vm.expectRevert(SignatureVerification.InvalidSigner.selector);
+        proxy.executeWithSig(permit, sig, OWNER, tampered, commands, inputs);
+
+        // change the recipient
+        tampered = intent;
+        tampered.recipient = address(0xBAD);
+        vm.expectRevert(SignatureVerification.InvalidSigner.selector);
+        proxy.executeWithSig(permit, sig, OWNER, tampered, commands, inputs);
+
+        // change the router
+        tampered = intent;
+        tampered.router = address(0xBAD);
+        vm.expectRevert(SignatureVerification.InvalidSigner.selector);
+        proxy.executeWithSig(permit, sig, OWNER, tampered, commands, inputs);
+
+        // drop the minAmount gate (fixture signs minAmount = 0.1 ether so this tamper changes the hash)
+        tampered = intent;
+        tampered.minAmount = 0;
+        vm.expectRevert(SignatureVerification.InvalidSigner.selector);
+        proxy.executeWithSig(permit, sig, OWNER, tampered, commands, inputs);
+    }
+
+    function testSignedRevertsOnWrongSigner() public {
+        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands, bytes[] memory inputs,) = _signedFixture(type(uint256).max, 0, 13);
+
+        bytes memory wrongSig = _signIntent(permit, intent, commands, inputs, 0xBEE1); // not OWNER_KEY
+        vm.expectRevert(SignatureVerification.InvalidSigner.selector);
+        proxy.executeWithSig(permit, wrongSig, OWNER, intent, commands, inputs);
+    }
+
+    function testSignedRevertsOnWrongOwner() public {
+        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands, bytes[] memory inputs, bytes memory sig) = _signedFixture(type(uint256).max, 0, 17);
+
+        // a different address with a balance (so _resolveAmount passes and Permit2 verification is reached)
+        address notTheSigner = address(0xDA2E);
+        tokenA.mint(notTheSigner, AMOUNT);
+        vm.expectRevert(SignatureVerification.InvalidSigner.selector);
+        proxy.executeWithSig(permit, sig, notTheSigner, intent, commands, inputs);
+    }
+
+    /// @dev Signer contradiction: cap below minAmount can never execute — the capped amount fails the gate.
+    function testSignedRevertsWhenCapBelowMinAmount() public {
+        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands, bytes[] memory inputs, bytes memory sig) =
+            _signedFixture(0.1 ether, 0.5 ether, 18); // cap 0.1, minAmount 0.5; OWNER holds 1 ether
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IBalanceSwapProxy.InsufficientBalance.selector, 0.1 ether, 0.5 ether)
+        );
+        proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
+    }
+
+    function testSignedRevertsOnReplay() public {
+        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands, bytes[] memory inputs, bytes memory sig) = _signedFixture(type(uint256).max, 0, 14);
+
+        proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
+
+        // refill and replay the same signature
+        tokenA.mint(OWNER, AMOUNT);
+        vm.expectRevert(InvalidNonce.selector);
+        proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
+    }
+
+    function testSignedRevertsOnExpiredDeadline() public {
+        (ISignatureTransfer.PermitTransferFrom memory permit, IBalanceSwapProxy.SwapIntent memory intent,
+            bytes memory commands, bytes[] memory inputs, bytes memory sig) = _signedFixture(type(uint256).max, 0, 15);
+
+        vm.warp(block.timestamp + 2000); // past permit.deadline
+        vm.expectRevert(abi.encodeWithSelector(SignatureExpired.selector, permit.deadline));
+        proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
+    }
+
+    /// @dev The dust-grief story: attacker donates dust pre-fill; minAmount blocks execution and
+    ///      preserves the nonce; the real fill then executes with the same signature.
+    function testSignedDustGriefBlockedByMinAmount() public {
+        // fresh user with zero balance ("bridge hasn't filled yet")
+        uint256 userKey = 0xB0B2;
+        address user = vm.addr(userKey);
+        vm.prank(user);
+        tokenA.approve(address(PERMIT2), type(uint256).max);
+
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        IBalanceSwapProxy.SwapIntent memory intent = _intent(address(tokenB), RECIPIENT, 0.9e36, 0.5 ether);
+        ISignatureTransfer.PermitTransferFrom memory permit =
+            _permit(address(tokenA), type(uint256).max, 99, block.timestamp + 1000);
+        bytes memory sig = _signIntent(permit, intent, commands, inputs, userKey);
+
+        // attacker donates dust and tries to burn the intent
+        tokenA.mint(user, 0.01 ether);
+        vm.prank(address(0xA77AC4E4));
+        vm.expectRevert(
+            abi.encodeWithSelector(IBalanceSwapProxy.InsufficientBalance.selector, 0.01 ether, 0.5 ether)
+        );
+        proxy.executeWithSig(permit, sig, user, intent, commands, inputs);
+
+        // the bridge fills; the SAME signature now executes
+        tokenA.mint(user, AMOUNT);
+        vm.prank(address(0xF177E4));
+        proxy.executeWithSig(permit, sig, user, intent, commands, inputs);
+        assertEq(tokenA.balanceOf(user), 0);
+        assertGt(tokenB.balanceOf(RECIPIENT), 0);
+    }
+
+    /// @dev A floor-revert consumes nothing; the same signature succeeds after the price improves.
+    function testSignedFloorRevertPreservesSignature() public {
+        (ISignatureTransfer.PermitTransferFrom memory permit,, bytes memory commands, bytes[] memory inputs,) =
+            _signedFixture(type(uint256).max, 0, 16);
+
+        // sign a floor just above the currently-achievable rate
+        uint256 expectedOut = _expectedOut(AMOUNT, pairAB, address(tokenA));
+        IBalanceSwapProxy.SwapIntent memory intent =
+            _intent(address(tokenB), RECIPIENT, (expectedOut + 2) * 1e18, 0);
+        bytes memory sig = _signIntent(permit, intent, commands, inputs, OWNER_KEY);
+
+        vm.expectRevert(); // InsufficientOutput
+        proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
+        assertEq(tokenA.balanceOf(OWNER), AMOUNT, 'pull unwound atomically');
+
+        // pool price improves (one-sided tokenB donation + sync raises the A->B rate)
+        tokenB.mint(pairAB, 10 ether);
+        IUniswapV2Pair(pairAB).sync();
+
+        proxy.executeWithSig(permit, sig, OWNER, intent, commands, inputs);
+        assertEq(tokenA.balanceOf(OWNER), 0, 'same signature executed after retry');
     }
 }
