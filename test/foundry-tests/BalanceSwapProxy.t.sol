@@ -120,4 +120,101 @@ contract BalanceSwapProxyTest is Test {
         assertEq(tokenA.balanceOf(address(router)), 0, 'no residue in router');
         assertEq(tokenA.balanceOf(address(proxy)), 0, 'no residue in proxy');
     }
+
+    function testDirectRevertsSameToken() public {
+        vm.startPrank(OWNER);
+        tokenA.approve(address(proxy), type(uint256).max);
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenA), RECIPIENT);
+        vm.expectRevert(IBalanceSwapProxy.SameToken.selector);
+        proxy.execute(
+            address(tokenA), _intent(address(tokenA), RECIPIENT, 0, 0), commands, inputs, block.timestamp + 1000
+        );
+        vm.stopPrank();
+    }
+
+    function testDirectRevertsZeroBalance() public {
+        address broke = address(0xB0B);
+        vm.startPrank(broke);
+        tokenA.approve(address(proxy), type(uint256).max);
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        vm.expectRevert(abi.encodeWithSelector(IBalanceSwapProxy.InsufficientBalance.selector, 0, 0));
+        proxy.execute(
+            address(tokenA), _intent(address(tokenB), RECIPIENT, 0, 0), commands, inputs, block.timestamp + 1000
+        );
+        vm.stopPrank();
+    }
+
+    function testDirectRevertsBelowMinAmount() public {
+        vm.startPrank(OWNER);
+        tokenA.transfer(address(0xDEAD), BALANCE - 0.01 ether); // leave dust
+        tokenA.approve(address(proxy), type(uint256).max);
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        vm.expectRevert(
+            abi.encodeWithSelector(IBalanceSwapProxy.InsufficientBalance.selector, 0.01 ether, 0.5 ether)
+        );
+        proxy.execute(
+            address(tokenA), _intent(address(tokenB), RECIPIENT, 0, 0.5 ether), commands, inputs,
+            block.timestamp + 1000
+        );
+        vm.stopPrank();
+    }
+
+    /// @dev With amount = 1e18, floor = amount * minPriceX36 / 1e36 = minPriceX36 / 1e18 exactly —
+    ///      so minPriceX36 = expectedOut * 1e18 puts the floor at precisely expectedOut.
+    function testDirectFloorBoundaryExact() public {
+        vm.startPrank(OWNER);
+        tokenA.transfer(address(0xDEAD), BALANCE - AMOUNT);
+        tokenA.approve(address(proxy), type(uint256).max);
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        uint256 expectedOut = _expectedOut(AMOUNT, pairAB, address(tokenA));
+
+        // floor == expectedOut exactly: passes
+        proxy.execute(
+            address(tokenA), _intent(address(tokenB), RECIPIENT, expectedOut * 1e18, 0), commands, inputs,
+            block.timestamp + 1000
+        );
+        assertEq(tokenB.balanceOf(RECIPIENT), expectedOut);
+        vm.stopPrank();
+    }
+
+    function testDirectFloorBoundaryRevert() public {
+        vm.startPrank(OWNER);
+        tokenA.transfer(address(0xDEAD), BALANCE - AMOUNT);
+        tokenA.approve(address(proxy), type(uint256).max);
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        uint256 expectedOut = _expectedOut(AMOUNT, pairAB, address(tokenA));
+
+        // floor == expectedOut + 1: reverts
+        vm.expectRevert(
+            abi.encodeWithSelector(IBalanceSwapProxy.InsufficientOutput.selector, expectedOut, expectedOut + 1)
+        );
+        proxy.execute(
+            address(tokenA), _intent(address(tokenB), RECIPIENT, (expectedOut + 1) * 1e18, 0), commands, inputs,
+            block.timestamp + 1000
+        );
+        vm.stopPrank();
+    }
+
+    function testDirectFloorDisabled() public {
+        // minPriceX36 = 0 skips the check even for an awful price (whole BALANCE into a small pool)
+        vm.startPrank(OWNER);
+        tokenA.approve(address(proxy), type(uint256).max);
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        proxy.execute(
+            address(tokenA), _intent(address(tokenB), RECIPIENT, 0, 0), commands, inputs, block.timestamp + 1000
+        );
+        assertEq(tokenA.balanceOf(OWNER), 0);
+        assertGt(tokenB.balanceOf(RECIPIENT), 0);
+        vm.stopPrank();
+    }
+
+    function testDirectRevertsWithoutApproval() public {
+        vm.startPrank(OWNER);
+        (bytes memory commands, bytes[] memory inputs) = _v2Route(address(tokenA), address(tokenB), RECIPIENT);
+        vm.expectRevert();
+        proxy.execute(
+            address(tokenA), _intent(address(tokenB), RECIPIENT, 0, 0), commands, inputs, block.timestamp + 1000
+        );
+        vm.stopPrank();
+    }
 }
