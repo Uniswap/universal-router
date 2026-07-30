@@ -7,6 +7,7 @@ import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
 import {IUnlockCallback} from '@uniswap/v4-core/src/interfaces/callback/IUnlockCallback.sol';
 import {Currency, CurrencyLibrary} from '@uniswap/v4-core/src/types/Currency.sol';
 import {IHooks} from '@uniswap/v4-core/src/interfaces/IHooks.sol';
+import {TransientStateLibrary} from '@uniswap/v4-core/src/libraries/TransientStateLibrary.sol';
 import {MockERC20} from 'solmate/src/test/utils/mocks/MockERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 
@@ -127,14 +128,86 @@ contract OuterLockOpener is IUnlockCallback {
     }
 }
 
+/// @notice An OuterLockOpener variant that FIRST creates an open credit (positive delta) for itself in
+///         `creditCurrency` via sync + transfer + settle, THEN delegates a nested UR swap whose input is that
+///         same currency. It records its own credit delta before and after the nested swap so the test can
+///         prove the router's nested settlement did NOT draw on the outer owner's credit.
+contract CreditOuterLockOpener is IUnlockCallback {
+    using TransientStateLibrary for IPoolManager;
+
+    IPoolManager public immutable manager;
+
+    LockHolder internal caller;
+    bytes internal commands;
+    bytes[] internal inputs;
+    Currency internal creditCurrency;
+    uint256 internal creditAmount;
+    bool internal settleCredit;
+
+    int256 public deltaAfterCredit;
+    int256 public deltaAfterSwap;
+    uint256 public takenBack;
+
+    constructor(IPoolManager _manager) {
+        manager = _manager;
+    }
+
+    function openCreateCreditAndDelegate(
+        LockHolder _caller,
+        Currency _creditCurrency,
+        uint256 _creditAmount,
+        bool _settleCredit,
+        bytes calldata _commands,
+        bytes[] calldata _inputs
+    ) external {
+        caller = _caller;
+        creditCurrency = _creditCurrency;
+        creditAmount = _creditAmount;
+        settleCredit = _settleCredit;
+        commands = _commands;
+        inputs = _inputs;
+        manager.unlock(hex'');
+    }
+
+    function unlockCallback(bytes calldata) external returns (bytes memory) {
+        require(msg.sender == address(manager), 'only manager');
+
+        // 1. Move creditAmount of creditCurrency into the manager. When settleCredit is true this is a full,
+        //    correctly-formed OPEN CREDIT (sync + transfer + settle) that gives us a +creditAmount per-address
+        //    delta. When false, we sync + transfer but SKIP settle: the tokens are "in flight" (synced into the
+        //    reserves baseline but not yet credited to anyone) — the "settle credits whoever calls it next" case.
+        manager.sync(creditCurrency);
+        MockERC20(Currency.unwrap(creditCurrency)).transfer(address(manager), creditAmount);
+        if (settleCredit) manager.settle();
+
+        deltaAfterCredit = manager.currencyDelta(address(this), creditCurrency);
+
+        // 2. Run a normal, balanced nested V4_SWAP whose input is the SAME currency. Funded by the execute
+        //    caller / router — never by this opener.
+        caller.executeDirect(commands, inputs);
+
+        // 3. Observe our own credit AFTER the nested swap+settle. If the router drained it, this drops.
+        deltaAfterSwap = manager.currencyDelta(address(this), creditCurrency);
+
+        // 4. Take our credit back so the unlock can close with zero deltas for us.
+        if (deltaAfterSwap > 0) {
+            takenBack = uint256(deltaAfterSwap);
+            manager.take(creditCurrency, address(this), takenBack);
+        }
+        return hex'';
+    }
+}
+
 contract V4SwapWithinUnlockTest is Test, Deployers {
     UniversalRouter router;
     LockHolder lockHolder;
     OuterLockOpener outerLockOpener;
+    CreditOuterLockOpener creditOpener;
     IAllowanceTransfer permit2;
 
     address constant RECIPIENT = address(0xBEEF);
     uint128 constant AMOUNT_IN = 1e18;
+    uint256 constant CREDIT_AMOUNT = 7e17; // distinct from AMOUNT_IN so a cross-draw would show as a wrong number
 
     function setUp() public {
         deployFreshManagerAndRouters();
@@ -158,6 +231,7 @@ contract V4SwapWithinUnlockTest is Test, Deployers {
         router = new UniversalRouter(params);
         lockHolder = new LockHolder(IPoolManager(address(manager)), router);
         outerLockOpener = new OuterLockOpener(IPoolManager(address(manager)));
+        creditOpener = new CreditOuterLockOpener(IPoolManager(address(manager)));
     }
 
     /// @dev builds a single V4_SWAP command: exact-in currency0 -> currency1, paying the input from the
@@ -459,5 +533,135 @@ contract V4SwapWithinUnlockTest is Test, Deployers {
     function test_rawNestedUnlock_reverts() public {
         vm.expectRevert();
         lockHolder.nestedUnlock();
+    }
+
+    /// @notice SECURITY: nested settlement is per-address. The outer lock owner holds an open credit in the
+    ///         swap-input currency; a nested UR swap in that same currency, funded from the ROUTER's own balance,
+    ///         settles only its own debt and must NEVER consume the outer owner's open credit.
+    function test_v4Swap_withinExistingUnlock_doesNotDrainOuterOwnerCredit_routerFunded() public {
+        _fundRouter();
+        // fund the outer opener with the tokens it will lock up as its own credit
+        MockERC20(Currency.unwrap(currency0)).transfer(address(creditOpener), CREDIT_AMOUNT);
+
+        (bytes memory commands, bytes[] memory inputs) = _v4SwapCommand(RECIPIENT, false);
+
+        uint256 openerC0Before = MockERC20(Currency.unwrap(currency0)).balanceOf(address(creditOpener));
+        uint256 openerC1Before = MockERC20(Currency.unwrap(currency1)).balanceOf(address(creditOpener));
+        uint256 routerC0Before = MockERC20(Currency.unwrap(currency0)).balanceOf(address(router));
+        uint256 recipientC1Before = MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT);
+
+        creditOpener.openCreateCreditAndDelegate(lockHolder, currency0, CREDIT_AMOUNT, true, commands, inputs);
+
+        // The opener created exactly CREDIT_AMOUNT of credit ...
+        assertEq(creditOpener.deltaAfterCredit(), int256(CREDIT_AMOUNT), 'credit not created as expected');
+        // ... and after the nested router swap+settle, the credit is STILL exactly CREDIT_AMOUNT (untouched).
+        assertEq(creditOpener.deltaAfterSwap(), int256(CREDIT_AMOUNT), 'router drained the outer owner credit');
+        assertEq(creditOpener.takenBack(), CREDIT_AMOUNT, 'outer owner recovered a different amount than its credit');
+
+        // Outer owner net token flow: locked CREDIT_AMOUNT, took the same back -> exactly whole, no gain/loss.
+        assertEq(
+            MockERC20(Currency.unwrap(currency0)).balanceOf(address(creditOpener)),
+            openerC0Before,
+            'outer owner currency0 balance changed'
+        );
+        assertEq(
+            MockERC20(Currency.unwrap(currency1)).balanceOf(address(creditOpener)),
+            openerC1Before,
+            'outer owner received swap output'
+        );
+
+        // The router funded the input from its own balance (thin-liquidity pool truncates the exact-in swap at
+        // the price limit, so only part of AMOUNT_IN is consumed; assert directionally), RECIPIENT got the output.
+        assertLt(
+            MockERC20(Currency.unwrap(currency0)).balanceOf(address(router)),
+            routerC0Before,
+            'router did not fund the swap input from its own balance'
+        );
+        assertGt(
+            MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT),
+            recipientC1Before,
+            'recipient did not receive swap output'
+        );
+    }
+
+    /// @notice SECURITY: same per-address invariant, but the nested swap input is pulled from the EXECUTE CALLER
+    ///         (LockHolder) via Permit2 (payerIsUser = true). The outer lock owner's open credit is fully
+    ///         preserved regardless of the funding source; nested settlement never draws on it.
+    function test_v4Swap_withinExistingUnlock_doesNotDrainOuterOwnerCredit_callerFunded() public {
+        _fundLockHolderAndApprovePermit2();
+        // fund the outer opener with its own credit tokens
+        MockERC20(Currency.unwrap(currency0)).transfer(address(creditOpener), CREDIT_AMOUNT);
+
+        (bytes memory commands, bytes[] memory inputs) = _v4SwapCommand(RECIPIENT, true);
+
+        uint256 openerC0Before = MockERC20(Currency.unwrap(currency0)).balanceOf(address(creditOpener));
+        uint256 lockHolderC0Before = MockERC20(Currency.unwrap(currency0)).balanceOf(address(lockHolder));
+        uint256 recipientC1Before = MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT);
+
+        creditOpener.openCreateCreditAndDelegate(lockHolder, currency0, CREDIT_AMOUNT, true, commands, inputs);
+
+        assertEq(creditOpener.deltaAfterCredit(), int256(CREDIT_AMOUNT), 'credit not created as expected');
+        assertEq(creditOpener.deltaAfterSwap(), int256(CREDIT_AMOUNT), 'router drained the outer owner credit');
+        assertEq(creditOpener.takenBack(), CREDIT_AMOUNT, 'outer owner recovered a different amount than its credit');
+
+        // Outer owner whole; input came from the locker, not the outer owner.
+        assertEq(
+            MockERC20(Currency.unwrap(currency0)).balanceOf(address(creditOpener)),
+            openerC0Before,
+            'outer owner currency0 balance changed'
+        );
+        assertLt(
+            MockERC20(Currency.unwrap(currency0)).balanceOf(address(lockHolder)),
+            lockHolderC0Before,
+            'locker did not fund the swap input'
+        );
+        assertGt(
+            MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT),
+            recipientC1Before,
+            'recipient did not receive swap output'
+        );
+    }
+
+    /// @notice SECURITY (sync/reserves flash-accounting angle): nested settlement is per-address even for
+    ///         "in-flight" tokens. The outer owner syncs + transfers the swap-input currency into the manager but
+    ///         does NOT settle, leaving tokens in the reserves baseline that a naive settle() would credit to
+    ///         whoever calls it next. The nested UR swap still funds its own settlement from the ROUTER's balance
+    ///         and never free-rides on those in-flight tokens (DeltaResolver._settle re-syncs before its transfer).
+    function test_v4Swap_withinExistingUnlock_doesNotCaptureOuterOwnerInFlightSyncedTokens() public {
+        _fundRouter();
+        MockERC20(Currency.unwrap(currency0)).transfer(address(creditOpener), CREDIT_AMOUNT);
+
+        (bytes memory commands, bytes[] memory inputs) = _v4SwapCommand(RECIPIENT, false);
+
+        uint256 routerC0Before = MockERC20(Currency.unwrap(currency0)).balanceOf(address(router));
+        uint256 routerC1Before = MockERC20(Currency.unwrap(currency1)).balanceOf(address(router));
+        uint256 recipientC1Before = MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT);
+
+        // settleCredit = false: opener syncs + transfers but does not settle (tokens left in flight).
+        creditOpener.openCreateCreditAndDelegate(lockHolder, currency0, CREDIT_AMOUNT, false, commands, inputs);
+
+        // The opener never settled, so it holds no positive delta before or after the swap, and takes nothing back.
+        assertEq(creditOpener.deltaAfterCredit(), int256(0), 'unsettled transfer wrongly credited the opener');
+        assertEq(creditOpener.deltaAfterSwap(), int256(0), 'opener delta changed across the nested swap');
+        assertEq(creditOpener.takenBack(), 0, 'opener took tokens it never had credit for');
+
+        // The router funded its settlement from its OWN balance (dropped): it did not free-ride on the in-flight
+        // tokens. If settle() had captured the outer owner's in-flight tokens, the router would not have paid.
+        assertLt(
+            MockERC20(Currency.unwrap(currency0)).balanceOf(address(router)),
+            routerC0Before,
+            'router did not fund settlement from its own balance (may have captured in-flight tokens)'
+        );
+        // The router did not walk away with any of the outer owner's currency0 either.
+        assertEq(
+            MockERC20(Currency.unwrap(currency1)).balanceOf(address(router)),
+            routerC1Before,
+            'router unexpectedly accrued currency1'
+        );
+        assertGt(
+            MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT),
+            recipientC1Before,
+            'recipient did not receive swap output'
+        );
     }
 }
