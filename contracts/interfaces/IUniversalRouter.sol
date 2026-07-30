@@ -70,8 +70,8 @@ interface IUniversalRouter {
     /// @return intent The intent value from the signed execution, or bytes32(0) if not in a signed execution
     /// @return data The data value from the signed execution, or bytes32(0) if not in a signed execution
     /// @dev This reads from transient storage which is only set during executeSigned().
-    /// @dev When consuming this context from a hook, the hook MUST verify that msg.sender is the
-    /// UniversalRouter contract. Otherwise, a malicious contract in the execution chain could abuse the
-    /// legitimate signed context by calling other contracts with it, causing unintended side effects.
+    /// @dev When consuming this context from a V4 hook, the hook MUST verify that msg.sender is the PoolManager
+    /// and that the hook's sender parameter is the UniversalRouter. Otherwise, a malicious contract in the
+    /// execution chain could abuse the legitimate signed context by initiating its own swap.
     function signedRouteContext() external view returns (address signer, bytes32 intent, bytes32 data);
 }

@@ -50,14 +50,43 @@ library BytesLib {
         pure
         returns (uint256 length, uint256 offset)
     {
-        assembly {
+        return toLengthOffset(_bytes, _arg, 0x20);
+    }
+
+    /// @notice Decode the `_arg`-th element in `_bytes` as a dynamic array with fixed-size elements.
+    /// @param _bytes The input bytes string to slice
+    /// @param _arg The index of the argument to extract
+    /// @param _elementSize The ABI-encoded size of each array element
+    /// @return length Length of the array
+    /// @return offset Pointer to the data part of the array
+    function toLengthOffset(bytes calldata _bytes, uint256 _arg, uint256 _elementSize)
+        internal
+        pure
+        returns (uint256 length, uint256 offset)
+    {
+        assembly ('memory-safe') {
             // The offset of the `_arg`-th element is `32 * arg`, which stores the offset of the length pointer.
             // shl(5, x) is equivalent to mul(32, x)
-            let lengthPtr := add(_bytes.offset, calldataload(add(_bytes.offset, shl(5, _arg))))
+            let headOffset := shl(5, _arg)
+            if or(iszero(_elementSize), gt(add(headOffset, 0x20), _bytes.length)) {
+                mstore(0, 0x3b99b53d) // SliceOutOfBounds()
+                revert(0x1c, 0x04)
+            }
+
+            let relativeLengthPtr := calldataload(add(_bytes.offset, headOffset))
+            if gt(relativeLengthPtr, sub(_bytes.length, 0x20)) {
+                mstore(0, 0x3b99b53d) // SliceOutOfBounds()
+                revert(0x1c, 0x04)
+            }
+
+            let lengthPtr := add(_bytes.offset, relativeLengthPtr)
             length := calldataload(lengthPtr)
             offset := add(lengthPtr, 0x20)
-            let relativeOffset := sub(offset, _bytes.offset)
-            if lt(_bytes.length, add(shl(5, length), relativeOffset)) {
+            let relativeOffset := add(relativeLengthPtr, 0x20)
+            let remainingLength := sub(_bytes.length, relativeOffset)
+
+            // Comparing before multiplication prevents length * elementSize from overflowing.
+            if gt(length, div(remainingLength, _elementSize)) {
                 mstore(0, 0x3b99b53d) // SliceOutOfBounds()
                 revert(0x1c, 0x04)
             }
