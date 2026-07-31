@@ -34,6 +34,11 @@ abstract contract Dispatcher is
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
+    /// @dev Thrown when a command's input is shorter than the fixed fields that command reads.
+    /// Commands below read parameters with `calldataload` at fixed offsets. Without this check they
+    /// would read past `inputs.length` into adjacent calldata, which `executeSigned` never covered
+    /// with the EIP-712 input hash (that hash is taken over exactly `inputs[i].length` bytes).
+    error InvalidInputLength();
 
     /// @notice Executes encoded commands along with provided inputs.
     /// @param commands A set of concatenated commands, each 1 byte in length
@@ -65,6 +70,7 @@ abstract contract Dispatcher is
                 // 0x00 <= command < 0x08
                 if (command < Commands.V2_SWAP_EXACT_IN) {
                     if (command == Commands.V3_SWAP_EXACT_IN) {
+                        if (inputs.length < 0xc0) revert InvalidInputLength();
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool, uint256[]))
                         address recipient;
                         uint256 amountIn;
@@ -82,6 +88,7 @@ abstract contract Dispatcher is
                         address payer = payerIsUser ? msgSender() : address(this);
                         v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, minHopPriceX36);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
+                        if (inputs.length < 0xc0) revert InvalidInputLength();
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool, uint256[]))
                         address recipient;
                         uint256 amountOut;
@@ -99,6 +106,7 @@ abstract contract Dispatcher is
                         address payer = payerIsUser ? msgSender() : address(this);
                         v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, minHopPriceX36);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
+                        if (inputs.length < 0x60) revert InvalidInputLength();
                         // equivalent: abi.decode(inputs, (address, address, uint160))
                         address token;
                         address recipient;
@@ -127,6 +135,7 @@ abstract contract Dispatcher is
                                 )
                             );
                     } else if (command == Commands.SWEEP) {
+                        if (inputs.length < 0x60) revert InvalidInputLength();
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
@@ -138,6 +147,7 @@ abstract contract Dispatcher is
                         }
                         Payments.sweep(token, map(recipient), amountMin);
                     } else if (command == Commands.TRANSFER) {
+                        if (inputs.length < 0x60) revert InvalidInputLength();
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
@@ -149,6 +159,7 @@ abstract contract Dispatcher is
                         }
                         Payments.pay(token, map(recipient), value);
                     } else if (command == Commands.PAY_PORTION) {
+                        if (inputs.length < 0x60) revert InvalidInputLength();
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
@@ -160,6 +171,7 @@ abstract contract Dispatcher is
                         }
                         Payments.payPortion(token, map(recipient), bips);
                     } else if (command == Commands.PAY_PORTION_FULL_PRECISION) {
+                        if (inputs.length < 0x60) revert InvalidInputLength();
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
@@ -176,6 +188,7 @@ abstract contract Dispatcher is
                 } else {
                     // 0x08 <= command < 0x10
                     if (command == Commands.V2_SWAP_EXACT_IN) {
+                        if (inputs.length < 0xc0) revert InvalidInputLength();
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, address[], bool, uint256[]))
                         address recipient;
                         uint256 amountIn;
@@ -193,6 +206,7 @@ abstract contract Dispatcher is
                         address payer = payerIsUser ? msgSender() : address(this);
                         v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, minHopPriceX36);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
+                        if (inputs.length < 0xc0) revert InvalidInputLength();
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, address[], bool, uint256[]))
                         address recipient;
                         uint256 amountOut;
@@ -226,6 +240,7 @@ abstract contract Dispatcher is
                                 )
                             );
                     } else if (command == Commands.WRAP_ETH) {
+                        if (inputs.length < 0x40) revert InvalidInputLength();
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;
                         uint256 amount;
@@ -235,6 +250,7 @@ abstract contract Dispatcher is
                         }
                         Payments.wrapETH(map(recipient), amount);
                     } else if (command == Commands.UNWRAP_WETH) {
+                        if (inputs.length < 0x40) revert InvalidInputLength();
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;
                         uint256 amountMin;
@@ -252,6 +268,7 @@ abstract contract Dispatcher is
                         }
                         permit2TransferFrom(batchDetails, msgSender());
                     } else if (command == Commands.BALANCE_CHECK_ERC20) {
+                        if (inputs.length < 0x60) revert InvalidInputLength();
                         // equivalent: abi.decode(inputs, (address, address, uint256))
                         address owner;
                         address token;
@@ -281,6 +298,7 @@ abstract contract Dispatcher is
                     _checkV3PositionManagerCall(inputs, msgSender());
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V4_INITIALIZE_POOL) {
+                    if (inputs.length < 0xc0) revert InvalidInputLength();
                     PoolKey calldata poolKey;
                     uint160 sqrtPriceX96;
                     assembly {
