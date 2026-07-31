@@ -89,8 +89,9 @@ contract DispatcherInputLengthTest is Test {
             bytes[] memory inputs = new bytes[](1);
             inputs[0] = new bytes(cases[i].minLength);
             try router.execute(_cmd(cases[i].command), inputs) {
-                // guard did not fire
-            } catch (bytes memory reason) {
+            // guard did not fire
+            }
+            catch (bytes memory reason) {
                 assertTrue(
                     bytes4(reason) != Dispatcher.InvalidInputLength.selector,
                     string.concat('guard fired at exact minimum length for ', cases[i].name)
