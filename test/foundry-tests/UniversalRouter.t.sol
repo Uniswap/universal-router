@@ -9,6 +9,7 @@ import {Commands} from '../../contracts/libraries/Commands.sol';
 import {MockERC20} from './mock/MockERC20.sol';
 import {ExampleModule} from '../../contracts/test/ExampleModule.sol';
 import {RouterParameters} from '../../contracts/types/RouterParameters.sol';
+import {BytesLib} from '../../contracts/modules/uniswap/v3/BytesLib.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {IERC165} from '@openzeppelin/contracts/utils/introspection/IERC165.sol';
@@ -55,6 +56,106 @@ contract UniversalRouterTest is Test {
         emit log_uint(bytecodeSize);
     }
 
+    function testRejectsShortStaticCommandInputs() public {
+        uint256[] memory commandTypes = new uint256[](15);
+        uint256[] memory minimumLengths = new uint256[](15);
+
+        commandTypes[0] = Commands.V3_SWAP_EXACT_IN;
+        commandTypes[1] = Commands.V3_SWAP_EXACT_OUT;
+        commandTypes[2] = Commands.PERMIT2_TRANSFER_FROM;
+        commandTypes[3] = Commands.SWEEP;
+        commandTypes[4] = Commands.TRANSFER;
+        commandTypes[5] = Commands.PAY_PORTION;
+        commandTypes[6] = Commands.PAY_PORTION_FULL_PRECISION;
+        commandTypes[7] = Commands.V2_SWAP_EXACT_IN;
+        commandTypes[8] = Commands.V2_SWAP_EXACT_OUT;
+        commandTypes[9] = Commands.PERMIT2_PERMIT;
+        commandTypes[10] = Commands.WRAP_ETH;
+        commandTypes[11] = Commands.UNWRAP_WETH;
+        commandTypes[12] = Commands.BALANCE_CHECK_ERC20;
+        commandTypes[13] = Commands.UNWRAP_WETH_EXACT;
+        commandTypes[14] = Commands.V4_INITIALIZE_POOL;
+
+        minimumLengths[0] = 0xc0;
+        minimumLengths[1] = 0xc0;
+        minimumLengths[2] = 0x60;
+        minimumLengths[3] = 0x60;
+        minimumLengths[4] = 0x60;
+        minimumLengths[5] = 0x60;
+        minimumLengths[6] = 0x60;
+        minimumLengths[7] = 0xc0;
+        minimumLengths[8] = 0xc0;
+        minimumLengths[9] = 0xe0;
+        minimumLengths[10] = 0x40;
+        minimumLengths[11] = 0x40;
+        minimumLengths[12] = 0x60;
+        minimumLengths[13] = 0x40;
+        minimumLengths[14] = 0xc0;
+
+        bytes[] memory inputs = new bytes[](1);
+        for (uint256 i; i < commandTypes.length; ++i) {
+            bytes memory commands = abi.encodePacked(bytes1(uint8(commandTypes[i])));
+            inputs[0] = new bytes(minimumLengths[i] - 1);
+
+            vm.expectRevert(BytesLib.SliceOutOfBounds.selector);
+            router.execute(commands, inputs);
+        }
+    }
+
+    function testRejectsShortDynamicCommandInputs() public {
+        uint256[] memory commandTypes = new uint256[](5);
+        commandTypes[0] = Commands.PERMIT2_PERMIT_BATCH;
+        commandTypes[1] = Commands.PERMIT2_TRANSFER_FROM_BATCH;
+        commandTypes[2] = Commands.V3_POSITION_MANAGER_PERMIT;
+        commandTypes[3] = Commands.V3_POSITION_MANAGER_CALL;
+        commandTypes[4] = Commands.V4_POSITION_MANAGER_CALL;
+
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = hex'';
+
+        for (uint256 i; i < commandTypes.length; ++i) {
+            bytes memory commands = abi.encodePacked(bytes1(uint8(commandTypes[i])));
+
+            vm.expectRevert(BytesLib.SliceOutOfBounds.selector);
+            router.execute(commands, inputs);
+        }
+    }
+
+    function testPermit2PermitBatchDecodesBoundedDetails() public {
+        IAllowanceTransfer.PermitDetails[] memory details = new IAllowanceTransfer.PermitDetails[](1);
+        details[0] = IAllowanceTransfer.PermitDetails({
+            token: address(erc20), amount: 1 ether, expiration: type(uint48).max, nonce: 0
+        });
+        IAllowanceTransfer.PermitBatch memory permitBatch =
+            IAllowanceTransfer.PermitBatch({details: details, spender: address(router), sigDeadline: block.timestamp});
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.PERMIT2_PERMIT_BATCH)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(permitBatch, hex'');
+
+        router.execute(commands, inputs);
+    }
+
+    function testPermit2PermitBatchRejectsTruncatedDetails() public {
+        IAllowanceTransfer.PermitDetails[] memory details = new IAllowanceTransfer.PermitDetails[](1);
+        details[0] = IAllowanceTransfer.PermitDetails({
+            token: address(erc20), amount: 1 ether, expiration: type(uint48).max, nonce: 0
+        });
+        IAllowanceTransfer.PermitBatch memory permitBatch =
+            IAllowanceTransfer.PermitBatch({details: details, spender: address(router), sigDeadline: block.timestamp});
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.PERMIT2_PERMIT_BATCH)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(permitBatch, hex'');
+
+        assembly {
+            mstore(mload(add(inputs, 0x20)), 0x120)
+        }
+
+        vm.expectRevert(BytesLib.SliceOutOfBounds.selector);
+        router.execute(commands, inputs);
+    }
+
     function testSweepToken() public {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.SWEEP)));
         bytes[] memory inputs = new bytes[](1);
@@ -78,6 +179,44 @@ contract UniversalRouterTest is Test {
 
         vm.expectRevert(Payments.InsufficientToken.selector);
         router.execute(commands, inputs);
+    }
+
+    /// @dev SWEEP declares a uint256 amountMinimum. A narrower decode would enforce only the
+    /// low 160 bits, silently reducing minima at or above 2**160 modulo 2**160.
+    function testSweepTokenEnforcesFullWidthMinimum() public {
+        uint256[] memory minimums = new uint256[](4);
+        minimums[0] = uint256(type(uint160).max) + 1; // 2**160, truncates to 0
+        minimums[1] = uint256(type(uint160).max) + 1 + AMOUNT - 1; // truncates to AMOUNT - 1
+        minimums[2] = uint256(type(uint160).max) + 1 + AMOUNT; // truncates to AMOUNT
+        minimums[3] = type(uint256).max;
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.SWEEP)));
+
+        for (uint256 i = 0; i < minimums.length; i++) {
+            uint256 state = vm.snapshotState();
+
+            bytes[] memory inputs = new bytes[](1);
+            inputs[0] = abi.encode(address(erc20), RECIPIENT, minimums[i]);
+            erc20.mint(address(router), AMOUNT);
+
+            vm.expectRevert(Payments.InsufficientToken.selector);
+            router.execute(commands, inputs);
+
+            assertEq(erc20.balanceOf(RECIPIENT), 0);
+            assertTrue(vm.revertToState(state));
+        }
+    }
+
+    function testSweepTokenAtUint160MaxMinimum() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.SWEEP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(address(erc20), RECIPIENT, uint256(type(uint160).max));
+
+        erc20.mint(address(router), type(uint160).max);
+
+        router.execute(commands, inputs);
+
+        assertEq(erc20.balanceOf(RECIPIENT), type(uint160).max);
     }
 
     function testSweepETH() public {

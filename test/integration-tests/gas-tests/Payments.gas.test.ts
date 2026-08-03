@@ -61,6 +61,17 @@ describe('Payments Gas Tests', () => {
       await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
     })
 
+    it('gas: UNWRAP_WETH_EXACT partial amount', async () => {
+      const total: BigNumber = expandTo18DecimalsBN(3)
+      const amount: BigNumber = expandTo18DecimalsBN(1)
+      await wethContract.transfer(router.address, total)
+
+      planner.addCommand(CommandType.UNWRAP_WETH_EXACT, [alice.address, amount])
+      const { commands, inputs } = planner
+
+      await snapshotGasCost(router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE))
+    })
+
     it('gas: TRANSFER with ETH', async () => {
       // seed router with WETH and unwrap it into the router
       const amount: BigNumber = expandTo18DecimalsBN(3)
