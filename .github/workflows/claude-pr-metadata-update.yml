@@ -28,14 +28,8 @@ jobs:
     # - Merge queue PRs (handled separately)
     # - Dependabot PRs (already have proper titles)
     # - Release PRs (have their own format)
-    # - Bot-initiated runs: claude-code-action's checkHumanActor() gates on
-    #   github.actor and hard-fails for any non-User account not listed in its
-    #   allowed_bots input, which the reusable workflow pins to "dependabot".
-    #   A PR opened or pushed by claude[bot] therefore always failed this check,
-    #   and such PRs already ship a Claude-generated description anyway.
     if: |
       github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.sender.type != 'Bot' &&
       !contains(github.head_ref, 'gh-readonly-queue/') &&
       !contains(github.head_ref, 'gtmq') &&
       !contains(github.head_ref, 'dependabot/') &&
