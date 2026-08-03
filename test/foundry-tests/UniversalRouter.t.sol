@@ -181,6 +181,44 @@ contract UniversalRouterTest is Test {
         router.execute(commands, inputs);
     }
 
+    /// @dev SWEEP declares a uint256 amountMinimum. A narrower decode would enforce only the
+    /// low 160 bits, silently reducing minima at or above 2**160 modulo 2**160.
+    function testSweepTokenEnforcesFullWidthMinimum() public {
+        uint256[] memory minimums = new uint256[](4);
+        minimums[0] = uint256(type(uint160).max) + 1; // 2**160, truncates to 0
+        minimums[1] = uint256(type(uint160).max) + 1 + AMOUNT - 1; // truncates to AMOUNT - 1
+        minimums[2] = uint256(type(uint160).max) + 1 + AMOUNT; // truncates to AMOUNT
+        minimums[3] = type(uint256).max;
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.SWEEP)));
+
+        for (uint256 i = 0; i < minimums.length; i++) {
+            uint256 state = vm.snapshotState();
+
+            bytes[] memory inputs = new bytes[](1);
+            inputs[0] = abi.encode(address(erc20), RECIPIENT, minimums[i]);
+            erc20.mint(address(router), AMOUNT);
+
+            vm.expectRevert(Payments.InsufficientToken.selector);
+            router.execute(commands, inputs);
+
+            assertEq(erc20.balanceOf(RECIPIENT), 0);
+            assertTrue(vm.revertToState(state));
+        }
+    }
+
+    function testSweepTokenAtUint160MaxMinimum() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.SWEEP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(address(erc20), RECIPIENT, uint256(type(uint160).max));
+
+        erc20.mint(address(router), type(uint160).max);
+
+        router.execute(commands, inputs);
+
+        assertEq(erc20.balanceOf(RECIPIENT), type(uint160).max);
+    }
+
     function testSweepETH() public {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.SWEEP)));
         bytes[] memory inputs = new bytes[](1);

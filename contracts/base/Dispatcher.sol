@@ -131,7 +131,7 @@ abstract contract Dispatcher is
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
-                        uint160 amountMin;
+                        uint256 amountMin;
                         assembly {
                             token := calldataload(inputs.offset)
                             recipient := calldataload(add(inputs.offset, 0x20))
@@ -352,14 +352,15 @@ abstract contract Dispatcher is
         pure
         returns (IAllowanceTransfer.PermitBatch calldata permitBatch)
     {
-        checkInputLength(input, 0x40);
+        // PermitBatch has a three-word head: details offset, spender, and signature deadline.
+        checkInputLength(input, 0x60);
 
         assembly ('memory-safe') {
             let inputLength := input.length
             let permitBatchOffset := calldataload(input.offset)
 
-            // PermitBatch has a three-word head: details offset, spender, and signature deadline.
-            if or(lt(inputLength, 0x60), gt(permitBatchOffset, sub(inputLength, 0x60))) {
+            // The PermitBatch head must be contained in the input.
+            if gt(permitBatchOffset, sub(inputLength, 0x60)) {
                 mstore(0, 0x3b99b53d) // SliceOutOfBounds()
                 revert(0x1c, 0x04)
             }
