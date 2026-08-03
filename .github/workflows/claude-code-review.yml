@@ -21,13 +21,13 @@ jobs:
         github.event.action == 'ready_for_review'
       )
 
-    uses: Uniswap/ai-toolkit/.github/workflows/_claude-code-review.yml@27e7e2de432ac025b23051c5ffab8d88a342b1f9
+    uses: Uniswap/ai-toolkit/.github/workflows/_claude-code-review.yml@9b405c71e42d0cec4026f2c158edf99716600baa
     with:
       pr_number: ${{ github.event.pull_request.number }}
       base_ref: ${{ github.base_ref }}
       force_review: false
       toolkit_ref: 96ef665ba04221de07e94fcc3ea69fe32c7cf306
-      model: 'claude-opus-4-8'
+      model: 'claude-opus-5'
 
       # Standard timeout for most PRs
       timeout_minutes: 20
