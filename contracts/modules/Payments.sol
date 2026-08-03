@@ -117,4 +117,17 @@ abstract contract Payments is PaymentsImmutables {
             }
         }
     }
+
+    /// @notice Unwraps an exact amount of the contract's WETH into ETH
+    /// @param recipient The recipient of the ETH
+    /// @param amount The exact amount of WETH to unwrap
+    function unwrapWETH9Exact(address recipient, uint256 amount) internal {
+        if (WETH9.balanceOf(address(this)) < amount) revert InsufficientETH();
+        if (amount > 0) {
+            WETH9.withdraw(amount);
+            if (recipient != address(this)) {
+                recipient.safeTransferETH(amount);
+            }
+        }
+    }
 }
