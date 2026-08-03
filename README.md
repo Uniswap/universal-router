@@ -84,7 +84,21 @@ Each command is a `bytes1` containing the following 8 bits:
    ├──────┼───────────────────────────────┤
    │ 0x0d │  PERMIT2_TRANSFER_FROM_BATCH  │
    ├──────┼───────────────────────────────┤
-   │ 0x0e-│  -------                      │
+   │ 0x0e │  BALANCE_CHECK_ERC20          │
+   ├──────┼───────────────────────────────┤
+   │ 0x0f │  UNWRAP_WETH_EXACT            │
+   ├──────┼───────────────────────────────┤
+   │ 0x10 │  V4_SWAP                      │
+   ├──────┼───────────────────────────────┤
+   │ 0x11 │  V3_POSITION_MANAGER_PERMIT   │
+   ├──────┼───────────────────────────────┤
+   │ 0x12 │  V3_POSITION_MANAGER_CALL     │
+   ├──────┼───────────────────────────────┤
+   │ 0x13 │  V4_INITIALIZE_POOL           │
+   ├──────┼───────────────────────────────┤
+   │ 0x14 │  V4_POSITION_MANAGER_CALL     │
+   ├──────┼───────────────────────────────┤
+   │ 0x15-│  -------                      │
    │ 0x20 │                               │
    ├──────┼───────────────────────────────┤
    │ 0x21 │  EXECUTE_SUB_PLAN             │
@@ -95,6 +109,8 @@ Each command is a `bytes1` containing the following 8 bits:
 ```
 
 Note that some of the commands in the middle of the series are unused. These gaps allowed us to create gas-efficiencies when selecting which command to execute.
+
+`UNWRAP_WETH_EXACT` takes `(recipient, amount)` and unwraps an exact amount of the contract's WETH, reverting if the balance is insufficient.
 
 #### How the input bytes are structures
 

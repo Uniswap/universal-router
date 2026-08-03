@@ -172,8 +172,6 @@ abstract contract Dispatcher is
                             portion := calldataload(add(inputs.offset, 0x40))
                         }
                         Payments.payPortionFullPrecision(token, map(recipient), portion);
-                    } else {
-                        revert InvalidCommandType(command);
                     }
                 } else {
                     // 0x08 <= command < 0x10
@@ -271,9 +269,16 @@ abstract contract Dispatcher is
                         }
                         success = (ERC20(token).balanceOf(owner) >= minBalance);
                         if (!success) output = abi.encodePacked(BalanceTooLow.selector);
-                    } else {
-                        // placeholder area for command 0x0f
-                        revert InvalidCommandType(command);
+                    } else if (command == Commands.UNWRAP_WETH_EXACT) {
+                        checkInputLength(inputs, 0x40);
+                        // equivalent: abi.decode(inputs, (address, uint256))
+                        address recipient;
+                        uint256 amount;
+                        assembly {
+                            recipient := calldataload(inputs.offset)
+                            amount := calldataload(add(inputs.offset, 0x20))
+                        }
+                        Payments.unwrapWETH9Exact(map(recipient), amount);
                     }
                 }
             } else {

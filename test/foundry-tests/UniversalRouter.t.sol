@@ -57,8 +57,8 @@ contract UniversalRouterTest is Test {
     }
 
     function testRejectsShortStaticCommandInputs() public {
-        uint256[] memory commandTypes = new uint256[](14);
-        uint256[] memory minimumLengths = new uint256[](14);
+        uint256[] memory commandTypes = new uint256[](15);
+        uint256[] memory minimumLengths = new uint256[](15);
 
         commandTypes[0] = Commands.V3_SWAP_EXACT_IN;
         commandTypes[1] = Commands.V3_SWAP_EXACT_OUT;
@@ -73,7 +73,8 @@ contract UniversalRouterTest is Test {
         commandTypes[10] = Commands.WRAP_ETH;
         commandTypes[11] = Commands.UNWRAP_WETH;
         commandTypes[12] = Commands.BALANCE_CHECK_ERC20;
-        commandTypes[13] = Commands.V4_INITIALIZE_POOL;
+        commandTypes[13] = Commands.UNWRAP_WETH_EXACT;
+        commandTypes[14] = Commands.V4_INITIALIZE_POOL;
 
         minimumLengths[0] = 0xc0;
         minimumLengths[1] = 0xc0;
@@ -88,7 +89,8 @@ contract UniversalRouterTest is Test {
         minimumLengths[10] = 0x40;
         minimumLengths[11] = 0x40;
         minimumLengths[12] = 0x60;
-        minimumLengths[13] = 0xc0;
+        minimumLengths[13] = 0x40;
+        minimumLengths[14] = 0xc0;
 
         bytes[] memory inputs = new bytes[](1);
         for (uint256 i; i < commandTypes.length; ++i) {
