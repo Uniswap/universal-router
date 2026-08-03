@@ -16,6 +16,7 @@ import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstan
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
+import {TransientStateLibrary} from '@uniswap/v4-core/src/libraries/TransientStateLibrary.sol';
 import {ChainedActions} from '../modules/ChainedActions.sol';
 
 /// @title Decodes and Executes Commands
@@ -31,6 +32,7 @@ abstract contract Dispatcher is
 {
     using BytesLib for bytes;
     using CalldataDecoder for bytes;
+    using TransientStateLibrary for IPoolManager;
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
@@ -284,8 +286,16 @@ abstract contract Dispatcher is
             } else {
                 // 0x10 <= command < 0x21
                 if (command == Commands.V4_SWAP) {
-                    // pass the calldata provided to V4SwapRouter._executeActions (defined in BaseActionsRouter)
-                    _executeActions(inputs);
+                    // If the PoolManager is already unlocked, this contract is executing inside another
+                    // contract's unlock callback. Opening a new lock via _executeActions would revert with
+                    // AlreadyUnlocked, so instead run the v4 actions within the existing lock.
+                    if (poolManager.isUnlocked()) {
+                        (bytes calldata actions, bytes[] calldata params) = inputs.decodeActionsRouterParams();
+                        _executeActionsWithoutUnlock(actions, params);
+                    } else {
+                        // pass the calldata provided to V4SwapRouter._executeActions (defined in BaseActionsRouter)
+                        _executeActions(inputs);
+                    }
                     // This contract MUST be approved to spend the token since its going to be doing the call on the position manager
                 } else if (command == Commands.V3_POSITION_MANAGER_PERMIT) {
                     _checkV3PermitCall(inputs);
