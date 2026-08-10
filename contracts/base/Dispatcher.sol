@@ -6,6 +6,7 @@ import {V3SwapRouter} from '../modules/uniswap/v3/V3SwapRouter.sol';
 import {V4SwapRouter} from '../modules/uniswap/v4/V4SwapRouter.sol';
 import {BytesLib} from '../modules/uniswap/v3/BytesLib.sol';
 import {Payments} from '../modules/Payments.sol';
+import {Constants} from '../libraries/Constants.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
 import {V3ToV4Migrator} from '../modules/V3ToV4Migrator.sol';
 import {Commands} from '../libraries/Commands.sol';
@@ -136,6 +137,14 @@ abstract contract Dispatcher is
                             token := calldataload(inputs.offset)
                             recipient := calldataload(add(inputs.offset, 0x20))
                             amountMin := calldataload(add(inputs.offset, 0x40))
+                        }
+                        // An adapter unwraps on arrival, so the router only ever holds the underlying.
+                        // Sweeping the adapter would read an always-zero balance and strand the underlying.
+                        // ETH short-circuits: Constants.ETH is address(0), which is never an adapter, so
+                        // the lookup would be both wasted and reliant on the factory returning zero for it.
+                        if (token != Constants.ETH && address(PERMISSIONS_ADAPTER_FACTORY) != address(0)) {
+                            address underlying = PERMISSIONS_ADAPTER_FACTORY.verifiedPermissionsAdapterOf(token);
+                            if (underlying != address(0)) token = underlying;
                         }
                         Payments.sweep(token, map(recipient), amountMin);
                     } else if (command == Commands.TRANSFER) {
