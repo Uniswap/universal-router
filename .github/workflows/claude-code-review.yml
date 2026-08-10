@@ -27,7 +27,6 @@ jobs:
       base_ref: ${{ github.base_ref }}
       force_review: false
       toolkit_ref: c4820d6e62a9488c831e722aac202733fafab5dd
-      custom_prompt_path: '.claude/prompts/claude-pr-review.md'
       model: 'claude-opus-5'
 
       # Standard timeout for most PRs
