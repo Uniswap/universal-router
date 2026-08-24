@@ -19,6 +19,7 @@ import {IV4Router} from '@uniswap/v4-periphery/src/interfaces/IV4Router.sol';
 import {UniversalRouter} from '../../contracts/UniversalRouter.sol';
 import {RouterParameters} from '../../contracts/types/RouterParameters.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
+import {Dispatcher} from '../../contracts/base/Dispatcher.sol';
 
 contract Permit2AllowanceMock {
     struct Allowance {
@@ -78,6 +79,12 @@ contract LockHolder is IUnlockCallback {
         router.execute(_commands, _inputs);
     }
 
+    /// @dev calls UR opting in to an unlock opened by someone else. Same shape as executeDirect, but via the
+    /// entrypoint that consents to sharing the router's delta account with the rest of that unlock.
+    function executeNestedDirect(bytes calldata _commands, bytes[] calldata _inputs) external {
+        router.executeNested(_commands, _inputs, block.timestamp);
+    }
+
     function approvePermit2(address token, IAllowanceTransfer permit2, address spender) external {
         MockERC20(token).approve(address(permit2), type(uint256).max);
         permit2.approve(token, spender, type(uint160).max, type(uint48).max);
@@ -91,7 +98,8 @@ contract LockHolder is IUnlockCallback {
     function unlockCallback(bytes calldata data) external returns (bytes memory) {
         require(msg.sender == address(manager), 'only manager');
         if (data.length == 0) {
-            router.execute(commands, inputs);
+            // opt in explicitly: the router refuses to reuse a foreign unlock via plain execute()
+            router.executeNested(commands, inputs, block.timestamp);
         } else {
             manager.unlock(hex'');
         }
@@ -113,17 +121,34 @@ contract OuterLockOpener is IUnlockCallback {
         manager = _manager;
     }
 
+    bool internal usePlainExecute;
+
     /// @dev opens the lock as owner, then delegates the UR call to `_caller` inside the callback
     function openAndDelegate(LockHolder _caller, bytes calldata _commands, bytes[] calldata _inputs) external {
         caller = _caller;
         commands = _commands;
         inputs = _inputs;
+        usePlainExecute = false;
+        manager.unlock(hex'');
+    }
+
+    /// @dev same, but the delegate reaches the router through plain execute() -- the M-01 victim shape, where
+    /// a contract that never opened this unlock has its route silently run inside someone else's.
+    function openAndDelegatePlain(LockHolder _caller, bytes calldata _commands, bytes[] calldata _inputs) external {
+        caller = _caller;
+        commands = _commands;
+        inputs = _inputs;
+        usePlainExecute = true;
         manager.unlock(hex'');
     }
 
     function unlockCallback(bytes calldata) external returns (bytes memory) {
         require(msg.sender == address(manager), 'only manager');
-        caller.executeDirect(commands, inputs);
+        if (usePlainExecute) {
+            caller.executeDirect(commands, inputs);
+        } else {
+            caller.executeNestedDirect(commands, inputs);
+        }
         return hex'';
     }
 }
@@ -184,7 +209,7 @@ contract CreditOuterLockOpener is IUnlockCallback {
 
         // 2. Run a normal, balanced nested V4_SWAP whose input is the SAME currency. Funded by the execute
         //    caller / router — never by this opener.
-        caller.executeDirect(commands, inputs);
+        caller.executeNestedDirect(commands, inputs);
 
         // 3. Observe our own credit AFTER the nested swap+settle. If the router drained it, this drops.
         deltaAfterSwap = manager.currencyDelta(address(this), creditCurrency);
@@ -663,5 +688,47 @@ contract V4SwapWithinUnlockTest is Test, Deployers {
             recipientC1Before,
             'recipient did not receive swap output'
         );
+    }
+
+    /// @notice The M-01 gate: plain execute() refuses to reuse an unlock it did not open. Before this,
+    ///         dispatch() auto-detected isUnlocked() and ran nested regardless of the caller's intent.
+    function test_v4Swap_withinExistingUnlock_plainExecuteReverts() public {
+        _fundRouter();
+        (bytes memory commands, bytes[] memory inputs) = _v4SwapCommand();
+
+        vm.expectRevert(Dispatcher.NestedExecutionNotPermitted.selector);
+        outerLockOpener.openAndDelegatePlain(lockHolder, commands, inputs);
+    }
+
+    /// @notice The opt-in must not survive the call that set it. A composer opting in once must not leave the
+    ///         gate open for an unrelated caller later in the same transaction.
+    function test_executeNested_optInDoesNotLeakToLaterCall() public {
+        _fundRouter();
+        (bytes memory commands, bytes[] memory inputs) = _v4SwapCommand();
+
+        // a complete, successful opted-in nested execution
+        lockHolder.executeWithinUnlock(commands, inputs);
+        assertGt(MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT), 0, 'nested swap did not run');
+
+        // a later plain execute() inside a fresh unlock must still be refused
+        _fundRouter();
+        (bytes memory commands2, bytes[] memory inputs2) = _v4SwapCommand();
+        vm.expectRevert(Dispatcher.NestedExecutionNotPermitted.selector);
+        outerLockOpener.openAndDelegatePlain(lockHolder, commands2, inputs2);
+    }
+
+    /// @notice EXECUTE_SUB_PLAN re-enters through address(this).call(Dispatcher.execute), which bypasses the
+    ///         entrypoint that set the opt-in. The flag lives in its own transient slot so it survives that
+    ///         self-call -- otherwise a sub-plan containing a V4_SWAP would revert inside an opted-in route.
+    function test_executeNested_optInPersistsIntoSubPlan() public {
+        _fundRouter();
+        (bytes memory inner, bytes[] memory innerInputs) = _v4SwapCommand();
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.EXECUTE_SUB_PLAN)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(inner, innerInputs);
+
+        lockHolder.executeWithinUnlock(commands, inputs);
+        assertGt(MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT), 0, 'sub-plan swap did not run');
     }
 }

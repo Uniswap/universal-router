@@ -65,6 +65,19 @@ interface IUniversalRouter {
         uint256 deadline
     ) external payable;
 
+    /// @notice Executes encoded commands, opting in to running inside a PoolManager unlock opened by
+    /// another contract
+    /// @param commands A set of concatenated commands, each 1 byte in length
+    /// @param inputs An array of byte strings containing abi encoded inputs for each command
+    /// @param deadline The deadline by which the transaction must be executed
+    /// @dev Use this ONLY from a contract that itself opened the surrounding PoolManager unlock. V4 deltas
+    /// accrue under the router's address for the lifetime of that unlock, not per call, so an unsettled
+    /// delta left by one call can be paid by a later call's `SETTLE_ALL` or `OPEN_DELTA` settlement, out of
+    /// that later caller's funds. Opting in accepts responsibility for that: a contract exposing a
+    /// permissionless function that reaches this entrypoint can have its own capital drained. If a function
+    /// does not open its own unlock, call `execute` instead, which refuses to run nested.
+    function executeNested(bytes calldata commands, bytes[] calldata inputs, uint256 deadline) external payable;
+
     /// @notice Returns all signed execution context (signer, intent, data) in a single call
     /// @return signer The address that signed the current execution, or address(0) if not in a signed execution
     /// @return intent The intent value from the signed execution, or bytes32(0) if not in a signed execution

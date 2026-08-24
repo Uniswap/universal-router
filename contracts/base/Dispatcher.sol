@@ -7,6 +7,7 @@ import {V4SwapRouter} from '../modules/uniswap/v4/V4SwapRouter.sol';
 import {BytesLib} from '../modules/uniswap/v3/BytesLib.sol';
 import {Payments} from '../modules/Payments.sol';
 import {Constants} from '../libraries/Constants.sol';
+import {NestedUnlock} from '../libraries/NestedUnlock.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
 import {V3ToV4Migrator} from '../modules/V3ToV4Migrator.sol';
 import {Commands} from '../libraries/Commands.sol';
@@ -37,11 +38,28 @@ abstract contract Dispatcher is
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
+    error NotSelf();
+    /// @notice Thrown when a route reaches V4_SWAP inside a foreign PoolManager unlock without opting in
+    error NestedExecutionNotPermitted();
 
     /// @notice Executes encoded commands along with provided inputs.
     /// @param commands A set of concatenated commands, each 1 byte in length
     /// @param inputs An array of byte strings containing abi encoded inputs for each command
     function execute(bytes calldata commands, bytes[] calldata inputs) external payable virtual;
+
+    /// @notice Runs the v4 actions of a V4_SWAP command inside a PoolManager unlock opened elsewhere
+    /// @param inputs The V4_SWAP command input, re-encoded by the dispatcher
+    /// @dev Only callable by this contract. It exists so that `inputs` arrives as a freshly abi encoded
+    /// calldata copy rather than as a slice of the original transaction calldata. The v4 parameter decoders
+    /// follow offsets without bounding them against the enclosing input, so a slice would let them read
+    /// bytes past `inputs.length` -- bytes that executeSigned never commits to. Encoding the argument makes
+    /// calldata end where the input ends, which is the same guarantee poolManager.unlock() gives the
+    /// ordinary path when it re-encodes for unlockCallback.
+    function executeV4SwapWithinUnlock(bytes calldata inputs) external {
+        if (msg.sender != address(this)) revert NotSelf();
+        (bytes calldata actions, bytes[] calldata params) = inputs.decodeActionsRouterParams();
+        _executeActionsWithoutUnlock(actions, params);
+    }
 
     /// @notice Public view function to be used instead of msg.sender, as the contract performs self-reentrancy and at
     /// times msg.sender == address(this). Instead msgSender() returns the initiator of the lock
@@ -299,8 +317,10 @@ abstract contract Dispatcher is
                     // contract's unlock callback. Opening a new lock via _executeActions would revert with
                     // AlreadyUnlocked, so instead run the v4 actions within the existing lock.
                     if (poolManager.isUnlocked()) {
-                        (bytes calldata actions, bytes[] calldata params) = inputs.decodeActionsRouterParams();
-                        _executeActionsWithoutUnlock(actions, params);
+                        // Nesting shares the router's delta account with every other call in this
+                        // unlock, so it runs only when the caller explicitly opted in via executeNested.
+                        if (!NestedUnlock.isPermitted()) revert NestedExecutionNotPermitted();
+                        this.executeV4SwapWithinUnlock(inputs);
                     } else {
                         // pass the calldata provided to V4SwapRouter._executeActions (defined in BaseActionsRouter)
                         _executeActions(inputs);
