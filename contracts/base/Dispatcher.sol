@@ -11,6 +11,8 @@ import {NestedUnlock} from '../libraries/NestedUnlock.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
 import {V3ToV4Migrator} from '../modules/V3ToV4Migrator.sol';
 import {Commands} from '../libraries/Commands.sol';
+import {ResolvedAmount} from '../libraries/ResolvedAmount.sol';
+import {IAmountResolver} from '../interfaces/IAmountResolver.sol';
 import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
@@ -102,7 +104,9 @@ abstract contract Dispatcher is
                         bytes calldata path = inputs.toBytes(3);
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, minHopPriceX36);
+                        v3SwapExactInput(
+                            map(recipient), resolveAmount(amountIn), amountOutMin, path, payer, minHopPriceX36
+                        );
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
                         checkInputLength(inputs, 0xc0);
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool, uint256[]))
@@ -120,7 +124,9 @@ abstract contract Dispatcher is
                         bytes calldata path = inputs.toBytes(3);
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, minHopPriceX36);
+                        v3SwapExactOutput(
+                            map(recipient), resolveAmount(amountOut), amountInMax, path, payer, minHopPriceX36
+                        );
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
                         checkInputLength(inputs, 0x60);
                         // equivalent: abi.decode(inputs, (address, address, uint160))
@@ -176,7 +182,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(add(inputs.offset, 0x20))
                             value := calldataload(add(inputs.offset, 0x40))
                         }
-                        Payments.pay(token, map(recipient), value);
+                        Payments.pay(token, map(recipient), resolveAmount(value));
                     } else if (command == Commands.PAY_PORTION) {
                         checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
@@ -221,7 +227,9 @@ abstract contract Dispatcher is
                         address[] calldata path = inputs.toAddressArray(3);
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, minHopPriceX36);
+                        v2SwapExactInput(
+                            map(recipient), resolveAmount(amountIn), amountOutMin, path, payer, minHopPriceX36
+                        );
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
                         checkInputLength(inputs, 0xc0);
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, address[], bool, uint256[]))
@@ -239,7 +247,9 @@ abstract contract Dispatcher is
                         address[] calldata path = inputs.toAddressArray(3);
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, minHopPriceX36);
+                        v2SwapExactOutput(
+                            map(recipient), resolveAmount(amountOut), amountInMax, path, payer, minHopPriceX36
+                        );
                     } else if (command == Commands.PERMIT2_PERMIT) {
                         checkInputLength(inputs, 0xe0);
                         // equivalent: abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes))
@@ -346,8 +356,17 @@ abstract contract Dispatcher is
                     // should only call modifyLiquidities() to mint
                     _checkV4PositionManagerCall(inputs);
                     (success, output) = address(V4_POSITION_MANAGER).call{value: address(this).balance}(inputs);
+                } else if (command == Commands.RESOLVE) {
+                    checkInputLength(inputs, 0x40);
+                    // equivalent: abi.decode(inputs, (address, bytes))
+                    address resolver;
+                    assembly {
+                        resolver := calldataload(inputs.offset)
+                    }
+                    bytes calldata context = inputs.toBytes(1);
+                    success = _resolve(resolver, context);
                 } else {
-                    // placeholder area for commands 0x15-0x20
+                    // placeholder area for commands 0x16-0x20
                     revert InvalidCommandType(command);
                 }
             }
@@ -373,6 +392,30 @@ abstract contract Dispatcher is
     /// @dev Reverts if an input cannot contain the complete static ABI head consumed by a command.
     function checkInputLength(bytes calldata input, uint256 minimumLength) private pure {
         if (input.length < minimumLength) revert CalldataDecoder.SliceOutOfBounds();
+    }
+
+    /// @notice Performs a bounded staticcall to a resolver and stores the result in the transient
+    /// ResolvedAmount register for a later command to consume via Constants.USE_RESOLVED_AMOUNT.
+    /// @dev The call is read-only (staticcall) so it cannot mutate state or reenter. At most one word
+    /// of returndata is copied, so a return bomb costs the resolver gas and nothing else. A resolver
+    /// that reverts or returns fewer than 32 bytes yields success=false, composing with
+    /// FLAG_ALLOW_REVERT exactly like the other call-based commands.
+    function _resolve(address resolver, bytes calldata context) private returns (bool ok) {
+        bytes memory callData = abi.encodeWithSelector(IAmountResolver.resolveAmount.selector, context);
+        uint256 result;
+        assembly ('memory-safe') {
+            mstore(0, 0)
+            ok := staticcall(gas(), resolver, add(callData, 0x20), mload(callData), 0, 0x20)
+            if lt(returndatasize(), 0x20) { ok := 0 }
+            result := mload(0)
+        }
+        if (ok) ResolvedAmount.set(result);
+    }
+
+    /// @notice Resolves a command's amount field, substituting the ResolvedAmount register when the
+    /// amount is the USE_RESOLVED_AMOUNT sentinel; otherwise returns the amount unchanged.
+    function resolveAmount(uint256 amount) internal view returns (uint256) {
+        return amount == Constants.USE_RESOLVED_AMOUNT ? ResolvedAmount.get() : amount;
     }
 
     /// @dev Decodes a Permit2 batch after validating its dynamic details array against the input bounds.
