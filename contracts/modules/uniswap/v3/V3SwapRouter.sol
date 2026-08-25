@@ -112,6 +112,11 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
         ) revert V3HopPriceAndPathLengthMismatch();
 
         // use amountIn == ActionConstants.CONTRACT_BALANCE as a flag to swap the entire balance of the contract
+        // KNOWN ISSUE (related to audit L-01, fix deferred): balanceOf includes tokens any third party
+        // sent to the router, so a donation enlarges the trade. The larger trade earns a worse average
+        // rate, which can trip minHopPriceX36 and revert the route, and SWEEP takes an arbitrary
+        // recipient so the donation is recoverable. V3's per-hop denominator is itself sound: it
+        // divides by the pool's callback amountToPay, not by a balance.
         if (amountIn == ActionConstants.CONTRACT_BALANCE) {
             address tokenIn = path.decodeFirstToken();
             amountIn = ERC20(tokenIn).balanceOf(address(this));

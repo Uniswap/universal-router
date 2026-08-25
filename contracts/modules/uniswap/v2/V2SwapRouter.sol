@@ -30,6 +30,14 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                 (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
                 (uint256 reserveInput, uint256 reserveOutput) =
                     input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+                // KNOWN ISSUE (audit L-01, fix deferred): amountInput is the pair's whole balance
+                // excess, so it counts tokens any third party transferred in. A larger apparent trade
+                // earns a worse average rate, so a donation drives the price below minHopPriceX36 and
+                // reverts a bounded route; the pair's permissionless skim() then returns the donation.
+                // No funds are at risk, the effect is censorship of routes that set a nonzero bound.
+                // Attributing the caller's own input does not close it on multihop routes: hop 0 swaps
+                // the donation, so hop 1 receives genuinely more input and honestly measures a worse
+                // rate. See test/foundry-tests/V2PerHopDonationMultihop.t.sol.
                 uint256 amountInput = ERC20(input).balanceOf(pair) - reserveInput;
                 uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
                 (uint256 amount0Out, uint256 amount1Out) =
@@ -64,6 +72,9 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     /// @param path The path of the trade as an array of token addresses
     /// @param payer The address that will be paying the input
     /// @param minHopPriceX36 Per-hop minimum price array in 1e36 precision (empty to disable)
+    /// @dev KNOWN ISSUE (audit L-01, fix deferred): a nonzero bound can be tripped by anyone
+    /// transferring tokens to a pair in the path, censoring the route at no net cost to them. See
+    /// the note in _v2Swap.
     function v2SwapExactInput(
         address recipient,
         uint256 amountIn,
@@ -101,6 +112,9 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     /// @param path The path of the trade as an array of token addresses
     /// @param payer The address that will be paying the input
     /// @param minHopPriceX36 Per-hop minimum price array in 1e36 precision (empty to disable)
+    /// @dev KNOWN ISSUE (audit L-01, fix deferred): a nonzero bound can be tripped by anyone
+    /// transferring tokens to a pair in the path, censoring the route at no net cost to them. See
+    /// the note in _v2Swap.
     function v2SwapExactOutput(
         address recipient,
         uint256 amountOut,
