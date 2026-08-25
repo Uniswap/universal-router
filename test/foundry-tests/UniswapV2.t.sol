@@ -177,7 +177,7 @@ abstract contract UniswapV2Test is Test {
         bytes[] memory inputs = new bytes[](1);
         inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, 0, path, true, hopSlippage);
 
-        vm.expectRevert(V2SwapRouter.V2InvalidHopPriceLength.selector);
+        vm.expectRevert(V2SwapRouter.V2InvalidHopBoundLength.selector);
         router.execute(commands, inputs);
     }
 
@@ -193,7 +193,7 @@ abstract contract UniswapV2Test is Test {
         bytes[] memory inputs = new bytes[](1);
         inputs[0] = abi.encode(ActionConstants.MSG_SENDER, AMOUNT, type(uint256).max, path, true, hopSlippage);
 
-        vm.expectRevert(V2SwapRouter.V2InvalidHopPriceLength.selector);
+        vm.expectRevert(V2SwapRouter.V2InvalidHopBoundLength.selector);
         router.execute(commands, inputs);
     }
 

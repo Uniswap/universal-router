@@ -201,9 +201,9 @@ abstract contract Dispatcher is
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         address[] calldata path = inputs.toAddressArray(3);
-                        uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
+                        uint256[] calldata hopBounds = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, minHopPriceX36);
+                        v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, hopBounds);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
                         checkInputLength(inputs, 0xc0);
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, address[], bool, uint256[]))
@@ -219,9 +219,9 @@ abstract contract Dispatcher is
                             payerIsUser := calldataload(add(inputs.offset, 0x80))
                         }
                         address[] calldata path = inputs.toAddressArray(3);
-                        uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
+                        uint256[] calldata hopBounds = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, minHopPriceX36);
+                        v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, hopBounds);
                     } else if (command == Commands.PERMIT2_PERMIT) {
                         checkInputLength(inputs, 0xe0);
                         // equivalent: abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes))

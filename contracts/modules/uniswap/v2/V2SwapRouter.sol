@@ -13,23 +13,47 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     error V2TooLittleReceived();
     error V2TooMuchRequested();
     error V2InvalidPath();
-    error V2TooLittleReceivedPerHop(uint256 hopIndex, uint256 minPrice, uint256 price);
-    error V2InvalidHopPriceLength();
+    error V2TooLittleReceivedPerHop(uint256 hopIndex, uint256 minAmountOut, uint256 quotedAmountOut);
+    error V2InvalidHopBoundLength();
 
-    function _v2Swap(address[] calldata path, address recipient, address pair, uint256[] calldata minHopPriceX36)
-        private
-    {
+    /// @dev Width of the minAmountOut field within a packed hop bound. Both fields hold V2 token
+    /// amounts, which a pair stores as uint112, so 128 bits each is always sufficient.
+    uint256 private constant HOP_BOUND_SHIFT = 128;
+
+    /// @notice Splits a packed hop bound into its reference input and its minimum output
+    /// @param hopBound referenceAmountIn in the high 128 bits, minAmountOut in the low 128 bits
+    function _unpackHopBound(uint256 hopBound) private pure returns (uint256 referenceAmountIn, uint256 minAmountOut) {
+        referenceAmountIn = hopBound >> HOP_BOUND_SHIFT;
+        minAmountOut = uint128(hopBound);
+    }
+
+    function _v2Swap(address[] calldata path, address recipient, address pair, uint256[] calldata hopBounds) private {
         unchecked {
             // cached to save on duplicate operations
             (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
             uint256 finalPairIndex = path.length - 1;
             uint256 penultimatePairIndex = finalPairIndex - 1;
-            bool minHopPriceEnabled = minHopPriceX36.length != 0;
+            bool hopBoundsEnabled = hopBounds.length != 0;
             for (uint256 i; i < finalPairIndex; i++) {
                 (address input, address output) = (path[i], path[i + 1]);
                 (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
                 (uint256 reserveInput, uint256 reserveOutput) =
                     input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+                // The bound is quoted off reserves at a caller supplied reference input, never off the
+                // pair's token balance. A balance includes tokens anyone can transfer in, and a larger
+                // apparent trade always earns a worse average rate, so a balance-derived bound lets a
+                // third party push a hop under its floor and then recover the tokens with skim().
+                // Reserves only move when the pool itself moves, which is the condition a slippage
+                // bound is meant to detect.
+                if (hopBoundsEnabled && hopBounds[i] != 0) {
+                    (uint256 referenceAmountIn, uint256 minAmountOut) = _unpackHopBound(hopBounds[i]);
+                    uint256 quotedAmountOut =
+                        UniswapV2Library.getAmountOut(referenceAmountIn, reserveInput, reserveOutput);
+                    if (quotedAmountOut < minAmountOut) {
+                        revert V2TooLittleReceivedPerHop(i, minAmountOut, quotedAmountOut);
+                    }
+                }
+
                 uint256 amountInput = ERC20(input).balanceOf(pair) - reserveInput;
                 uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
                 (uint256 amount0Out, uint256 amount1Out) =
@@ -41,17 +65,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                     )
                     : (recipient, address(0));
 
-                // if minHopPrice is being used, we need to check output balance change
-                if (minHopPriceEnabled && minHopPriceX36[i] != 0) {
-                    uint256 recipientBalance = ERC20(output).balanceOf(nextPair);
-                    IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
-                    amountOutput = ERC20(output).balanceOf(nextPair) - recipientBalance;
-                    uint256 price = amountOutput * Constants.PRICE_PRECISION / amountInput;
-                    uint256 minPrice = minHopPriceX36[i];
-                    if (price < minPrice) revert V2TooLittleReceivedPerHop(i, minPrice, price);
-                } else {
-                    IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
-                }
+                IUniswapV2Pair(pair).swap(amount0Out, amount1Out, nextPair, new bytes(0));
                 pair = nextPair;
             }
         }
@@ -63,18 +77,21 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     /// @param amountOutMinimum The minimum desired amount of output tokens
     /// @param path The path of the trade as an array of token addresses
     /// @param payer The address that will be paying the input
-    /// @param minHopPriceX36 Per-hop minimum price array in 1e36 precision (empty to disable)
+    /// @param hopBounds Per-hop bound array, one entry per hop, empty to disable. Each entry packs a
+    /// reference input amount in the high 128 bits and a minimum output amount in the low 128 bits.
+    /// A hop is checked by quoting its pair at the reference input against current reserves, so the
+    /// reference need only approximate the amount actually routed. A zero entry skips that hop.
     function v2SwapExactInput(
         address recipient,
         uint256 amountIn,
         uint256 amountOutMinimum,
         address[] calldata path,
         address payer,
-        uint256[] calldata minHopPriceX36
+        uint256[] calldata hopBounds
     ) internal {
         if (path.length < 2) revert V2InvalidPath();
-        if (minHopPriceX36.length != 0 && minHopPriceX36.length != path.length - 1) {
-            revert V2InvalidHopPriceLength();
+        if (hopBounds.length != 0 && hopBounds.length != path.length - 1) {
+            revert V2InvalidHopBoundLength();
         }
 
         address firstPair =
@@ -88,7 +105,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         ERC20 tokenOut = ERC20(path[path.length - 1]);
         uint256 balanceBefore = tokenOut.balanceOf(recipient);
 
-        _v2Swap(path, recipient, firstPair, minHopPriceX36);
+        _v2Swap(path, recipient, firstPair, hopBounds);
 
         uint256 amountOut = tokenOut.balanceOf(recipient) - balanceBefore;
         if (amountOut < amountOutMinimum) revert V2TooLittleReceived();
@@ -100,18 +117,21 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     /// @param amountInMaximum The maximum desired amount of input tokens
     /// @param path The path of the trade as an array of token addresses
     /// @param payer The address that will be paying the input
-    /// @param minHopPriceX36 Per-hop minimum price array in 1e36 precision (empty to disable)
+    /// @param hopBounds Per-hop bound array, one entry per hop, empty to disable. Each entry packs a
+    /// reference input amount in the high 128 bits and a minimum output amount in the low 128 bits.
+    /// A hop is checked by quoting its pair at the reference input against current reserves, so the
+    /// reference need only approximate the amount actually routed. A zero entry skips that hop.
     function v2SwapExactOutput(
         address recipient,
         uint256 amountOut,
         uint256 amountInMaximum,
         address[] calldata path,
         address payer,
-        uint256[] calldata minHopPriceX36
+        uint256[] calldata hopBounds
     ) internal {
         if (path.length < 2) revert V2InvalidPath();
-        if (minHopPriceX36.length != 0 && minHopPriceX36.length != path.length - 1) {
-            revert V2InvalidHopPriceLength();
+        if (hopBounds.length != 0 && hopBounds.length != path.length - 1) {
+            revert V2InvalidHopBoundLength();
         }
 
         (uint256 amountIn, address firstPair) =
@@ -119,6 +139,6 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         if (amountIn > amountInMaximum) revert V2TooMuchRequested();
 
         payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
-        _v2Swap(path, recipient, firstPair, minHopPriceX36);
+        _v2Swap(path, recipient, firstPair, hopBounds);
     }
 }
