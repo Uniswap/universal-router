@@ -30,6 +30,9 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                 (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
                 (uint256 reserveInput, uint256 reserveOutput) =
                     input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+                // Note: amountInput is the pair's whole balance excess, so it counts tokens any third party transferred in.
+                // A larger apparent trade earns a worse average rate, so a donation drives the price below minHopPriceX36 and
+                // reverts. The pair's permissionless skim() then returns the donation.
                 uint256 amountInput = ERC20(input).balanceOf(pair) - reserveInput;
                 uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
                 (uint256 amount0Out, uint256 amount1Out) =
