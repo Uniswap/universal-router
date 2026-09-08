@@ -102,7 +102,9 @@ Each command is a `bytes1` containing the following 8 bits:
    ├──────┼───────────────────────────────┤
    │ 0x16 │  V4_PROTOCOL_FEE_UPDATE       │
    ├──────┼───────────────────────────────┤
-   │ 0x17-│  -------                      │
+   │ 0x17 │  V3_PROTOCOL_FEE_UPDATE       │
+   ├──────┼───────────────────────────────┤
+   │ 0x18-│  -------                      │
    │ 0x20 │                               │
    ├──────┼───────────────────────────────┤
    │ 0x21 │  EXECUTE_SUB_PLAN             │
@@ -116,7 +118,9 @@ Note that some of the commands in the middle of the series are unused. These gap
 
 `UNWRAP_WETH_EXACT` takes `(recipient, amount)` and unwraps an exact amount of the contract's WETH, reverting if the balance is insufficient.
 
-`RESOLVE` takes `(address resolver, bytes context)` and performs a bounded, read-only `staticcall` to `resolver.resolveAmount(context)` (see `IAmountResolver`), storing the returned value in a transient register. A later command in the same plan can then use that value as an amount by passing the `Constants.USE_RESOLVED_AMOUNT` sentinel (`1 << 127`, which fits the `uint128` v4 amount fields) in place of a literal — supported by the v2/v3 swap amount fields, the `amountIn`/`amountOut` of every v4 swap action inside `V4_SWAP`, and `TRANSFER`. This lets a route obtain an amount that is only known onchain at execution time (for example, a live lending-position debt) instead of baking an offchain guess into calldata. The register is transaction-scoped: it survives across commands and into an `EXECUTE_SUB_PLAN`, and is cleared when the top-level `execute` returns. Because the resolver is invoked via `staticcall` and at most one word of returndata is copied, a resolver can neither mutate state nor grief the router with a return bomb; a resolver that reverts is subject to the usual `FLAG_ALLOW_REVERT` semantics.
+`RESOLVE` takes `(address resolver, bytes context)` and performs a bounded, read-only `staticcall` to `resolver.resolveAmount(context)` (see `IAmountResolver`), storing the returned value in a transient register. A later command in the same plan can then use that value as an amount by passing the `Constants.USE_RESOLVED_AMOUNT` sentinel (`1 << 127`, which fits the `uint128` v4 amount fields) in place of a literal. That sentinel is honored by the v2/v3 swap amount fields, the `amountIn`/`amountOut` of every v4 swap action inside `V4_SWAP`, and `TRANSFER`. This lets a route obtain an amount that is only known onchain at execution time (for example, a live lending-position debt) instead of baking an offchain guess into calldata. The register is transaction-scoped: it survives across commands and into an `EXECUTE_SUB_PLAN`, and is cleared when the top-level `execute` returns. Because the resolver is invoked via `staticcall` and at most one word of returndata is copied, a resolver can neither mutate state nor grief the router with a return bomb; a resolver that reverts is subject to the usual `FLAG_ALLOW_REVERT` semantics.
+
+`V4_PROTOCOL_FEE_UPDATE` takes `(PoolKey key)` and `V3_PROTOCOL_FEE_UPDATE` takes `(address pool)`. Each pokes the protocol fee adapter that governance installed as the controller (the v4 `PoolManager.protocolFeeController()`, or the v3 factory `owner()`), read onchain so the router holds no adapter address, which pushes that pool's resolved protocol fee into pool state. Newly created pools initialize with no protocol fee, so a route can activate it in the same transaction as the first swap rather than waiting on the offchain keeper. The poke follows the same failure semantics as the other call-based commands: it surfaces as `ExecutionFailed` unless `FLAG_ALLOW_REVERT` is set, and on a chain with no adapter installed the call targets `address(0)` and is a no-op, so one route shape works on every chain.
 
 #### How the input bytes are structures
 
