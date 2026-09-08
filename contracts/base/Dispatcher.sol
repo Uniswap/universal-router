@@ -13,6 +13,8 @@ import {V3ToV4Migrator} from '../modules/V3ToV4Migrator.sol';
 import {Commands} from '../libraries/Commands.sol';
 import {ResolvedAmount} from '../libraries/ResolvedAmount.sol';
 import {IAmountResolver} from '../interfaces/IAmountResolver.sol';
+import {IV4FeeAdapter} from '../interfaces/external/IV4FeeAdapter.sol';
+import {IProtocolFees} from '@uniswap/v4-core/src/interfaces/IProtocolFees.sol';
 import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
@@ -365,8 +367,21 @@ abstract contract Dispatcher is
                     }
                     bytes calldata context = inputs.toBytes(1);
                     success = _resolve(resolver, context);
+                } else if (command == Commands.V4_PROTOCOL_FEE_UPDATE) {
+                    checkInputLength(inputs, 0xa0);
+                    // equivalent: abi.decode(inputs, (PoolKey))
+                    PoolKey calldata poolKey;
+                    assembly {
+                        poolKey := inputs.offset
+                    }
+                    // New pools initialize with no protocol fee; governance's fee adapter is registered on the
+                    // PoolManager as its protocolFeeController and exposes a permissionless poke that pushes the
+                    // resolved fee into pool state. Reading the controller onchain means the router never holds an
+                    // adapter address and follows any future controller change.
+                    (success, output) = IProtocolFees(address(poolManager)).protocolFeeController()
+                        .call(abi.encodeCall(IV4FeeAdapter.triggerFeeUpdate, (poolKey)));
                 } else {
-                    // placeholder area for commands 0x16-0x20
+                    // placeholder area for commands 0x17-0x20
                     revert InvalidCommandType(command);
                 }
             }
