@@ -38,7 +38,8 @@ library Commands {
     uint256 constant V4_INITIALIZE_POOL = 0x13;
     uint256 constant V4_POSITION_MANAGER_CALL = 0x14;
     uint256 constant RESOLVE = 0x15;
-    // COMMAND_PLACEHOLDER = 0x16 -> 0x20
+    uint256 constant V4_PROTOCOL_FEE_UPDATE = 0x16;
+    // COMMAND_PLACEHOLDER = 0x17 -> 0x20
 
     // Command Types where 0x21<=value<=0x3f
     uint256 constant EXECUTE_SUB_PLAN = 0x21;
