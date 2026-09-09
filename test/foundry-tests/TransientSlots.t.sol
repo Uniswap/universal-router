@@ -6,6 +6,7 @@ import {TransientSlots} from '../../contracts/libraries/TransientSlots.sol';
 import {Locker} from '../../contracts/libraries/Locker.sol';
 import {MaxInputAmount} from '../../contracts/libraries/MaxInputAmount.sol';
 import {NestedUnlock} from '../../contracts/libraries/NestedUnlock.sol';
+import {ResolvedAmount} from '../../contracts/libraries/ResolvedAmount.sol';
 import {RouteSigner} from '../../contracts/base/RouteSigner.sol';
 import {EIP712} from '@openzeppelin/contracts/utils/cryptography/EIP712.sol';
 
@@ -21,13 +22,14 @@ contract RouteSignerSlots is RouteSigner {
 /// since transient storage is shared by all libraries compiled into the router.
 contract TransientSlotsTest is Test {
     function _allSlots() internal pure returns (bytes32[] memory slots) {
-        slots = new bytes32[](6);
+        slots = new bytes32[](7);
         slots[0] = TransientSlots.LOCKER;
         slots[1] = TransientSlots.MAX_AMOUNT_IN;
         slots[2] = TransientSlots.ROUTE_SIGNER;
         slots[3] = TransientSlots.ROUTE_INTENT;
         slots[4] = TransientSlots.ROUTE_DATA;
         slots[5] = TransientSlots.NESTED_UNLOCK;
+        slots[6] = TransientSlots.RESOLVED_AMOUNT;
     }
 
     function test_slotsAreDistinct() public pure {
@@ -45,6 +47,7 @@ contract TransientSlotsTest is Test {
         assertEq(Locker.LOCKER_SLOT, TransientSlots.LOCKER);
         assertEq(MaxInputAmount.MAX_AMOUNT_IN_SLOT, TransientSlots.MAX_AMOUNT_IN);
         assertEq(NestedUnlock.NESTED_UNLOCK_SLOT, TransientSlots.NESTED_UNLOCK);
+        assertEq(ResolvedAmount.RESOLVED_AMOUNT_SLOT, TransientSlots.RESOLVED_AMOUNT);
         (bytes32 signer, bytes32 intent, bytes32 data) = new RouteSignerSlots().slots();
         assertEq(signer, TransientSlots.ROUTE_SIGNER);
         assertEq(intent, TransientSlots.ROUTE_INTENT);

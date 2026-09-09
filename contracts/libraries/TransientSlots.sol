@@ -27,4 +27,7 @@ library TransientSlots {
 
     /// @dev Whether the caller opted into running inside a foreign PoolManager unlock (NestedUnlock.sol)
     bytes32 internal constant NESTED_UNLOCK = 0x0000000000000000000000000000000000000000000000000000000000000006;
+
+    /// @dev The amount written by a RESOLVE command for a later command to consume (ResolvedAmount.sol)
+    bytes32 internal constant RESOLVED_AMOUNT = 0x0000000000000000000000000000000000000000000000000000000000000007;
 }

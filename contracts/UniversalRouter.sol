@@ -10,6 +10,7 @@ import {UniswapImmutables, UniswapParameters} from './modules/uniswap/UniswapImm
 import {V4SwapRouter} from './modules/uniswap/v4/V4SwapRouter.sol';
 import {Commands} from './libraries/Commands.sol';
 import {NestedUnlock} from './libraries/NestedUnlock.sol';
+import {ResolvedAmount} from './libraries/ResolvedAmount.sol';
 import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
 import {MigratorImmutables, MigratorParameters} from './modules/MigratorImmutables.sol';
 import {EIP712} from '@openzeppelin/contracts/utils/cryptography/EIP712.sol';
@@ -97,6 +98,11 @@ contract UniversalRouter is IUniversalRouter, ChainedActions, RouteSigner, Dispa
                 revert ExecutionFailed({commandIndex: commandIndex, message: output});
             }
         }
+
+        // Clear the resolved-amount register on top-level exit so a value written by a RESOLVE command
+        // never leaks into a later execute in the same transaction. Sub-plans reenter with
+        // msg.sender == address(this) and intentionally keep the register live for the rest of the plan.
+        if (msg.sender != address(this)) ResolvedAmount.reset();
     }
 
     /// @inheritdoc IUniversalRouter
