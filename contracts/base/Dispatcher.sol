@@ -14,6 +14,8 @@ import {Commands} from '../libraries/Commands.sol';
 import {ResolvedAmount} from '../libraries/ResolvedAmount.sol';
 import {IAmountResolver} from '../interfaces/IAmountResolver.sol';
 import {IV4FeeAdapter} from '../interfaces/external/IV4FeeAdapter.sol';
+import {IV3FeeAdapter} from '../interfaces/external/IV3FeeAdapter.sol';
+import {IUniswapV3Factory} from '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
 import {IProtocolFees} from '@uniswap/v4-core/src/interfaces/IProtocolFees.sol';
 import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
@@ -370,8 +372,18 @@ abstract contract Dispatcher is
                     // adapter address and follows any future controller change.
                     (success, output) = IProtocolFees(address(poolManager)).protocolFeeController()
                         .call(abi.encodeCall(IV4FeeAdapter.triggerFeeUpdate, (poolKey)));
+                } else if (command == Commands.V3_PROTOCOL_FEE_UPDATE) {
+                    checkInputLength(inputs, 0x20);
+                    // equivalent: abi.decode(inputs, (address))
+                    address pool;
+                    assembly {
+                        pool := calldataload(inputs.offset)
+                    }
+                    // The v3 fee adapter owns the v3 factory; read it onchain and poke it for this pool.
+                    (success, output) = IUniswapV3Factory(UNISWAP_V3_FACTORY).owner()
+                        .call(abi.encodeCall(IV3FeeAdapter.triggerFeeUpdate, (pool)));
                 } else {
-                    // placeholder area for commands 0x17-0x20
+                    // placeholder area for commands 0x18-0x20
                     revert InvalidCommandType(command);
                 }
             }
