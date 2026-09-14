@@ -48,14 +48,15 @@ contract RawLockHolder is IUnlockCallback {
     }
 }
 
-/// @notice Regression coverage for the nested-unlock V4_SWAP path decoding from a canonical copy of its input.
+/// @notice Regression coverage for the nested-unlock V4_SWAP path: a redirected struct offset cannot reach
+///         bytes past the declared input.
 ///
-/// The v4 swap parameter decoders in CalldataDecoder follow the struct offset in the first word of `params`
-/// without bounding it against `params.length`. On the ordinary path that is inert, because
-/// `poolManager.unlock()` re-encodes the input for `unlockCallback` and calldata therefore ends where the
-/// input ends. The nested-unlock branch used to hand the decoders a slice of the original transaction
-/// calldata instead, which let a redirected struct offset reach bytes past `inputs[i].length` -- bytes that
-/// `executeSigned` never commits to. `Dispatcher.executeV4SwapWithinUnlock` restores the re-encode.
+/// The v4 swap parameter decoders in CalldataDecoder use abi.decode, which bounds the struct offset (and every
+/// dynamic member) against `params.length`. A redirected offset therefore reverts rather than reading bytes
+/// past `inputs[i].length`, bytes that `executeSigned` never commits to. This holds on both paths and does
+/// not depend on the caller re-encoding the input first, so the nested branch decodes directly from its
+/// calldata slice. The member-offset variant, which a struct-offset-only fix would miss, is in
+/// V4NestedMemberSmuggle.t.sol.
 contract V4NestedUnlockCalldataSmugglingTest is Test, Deployers {
     UniversalRouter router;
     RawLockHolder holder;
@@ -125,7 +126,7 @@ contract V4NestedUnlockCalldataSmugglingTest is Test, Deployers {
     ///      appended verbatim past the end of the encoding.
     /// @dev The nested entrypoint is required here: plain execute() now refuses to reuse an unlock it did not
     ///      open, so the smuggling attempts have to opt in the same way a real composer would. An attacker can
-    ///      opt themselves in, which is precisely why the re-encode remains load-bearing.
+    ///      opt themselves in, which is why the decoders themselves must bound the offsets.
     function _rawCalldata(bytes memory planBlob, bytes memory tail) internal pure returns (bytes memory) {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
@@ -274,12 +275,6 @@ contract V4NestedUnlockCalldataSmugglingTest is Test, Deployers {
             routerBefore,
             'no funds may move on the ordinary path'
         );
-    }
-
-    /// @notice Only this contract may drive the nested action runner.
-    function test_executeV4SwapWithinUnlock_revertsForExternalCallers() public {
-        vm.expectRevert(abi.encodeWithSignature('NotSelf()'));
-        router.executeV4SwapWithinUnlock(_plan(SMUGGLED_AMOUNT));
     }
 
     /// @dev needle search restricted to [from, to)
