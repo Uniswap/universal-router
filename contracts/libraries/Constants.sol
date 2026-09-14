@@ -28,4 +28,9 @@ library Constants {
 
     /// @dev Precision multiplier for per-hop price calculations
     uint256 internal constant PRICE_PRECISION = 1e36;
+
+    /// @dev Sentinel placed in a command's amount field to consume the ResolvedAmount register written
+    /// by a prior RESOLVE command. Distinct from ActionConstants.CONTRACT_BALANCE (1 << 255) and
+    /// OPEN_DELTA (0), and fits in uint128 so it is representable in v4 swap amount fields.
+    uint256 internal constant USE_RESOLVED_AMOUNT = 1 << 127;
 }

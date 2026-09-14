@@ -29,6 +29,7 @@ export enum CommandType {
   V3_POSITION_MANAGER_CALL = 0x12,
   V4_INITIALIZE_POOL = 0x13,
   V4_POSITION_MANAGER_CALL = 0x14,
+  RESOLVE = 0x15,
 
   EXECUTE_SUB_PLAN = 0x21,
 }
@@ -83,6 +84,9 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.V3_POSITION_MANAGER_CALL]: ['bytes'],
   [CommandType.V4_INITIALIZE_POOL]: [POOL_KEY_STRUCT, 'uint160'],
   [CommandType.V4_POSITION_MANAGER_CALL]: ['bytes'],
+
+  // Callback amount resolution
+  [CommandType.RESOLVE]: ['address', 'bytes'],
 }
 
 export class RoutePlanner {

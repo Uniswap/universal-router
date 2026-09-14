@@ -98,7 +98,9 @@ Each command is a `bytes1` containing the following 8 bits:
    ├──────┼───────────────────────────────┤
    │ 0x14 │  V4_POSITION_MANAGER_CALL     │
    ├──────┼───────────────────────────────┤
-   │ 0x15-│  -------                      │
+   │ 0x15 │  RESOLVE                      │
+   ├──────┼───────────────────────────────┤
+   │ 0x16-│  -------                      │
    │ 0x20 │                               │
    ├──────┼───────────────────────────────┤
    │ 0x21 │  EXECUTE_SUB_PLAN             │
@@ -111,6 +113,8 @@ Each command is a `bytes1` containing the following 8 bits:
 Note that some of the commands in the middle of the series are unused. These gaps allowed us to create gas-efficiencies when selecting which command to execute.
 
 `UNWRAP_WETH_EXACT` takes `(recipient, amount)` and unwraps an exact amount of the contract's WETH, reverting if the balance is insufficient.
+
+`RESOLVE` takes `(address resolver, bytes context)` and performs a bounded, read-only `staticcall` to `resolver.resolveAmount(context)` (see `IAmountResolver`), storing the returned value in a transient register. A later command in the same plan can then use that value as an amount by passing the `Constants.USE_RESOLVED_AMOUNT` sentinel (`1 << 127`, which fits the `uint128` v4 amount fields) in place of a literal — supported by the v2/v3 swap amount fields, the `amountIn`/`amountOut` of every v4 swap action inside `V4_SWAP`, and `TRANSFER`. This lets a route obtain an amount that is only known onchain at execution time (for example, a live lending-position debt) instead of baking an offchain guess into calldata. The register is transaction-scoped: it survives across commands and into an `EXECUTE_SUB_PLAN`, and is cleared when the top-level `execute` returns. Because the resolver is invoked via `staticcall` and at most one word of returndata is copied, a resolver can neither mutate state nor grief the router with a return bomb; a resolver that reverts is subject to the usual `FLAG_ALLOW_REVERT` semantics.
 
 #### How the input bytes are structures
 
