@@ -7,6 +7,7 @@ import {V4SwapRouter} from '../modules/uniswap/v4/V4SwapRouter.sol';
 import {BytesLib} from '../modules/uniswap/v3/BytesLib.sol';
 import {Payments} from '../modules/Payments.sol';
 import {Constants} from '../libraries/Constants.sol';
+import {NestedUnlock} from '../libraries/NestedUnlock.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
 import {V3ToV4Migrator} from '../modules/V3ToV4Migrator.sol';
 import {Commands} from '../libraries/Commands.sol';
@@ -37,6 +38,8 @@ abstract contract Dispatcher is
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
+    /// @notice Thrown when a route reaches V4_SWAP inside a foreign PoolManager unlock without opting in
+    error NestedExecutionNotPermitted();
 
     /// @notice Executes encoded commands along with provided inputs.
     /// @param commands A set of concatenated commands, each 1 byte in length
@@ -299,6 +302,13 @@ abstract contract Dispatcher is
                     // contract's unlock callback. Opening a new lock via _executeActions would revert with
                     // AlreadyUnlocked, so instead run the v4 actions within the existing lock.
                     if (poolManager.isUnlocked()) {
+                        // Nesting shares the router's delta account with every other call in this
+                        // unlock, so it runs only when the caller explicitly opted in via executeNested.
+                        if (!NestedUnlock.isPermitted()) revert NestedExecutionNotPermitted();
+                        // The v4 swap parameter decoders (v4-periphery) bound every struct and member offset
+                        // against the input length via abi.decode, so decoding directly from this calldata
+                        // slice cannot read past inputs[i].length. Coverage: V4NestedMemberSmuggle.t.sol and
+                        // V4NestedUnlockCalldataSmuggling.t.sol.
                         (bytes calldata actions, bytes[] calldata params) = inputs.decodeActionsRouterParams();
                         _executeActionsWithoutUnlock(actions, params);
                     } else {
