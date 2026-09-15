@@ -9,6 +9,7 @@ import {PaymentsImmutables, PaymentsParameters} from './modules/PaymentsImmutabl
 import {UniswapImmutables, UniswapParameters} from './modules/uniswap/UniswapImmutables.sol';
 import {V4SwapRouter} from './modules/uniswap/v4/V4SwapRouter.sol';
 import {Commands} from './libraries/Commands.sol';
+import {NestedUnlock} from './libraries/NestedUnlock.sol';
 import {IUniversalRouter} from './interfaces/IUniversalRouter.sol';
 import {MigratorImmutables, MigratorParameters} from './modules/MigratorImmutables.sol';
 import {EIP712} from '@openzeppelin/contracts/utils/cryptography/EIP712.sol';
@@ -64,6 +65,17 @@ contract UniversalRouter is IUniversalRouter, ChainedActions, RouteSigner, Dispa
 
         // Clear signature context
         _resetSignatureContext();
+    }
+
+    /// @inheritdoc IUniversalRouter
+    function executeNested(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
+        external
+        payable
+        checkDeadline(deadline)
+    {
+        NestedUnlock.set(true);
+        execute(commands, inputs);
+        NestedUnlock.set(false);
     }
 
     /// @inheritdoc Dispatcher
