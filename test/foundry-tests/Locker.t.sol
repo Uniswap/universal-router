@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import 'forge-std/Test.sol';
 import {Locker} from '../../contracts/libraries/Locker.sol';
+import {TransientSlots} from '../../contracts/libraries/TransientSlots.sol';
 
 contract LockerTest is Test {
     function test_fuzz_set_get(address locker1, address locker2, address locker3) public {
@@ -33,8 +34,7 @@ contract LockerTest is Test {
         assertEq(Locker.isLocked(), false);
     }
 
-    function test_lockerSlot() public {
-        bytes32 expectedSlot = bytes32(uint256(keccak256('Locker')) - 1);
-        assertEq(expectedSlot, Locker.LOCKER_SLOT);
+    function test_lockerSlot() public pure {
+        assertEq(Locker.LOCKER_SLOT, TransientSlots.LOCKER);
     }
 }
