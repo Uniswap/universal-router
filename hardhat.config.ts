@@ -14,7 +14,7 @@ const DEFAULT_COMPILER_SETTINGS = {
     evmVersion: 'cancun',
     optimizer: {
       enabled: true,
-      runs: 1,
+      runs: 3000,
     },
     metadata: {
       bytecodeHash: 'none',
