@@ -17,7 +17,6 @@ import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstan
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
-import {TransientStateLibrary} from '@uniswap/v4-core/src/libraries/TransientStateLibrary.sol';
 import {ChainedActions} from '../modules/ChainedActions.sol';
 
 /// @title Decodes and Executes Commands
@@ -33,7 +32,6 @@ abstract contract Dispatcher is
 {
     using BytesLib for bytes;
     using CalldataDecoder for bytes;
-    using TransientStateLibrary for IPoolManager;
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
@@ -68,7 +66,6 @@ abstract contract Dispatcher is
                 // 0x00 <= command < 0x08
                 if (command < Commands.V2_SWAP_EXACT_IN) {
                     if (command == Commands.V3_SWAP_EXACT_IN) {
-                        checkInputLength(inputs, 0xc0);
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool, uint256[]))
                         address recipient;
                         uint256 amountIn;
@@ -86,7 +83,6 @@ abstract contract Dispatcher is
                         address payer = payerIsUser ? msgSender() : address(this);
                         v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, minHopPriceX36);
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
-                        checkInputLength(inputs, 0xc0);
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool, uint256[]))
                         address recipient;
                         uint256 amountOut;
@@ -104,7 +100,6 @@ abstract contract Dispatcher is
                         address payer = payerIsUser ? msgSender() : address(this);
                         v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, minHopPriceX36);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
-                        checkInputLength(inputs, 0x60);
                         // equivalent: abi.decode(inputs, (address, address, uint160))
                         address token;
                         address recipient;
@@ -116,7 +111,12 @@ abstract contract Dispatcher is
                         }
                         permit2TransferFrom(token, msgSender(), map(recipient), amount);
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
-                        IAllowanceTransfer.PermitBatch calldata permitBatch = decodePermitBatch(inputs);
+                        IAllowanceTransfer.PermitBatch calldata permitBatch;
+                        assembly {
+                            // this is a variable length struct, so calldataload(inputs.offset) contains the
+                            // offset from inputs.offset at which the struct begins
+                            permitBatch := add(inputs.offset, calldataload(inputs.offset))
+                        }
                         bytes calldata data = inputs.toBytes(1);
                         (success, output) = address(PERMIT2)
                             .call(
@@ -128,11 +128,10 @@ abstract contract Dispatcher is
                                 )
                             );
                     } else if (command == Commands.SWEEP) {
-                        checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
-                        uint256 amountMin;
+                        uint160 amountMin;
                         assembly {
                             token := calldataload(inputs.offset)
                             recipient := calldataload(add(inputs.offset, 0x20))
@@ -148,7 +147,6 @@ abstract contract Dispatcher is
                         }
                         Payments.sweep(token, map(recipient), amountMin);
                     } else if (command == Commands.TRANSFER) {
-                        checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
@@ -160,7 +158,6 @@ abstract contract Dispatcher is
                         }
                         Payments.pay(token, map(recipient), value);
                     } else if (command == Commands.PAY_PORTION) {
-                        checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
@@ -172,7 +169,6 @@ abstract contract Dispatcher is
                         }
                         Payments.payPortion(token, map(recipient), bips);
                     } else if (command == Commands.PAY_PORTION_FULL_PRECISION) {
-                        checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
@@ -183,11 +179,12 @@ abstract contract Dispatcher is
                             portion := calldataload(add(inputs.offset, 0x40))
                         }
                         Payments.payPortionFullPrecision(token, map(recipient), portion);
+                    } else {
+                        revert InvalidCommandType(command);
                     }
                 } else {
                     // 0x08 <= command < 0x10
                     if (command == Commands.V2_SWAP_EXACT_IN) {
-                        checkInputLength(inputs, 0xc0);
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, address[], bool, uint256[]))
                         address recipient;
                         uint256 amountIn;
@@ -205,7 +202,6 @@ abstract contract Dispatcher is
                         address payer = payerIsUser ? msgSender() : address(this);
                         v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, minHopPriceX36);
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
-                        checkInputLength(inputs, 0xc0);
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, address[], bool, uint256[]))
                         address recipient;
                         uint256 amountOut;
@@ -223,7 +219,6 @@ abstract contract Dispatcher is
                         address payer = payerIsUser ? msgSender() : address(this);
                         v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, minHopPriceX36);
                     } else if (command == Commands.PERMIT2_PERMIT) {
-                        checkInputLength(inputs, 0xe0);
                         // equivalent: abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes))
                         IAllowanceTransfer.PermitSingle calldata permitSingle;
                         assembly {
@@ -240,7 +235,6 @@ abstract contract Dispatcher is
                                 )
                             );
                     } else if (command == Commands.WRAP_ETH) {
-                        checkInputLength(inputs, 0x40);
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;
                         uint256 amount;
@@ -250,7 +244,6 @@ abstract contract Dispatcher is
                         }
                         Payments.wrapETH(map(recipient), amount);
                     } else if (command == Commands.UNWRAP_WETH) {
-                        checkInputLength(inputs, 0x40);
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;
                         uint256 amountMin;
@@ -261,14 +254,13 @@ abstract contract Dispatcher is
                         Payments.unwrapWETH9(map(recipient), amountMin);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
                         IAllowanceTransfer.AllowanceTransferDetails[] calldata batchDetails;
-                        (uint256 length, uint256 offset) = inputs.toLengthOffset(0, 0x80);
+                        (uint256 length, uint256 offset) = inputs.toLengthOffset(0);
                         assembly {
                             batchDetails.length := length
                             batchDetails.offset := offset
                         }
                         permit2TransferFrom(batchDetails, msgSender());
                     } else if (command == Commands.BALANCE_CHECK_ERC20) {
-                        checkInputLength(inputs, 0x60);
                         // equivalent: abi.decode(inputs, (address, address, uint256))
                         address owner;
                         address token;
@@ -280,31 +272,16 @@ abstract contract Dispatcher is
                         }
                         success = (ERC20(token).balanceOf(owner) >= minBalance);
                         if (!success) output = abi.encodePacked(BalanceTooLow.selector);
-                    } else if (command == Commands.UNWRAP_WETH_EXACT) {
-                        checkInputLength(inputs, 0x40);
-                        // equivalent: abi.decode(inputs, (address, uint256))
-                        address recipient;
-                        uint256 amount;
-                        assembly {
-                            recipient := calldataload(inputs.offset)
-                            amount := calldataload(add(inputs.offset, 0x20))
-                        }
-                        Payments.unwrapWETH9Exact(map(recipient), amount);
+                    } else {
+                        // placeholder area for command 0x0f
+                        revert InvalidCommandType(command);
                     }
                 }
             } else {
                 // 0x10 <= command < 0x21
                 if (command == Commands.V4_SWAP) {
-                    // If the PoolManager is already unlocked, this contract is executing inside another
-                    // contract's unlock callback. Opening a new lock via _executeActions would revert with
-                    // AlreadyUnlocked, so instead run the v4 actions within the existing lock.
-                    if (poolManager.isUnlocked()) {
-                        (bytes calldata actions, bytes[] calldata params) = inputs.decodeActionsRouterParams();
-                        _executeActionsWithoutUnlock(actions, params);
-                    } else {
-                        // pass the calldata provided to V4SwapRouter._executeActions (defined in BaseActionsRouter)
-                        _executeActions(inputs);
-                    }
+                    // pass the calldata provided to V4SwapRouter._executeActions (defined in BaseActionsRouter)
+                    _executeActions(inputs);
                     // This contract MUST be approved to spend the token since its going to be doing the call on the position manager
                 } else if (command == Commands.V3_POSITION_MANAGER_PERMIT) {
                     _checkV3PermitCall(inputs);
@@ -313,7 +290,6 @@ abstract contract Dispatcher is
                     _checkV3PositionManagerCall(inputs, msgSender());
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V4_INITIALIZE_POOL) {
-                    checkInputLength(inputs, 0xc0);
                     PoolKey calldata poolKey;
                     uint160 sqrtPriceX96;
                     assembly {
@@ -347,55 +323,6 @@ abstract contract Dispatcher is
                 // placeholder area for commands 0x41-0x5f
                 revert InvalidCommandType(command);
             }
-        }
-    }
-
-    /// @dev Reverts if an input cannot contain the complete static ABI head consumed by a command.
-    function checkInputLength(bytes calldata input, uint256 minimumLength) private pure {
-        if (input.length < minimumLength) revert CalldataDecoder.SliceOutOfBounds();
-    }
-
-    /// @dev Decodes a Permit2 batch after validating its dynamic details array against the input bounds.
-    function decodePermitBatch(bytes calldata input)
-        private
-        pure
-        returns (IAllowanceTransfer.PermitBatch calldata permitBatch)
-    {
-        // PermitBatch has a three-word head: details offset, spender, and signature deadline.
-        checkInputLength(input, 0x60);
-
-        assembly ('memory-safe') {
-            let inputLength := input.length
-            let permitBatchOffset := calldataload(input.offset)
-
-            // The PermitBatch head must be contained in the input.
-            if gt(permitBatchOffset, sub(inputLength, 0x60)) {
-                mstore(0, 0x3b99b53d) // SliceOutOfBounds()
-                revert(0x1c, 0x04)
-            }
-
-            let permitBatchPointer := add(input.offset, permitBatchOffset)
-            let detailsOffset := calldataload(permitBatchPointer)
-            let permitBatchLength := sub(inputLength, permitBatchOffset)
-
-            // The PermitDetails array length word must be contained in the PermitBatch slice.
-            if gt(detailsOffset, sub(permitBatchLength, 0x20)) {
-                mstore(0, 0x3b99b53d) // SliceOutOfBounds()
-                revert(0x1c, 0x04)
-            }
-
-            let detailsLengthPointer := add(permitBatchPointer, detailsOffset)
-            let detailsLength := calldataload(detailsLengthPointer)
-            let detailsDataOffset := add(detailsOffset, 0x20)
-            let remainingLength := sub(permitBatchLength, detailsDataOffset)
-
-            // Each PermitDetails element occupies four words.
-            if gt(detailsLength, div(remainingLength, 0x80)) {
-                mstore(0, 0x3b99b53d) // SliceOutOfBounds()
-                revert(0x1c, 0x04)
-            }
-
-            permitBatch := permitBatchPointer
         }
     }
 
