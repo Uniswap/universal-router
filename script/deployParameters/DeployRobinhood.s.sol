@@ -16,10 +16,7 @@ contract DeployRobinhood is DeployUniversalRouter {
             v4PoolManager: 0x8366a39CC670B4001A1121B8F6A443A643e40951,
             v3NFTPositionManager: 0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3,
             v4PositionManager: 0x58daec3116aae6D93017bAAea7749052E8a04fA7,
-            // matches the live 2.1.1 deployment, which was built with no SpokePool.
-            // An Across SpokePool does exist at 0xD29C85F15DF544bA632C9E25829fd29d767d7978
-            // if enabling ChainedActions here is intended.
-            spokePool: address(0)
+            spokePool: 0xD29C85F15DF544bA632C9E25829fd29d767d7978
         });
 
         unsupported = 0x7332D11BD10d18A04B119Cd4671a96f3148002c4;
