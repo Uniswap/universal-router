@@ -19,5 +19,7 @@ contract DeployInk is DeployUniversalRouter {
             v4PositionManager: 0x1b35d13a2E2528f192637F14B05f0Dc0e7dEB566,
             spokePool: 0xeF684C38F94F48775959ECf2012D7E864ffb9dd4
         });
+
+        unsupported = 0xD1b797D92d87B688193A2B976eFc8D577D204343;
     }
 }
