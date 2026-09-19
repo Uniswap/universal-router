@@ -1,0 +1,535 @@
+name: '[claude] PR description'
+
+# Drop-in replacement for ai-toolkit's _generate-pr-metadata.yml workflow.
+# Runs on every PR open / synchronize; writes the bot's zone inside the
+# `<!-- claude-pr-description-start -->...end -->` markers without
+# overwriting human-authored prefix / suffix content.
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+concurrency:
+  group: describe-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# ── Pinned versions — BUMP THEM HERE, nowhere else ───────────────────────
+#
+# `vars.<NAME>` lets a repo roll forward from repo settings without a
+# commit; the literal after `||` is the fallback this template shipped with.
+#
+# The Claude Code install step below downloads this exact release binary and
+# verifies its SHA256 against the release's GPG-signed manifest before
+# anything executes it. Without the pin, an install script fetched at job
+# time executes whatever upstream is serving at that moment — every other
+# third-party input to this workflow is SHA-pinned, so this one shouldn't be
+# the exception.
+#
+# Released Claude Code versions are listed at
+# https://www.npmjs.com/package/@anthropic-ai/claude-code?activeTab=versions
+# (the npm package and the native installer ship the same binary and the same
+# version numbers).
+env:
+  DESCRIBE_CLI_VERSION: ${{ vars.DESCRIBE_CLI_VERSION || '0.2.18' }}
+  CLAUDE_CODE_VERSION: ${{ vars.CLAUDE_CODE_VERSION || '2.1.267' }}
+  # Fingerprint of the Anthropic Claude Code release signing key. Fixed across
+  # releases; published at
+  # https://code.claude.com/docs/en/setup#binary-integrity-and-code-signing
+  # Only change this if Anthropic rotates the key.
+  CLAUDE_CODE_GPG_FINGERPRINT: '31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE'
+  # Native installs auto-update in the background. A pin that silently updates
+  # itself mid-job is not a pin.
+  DISABLE_AUTOUPDATER: '1'
+  # Also switches off telemetry, error reporting and the update check, so the
+  # only outbound traffic from the binary is the model API. Keeps the Bullfrog
+  # egress log to what the job actually needs.
+  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1'
+
+jobs:
+  describe:
+    if: |
+      !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association) ||
+        github.event.pull_request.user.type == 'Bot') &&
+      !startsWith(github.head_ref, 'gh-readonly-queue/') &&
+      !startsWith(github.head_ref, 'release/') &&
+      !startsWith(github.head_ref, 'changeset-release/') &&
+      !startsWith(github.head_ref, 'cherry-pick/') &&
+      !startsWith(github.head_ref, 'dependabot/') &&
+      !startsWith(github.head_ref, 'renovate/') &&
+      !startsWith(github.event.pull_request.title, 'chore(release):')
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # checkout for the diff
+      packages: read # pull @uniswap/describe-cli from GitHub Packages
+      pull-requests: write # write the description
+    timeout-minutes: 10
+    env:
+      # Project-scope files Claude Code executes rather than reads: settings
+      # `hooks` run as commands and `.mcp.json` `mcpServers` spawn processes.
+      # The drop step removes every copy before Claude Code launches and the
+      # base-branch step never writes one back from either ref; both read
+      # this one list, so a new auto-executing config format is added here
+      # once. Space-separated paths relative to any directory.
+      CLAUDE_AUTORUN_FILES: .claude/settings.json .claude/settings.local.json .mcp.json
+
+    steps:
+      # Egress monitor. Must be the first step of the job or it cannot see
+      # the requests made before it started. Audit mode: every outbound
+      # connection is listed in the job summary without being blocked; that
+      # list is the input for switching this to `egress-policy: block`.
+      - uses: bullfrogsec/bullfrog@1831f79cce8ad602eef14d2163873f27081ebfb3 # v0.8.4
+        with:
+          egress-policy: audit
+
+      # Trust boundary for the describe job, re-checked here against the API
+      # rather than trusting the event payload: the PR must come from this
+      # repository (never a fork) and be authored by a member or owner of
+      # the organization, or by a bot the organization installed. A comment
+      # PR that slipped past the `if:` above would otherwise reach the
+      # checkout below with PR-controlled code in a job holding the LLM
+      # credential. Same-repo plus membership is the whole model: outside
+      # contributions never reach this job.
+      # Membership is decided by the repository's outside-collaborator list,
+      # not by `author_association`: the API labels a member with private
+      # membership COLLABORATOR (verified on Uniswap/ai-sandbox#58), and
+      # the job token cannot read organization membership (404/403), but it
+      # can list outside collaborators, which is exactly the set to refuse.
+      # Kept byte-identical to the same-named step in the sibling template;
+      # packages/review-cli/src/templates-parity.test.ts fails if they drift.
+      - name: Refuse fork PRs and non-member authors
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          pr=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")
+          head_repo=$(printf '%s' "$pr" | jq -r '.head.repo.full_name // empty')
+          author=$(printf '%s' "$pr" | jq -r '.user.login // empty')
+          assoc=$(printf '%s' "$pr" | jq -r '.author_association // empty')
+          utype=$(printf '%s' "$pr" | jq -r '.user.type // empty')
+          if [ "$head_repo" != "$GH_REPO" ]; then
+            echo "::error::PR #$PR_NUMBER head is $head_repo, not $GH_REPO. Fork PRs never pass this gate."
+            exit 1
+          fi
+          if [ "$utype" = "Bot" ]; then
+            echo "PR #$PR_NUMBER is authored by installed bot '$author'; continuing."
+            exit 0
+          fi
+          case "$assoc" in
+            OWNER|MEMBER|COLLABORATOR) ;;
+            *)
+              echo "::error::PR #$PR_NUMBER author '$author' has association '$assoc'. Only organization members, owners and installed bots pass this gate."
+              exit 1
+              ;;
+          esac
+          # COLLABORATOR is what the API reports for a member whose membership
+          # is private, and also for an outside collaborator. Only the second
+          # is refused, and the outside-collaborator list is how to tell.
+          is_outside=$(gh api --paginate "repos/$GH_REPO/collaborators?affiliation=outside&per_page=100" \
+            | jq -rs --arg a "$author" 'any(.[][]; .login == $a)')
+          if [ "$is_outside" != "false" ]; then
+            echo "::error::PR #$PR_NUMBER author '$author' is an outside collaborator (lookup: $is_outside). Only organization members, owners and installed bots pass this gate."
+            exit 1
+          fi
+          echo "PR #$PR_NUMBER author '$author': same-repo head, association $assoc, not an outside collaborator; continuing."
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@4bc047ad259df6fc24a6c9b0f9a0cb08cf17fbe5 # v2.0.1
+        with:
+          bun-version: '1.3.13'
+
+      # Install the CLI with NO repo content on disk (the checkout comes
+      # after). describe-cli is published only to GitHub Packages, so the
+      # @uniswap scope must be routed there. Bun supports per-scope but not
+      # per-package registry overrides, so the install runs from a scratch
+      # directory with its own bunfig rather than adding one to your repo.
+      # `bun add` is pointed at that file with --config; bun ignores the
+      # BUN_CONFIG_FILE environment variable entirely (verified on 1.3.13
+      # and 1.3.14), so the flag and the scratch CWD are what keep any other
+      # bunfig.toml out of scope.
+      - name: Install describe-cli
+        id: install
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          install_dir="$RUNNER_TEMP/describe-cli-install"
+          mkdir -p "$install_dir"
+          cat > "$install_dir/bunfig.toml" <<EOF
+          [install.scopes]
+          "@uniswap" = { url = "https://npm.pkg.github.com", token = "$GH_PACKAGES_TOKEN" }
+          EOF
+          # The bunfig holds GITHUB_TOKEN in cleartext and is only needed until
+          # the package resolves. Remove it on every exit path — a failed
+          # `bun add` must not leave it under $RUNNER_TEMP either.
+          trap 'rm -f "$install_dir/bunfig.toml" "$RUNNER_TEMP/bun-add.err"' EXIT
+          cd "$install_dir"
+          bun init -y > /dev/null
+          if ! bun add --config="$install_dir/bunfig.toml" "@uniswap/describe-cli@${DESCRIBE_CLI_VERSION}" 2> "$RUNNER_TEMP/bun-add.err"; then
+            cat "$RUNNER_TEMP/bun-add.err" >&2
+            if grep -qE '(^|[^0-9])403([^0-9]|$)' "$RUNNER_TEMP/bun-add.err"; then
+              echo "::error::403 from GitHub Packages. $GITHUB_REPOSITORY has no read access to @uniswap/describe-cli. Fix: Uniswap/internal-tools -> Packages -> describe-cli -> Package settings -> Manage Actions access -> add this repository. This is a per-repo grant; no workflow change can confer it."
+            fi
+            exit 1
+          fi
+          echo "bin=$install_dir/node_modules/.bin/describe-cli" >> "$GITHUB_OUTPUT"
+
+      - name: Verify an LLM credential is present
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ] && [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::No LLM credential. Set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN as a repo secret. If both are set, Claude Code uses the API key."
+            exit 1
+          fi
+
+      # Claude Code is fetched as a bare release binary and verified against
+      # the release's GPG-signed manifest BEFORE anything executes. Earlier
+      # revisions of this template piped https://claude.ai/install.sh into
+      # bash first and verified the binary it produced; that left the one
+      # unpinned, unsigned executable in the chain running before any check,
+      # in a job holding the LLM credential. Nothing here runs until the
+      # checksum matches.
+      #
+      # The version installed is pinned by `CLAUDE_CODE_VERSION` at the top of
+      # this file. Bump it there.
+      # Kept byte-identical to the same-named step in the sibling template;
+      # packages/review-cli/src/templates-parity.test.ts fails if they drift.
+      - name: Install Claude Code binary
+        run: |
+          set -euo pipefail
+
+          case "$(uname -s)/$(uname -m)" in
+            Linux/x86_64) PLATFORM='linux-x64' ;;
+            Linux/aarch64 | Linux/arm64) PLATFORM='linux-arm64' ;;
+            *)
+              echo "::error::No release-manifest platform key for $(uname -s)/$(uname -m). This template assumes a Linux runner; add a case here if you changed runs-on."
+              exit 1
+              ;;
+          esac
+
+          RELEASES='https://downloads.claude.ai/claude-code-releases'
+          WORK="$(mktemp -d)"
+          curl -fsSL "$RELEASES/$CLAUDE_CODE_VERSION/manifest.json" -o "$WORK/manifest.json"
+          curl -fsSL "$RELEASES/$CLAUDE_CODE_VERSION/manifest.json.sig" -o "$WORK/manifest.json.sig"
+
+          # The manifest lists a SHA256 for every platform binary and is itself
+          # GPG-signed, so a good signature on the manifest transitively covers
+          # the binary. Import into a throwaway keyring, assert the KEY
+          # FINGERPRINT, then require the signature itself to come from that
+          # key: `gpg --verify` alone accepts a valid signature from ANY key in
+          # the keyring, so a poisoned key bundle would pass the fingerprint
+          # check and then sign a tampered manifest. VALIDSIG lists the signing
+          # key first and the primary key last.
+          export GNUPGHOME="$WORK/gnupg"
+          mkdir -m 0700 "$GNUPGHOME"
+          curl -fsSL https://downloads.claude.ai/keys/claude-code.asc | gpg --batch --quiet --import
+          if ! gpg --batch --with-colons --fingerprint security@anthropic.com \
+            | grep -q "^fpr:.*:${CLAUDE_CODE_GPG_FINGERPRINT}:"; then
+            echo "::error::Claude Code release signing key does not match the pinned fingerprint $CLAUDE_CODE_GPG_FINGERPRINT"
+            exit 1
+          fi
+          if ! gpg --batch --status-fd 1 --verify "$WORK/manifest.json.sig" "$WORK/manifest.json" \
+            | grep -qE "^\[GNUPG:\] VALIDSIG (${CLAUDE_CODE_GPG_FINGERPRINT} |.* ${CLAUDE_CODE_GPG_FINGERPRINT}$)"; then
+            echo "::error::manifest.json signature was not made by the pinned key $CLAUDE_CODE_GPG_FINGERPRINT"
+            exit 1
+          fi
+
+          MANIFEST_VERSION="$(jq -r '.version // empty' "$WORK/manifest.json")"
+          if [ "$MANIFEST_VERSION" != "$CLAUDE_CODE_VERSION" ]; then
+            echo "::error::manifest.json at the $CLAUDE_CODE_VERSION URL declares version '$MANIFEST_VERSION'. A validly signed manifest for a different release is not the release this workflow pinned."
+            exit 1
+          fi
+
+          EXPECTED="$(jq -r --arg p "$PLATFORM" '.platforms[$p].checksum // empty' "$WORK/manifest.json")"
+          if [ -z "$EXPECTED" ]; then
+            echo "::error::manifest.json for $CLAUDE_CODE_VERSION lists no checksum for $PLATFORM"
+            exit 1
+          fi
+
+          # Same URL the official installer downloads from, verified against
+          # the signed manifest before it is made executable.
+          curl -fsSL "$RELEASES/$CLAUDE_CODE_VERSION/$PLATFORM/claude" -o "$WORK/claude"
+          ACTUAL="$(sha256sum "$WORK/claude" | cut -d' ' -f1)"
+          if [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "::error::Claude Code $CLAUDE_CODE_VERSION checksum mismatch for $PLATFORM (expected $EXPECTED, got $ACTUAL). The download does not match the signed manifest; do not work around this by changing the version pin."
+            exit 1
+          fi
+          CLAUDE_DIR="$RUNNER_TEMP/claude-code"
+          mkdir -p "$CLAUDE_DIR"
+          install -m 0755 "$WORK/claude" "$CLAUDE_DIR/claude"
+          rm -rf "$WORK"
+          echo "Verified Claude Code $CLAUDE_CODE_VERSION ($PLATFORM) against the signed release manifest."
+
+          # Point the SDK at the binary we actually verified.
+          echo "CLAUDE_CODE_EXECUTABLE_PATH=$CLAUDE_DIR/claude" >> "$GITHUB_ENV"
+          echo "$CLAUDE_DIR" >> "$GITHUB_PATH"
+
+      # Pinned to the PR head rather than left to default. The default for
+      # pull_request events is refs/pull/N/merge, which GitHub stops
+      # publishing once the PR has conflicts, so the checkout would fail with
+      # "couldn't find remote ref" on exactly the PRs that most need a
+      # description. describe-cli reads the diff itself over the API
+      # (`gh pr diff`), so the checkout supplies file context plus the refs
+      # its change detection hashes: `git rev-parse` on HEAD and its tree, and
+      # `git diff origin/<base>..HEAD | git patch-id`. The patch-id needs
+      # origin/<base>, so fetch-depth stays 0; at depth 1 the call fails, is
+      # caught, and the content-preserving-rebase fast path is lost (change
+      # detection falls back to per-hunk digests).
+      #
+      # Everything from here runs with untrusted PR files in the working
+      # directory. bun auto-loads ./bunfig.toml from CWD and executes its
+      # `preload` array in-process, and it auto-loads a CWD dotenv file into
+      # any environment variable the job left unset. describe-cli's bin is a
+      # `#!/usr/bin/env bun` script, so it is launched as
+      # `bun --config=/dev/null --env-file=/dev/null "$DESCRIBE_CLI"`. Those
+      # flags are the only thing that works: BUN_CONFIG_FILE=/dev/null does
+      # not suppress the bunfig (a `preload` still ran under it on bun 1.3.13
+      # and 1.3.14). The installs above already completed against
+      # their own config.
+      - name: Checkout PR head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
+
+
+      # describe-cli runs its agent through the Claude Agent SDK with the
+      # `project` setting source, so Claude Code reads this checkout's
+      # `.claude/settings.json` and `.claude/settings.local.json` (whose
+      # `hooks` run as commands) and `.mcp.json` (whose `mcpServers` spawn
+      # commands), at the root and below it. That is a PR-author-controlled
+      # execution path of the same class as the bunfig and dotenv ones above,
+      # so every copy goes before anything launches Claude Code. The same
+      # source also reads CLAUDE.md, `.claude/rules/` and `.claude/agents/` as
+      # instructions; the next step takes those from the base branch.
+      - name: Drop PR-authored Claude Code settings
+        run: |
+          # describe-cli works on this checkout as it stands (its git calls
+          # compare committed refs), so unlike review.yml nothing here has to
+          # keep `git status` clean; the files are simply removed. A `.claude`
+          # directory or `.mcp.json` committed as a symlink is followed by
+          # Claude Code but skipped by a plain `find`, so symlinks by those
+          # names go first, then the files themselves. A removal that fails
+          # stops the job instead of launching Claude Code against the
+          # surviving file.
+          set -euo pipefail
+          drop() {
+            rm -rf "$1" || { echo "::error::Could not remove PR-authored $1"; exit 1; }
+            if [ -e "$1" ] || [ -L "$1" ]; then echo "::error::PR-authored $1 is still present after its removal"; exit 1; fi
+            echo "::warning::Removed PR-authored $1 before launching Claude Code; inspect it in the PR diff."
+          }
+          # The file list is the job-level CLAUDE_AUTORUN_FILES, shared with the
+          # base-branch step below so the two cannot drift.
+          match=(); for n in $CLAUDE_AUTORUN_FILES; do match+=(-o -path "*/$n"); done
+          # The listing is written to a file first so a failing `find` ends the
+          # step under `set -e` instead of running an empty loop.
+          found=$(mktemp "${RUNNER_TEMP:-/tmp}/autorun-find.XXXXXX")
+          find . -path ./.git -prune -o -type l \( -name '.claude' "${match[@]}" \) -print0 > "$found"
+          while IFS= read -r -d '' f; do drop "$f"; done < "$found"
+          find . -path ./.git -prune -o \( -false "${match[@]}" \) -print0 > "$found"
+          while IFS= read -r -d '' f; do drop "$f"; done < "$found"
+          rm -f -- "$found"
+
+      # CLAUDE.md (root and nested, plus CLAUDE.local.md), everything under
+      # `.claude/` (agents/, rules/, skills/, commands/, review files), and the
+      # convention files the CLIs inline into agent prompts (AGENTS.md at any
+      # depth; root .cursorrules, .cursor/rules.md, CONTRIBUTING.md,
+      # ARCHITECTURE.md and docs/ARCHITECTURE.md; kept identical to review.yml)
+      # are read from this checkout as instructions, and a PR can add text to
+      # them that reaches the agent as repo policy rather than as diff content.
+      # This step rewrites every one of them, plus whatever the default
+      # branch's CLAUDE.md files import, to the default branch's version
+      # before Claude Code launches.
+      #
+      # The default branch, not the PR's base branch: in a stack main > A > B,
+      # B's base is A, which is itself an open PR, so instructions read from
+      # the base would let a stacked PR apply its own to the description of
+      # the PR above it. For a PR against the default branch the two refs are
+      # the same.
+      #
+      # Note that `pull_request` runs the PR's own copy of this workflow file
+      # (only `pull_request_target` uses the base branch's), so this step is
+      # the only thing keeping the PR's instruction files from applying to
+      # their own description: the PR's version of each is described as a
+      # change and never applied.
+      #
+      # In a repo that also ships review-cli's canonical review.yml (not an
+      # older claude-code-review.yml, which has neither step), keep this block
+      # identical to its "Take the review policy from the default branch"
+      # step, minus the assume-unchanged and exclude bookkeeping that only
+      # review-cli's in-place review needs; a change to the policy set goes in
+      # both files.
+      - name: Take the instructions from the default branch
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          # Every tracked path in the policy set ends up identical to the default
+          # branch: there -> written from it; not there -> removed.
+          # The auto-executing files (`.claude/settings*.json`, `.mcp.json`)
+          # are the exception: never written back from either ref, so this is
+          # a second, index-driven removal for them. Files are written with
+          # `git checkout <sha> -- path`, so a mode on the default branch is
+          # reproduced; a symlink there is dereferenced (write_policy). Paths
+          # are passed to git as `:(literal)` pathspecs. Paths inside
+          # submodules are left alone. Every listing a loop reads is written to
+          # a file first: `while read` over a process substitution never sees the
+          # producer's exit status, so a failing `git ls-files` would run an empty
+          # loop and leave the PR's policy in place with the step green.
+          policy_ref=$DEFAULT_BRANCH
+          policy_sha=$(git rev-parse --verify --quiet "refs/remotes/origin/$policy_ref^{commit}") \
+            || { echo "::error::origin/$policy_ref (the default branch) is not in this checkout; fetch-depth must stay 0"; exit 1; }
+          policy='(^|/)CLAUDE(\.local)?\.md$|(^|/)\.claude(/|$)|(^|/)\.mcp\.json$|(^|/)AGENTS\.md$|^\.cursorrules$|^\.cursor/rules\.md$|^CONTRIBUTING\.md$|^(docs/)?(ARCHITECTURE|architecture)\.md$'
+          blob_at() { [ "$(git cat-file -t "$1:$2" 2>/dev/null || true)" = blob ]; }
+          autorun() { for n in $CLAUDE_AUTORUN_FILES; do if [ "$1" = "$n" ] || [[ $1 == */"$n" ]]; then return 0; fi; done; return 1; }
+          # A policy path that is a symlink on the default branch is dereferenced,
+          # never reproduced as a link: its target is usually outside the policy
+          # set (CLAUDE.md -> docs/instructions.md), so a PR could edit the
+          # target and leave the link untouched. The target is resolved inside
+          # the default branch's tree and written as a regular file; a target that
+          # escapes the repository, is missing there, or is itself a symlink means
+          # the path is removed instead (return 1). Kept byte-identical in both
+          # templates; templates-parity.test.ts fails if they drift.
+          mode_at() { git ls-tree -z "$1" -- ":(literal)$2" | cut -d' ' -f1; }
+          normpath() {
+            local IFS=/ segs seg out=()
+            read -r -a segs <<< "$1"
+            for seg in "${segs[@]}"; do
+              case $seg in ''|.) ;; ..) [ ${#out[@]} -gt 0 ] || return 1; unset 'out[${#out[@]}-1]' ;; *) out+=("$seg") ;; esac
+            done
+            [ ${#out[@]} -gt 0 ] || return 1
+            printf '%s' "${out[*]}"
+          }
+          write_policy() {
+            local p=$1 target resolved
+            if [ "$(mode_at "$policy_sha" "$p")" != 120000 ]; then
+              git checkout -q "$policy_sha" -- ":(literal)$p" \
+                || { echo "::error::could not write $p from origin/$policy_ref"; exit 1; }
+              return 0
+            fi
+            target=$(git cat-file -p "$policy_sha:$p")
+            case $target in /*) return 1 ;; esac
+            resolved=$(normpath "$(dirname -- "$p")/$target") || return 1
+            case "$(mode_at "$policy_sha" "$resolved")" in 100644|100755) ;; *) return 1 ;; esac
+            mkdir -p -- "$(dirname -- "$p")"
+            git cat-file -p "$policy_sha:$resolved" > "$p"
+            [ "$(mode_at "$policy_sha" "$resolved")" = 100755 ] && chmod +x -- "$p"
+            echo "::warning::$p is a symlink to $resolved on the default branch; the default branch's target content is written in its place."
+            return 0
+          }
+          # A CLAUDE.md imports other files with `@path` and Claude Code resolves
+          # those imports from the checkout when it loads the file, so a
+          # default-branch CLAUDE.md that says `@docs/style.md` would still read the
+          # PR's docs/style.md. The imports of every CLAUDE.md on the default branch
+          # join the policy set, recursively to the same four hops Claude Code
+          # follows, and are taken from the default branch too. An import target
+          # that is missing on the default branch joins the set as well, so a PR
+          # cannot supply it; a CLAUDE.md that is a symlink there is read through
+          # its target. The token rule is Claude Code's: `@` at line start or after
+          # whitespace, up to the next whitespace; nothing inside a fenced block or
+          # a backtick code span counts; `~/` and absolute paths are outside the
+          # repository. `extra` is newline-delimited and lookups are whole-line, so
+          # a path is matched exactly.
+          imp='(^|[[:space:]])@([^[:space:]]+)(.*)$'
+          bt=\`
+          span="^([^${bt}]*)${bt}[^${bt}]*${bt}(.*)\$"
+          extra=$'\n'
+          in_policy() { [[ $1 =~ $policy ]] || [[ $extra == *$'\n'"$1"$'\n'* ]]; }
+          import_paths() {
+            local f=$1 depth=$2 src dir line trimmed rest tok p fence=0 body
+            [ "$depth" -le 4 ] || return 0
+            dir=$(dirname -- "$f")
+            src=$f
+            if [ "$(mode_at "$policy_sha" "$f")" = 120000 ]; then
+              tok=$(git cat-file -p "$policy_sha:$f")
+              case $tok in /*) return 0 ;; esac
+              src=$(normpath "$dir/$tok") || return 0
+              case "$(mode_at "$policy_sha" "$src")" in 100644|100755) ;; *) return 0 ;; esac
+            fi
+            body=$(mktemp "${RUNNER_TEMP:-/tmp}/policy-import.XXXXXX")
+            git cat-file -p "$policy_sha:$src" > "$body"
+            while IFS= read -r line || [ -n "$line" ]; do
+              trimmed=${line#"${line%%[![:space:]]*}"}
+              case $trimmed in '```'*|'~~~'*) fence=$((1 - fence)); continue ;; esac
+              [ "$fence" -eq 0 ] || continue
+              rest=$line
+              while [[ $rest =~ $span ]]; do rest=${BASH_REMATCH[1]}${BASH_REMATCH[2]}; done
+              while [[ $rest =~ $imp ]]; do
+                tok=${BASH_REMATCH[2]}; rest=${BASH_REMATCH[3]}
+                while [[ $tok == *[.,:\;\)\"\'\`\]\>] ]]; do tok=${tok%?}; done
+                case $tok in ''|~*|/*) continue ;; esac
+                p=$(normpath "$dir/$tok") || continue
+                [[ $extra == *$'\n'"$p"$'\n'* ]] && continue
+                extra="$extra$p"$'\n'
+                if blob_at "$policy_sha" "$p"; then import_paths "$p" $((depth + 1)); fi
+              done
+            done < "$body"
+            rm -f -- "$body"
+          }
+          claude_md='(^|/)CLAUDE(\.local)?\.md$'
+          listing=$(mktemp "${RUNNER_TEMP:-/tmp}/policy-listing.XXXXXX")
+          git ls-tree -r -z --name-only "$policy_sha" > "$listing"
+          while IFS= read -r -d '' f; do if [[ $f =~ $claude_md ]]; then import_paths "$f" 1; fi; done < "$listing"
+          git ls-files -z > "$listing"
+          while IFS= read -r -d '' p; do
+            in_policy "$p" || continue
+            if autorun "$p"; then rm -rf -- "$p"; continue; fi
+            if blob_at "$policy_sha" "$p"; then
+              # A symlink on the default branch is always rewritten: comparing the
+              # link blob says nothing about the target's content.
+              if [ "$(mode_at "$policy_sha" "$p")" = 120000 ] || ! git diff --quiet "$policy_sha" HEAD -- ":(literal)$p"; then
+                rm -rf -- "$p"
+                if write_policy "$p"; then
+                  echo "::warning::$p differs from the default branch origin/$policy_ref; that version applies to this run and the PR's version is described as a change."
+                else
+                  echo "::warning::Removed $p: a symlink on the default branch origin/$policy_ref whose target cannot be resolved inside its tree, so no version applies to this run."
+                fi
+              fi
+            else
+              rm -rf -- "$p"
+              echo "::warning::Removed $p: not on the default branch origin/$policy_ref, so it is described as a change and not applied to this run."
+            fi
+          done < "$listing"
+          git ls-tree -r -z --name-only "$policy_sha" > "$listing"
+          while IFS= read -r -d '' p; do
+            in_policy "$p" || continue
+            autorun "$p" && continue
+            blob_at HEAD "$p" && continue
+            rm -rf -- "$p"
+            if write_policy "$p"; then
+              echo "::warning::$p is not a file on the PR head; the default branch origin/$policy_ref version applies to this run."
+            else
+              echo "::warning::$p is not a file on the PR head and is an unresolvable symlink on the default branch origin/$policy_ref; no version applies to this run."
+            fi
+          done < "$listing"
+          rm -f -- "$listing"
+
+      - name: Describe + post
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Either credential works. When both are set, Claude Code uses
+          # ANTHROPIC_API_KEY (its documented authentication precedence), so
+          # a stale key cannot be shadowed by adding a token; replace or
+          # remove the key instead.
+          # Both are forwarded because repos differ in which one they hold. If
+          # this repo's other Claude workflows deliberately withhold one of
+          # them, drop it here too so the two agree; this file makes no other
+          # claim about those workflows.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          DESCRIBE_CLI: ${{ steps.install.outputs.bin }}
+        run: |
+          bun --config=/dev/null --env-file=/dev/null "$DESCRIBE_CLI" describe "$PR_NUMBER" \
+            --repo "$GH_REPO" \
+            --post \
+            --yes \
+            --debug
