@@ -22,7 +22,7 @@ contract DeployHyperEVM is DeployUniversalRouter {
             spokePool: 0x35E63eA3eb0fb7A3bc543C71FB66412e1F6B0E04
         });
 
-        // no UnsupportedProtocol on HyperEVM yet; the script deploys one (unused: every param above is set)
-        unsupported = address(0);
+        // deployed by this script's first run on 2026-09-17 (tx 0xbc5218...e5cb); reuse it, do not create another
+        unsupported = 0xEEE3Aa3c0d6D6f4E702748DeAcb42991A0094BcF;
     }
 }
