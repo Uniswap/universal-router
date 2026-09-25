@@ -7,6 +7,8 @@ This directory contains Solidity interfaces for the Universal Router and externa
 ## Key Files
 
 - `IUniversalRouter.sol` - Main router interface with execute() methods and signature verification
+- `ISwapProxy.sol` - Proxy enabling 2-tx swap flow (ERC20 approve + swap) without Permit2 signatures
+- `IBalanceSwapProxy.sol` - Proxy for full-balance swaps: pre-signed route-bound Permit2 witness (relayed) or direct standing-approval modes
 - `external/IV3SpokePool.sol` - Across Protocol V3 bridge integration interface
 
 ## Purpose
