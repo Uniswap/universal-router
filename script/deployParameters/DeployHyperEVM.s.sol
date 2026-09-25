@@ -16,7 +16,7 @@ contract DeployHyperEVM is DeployUniversalRouter {
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
             v4PoolManager: 0x12D4Fd9C5DeDd00ab8a0bCe2CF0167bbf94b6B1F,
-            permissionsAdapterFactory: 0x2a9049F60a1a42E82ba340eFe02b9Ba468Aff803,
+            permissionsAdapterFactory: 0x8702463e73f74d0b6765aBceb314Ef07aCb92650,
             v3NFTPositionManager: 0x39654A85A4C05127f5Fd6ED22CAeC077A0fB1377,
             v4PositionManager: 0x0d7Ab5B3db668128Aff6F70C4eBC71D7d4DA9bf9,
             // Across SpokePool on HyperEVM (chainId()=999, wrappedNativeToken()=WHYPE)
