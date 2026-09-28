@@ -3,12 +3,13 @@ pragma solidity ^0.8.24;
 
 /// @title TransientSlots
 /// @notice The single allocation table for every transient storage slot the router uses
-/// @dev Slots are small literals rather than keccak-derived hashes. Each reference to a 32-byte constant costs a
-/// PUSH32 in the runtime bytecode, and the router sits within a few hundred bytes of the EIP-170 limit, so the
-/// hashed form spent roughly 750 bytes on nothing: transient storage is private to this contract, so the only
-/// requirement is that the slots below are distinct from one another. No inherited dependency (v4-periphery,
-/// permit2, solmate, OpenZeppelin 5.0) touches transient storage in the router's context. Append new slots at the
-/// end and never reuse a number.
+/// @dev Slots are small literals rather than keccak hashes: each 32-byte constant costs a PUSH32, and the hashed form
+/// spent roughly 700 bytes of a contract near the EIP-170 limit. Transient storage is per-contract, so the slots only
+/// need to be distinct from one another, and no dependency (v4-periphery, permit2, solmate, OpenZeppelin 5.0) uses
+/// transient storage in the router's context. Append new slots at the end and never reuse a number.
+/// WARNING: solc >=0.8.28 allocates `transient` state variables from slot 0 upward, so they would collide with this
+/// table. No contract in the router's inheritance tree, dependencies included, may declare one. To adopt `transient`,
+/// migrate every slot below in one change and delete this table.
 library TransientSlots {
     /// @dev The address that holds the reentrancy lock (Locker.sol)
     bytes32 internal constant LOCKER = 0x0000000000000000000000000000000000000000000000000000000000000001;
