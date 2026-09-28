@@ -89,6 +89,31 @@ contract V3ProtocolFeeUpdateTest is Test {
         router.execute(commands, inputs);
     }
 
+    /// @dev Reading the factory owner is a high-level call outside FLAG_ALLOW_REVERT, so on a chain without a v3
+    /// factory the command reverts the whole execute rather than failing softly.
+    function test_v3ProtocolFeeUpdate_noFactoryRevertsEvenWithAllowRevert() public {
+        RouterParameters memory params = RouterParameters({
+            permit2: address(0),
+            weth9: address(0),
+            v2Factory: address(0),
+            v3Factory: address(0),
+            pairInitCodeHash: bytes32(0),
+            poolInitCodeHash: bytes32(0),
+            v4PoolManager: address(0),
+            permissionsAdapterFactory: address(0),
+            v3NFTPositionManager: address(0),
+            v4PositionManager: address(0),
+            spokePool: address(0)
+        });
+        UniversalRouter noV3Router = new UniversalRouter(params);
+        (bytes memory commands, bytes[] memory inputs) = _plan(POOL, true);
+
+        // Empty revert data: the lookup finds no code and its return value fails to decode. ExecutionFailed
+        // (a soft, catchable failure) would carry data, so this also proves FLAG_ALLOW_REVERT did not apply.
+        vm.expectRevert(bytes(''));
+        noV3Router.execute(commands, inputs);
+    }
+
     function test_v3ProtocolFeeUpdate_shortInputReverts() public {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V3_PROTOCOL_FEE_UPDATE)));
         bytes[] memory inputs = new bytes[](1);

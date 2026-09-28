@@ -122,6 +122,31 @@ contract V4ProtocolFeeUpdateTest is Test, Deployers {
         assertEq(fee, 0);
     }
 
+    /// @dev Reading the controller is a high-level call outside FLAG_ALLOW_REVERT, so on a chain without a v4
+    /// PoolManager the command reverts the whole execute rather than failing softly.
+    function test_v4ProtocolFeeUpdate_noPoolManagerRevertsEvenWithAllowRevert() public {
+        RouterParameters memory params = RouterParameters({
+            permit2: address(0),
+            weth9: address(0),
+            v2Factory: address(0),
+            v3Factory: address(0),
+            pairInitCodeHash: bytes32(0),
+            poolInitCodeHash: bytes32(0),
+            v4PoolManager: address(0),
+            permissionsAdapterFactory: address(0),
+            v3NFTPositionManager: address(0),
+            v4PositionManager: address(0),
+            spokePool: address(0)
+        });
+        UniversalRouter noV4Router = new UniversalRouter(params);
+        (bytes memory commands, bytes[] memory inputs) = _plan(key, true);
+
+        // Empty revert data: the lookup finds no code and its return value fails to decode. ExecutionFailed
+        // (a soft, catchable failure) would carry data, so this also proves FLAG_ALLOW_REVERT did not apply.
+        vm.expectRevert(bytes(''));
+        noV4Router.execute(commands, inputs);
+    }
+
     function test_v4ProtocolFeeUpdate_shortInputReverts() public {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_PROTOCOL_FEE_UPDATE)));
         bytes[] memory inputs = new bytes[](1);
