@@ -3,7 +3,6 @@ pragma solidity ^0.8.24;
 
 /// @notice A library to implement a reentrancy lock in transient storage.
 /// @dev Instead of storing a boolean, the locker's address is stored to allow the contract to know who locked the contract
-/// TODO: This library can be deleted when we have the transient keyword support in solidity.
 library Locker {
     // The slot holding the locker state, transiently. Must equal TransientSlots.LOCKER; inline assembly only accepts
     // a literal here.

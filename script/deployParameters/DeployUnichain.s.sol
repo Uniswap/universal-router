@@ -19,5 +19,7 @@ contract DeployUnichain is DeployUniversalRouter {
             v4PositionManager: 0x4529A01c7A0410167c5740C487A8DE60232617bf,
             spokePool: 0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64
         });
+
+        unsupported = 0xe2023F3FA515cF070e07fD9d51c1d236e07843f4;
     }
 }
