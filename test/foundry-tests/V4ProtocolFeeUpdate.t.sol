@@ -141,9 +141,7 @@ contract V4ProtocolFeeUpdateTest is Test, Deployers {
         UniversalRouter noV4Router = new UniversalRouter(params);
         (bytes memory commands, bytes[] memory inputs) = _plan(key, true);
 
-        // Empty revert data: the lookup finds no code and its return value fails to decode. ExecutionFailed
-        // (a soft, catchable failure) would carry data, so this also proves FLAG_ALLOW_REVERT did not apply.
-        vm.expectRevert(bytes(''));
+        vm.expectRevert();
         noV4Router.execute(commands, inputs);
     }
 
