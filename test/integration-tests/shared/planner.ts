@@ -31,6 +31,7 @@ export enum CommandType {
   V4_POSITION_MANAGER_CALL = 0x14,
   RESOLVE = 0x15,
   V4_PROTOCOL_FEE_UPDATE = 0x16,
+  V3_PROTOCOL_FEE_UPDATE = 0x17,
 
   EXECUTE_SUB_PLAN = 0x21,
 }
@@ -91,6 +92,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
 
   // Protocol fee propagation
   [CommandType.V4_PROTOCOL_FEE_UPDATE]: [POOL_KEY_STRUCT],
+  [CommandType.V3_PROTOCOL_FEE_UPDATE]: ['address'],
 }
 
 export class RoutePlanner {
