@@ -19,5 +19,7 @@ contract DeployZora is DeployUniversalRouter {
             v4PositionManager: 0xf66C7b99e2040f0D9b326B3b7c152E9663543D63,
             spokePool: 0x13fDac9F9b4777705db45291bbFF3c972c6d1d97
         });
+
+        unsupported = 0x661E93cca42AfacB172121EF892830cA3b70F08d;
     }
 }

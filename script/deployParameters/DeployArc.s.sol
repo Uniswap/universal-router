@@ -4,22 +4,24 @@ pragma solidity ^0.8.24;
 import {DeployUniversalRouter} from '../DeployUniversalRouter.s.sol';
 import {RouterParameters} from 'contracts/types/RouterParameters.sol';
 
-contract DeployWorldchain is DeployUniversalRouter {
+contract DeployArc is DeployUniversalRouter {
     function setUp() public override {
         params = RouterParameters({
             permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
-            weth9: 0x4200000000000000000000000000000000000006,
-            v2Factory: 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f,
-            v3Factory: 0x7a5028BDa40e7B173C278C5342087826455ea25a,
+            // Arc has no canonical WETH
+            weth9: UNSUPPORTED_PROTOCOL,
+            v2Factory: 0x89e5DB8B5aA49aA85AC63f691524311AEB649eba,
+            v3Factory: 0xf0db7b58379503491d857dB50AC9ece64c653918,
             pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
             poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54,
-            v4PoolManager: 0xb1860D529182ac3BC1F51Fa2ABd56662b7D13f33,
+            v4PoolManager: 0x8366a39CC670B4001A1121B8F6A443A643e40951,
             permissionsAdapterFactory: address(0), // ToDo: Add permissions adapter factory
-            v3NFTPositionManager: 0xec12a9F9a09f50550686363766Cc153D03c27b5e,
-            v4PositionManager: 0xC585E0f504613b5fBf874F21Af14c65260fB41fA,
-            spokePool: 0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64
+            v3NFTPositionManager: 0x39654A85A4C05127f5Fd6ED22CAeC077A0fB1377,
+            v4PositionManager: 0x6049c9a0e26405C0985f9E3685C87d0aE917f82B,
+            // no Across SpokePool on Arc
+            spokePool: UNSUPPORTED_PROTOCOL
         });
 
-        unsupported = 0x661E93cca42AfacB172121EF892830cA3b70F08d;
+        unsupported = 0x8bcEaA40B9AcdfAedF85AdF4FF01F5Ad6517937f;
     }
 }

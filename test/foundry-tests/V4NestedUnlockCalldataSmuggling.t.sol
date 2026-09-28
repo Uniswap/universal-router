@@ -182,8 +182,8 @@ contract V4NestedUnlockCalldataSmugglingTest is Test, Deployers {
 
     /// @notice The regression: the declared input authorises nothing (its swap parameter body is blank), the
     ///         real swap struct is appended past inputs[0].length, and the struct offset is redirected at it.
-    ///         The re-encode makes calldata end at the input boundary, so the redirect resolves to zeroes and
-    ///         no funds move.
+    ///         abi.decode bounds the offset against params.length, so the redirect resolves to zeroes and no
+    ///         funds move.
     function test_nestedUnlock_structOffsetRedirect_cannotReachSmuggledBytes() public {
         bytes memory planBlob = _plan(SMUGGLED_AMOUNT);
 
