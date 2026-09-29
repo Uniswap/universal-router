@@ -24,15 +24,10 @@ abstract contract Payments is PaymentsImmutables {
     /// @param recipient The address that will receive the payment
     /// @param value The amount to pay
     function pay(address token, address recipient, uint256 value) internal {
-        if (token == Constants.ETH) {
-            recipient.safeTransferETH(value);
-        } else {
-            if (value == ActionConstants.CONTRACT_BALANCE) {
-                value = ERC20(token).balanceOf(address(this));
-            }
-
-            ERC20(token).safeTransfer(recipient, value);
+        if (token != Constants.ETH && value == ActionConstants.CONTRACT_BALANCE) {
+            value = ERC20(token).balanceOf(address(this));
         }
+        _transfer(token, recipient, value);
     }
 
     /// @notice Pays a proportion of the contract's ETH or ERC20 to a recipient
@@ -40,15 +35,7 @@ abstract contract Payments is PaymentsImmutables {
     /// @param recipient The address that will receive payment
     /// @param bips Portion in bips of whole balance of the contract
     function payPortion(address token, address recipient, uint256 bips) internal {
-        if (token == Constants.ETH) {
-            uint256 balance = address(this).balance;
-            uint256 amount = balance.calculatePortion(bips);
-            recipient.safeTransferETH(amount);
-        } else {
-            uint256 balance = ERC20(token).balanceOf(address(this));
-            uint256 amount = balance.calculatePortion(bips);
-            ERC20(token).safeTransfer(recipient, amount);
-        }
+        _transfer(token, recipient, _balanceOf(token).calculatePortion(bips));
     }
 
     /// @notice Pays a proportion of the contract's ETH or ERC20 to a recipient with 1e18 precision
@@ -57,15 +44,7 @@ abstract contract Payments is PaymentsImmutables {
     /// @param portion Portion of whole balance of the contract, where 1e18 represents 100%
     function payPortionFullPrecision(address token, address recipient, uint256 portion) internal {
         if (portion > 1e18) revert InvalidPortion();
-        if (token == Constants.ETH) {
-            uint256 balance = address(this).balance;
-            uint256 amount = balance * portion / 1e18;
-            recipient.safeTransferETH(amount);
-        } else {
-            uint256 balance = ERC20(token).balanceOf(address(this));
-            uint256 amount = balance * portion / 1e18;
-            ERC20(token).safeTransfer(recipient, amount);
-        }
+        _transfer(token, recipient, _balanceOf(token) * portion / 1e18);
     }
 
     /// @notice Sweeps all of the contract's ERC20 or ETH to an address
@@ -73,16 +52,12 @@ abstract contract Payments is PaymentsImmutables {
     /// @param recipient The address that will receive payment
     /// @param amountMinimum The minimum desired amount
     function sweep(address token, address recipient, uint256 amountMinimum) internal {
-        uint256 balance;
-        if (token == Constants.ETH) {
-            balance = address(this).balance;
-            if (balance < amountMinimum) revert InsufficientETH();
-            if (balance > 0) recipient.safeTransferETH(balance);
-        } else {
-            balance = ERC20(token).balanceOf(address(this));
-            if (balance < amountMinimum) revert InsufficientToken();
-            if (balance > 0) ERC20(token).safeTransfer(recipient, balance);
+        uint256 balance = _balanceOf(token);
+        if (balance < amountMinimum) {
+            if (token == Constants.ETH) revert InsufficientETH();
+            revert InsufficientToken();
         }
+        if (balance > 0) _transfer(token, recipient, balance);
     }
 
     /// @notice Wraps an amount of ETH into WETH
@@ -107,15 +82,8 @@ abstract contract Payments is PaymentsImmutables {
     /// @param amountMinimum The minimum amount of ETH desired
     function unwrapWETH9(address recipient, uint256 amountMinimum) internal {
         uint256 value = WETH9.balanceOf(address(this));
-        if (value < amountMinimum) {
-            revert InsufficientETH();
-        }
-        if (value > 0) {
-            WETH9.withdraw(value);
-            if (recipient != address(this)) {
-                recipient.safeTransferETH(value);
-            }
-        }
+        if (value < amountMinimum) revert InsufficientETH();
+        _unwrap(recipient, value);
     }
 
     /// @notice Unwraps an exact amount of the contract's WETH into ETH
@@ -123,11 +91,36 @@ abstract contract Payments is PaymentsImmutables {
     /// @param amount The exact amount of WETH to unwrap
     function unwrapWETH9Exact(address recipient, uint256 amount) internal {
         if (WETH9.balanceOf(address(this)) < amount) revert InsufficientETH();
+        _unwrap(recipient, amount);
+    }
+
+    /// @notice Unwraps an amount of WETH and forwards the ETH to a recipient
+    /// @param recipient The recipient of the ETH; if this contract, the ETH is kept here
+    /// @param amount The amount of WETH to unwrap
+    function _unwrap(address recipient, uint256 amount) private {
         if (amount > 0) {
             WETH9.withdraw(amount);
             if (recipient != address(this)) {
                 recipient.safeTransferETH(amount);
             }
+        }
+    }
+
+    /// @notice Returns the contract's balance of a token
+    /// @param token The token to query (can be ETH using Constants.ETH)
+    function _balanceOf(address token) private view returns (uint256) {
+        return token == Constants.ETH ? address(this).balance : ERC20(token).balanceOf(address(this));
+    }
+
+    /// @notice Transfers an amount of ETH or ERC20 to a recipient
+    /// @param token The token to transfer (can be ETH using Constants.ETH)
+    /// @param recipient The address that will receive the transfer
+    /// @param amount The amount to transfer
+    function _transfer(address token, address recipient, uint256 amount) private {
+        if (token == Constants.ETH) {
+            recipient.safeTransferETH(amount);
+        } else {
+            ERC20(token).safeTransfer(recipient, amount);
         }
     }
 }
