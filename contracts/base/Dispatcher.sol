@@ -16,7 +16,6 @@ import {IAmountResolver} from '../interfaces/IAmountResolver.sol';
 import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
-import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
@@ -90,7 +89,7 @@ abstract contract Dispatcher is
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
                         v3SwapExactInput(
-                            map(recipient), resolveAmount(amountIn), amountOutMin, path, payer, minHopPriceX36
+                            _mapRecipient(recipient), resolveAmount(amountIn), amountOutMin, path, payer, minHopPriceX36
                         );
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
                         checkInputLength(inputs, 0xc0);
@@ -110,7 +109,7 @@ abstract contract Dispatcher is
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
                         v3SwapExactOutput(
-                            map(recipient), resolveAmount(amountOut), amountInMax, path, payer, minHopPriceX36
+                            _mapRecipient(recipient), resolveAmount(amountOut), amountInMax, path, payer, minHopPriceX36
                         );
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
                         checkInputLength(inputs, 0x60);
@@ -123,7 +122,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(add(inputs.offset, 0x20))
                             amount := calldataload(add(inputs.offset, 0x40))
                         }
-                        permit2TransferFrom(token, msgSender(), map(recipient), amount);
+                        permit2TransferFrom(token, msgSender(), _mapRecipient(recipient), amount);
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
                         IAllowanceTransfer.PermitBatch calldata permitBatch = decodePermitBatch(inputs);
                         bytes calldata data = inputs.toBytes(1);
@@ -155,7 +154,7 @@ abstract contract Dispatcher is
                             address underlying = PERMISSIONS_ADAPTER_FACTORY.verifiedPermissionsAdapterOf(token);
                             if (underlying != address(0)) token = underlying;
                         }
-                        Payments.sweep(token, map(recipient), amountMin);
+                        Payments.sweep(token, _mapRecipient(recipient), amountMin);
                     } else if (command == Commands.TRANSFER) {
                         checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
@@ -167,7 +166,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(add(inputs.offset, 0x20))
                             value := calldataload(add(inputs.offset, 0x40))
                         }
-                        Payments.pay(token, map(recipient), resolveAmount(value));
+                        Payments.pay(token, _mapRecipient(recipient), resolveAmount(value));
                     } else if (command == Commands.PAY_PORTION) {
                         checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
@@ -179,7 +178,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(add(inputs.offset, 0x20))
                             bips := calldataload(add(inputs.offset, 0x40))
                         }
-                        Payments.payPortion(token, map(recipient), bips);
+                        Payments.payPortion(token, _mapRecipient(recipient), bips);
                     } else if (command == Commands.PAY_PORTION_FULL_PRECISION) {
                         checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
@@ -191,7 +190,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(add(inputs.offset, 0x20))
                             portion := calldataload(add(inputs.offset, 0x40))
                         }
-                        Payments.payPortionFullPrecision(token, map(recipient), portion);
+                        Payments.payPortionFullPrecision(token, _mapRecipient(recipient), portion);
                     }
                 } else {
                     // 0x08 <= command < 0x10
@@ -213,7 +212,7 @@ abstract contract Dispatcher is
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
                         v2SwapExactInput(
-                            map(recipient), resolveAmount(amountIn), amountOutMin, path, payer, minHopPriceX36
+                            _mapRecipient(recipient), resolveAmount(amountIn), amountOutMin, path, payer, minHopPriceX36
                         );
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
                         checkInputLength(inputs, 0xc0);
@@ -233,7 +232,7 @@ abstract contract Dispatcher is
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
                         v2SwapExactOutput(
-                            map(recipient), resolveAmount(amountOut), amountInMax, path, payer, minHopPriceX36
+                            _mapRecipient(recipient), resolveAmount(amountOut), amountInMax, path, payer, minHopPriceX36
                         );
                     } else if (command == Commands.PERMIT2_PERMIT) {
                         checkInputLength(inputs, 0xe0);
@@ -261,7 +260,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(inputs.offset)
                             amount := calldataload(add(inputs.offset, 0x20))
                         }
-                        Payments.wrapETH(map(recipient), amount);
+                        Payments.wrapETH(_mapRecipient(recipient), amount);
                     } else if (command == Commands.UNWRAP_WETH) {
                         checkInputLength(inputs, 0x40);
                         // equivalent: abi.decode(inputs, (address, uint256))
@@ -271,7 +270,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(inputs.offset)
                             amountMin := calldataload(add(inputs.offset, 0x20))
                         }
-                        Payments.unwrapWETH9(map(recipient), amountMin);
+                        Payments.unwrapWETH9(_mapRecipient(recipient), amountMin);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
                         IAllowanceTransfer.AllowanceTransferDetails[] calldata batchDetails;
                         (uint256 length, uint256 offset) = inputs.toLengthOffset(0, 0x80);
@@ -302,7 +301,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(inputs.offset)
                             amount := calldataload(add(inputs.offset, 0x20))
                         }
-                        Payments.unwrapWETH9Exact(map(recipient), amount);
+                        Payments.unwrapWETH9Exact(_mapRecipient(recipient), amount);
                     }
                 }
             } else {
@@ -449,19 +448,6 @@ abstract contract Dispatcher is
             }
 
             permitBatch := permitBatchPointer
-        }
-    }
-
-    /// @notice Calculates the recipient address for a command
-    /// @param recipient The recipient or recipient-flag for the command
-    /// @return output The resultant recipient for the command
-    function map(address recipient) internal view returns (address) {
-        if (recipient == ActionConstants.MSG_SENDER) {
-            return msgSender();
-        } else if (recipient == ActionConstants.ADDRESS_THIS) {
-            return address(this);
-        } else {
-            return recipient;
         }
     }
 }
