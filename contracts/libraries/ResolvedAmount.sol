@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.24;
 
+import {Constants} from './Constants.sol';
+
 /// @notice A transient register holding an amount resolved onchain by a RESOLVE command, for a later
 /// command to consume via the Constants.USE_RESOLVED_AMOUNT sentinel in one of its amount fields.
 /// @dev The register is transaction-scoped: RESOLVE writes it, subsequent commands (including those in
@@ -27,5 +29,11 @@ library ResolvedAmount {
         assembly ('memory-safe') {
             tstore(RESOLVED_AMOUNT_SLOT, 0)
         }
+    }
+
+    /// @notice Maps a command's amount field through the register: the USE_RESOLVED_AMOUNT sentinel reads the
+    /// register, any other value passes through unchanged
+    function map(uint256 amount) internal view returns (uint256) {
+        return amount == Constants.USE_RESOLVED_AMOUNT ? get() : amount;
     }
 }

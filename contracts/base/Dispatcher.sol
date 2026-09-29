@@ -89,7 +89,12 @@ abstract contract Dispatcher is
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
                         v3SwapExactInput(
-                            _mapRecipient(recipient), resolveAmount(amountIn), amountOutMin, path, payer, minHopPriceX36
+                            _mapRecipient(recipient),
+                            ResolvedAmount.map(amountIn),
+                            amountOutMin,
+                            path,
+                            payer,
+                            minHopPriceX36
                         );
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
                         checkInputLength(inputs, 0xc0);
@@ -109,7 +114,12 @@ abstract contract Dispatcher is
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
                         v3SwapExactOutput(
-                            _mapRecipient(recipient), resolveAmount(amountOut), amountInMax, path, payer, minHopPriceX36
+                            _mapRecipient(recipient),
+                            ResolvedAmount.map(amountOut),
+                            amountInMax,
+                            path,
+                            payer,
+                            minHopPriceX36
                         );
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
                         checkInputLength(inputs, 0x60);
@@ -166,7 +176,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(add(inputs.offset, 0x20))
                             value := calldataload(add(inputs.offset, 0x40))
                         }
-                        Payments.pay(token, _mapRecipient(recipient), resolveAmount(value));
+                        Payments.pay(token, _mapRecipient(recipient), ResolvedAmount.map(value));
                     } else if (command == Commands.PAY_PORTION) {
                         checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
@@ -212,7 +222,12 @@ abstract contract Dispatcher is
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
                         v2SwapExactInput(
-                            _mapRecipient(recipient), resolveAmount(amountIn), amountOutMin, path, payer, minHopPriceX36
+                            _mapRecipient(recipient),
+                            ResolvedAmount.map(amountIn),
+                            amountOutMin,
+                            path,
+                            payer,
+                            minHopPriceX36
                         );
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
                         checkInputLength(inputs, 0xc0);
@@ -232,7 +247,12 @@ abstract contract Dispatcher is
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
                         v2SwapExactOutput(
-                            _mapRecipient(recipient), resolveAmount(amountOut), amountInMax, path, payer, minHopPriceX36
+                            _mapRecipient(recipient),
+                            ResolvedAmount.map(amountOut),
+                            amountInMax,
+                            path,
+                            payer,
+                            minHopPriceX36
                         );
                     } else if (command == Commands.PERMIT2_PERMIT) {
                         checkInputLength(inputs, 0xe0);
@@ -399,12 +419,6 @@ abstract contract Dispatcher is
             result := mload(0)
         }
         if (ok) ResolvedAmount.set(result);
-    }
-
-    /// @notice Resolves a command's amount field, substituting the ResolvedAmount register when the
-    /// amount is the USE_RESOLVED_AMOUNT sentinel; otherwise returns the amount unchanged.
-    function resolveAmount(uint256 amount) internal view returns (uint256) {
-        return amount == Constants.USE_RESOLVED_AMOUNT ? ResolvedAmount.get() : amount;
     }
 
     /// @dev Decodes a Permit2 batch after validating its dynamic details array against the input bounds.
