@@ -403,22 +403,24 @@ abstract contract Dispatcher is
         if (input.length < minimumLength) revert CalldataDecoder.SliceOutOfBounds();
     }
 
-    /// @notice Performs a bounded staticcall to a resolver and stores the result in the transient
+    /// @notice Performs a bounded staticcall to a resolver and writes the result to the transient
     /// ResolvedAmount register for a later command to consume via Constants.USE_RESOLVED_AMOUNT.
     /// @dev The call is read-only (staticcall) so it cannot mutate state or reenter. At most one word
     /// of returndata is copied, so a return bomb costs the resolver gas and nothing else. A resolver
-    /// that reverts or returns fewer than 32 bytes yields success=false, composing with
-    /// FLAG_ALLOW_REVERT exactly like the other call-based commands.
+    /// that reverts, returns fewer than 32 bytes, or returns zero fails the command, composing with
+    /// FLAG_ALLOW_REVERT like the other call-based commands: zero is not an amount any command can act
+    /// on, and the v4 swap helpers would read it as OPEN_DELTA. Every failure clears the register, so
+    /// no later command can consume a value this RESOLVE did not produce.
     function _resolve(address resolver, bytes calldata context) private returns (bool ok) {
         bytes memory callData = abi.encodeWithSelector(IAmountResolver.resolveAmount.selector, context);
         uint256 result;
         assembly ('memory-safe') {
-            mstore(0, 0)
             ok := staticcall(gas(), resolver, add(callData, 0x20), mload(callData), 0, 0x20)
-            if lt(returndatasize(), 0x20) { ok := 0 }
-            result := mload(0)
+            // the copied word only means something after a successful call that returned a full word
+            result := mul(mload(0), and(ok, gt(returndatasize(), 0x1f)))
+            ok := iszero(iszero(result))
         }
-        if (ok) ResolvedAmount.set(result);
+        ResolvedAmount.set(result);
     }
 
     /// @dev Decodes a Permit2 batch after validating its dynamic details array against the input bounds.

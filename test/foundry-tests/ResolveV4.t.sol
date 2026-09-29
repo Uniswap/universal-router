@@ -17,6 +17,7 @@ import {UniversalRouter} from '../../contracts/UniversalRouter.sol';
 import {RouterParameters} from '../../contracts/types/RouterParameters.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {Constants} from '../../contracts/libraries/Constants.sol';
+import {ResolvedAmount} from '../../contracts/libraries/ResolvedAmount.sol';
 import {MockResolver} from './mock/MockResolver.sol';
 
 /// @notice The motivating RESOLVE flow: a v4 exact-output swap whose amountOut is only known onchain (a live
@@ -141,14 +142,26 @@ contract ResolveV4Test is Test, Deployers {
         router.execute(commands, inputs);
     }
 
-    /// @dev Without a RESOLVE the register is zero, which the v4 helpers read as OPEN_DELTA: with no open delta the
-    /// exact-output swap requests zero output and the route ends up moving nothing.
-    function test_resolve_v4SentinelWithoutResolveReadsZeroRegister() public {
+    /// @dev Without a RESOLVE the register is empty. The sentinel must revert rather than read as zero, which the v4
+    /// helpers would treat as OPEN_DELTA.
+    function test_resolve_v4SentinelWithoutResolve_reverts() public {
         bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
         bytes[] memory inputs = new bytes[](1);
         inputs[0] = _exactOutPlan(uint128(Constants.USE_RESOLVED_AMOUNT));
 
-        vm.expectRevert();
+        vm.expectRevert(ResolvedAmount.ResolvedAmountUnset.selector);
+        router.execute(commands, inputs);
+    }
+
+    /// @dev A resolver returning zero fails the RESOLVE. Tolerating that failure leaves the register empty, so the v4
+    /// swap reverts instead of swapping the open delta.
+    function test_resolve_v4ZeroResult_allowRevert_doesNotFallThroughToOpenDelta() public {
+        MockResolver resolver = new MockResolver(0);
+        (bytes memory commands, bytes[] memory inputs) =
+            _resolveThenV4(address(resolver), _exactOutPlan(uint128(Constants.USE_RESOLVED_AMOUNT)));
+        commands[0] = bytes1(uint8(Commands.RESOLVE) | uint8(Commands.FLAG_ALLOW_REVERT));
+
+        vm.expectRevert(ResolvedAmount.ResolvedAmountUnset.selector);
         router.execute(commands, inputs);
     }
 }
