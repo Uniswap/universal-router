@@ -1,6 +1,6 @@
 {
   "lib/forge-std": {
-    "rev": "73d44ec7d124e3831bc5f832267889ffb6f9bc3f"
+    "rev": "3b20d60d14b343ee4f908cb8079495c07f5e8981"
   },
   "lib/permit2": {
     "rev": "cc56ad0f3439c502c246fc5cfcc3db92bb8b7219"
@@ -13,8 +13,8 @@
   },
   "lib/v4-periphery": {
     "branch": {
-      "name": "main",
-      "rev": "9dafaaecc1e2e1e824eda9d941085f96517d827b"
+      "name": "dev-ur-2.3.0",
+      "rev": "ed72ce4716fddfb37e47a1c99e58738311d0fd5b"
     }
   }
 }
