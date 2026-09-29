@@ -108,6 +108,7 @@ abstract contract Payments is PaymentsImmutables {
 
     /// @notice Returns the contract's balance of a token
     /// @param token The token to query (can be ETH using Constants.ETH)
+    /// @return The contract's balance of the token, or its ETH balance if token is Constants.ETH
     function _balanceOf(address token) private view returns (uint256) {
         return token == Constants.ETH ? address(this).balance : ERC20(token).balanceOf(address(this));
     }
