@@ -5,6 +5,7 @@ import 'forge-std/Test.sol';
 import {UniversalRouter} from '../../contracts/UniversalRouter.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {Constants} from '../../contracts/libraries/Constants.sol';
+import {ResolvedAmount} from '../../contracts/libraries/ResolvedAmount.sol';
 import {RouterParameters} from '../../contracts/types/RouterParameters.sol';
 import {IUniversalRouter} from '../../contracts/interfaces/IUniversalRouter.sol';
 import {MockERC20} from './mock/MockERC20.sol';
@@ -128,13 +129,90 @@ contract ResolveTest is Test {
         resolveInputs[0] = abi.encode(address(resolver), bytes(''));
         router.execute(resolveOnly, resolveInputs);
 
-        // A later execute that consumes the sentinel sees a cleared (zero) register, not the stale N.
+        // A later execute that consumes the sentinel finds the register empty rather than holding the stale N.
         bytes memory transferOnly = abi.encodePacked(bytes1(uint8(Commands.TRANSFER)));
         bytes[] memory transferInputs = new bytes[](1);
         transferInputs[0] = abi.encode(address(erc20), RECIPIENT, Constants.USE_RESOLVED_AMOUNT);
         erc20.mint(address(router), N);
-        router.execute(transferOnly, transferInputs);
 
-        assertEq(erc20.balanceOf(RECIPIENT), 0);
+        vm.expectRevert(ResolvedAmount.ResolvedAmountUnset.selector);
+        router.execute(transferOnly, transferInputs);
+    }
+
+    function test_resolve_sentinelWithoutResolve_reverts() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.TRANSFER)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(address(erc20), RECIPIENT, Constants.USE_RESOLVED_AMOUNT);
+        erc20.mint(address(router), N);
+
+        vm.expectRevert(ResolvedAmount.ResolvedAmountUnset.selector);
+        router.execute(commands, inputs);
+    }
+
+    function test_resolve_zeroResult_failsCommand() public {
+        MockResolver resolver = new MockResolver(0);
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.RESOLVE)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(address(resolver), bytes(''));
+
+        vm.expectRevert(abi.encodeWithSelector(IUniversalRouter.ExecutionFailed.selector, uint256(0), bytes('')));
+        router.execute(commands, inputs);
+    }
+
+    function test_resolve_zeroResult_allowRevert_consumerReverts() public {
+        MockResolver resolver = new MockResolver(0);
+        (bytes memory commands, bytes[] memory inputs) =
+            _resolveThenTransfer(address(resolver), Constants.USE_RESOLVED_AMOUNT);
+        commands[0] = bytes1(uint8(Commands.RESOLVE) | uint8(Commands.FLAG_ALLOW_REVERT));
+        erc20.mint(address(router), N);
+
+        // The tolerated failure leaves the register empty, so the consumer cannot fall through to a zero amount.
+        vm.expectRevert(ResolvedAmount.ResolvedAmountUnset.selector);
+        router.execute(commands, inputs);
+    }
+
+    /// @dev The sequence from review: a value in the register, a later RESOLVE that fails, and a consumer that
+    /// must not pick up the earlier value.
+    function test_resolve_failedResolve_clearsEarlierValue() public {
+        MockResolver good = new MockResolver(N);
+        RevertingResolver bad = new RevertingResolver();
+        bytes memory commands = abi.encodePacked(
+            bytes1(uint8(Commands.RESOLVE)),
+            bytes1(uint8(Commands.RESOLVE) | uint8(Commands.FLAG_ALLOW_REVERT)),
+            bytes1(uint8(Commands.TRANSFER))
+        );
+        bytes[] memory inputs = new bytes[](3);
+        inputs[0] = abi.encode(address(good), bytes(''));
+        inputs[1] = abi.encode(address(bad), bytes(''));
+        inputs[2] = abi.encode(address(erc20), RECIPIENT, Constants.USE_RESOLVED_AMOUNT);
+        erc20.mint(address(router), N);
+
+        vm.expectRevert(ResolvedAmount.ResolvedAmountUnset.selector);
+        router.execute(commands, inputs);
+    }
+
+    /// @dev The supported way to tolerate a failed RESOLVE: consume the sentinel inside a sub-plan that also allows
+    /// revert, so the plan continues past it.
+    function test_resolve_failedResolve_toleratedInSubPlan() public {
+        MockResolver resolver = new MockResolver(0);
+
+        bytes memory subCommands = abi.encodePacked(bytes1(uint8(Commands.TRANSFER)));
+        bytes[] memory subInputs = new bytes[](1);
+        subInputs[0] = abi.encode(address(erc20), RECIPIENT, Constants.USE_RESOLVED_AMOUNT);
+
+        bytes memory commands = abi.encodePacked(
+            bytes1(uint8(Commands.RESOLVE) | uint8(Commands.FLAG_ALLOW_REVERT)),
+            bytes1(uint8(Commands.EXECUTE_SUB_PLAN) | uint8(Commands.FLAG_ALLOW_REVERT)),
+            bytes1(uint8(Commands.TRANSFER))
+        );
+        bytes[] memory inputs = new bytes[](3);
+        inputs[0] = abi.encode(address(resolver), bytes(''));
+        inputs[1] = abi.encode(subCommands, subInputs);
+        inputs[2] = abi.encode(address(erc20), RECIPIENT, uint256(1 ether));
+        erc20.mint(address(router), N);
+
+        router.execute(commands, inputs);
+
+        assertEq(erc20.balanceOf(RECIPIENT), 1 ether, 'only the literal transfer after the sub-plan ran');
     }
 }

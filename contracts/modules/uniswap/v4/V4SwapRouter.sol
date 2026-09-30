@@ -6,7 +6,6 @@ import {Permit2Payments} from '../../Permit2Payments.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
 import {Currency} from '@uniswap/v4-core/src/types/Currency.sol';
 import {SafeCast} from '@uniswap/v4-core/src/libraries/SafeCast.sol';
-import {Constants} from '../../../libraries/Constants.sol';
 import {ResolvedAmount} from '../../../libraries/ResolvedAmount.sol';
 import {PermissionedV4Router} from '@uniswap/v4-periphery/src/hooks/permissionedPools/PermissionedV4Router.sol';
 import {
@@ -24,11 +23,10 @@ abstract contract V4SwapRouter is PermissionedV4Router, Permit2Payments {
         PermissionedV4Router(IPoolManager(_poolManager), IPermissionsAdapterFactory(_permissionsAdapterFactory))
     {}
 
-    /// @notice Resolves the USE_RESOLVED_AMOUNT sentinel in a v4 swap amount field from the RESOLVE register
+    /// @notice Maps the USE_RESOLVED_AMOUNT sentinel in a v4 swap amount field through the RESOLVE register
     /// @dev Reverts on a register value that does not fit uint128, since v4 swap amounts are uint128
     function _mapSwapAmount(uint128 amount) internal view override returns (uint128) {
-        if (amount != uint128(Constants.USE_RESOLVED_AMOUNT)) return amount;
-        return ResolvedAmount.get().toUint128();
+        return ResolvedAmount.map(amount).toUint128();
     }
 
     function _payStandard(Currency currency, address payer, uint256 amount) internal override {
