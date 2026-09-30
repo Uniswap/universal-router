@@ -16,9 +16,15 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     error V2TooLittleReceivedPerHop(uint256 hopIndex, uint256 minPrice, uint256 price);
     error V2InvalidHopPriceLength();
 
-    function _v2Swap(address[] calldata path, address recipient, address pair, uint256[] calldata minHopPriceX36)
-        private
-    {
+    function _v2Swap(
+        address[] calldata path,
+        address recipient,
+        address pair,
+        uint256[] calldata minHopPriceX36,
+        uint256 amountOutMinimum
+    ) private {
+        ERC20 tokenOut = ERC20(path[path.length - 1]);
+        uint256 balanceBefore = tokenOut.balanceOf(recipient);
         unchecked {
             // cached to save on duplicate operations
             (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
@@ -59,6 +65,9 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                 pair = nextPair;
             }
         }
+        // Delivery is measured at the recipient, so a token that hands over less than the pairs computed (fee on
+        // transfer or withholding, at any hop) fails the route instead of leaving a silent shortfall.
+        if (tokenOut.balanceOf(recipient) - balanceBefore < amountOutMinimum) revert V2TooLittleReceived();
     }
 
     /// @notice Performs a Uniswap v2 exact input swap
@@ -89,13 +98,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
             payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
         }
 
-        ERC20 tokenOut = ERC20(path[path.length - 1]);
-        uint256 balanceBefore = tokenOut.balanceOf(recipient);
-
-        _v2Swap(path, recipient, firstPair, minHopPriceX36);
-
-        uint256 amountOut = tokenOut.balanceOf(recipient) - balanceBefore;
-        if (amountOut < amountOutMinimum) revert V2TooLittleReceived();
+        _v2Swap(path, recipient, firstPair, minHopPriceX36, amountOutMinimum);
     }
 
     /// @notice Performs a Uniswap v2 exact output swap
@@ -123,6 +126,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         if (amountIn > amountInMaximum) revert V2TooMuchRequested();
 
         payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
-        _v2Swap(path, recipient, firstPair, minHopPriceX36);
+        // exact output requires full delivery, so the requested amount is also the minimum
+        _v2Swap(path, recipient, firstPair, minHopPriceX36, amountOut);
     }
 }
