@@ -411,6 +411,11 @@ abstract contract Dispatcher is
             if (command == Commands.EXECUTE_SUB_PLAN) {
                 (bytes calldata _commands, bytes[] calldata _inputs) = inputs.decodeCommandsAndInputs();
                 (success, output) = (address(this)).call(abi.encodeCall(Dispatcher.execute, (_commands, _inputs)));
+                // The nested-execution gate is a consent check, not a route failure: FLAG_ALLOW_REVERT on the
+                // sub-plan must not turn it into a silent skip that leaves the route's input in the router.
+                if (!success && output.length == 4 && bytes4(output) == NestedExecutionNotPermitted.selector) {
+                    revert NestedExecutionNotPermitted();
+                }
             } else {
                 // placeholder area for commands 0x22-0x3f
                 revert InvalidCommandType(command);

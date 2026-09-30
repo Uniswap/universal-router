@@ -731,4 +731,30 @@ contract V4SwapWithinUnlockTest is Test, Deployers {
         lockHolder.executeWithinUnlock(commands, inputs);
         assertGt(MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT), 0, 'sub-plan swap did not run');
     }
+
+    /// @notice OZ 2.3.0 L-01: FLAG_ALLOW_REVERT on a sub-plan must not turn the nested gate into a silent skip.
+    ///         Plain execute inside a foreign unlock, with the V4_SWAP wrapped in an allow-revert sub-plan, used to
+    ///         succeed with the swap skipped and the input stranded in the router.
+    function test_allowRevertSubPlan_cannotSkipNestedGate() public {
+        _fundRouter();
+        (bytes memory inner, bytes[] memory innerInputs) = _v4SwapCommand();
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.EXECUTE_SUB_PLAN)) | Commands.FLAG_ALLOW_REVERT);
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(inner, innerInputs);
+
+        vm.expectRevert(Dispatcher.NestedExecutionNotPermitted.selector);
+        outerLockOpener.openAndDelegatePlain(lockHolder, commands, inputs);
+    }
+
+    /// @notice The same allow-revert sub-plan still runs once the caller has opted in through executeNested.
+    function test_allowRevertSubPlan_runsWhenOptedIn() public {
+        _fundRouter();
+        (bytes memory inner, bytes[] memory innerInputs) = _v4SwapCommand();
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.EXECUTE_SUB_PLAN)) | Commands.FLAG_ALLOW_REVERT);
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(inner, innerInputs);
+
+        outerLockOpener.openAndDelegate(lockHolder, commands, inputs);
+        assertGt(MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT), 0, 'swap did not execute in lock');
+    }
 }
