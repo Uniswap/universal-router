@@ -61,6 +61,7 @@ contract LockHolder is IUnlockCallback {
 
     bytes internal commands;
     bytes[] internal inputs;
+    bool internal useNoDeadline;
 
     constructor(IPoolManager _manager, UniversalRouter _router) {
         manager = _manager;
@@ -71,6 +72,15 @@ contract LockHolder is IUnlockCallback {
     function executeWithinUnlock(bytes calldata _commands, bytes[] calldata _inputs) external {
         commands = _commands;
         inputs = _inputs;
+        useNoDeadline = false;
+        manager.unlock(hex'');
+    }
+
+    /// @dev same, but opts in through the deadline-free executeNested overload
+    function executeWithinUnlockNoDeadline(bytes calldata _commands, bytes[] calldata _inputs) external {
+        commands = _commands;
+        inputs = _inputs;
+        useNoDeadline = true;
         manager.unlock(hex'');
     }
 
@@ -99,7 +109,8 @@ contract LockHolder is IUnlockCallback {
         require(msg.sender == address(manager), 'only manager');
         if (data.length == 0) {
             // opt in explicitly: the router refuses to reuse a foreign unlock via plain execute()
-            router.executeNested(commands, inputs, block.timestamp);
+            if (useNoDeadline) router.executeNested(commands, inputs);
+            else router.executeNested(commands, inputs, block.timestamp);
         } else {
             manager.unlock(hex'');
         }
@@ -730,5 +741,40 @@ contract V4SwapWithinUnlockTest is Test, Deployers {
 
         lockHolder.executeWithinUnlock(commands, inputs);
         assertGt(MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT), 0, 'sub-plan swap did not run');
+    }
+
+    /// @notice OZ 2.3.0 L-01: FLAG_ALLOW_REVERT on a sub-plan must not turn the nested gate into a silent skip.
+    ///         Plain execute inside a foreign unlock, with the V4_SWAP wrapped in an allow-revert sub-plan, used to
+    ///         succeed with the swap skipped and the input stranded in the router.
+    function test_allowRevertSubPlan_cannotSkipNestedGate() public {
+        _fundRouter();
+        (bytes memory inner, bytes[] memory innerInputs) = _v4SwapCommand();
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.EXECUTE_SUB_PLAN)) | Commands.FLAG_ALLOW_REVERT);
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(inner, innerInputs);
+
+        vm.expectRevert(Dispatcher.NestedExecutionNotPermitted.selector);
+        outerLockOpener.openAndDelegatePlain(lockHolder, commands, inputs);
+    }
+
+    /// @notice The same allow-revert sub-plan still runs once the caller has opted in through executeNested.
+    function test_allowRevertSubPlan_runsWhenOptedIn() public {
+        _fundRouter();
+        (bytes memory inner, bytes[] memory innerInputs) = _v4SwapCommand();
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.EXECUTE_SUB_PLAN)) | Commands.FLAG_ALLOW_REVERT);
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(inner, innerInputs);
+
+        outerLockOpener.openAndDelegate(lockHolder, commands, inputs);
+        assertGt(MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT), 0, 'swap did not execute in lock');
+    }
+
+    /// @notice OZ 2.3.0 N-03: the deadline-free executeNested overload opts in exactly like the deadline form.
+    function test_v4Swap_withinExistingUnlock_noDeadlineOverload_succeeds() public {
+        _fundRouter();
+        (bytes memory commands, bytes[] memory inputs) = _v4SwapCommand();
+
+        lockHolder.executeWithinUnlockNoDeadline(commands, inputs);
+        assertGt(MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT), 0, 'swap did not execute in lock');
     }
 }

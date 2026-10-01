@@ -80,6 +80,10 @@ interface IUniversalRouter {
     /// open its own unlock, call `execute` instead, which refuses to run nested.
     function executeNested(bytes calldata commands, bytes[] calldata inputs, uint256 deadline) external payable;
 
+    /// @notice Deadline-free overload of executeNested, mirroring the two-argument execute
+    /// @dev Carries the same delta-sharing caveats as the deadline overload
+    function executeNested(bytes calldata commands, bytes[] calldata inputs) external payable;
+
     /// @notice Returns all signed execution context (signer, intent, data) in a single call
     /// @return signer The address that signed the current execution, or address(0) if not in a signed execution
     /// @return intent The intent value from the signed execution, or bytes32(0) if not in a signed execution

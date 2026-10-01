@@ -68,7 +68,8 @@ library BytesLib {
             // The offset of the `_arg`-th element is `32 * arg`, which stores the offset of the length pointer.
             // shl(5, x) is equivalent to mul(32, x)
             let headOffset := shl(5, _arg)
-            if or(iszero(_elementSize), gt(add(headOffset, 0x20), _bytes.length)) {
+            // Compare in whole words: the byte form add(headOffset, 0x20) wraps for a huge _arg and passes.
+            if or(iszero(_elementSize), iszero(gt(div(_bytes.length, 0x20), _arg))) {
                 mstore(0, 0x3b99b53d) // SliceOutOfBounds()
                 revert(0x1c, 0x04)
             }

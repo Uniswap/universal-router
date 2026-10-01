@@ -16,9 +16,15 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
     error V2TooLittleReceivedPerHop(uint256 hopIndex, uint256 minPrice, uint256 price);
     error V2InvalidHopPriceLength();
 
-    function _v2Swap(address[] calldata path, address recipient, address pair, uint256[] calldata minHopPriceX36)
-        private
-    {
+    function _v2Swap(
+        address[] calldata path,
+        address recipient,
+        address pair,
+        uint256[] calldata minHopPriceX36,
+        uint256 amountOutMinimum
+    ) private {
+        ERC20 tokenOut = ERC20(path[path.length - 1]);
+        uint256 balanceBefore = tokenOut.balanceOf(recipient);
         unchecked {
             // cached to save on duplicate operations
             (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
@@ -31,8 +37,9 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                 (uint256 reserveInput, uint256 reserveOutput) =
                     input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
                 // Note: amountInput is the pair's whole balance excess, so it counts tokens any third party transferred in.
-                // A larger apparent trade earns a worse average rate, so a donation drives the price below minHopPriceX36 and
-                // reverts. The pair's permissionless skim() then returns the donation.
+                // The larger apparent trade earns a worse average rate, which can trip minHopPriceX36 and revert the
+                // route. A donation below that bound, or with the bound disabled, is simply swapped along with the input.
+                // Any excess left in the pair can be claimed through the permissionless skim(to) by whoever calls it first.
                 uint256 amountInput = ERC20(input).balanceOf(pair) - reserveInput;
                 uint256 amountOutput = UniswapV2Library.getAmountOut(amountInput, reserveInput, reserveOutput);
                 (uint256 amount0Out, uint256 amount1Out) =
@@ -58,6 +65,9 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                 pair = nextPair;
             }
         }
+        // Delivery is measured at the recipient, so a token that hands over less than the pairs computed (fee on
+        // transfer or withholding, at any hop) fails the route instead of leaving a silent shortfall.
+        if (tokenOut.balanceOf(recipient) - balanceBefore < amountOutMinimum) revert V2TooLittleReceived();
     }
 
     /// @notice Performs a Uniswap v2 exact input swap
@@ -88,13 +98,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
             payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
         }
 
-        ERC20 tokenOut = ERC20(path[path.length - 1]);
-        uint256 balanceBefore = tokenOut.balanceOf(recipient);
-
-        _v2Swap(path, recipient, firstPair, minHopPriceX36);
-
-        uint256 amountOut = tokenOut.balanceOf(recipient) - balanceBefore;
-        if (amountOut < amountOutMinimum) revert V2TooLittleReceived();
+        _v2Swap(path, recipient, firstPair, minHopPriceX36, amountOutMinimum);
     }
 
     /// @notice Performs a Uniswap v2 exact output swap
@@ -122,6 +126,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         if (amountIn > amountInMaximum) revert V2TooMuchRequested();
 
         payOrPermit2Transfer(path[0], payer, firstPair, amountIn);
-        _v2Swap(path, recipient, firstPair, minHopPriceX36);
+        // exact output requires full delivery, so the requested amount is also the minimum
+        _v2Swap(path, recipient, firstPair, minHopPriceX36, amountOut);
     }
 }

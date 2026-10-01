@@ -74,6 +74,15 @@ contract UniversalRouter is IUniversalRouter, ChainedActions, RouteSigner, Dispa
         payable
         checkDeadline(deadline)
     {
+        _executeNested(commands, inputs);
+    }
+
+    /// @inheritdoc IUniversalRouter
+    function executeNested(bytes calldata commands, bytes[] calldata inputs) external payable {
+        _executeNested(commands, inputs);
+    }
+
+    function _executeNested(bytes calldata commands, bytes[] calldata inputs) private {
         NestedUnlock.set(true);
         execute(commands, inputs);
         NestedUnlock.set(false);
