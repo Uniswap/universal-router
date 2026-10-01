@@ -65,13 +65,32 @@ interface IUniversalRouter {
         uint256 deadline
     ) external payable;
 
+    /// @notice Executes encoded commands, opting in to running inside a PoolManager unlock opened by
+    /// another contract
+    /// @param commands A set of concatenated commands, each 1 byte in length
+    /// @param inputs An array of byte strings containing abi encoded inputs for each command
+    /// @param deadline The deadline by which the transaction must be executed
+    /// @dev Use this ONLY from a contract that itself opened the surrounding PoolManager unlock. V4 deltas
+    /// accrue under the router's address for the lifetime of that unlock, not per call, so an unsettled
+    /// delta left by one call can be paid by a later call's `SETTLE_ALL` or `OPEN_DELTA` settlement, out of
+    /// that later caller's funds. Opting in accepts responsibility for that: a contract exposing a
+    /// permissionless function that reaches this entrypoint can have its own capital drained. Credit is
+    /// exposed the same way: positive delta left under the router can be `TAKE`n by anyone who opts in
+    /// before the next call, so keep plans delta-neutral across call boundaries. If a function does not
+    /// open its own unlock, call `execute` instead, which refuses to run nested.
+    function executeNested(bytes calldata commands, bytes[] calldata inputs, uint256 deadline) external payable;
+
+    /// @notice Deadline-free overload of executeNested, mirroring the two-argument execute
+    /// @dev Carries the same delta-sharing caveats as the deadline overload
+    function executeNested(bytes calldata commands, bytes[] calldata inputs) external payable;
+
     /// @notice Returns all signed execution context (signer, intent, data) in a single call
     /// @return signer The address that signed the current execution, or address(0) if not in a signed execution
     /// @return intent The intent value from the signed execution, or bytes32(0) if not in a signed execution
     /// @return data The data value from the signed execution, or bytes32(0) if not in a signed execution
     /// @dev This reads from transient storage which is only set during executeSigned().
-    /// @dev When consuming this context from a hook, the hook MUST verify that msg.sender is the
-    /// UniversalRouter contract. Otherwise, a malicious contract in the execution chain could abuse the
-    /// legitimate signed context by calling other contracts with it, causing unintended side effects.
+    /// @dev When consuming this context from a V4 hook, the hook MUST verify that msg.sender is the PoolManager
+    /// and that the hook's sender parameter is the UniversalRouter. Otherwise, a malicious contract in the
+    /// execution chain could abuse the legitimate signed context by initiating its own swap.
     function signedRouteContext() external view returns (address signer, bytes32 intent, bytes32 data);
 }

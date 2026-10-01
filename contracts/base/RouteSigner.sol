@@ -8,16 +8,16 @@ import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 /// @notice Contract for managing signed execution context using transient storage
 abstract contract RouteSigner is EIP712 {
     /// @notice Transient storage slot for the route signer address
-    /// @dev bytes32(uint256(keccak256("RouteSigner")) - 1)
-    bytes32 private constant ROUTE_SIGNER_SLOT = 0xd317c76a4357223a1868125ee857a1f31cabfcec288f6cdd0ea8c52b6a71ee31;
+    /// @dev Must equal TransientSlots.ROUTE_SIGNER; inline assembly only accepts a literal here
+    bytes32 internal constant ROUTE_SIGNER_SLOT = 0x0000000000000000000000000000000000000000000000000000000000000003;
 
     /// @notice Transient storage slot for the route intent
-    /// @dev bytes32(uint256(keccak256("RouteIntent")) - 1)
-    bytes32 private constant ROUTE_INTENT_SLOT = 0xa42de8dec63499ed8713dc6815ea14006a1f8e80e1664c66e3beb461bb65b0da;
+    /// @dev Must equal TransientSlots.ROUTE_INTENT
+    bytes32 internal constant ROUTE_INTENT_SLOT = 0x0000000000000000000000000000000000000000000000000000000000000004;
 
     /// @notice Transient storage slot for the route data
-    /// @dev bytes32(uint256(keccak256("RouteData")) - 1)
-    bytes32 private constant ROUTE_DATA_SLOT = 0x17350132762f24cc4b86e10621ea1e0b5c33483a51cca86a1b11e7ed029b6eb6;
+    /// @dev Must equal TransientSlots.ROUTE_DATA
+    bytes32 internal constant ROUTE_DATA_SLOT = 0x0000000000000000000000000000000000000000000000000000000000000005;
 
     /// @notice EIP712 typehash for signed execution
     bytes32 internal constant EXECUTE_SIGNED_TYPEHASH = keccak256(

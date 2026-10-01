@@ -29,7 +29,7 @@ library Commands {
     uint256 constant UNWRAP_WETH = 0x0c;
     uint256 constant PERMIT2_TRANSFER_FROM_BATCH = 0x0d;
     uint256 constant BALANCE_CHECK_ERC20 = 0x0e;
-    // COMMAND_PLACEHOLDER = 0x0f;
+    uint256 constant UNWRAP_WETH_EXACT = 0x0f;
 
     // Command Types where 0x10<=value<=0x20, executed in the third nested-if block
     uint256 constant V4_SWAP = 0x10;
@@ -37,7 +37,10 @@ library Commands {
     uint256 constant V3_POSITION_MANAGER_CALL = 0x12;
     uint256 constant V4_INITIALIZE_POOL = 0x13;
     uint256 constant V4_POSITION_MANAGER_CALL = 0x14;
-    // COMMAND_PLACEHOLDER = 0x15 -> 0x20
+    uint256 constant RESOLVE = 0x15;
+    uint256 constant V4_PROTOCOL_FEE_UPDATE = 0x16;
+    uint256 constant V3_PROTOCOL_FEE_UPDATE = 0x17;
+    // COMMAND_PLACEHOLDER = 0x18 -> 0x20
 
     // Command Types where 0x21<=value<=0x3f
     uint256 constant EXECUTE_SUB_PLAN = 0x21;

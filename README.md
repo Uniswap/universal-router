@@ -48,7 +48,7 @@ Each command is a `bytes1` containing the following 8 bits:
 └─┴─┴───────────┘
 ```
 
-- `f` is a single bit flag, that signals whether or not the command should be allowed to revert. If `f` is `false`, and the command reverts, then the entire transaction will revert. If `f` is `true` and the command reverts then the transaction will continue, allowing us to achieve partial fills. If using this flag, be careful to include further commands that will remove any funds that could be left unused in the `UniversalRouter` contract.
+- `f` is a single bit flag, that signals whether or not the command should be allowed to revert. If `f` is `false`, and the command reverts, then the entire transaction will revert. If `f` is `true` and the command reverts then the transaction will continue, allowing us to achieve partial fills. The flag only has an effect on commands built on an external call: `PERMIT2_PERMIT`, `PERMIT2_PERMIT_BATCH`, `BALANCE_CHECK_ERC20`, `V3_POSITION_MANAGER_PERMIT`, `V3_POSITION_MANAGER_CALL`, `V4_INITIALIZE_POOL`, `V4_POSITION_MANAGER_CALL`, `RESOLVE`, `V4_PROTOCOL_FEE_UPDATE`, `V3_PROTOCOL_FEE_UPDATE` and `EXECUTE_SUB_PLAN`. Swaps, transfers, wraps, sweeps and the Across deposit run as internal calls and revert the whole transaction regardless of the flag; to tolerate their failure, wrap them in an `EXECUTE_SUB_PLAN` that sets it. One failure is never swallowed: a sub-plan that trips the nested-execution gate (`NestedExecutionNotPermitted`) reverts the transaction even with the flag set. If using this flag, be careful to include further commands that will remove any funds that could be left unused in the `UniversalRouter` contract.
 
 - `r` is one bit of reserved space. This will allow us to increase the space used for commands, or add new flags in future.
 
@@ -84,7 +84,27 @@ Each command is a `bytes1` containing the following 8 bits:
    ├──────┼───────────────────────────────┤
    │ 0x0d │  PERMIT2_TRANSFER_FROM_BATCH  │
    ├──────┼───────────────────────────────┤
-   │ 0x0e-│  -------                      │
+   │ 0x0e │  BALANCE_CHECK_ERC20          │
+   ├──────┼───────────────────────────────┤
+   │ 0x0f │  UNWRAP_WETH_EXACT            │
+   ├──────┼───────────────────────────────┤
+   │ 0x10 │  V4_SWAP                      │
+   ├──────┼───────────────────────────────┤
+   │ 0x11 │  V3_POSITION_MANAGER_PERMIT   │
+   ├──────┼───────────────────────────────┤
+   │ 0x12 │  V3_POSITION_MANAGER_CALL     │
+   ├──────┼───────────────────────────────┤
+   │ 0x13 │  V4_INITIALIZE_POOL           │
+   ├──────┼───────────────────────────────┤
+   │ 0x14 │  V4_POSITION_MANAGER_CALL     │
+   ├──────┼───────────────────────────────┤
+   │ 0x15 │  RESOLVE                      │
+   ├──────┼───────────────────────────────┤
+   │ 0x16 │  V4_PROTOCOL_FEE_UPDATE       │
+   ├──────┼───────────────────────────────┤
+   │ 0x17 │  V3_PROTOCOL_FEE_UPDATE       │
+   ├──────┼───────────────────────────────┤
+   │ 0x18-│  -------                      │
    │ 0x20 │                               │
    ├──────┼───────────────────────────────┤
    │ 0x21 │  EXECUTE_SUB_PLAN             │
@@ -95,6 +115,14 @@ Each command is a `bytes1` containing the following 8 bits:
 ```
 
 Note that some of the commands in the middle of the series are unused. These gaps allowed us to create gas-efficiencies when selecting which command to execute.
+
+`UNWRAP_WETH_EXACT` takes `(recipient, amount)` and unwraps an exact amount of the contract's WETH, reverting if the balance is insufficient.
+
+`V4_SWAP` takes an encoded v4 action plan `(bytes actions, bytes[] params)` and runs it through the router's `V4Router`. Exact-output swaps are all-or-nothing and revert on a shortfall. An exact-output swap paid from the router's own balance (`payerIsUser = false`, or a native input) spends only what the route actually costs, so whatever the plan pre-funded beyond that stays in the router. Such a plan must end with a full-balance return such as `SWEEP` for each input currency, since any balance left in the router can be swept by anyone. A hook that funds the swap's input itself is the extreme case: the route costs nothing, so the entire pre-funded amount stays in the router and must be swept back.
+
+`RESOLVE` takes `(address resolver, bytes context)` and performs a bounded, read-only `staticcall` to `resolver.resolveAmount(context)` (see `IAmountResolver`), storing the returned value in a transient register. A later command in the same plan can then use that value as an amount by passing the `Constants.USE_RESOLVED_AMOUNT` sentinel (`type(uint128).max`, the top of the `uint128` v4 amount range) in place of a literal. This is supported by the v2/v3 swap amount fields, the `amountIn`/`amountOut` of every v4 swap action inside `V4_SWAP`, and `TRANSFER`. This lets a route obtain an amount that is only known onchain at execution time (for example, a live lending-position debt) instead of baking an offchain guess into calldata. The register is transaction-scoped: it survives across commands and into an `EXECUTE_SUB_PLAN`, and is cleared when the top-level `execute` returns. Because the resolver is invoked via `staticcall` and at most one word of returndata is copied, a resolver can neither mutate state nor grief the router with a return bomb. A resolver that reverts, returns fewer than 32 bytes, or returns zero fails the command under the usual `FLAG_ALLOW_REVERT` semantics: zero is not an amount any command can act on, and the v4 swap helpers would read it as `OPEN_DELTA`. Every failure clears the register, and a command that consumes the sentinel while the register is empty reverts with `ResolvedAmountUnset`, so a tolerated RESOLVE failure can only be followed by consumers inside an `EXECUTE_SUB_PLAN` that also allows revert.
+
+`V4_PROTOCOL_FEE_UPDATE` takes `(PoolKey key)` and `V3_PROTOCOL_FEE_UPDATE` takes `(address pool)`. Each pokes the protocol fee adapter that governance installed as the controller (the v4 `PoolManager.protocolFeeController()`, or the v3 factory `owner()`), read onchain so the router holds no adapter address, which pushes that pool's resolved protocol fee into pool state. Newly created pools initialize with no protocol fee, so a route can activate it in the same transaction as the first swap rather than waiting on the offchain keeper. The poke follows the same failure semantics as the other call-based commands: a revert from the adapter surfaces as `ExecutionFailed` unless `FLAG_ALLOW_REVERT` is set. Where the protocol is deployed but no adapter is installed, the call targets `address(0)` and is a no-op. Reading the controller is not covered by `FLAG_ALLOW_REVERT`: on a chain without a v4 `PoolManager` (or v3 factory) the command reverts the whole `execute`, so only include it on chains where that protocol is deployed.
 
 #### How the input bytes are structures
 
