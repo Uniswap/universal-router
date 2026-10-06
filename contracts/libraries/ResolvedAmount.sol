@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Constants} from './Constants.sol';
+import {RESOLVED_AMOUNT_SLOT} from './TransientSlots.sol';
 
 /// @notice A transient register holding an amount resolved onchain by a RESOLVE command, for a later
 /// command to consume via the Constants.USE_RESOLVED_AMOUNT sentinel in one of its amount fields.
@@ -12,10 +13,6 @@ import {Constants} from './Constants.sol';
 library ResolvedAmount {
     /// @notice Thrown when a command consumes the USE_RESOLVED_AMOUNT sentinel while the register is empty
     error ResolvedAmountUnset();
-
-    // The slot holding the resolved amount, transiently. Must equal TransientSlots.RESOLVED_AMOUNT; inline assembly
-    // only accepts a literal here.
-    bytes32 constant RESOLVED_AMOUNT_SLOT = 0x0000000000000000000000000000000000000000000000000000000000000007;
 
     function set(uint256 amount) internal {
         assembly ('memory-safe') {

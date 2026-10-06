@@ -3,7 +3,6 @@ pragma solidity ^0.8.24;
 
 import 'forge-std/Test.sol';
 import {MaxInputAmount} from '../../contracts/libraries/MaxInputAmount.sol';
-import {TransientSlots} from '../../contracts/libraries/TransientSlots.sol';
 
 contract MaxInputAmountTest is Test {
     function test_fuzz_maxAmtIn_set_get(uint256 value1, uint256 value2, uint256 value3) public {
@@ -20,9 +19,5 @@ contract MaxInputAmountTest is Test {
 
         MaxInputAmount.set(0);
         assertEq(MaxInputAmount.get(), 0);
-    }
-
-    function test_maxAmtInSlot() public pure {
-        assertEq(MaxInputAmount.MAX_AMOUNT_IN_SLOT, TransientSlots.MAX_AMOUNT_IN);
     }
 }

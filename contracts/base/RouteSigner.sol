@@ -3,22 +3,11 @@ pragma solidity ^0.8.24;
 
 import {EIP712} from '@openzeppelin/contracts/utils/cryptography/EIP712.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import {ROUTE_SIGNER_SLOT, ROUTE_INTENT_SLOT, ROUTE_DATA_SLOT} from '../libraries/TransientSlots.sol';
 
 /// @title RouteSigner
 /// @notice Contract for managing signed execution context using transient storage
 abstract contract RouteSigner is EIP712 {
-    /// @notice Transient storage slot for the route signer address
-    /// @dev Must equal TransientSlots.ROUTE_SIGNER; inline assembly only accepts a literal here
-    bytes32 internal constant ROUTE_SIGNER_SLOT = 0x0000000000000000000000000000000000000000000000000000000000000003;
-
-    /// @notice Transient storage slot for the route intent
-    /// @dev Must equal TransientSlots.ROUTE_INTENT
-    bytes32 internal constant ROUTE_INTENT_SLOT = 0x0000000000000000000000000000000000000000000000000000000000000004;
-
-    /// @notice Transient storage slot for the route data
-    /// @dev Must equal TransientSlots.ROUTE_DATA
-    bytes32 internal constant ROUTE_DATA_SLOT = 0x0000000000000000000000000000000000000000000000000000000000000005;
-
     /// @notice EIP712 typehash for signed execution
     bytes32 internal constant EXECUTE_SIGNED_TYPEHASH = keccak256(
         'ExecuteSigned(bytes commands,bytes[] inputs,bytes32 intent,bytes32 data,address sender,bytes32 nonce,uint256 deadline)'
