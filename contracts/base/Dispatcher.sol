@@ -16,7 +16,6 @@ import {IAmountResolver} from '../interfaces/IAmountResolver.sol';
 import {IV4FeeAdapter} from '../interfaces/external/IV4FeeAdapter.sol';
 import {IV3FeeAdapter} from '../interfaces/external/IV3FeeAdapter.sol';
 import {IUniswapV3Factory} from '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
-import {IProtocolFees} from '@uniswap/v4-core/src/interfaces/IProtocolFees.sol';
 import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
@@ -389,7 +388,7 @@ abstract contract Dispatcher is
                     // PoolManager as its protocolFeeController and exposes a permissionless poke that pushes the
                     // resolved fee into pool state. Reading the controller onchain means the router never holds an
                     // adapter address and follows any future controller change.
-                    (success, output) = IProtocolFees(address(poolManager)).protocolFeeController()
+                    (success, output) = poolManager.protocolFeeController()
                         .call(abi.encodeCall(IV4FeeAdapter.triggerFeeUpdate, (poolKey)));
                 } else if (command == Commands.V3_PROTOCOL_FEE_UPDATE) {
                     checkInputLength(inputs, 0x20);
