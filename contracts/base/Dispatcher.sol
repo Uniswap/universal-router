@@ -19,6 +19,7 @@ import {IUniswapV3Factory} from '@uniswap/v3-core/contracts/interfaces/IUniswapV
 import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
+import {SafeCast160} from 'permit2/src/libraries/SafeCast160.sol';
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
@@ -135,7 +136,12 @@ abstract contract Dispatcher is
                             recipient := calldataload(add(inputs.offset, 0x20))
                             amount := calldataload(add(inputs.offset, 0x40))
                         }
-                        permit2TransferFrom(token, msgSender(), _mapRecipient(recipient), amount);
+                        permit2TransferFrom(
+                            token,
+                            msgSender(),
+                            _mapRecipient(recipient),
+                            SafeCast160.toUint160(ResolvedAmount.map(amount))
+                        );
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
                         IAllowanceTransfer.PermitBatch calldata permitBatch = decodePermitBatch(inputs);
                         bytes calldata data = inputs.toBytes(1);

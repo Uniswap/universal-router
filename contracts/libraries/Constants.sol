@@ -32,6 +32,8 @@ library Constants {
     /// @dev Sentinel placed in a command's amount field to consume the ResolvedAmount register written by a prior
     /// RESOLVE command. It must fit uint128: v4 swap amounts are uint128 and the ABI decoder rejects a larger word
     /// before the router sees it, the same constraint that makes OPEN_DELTA zero. The top of that range is the literal
-    /// amount given up. The amountInMaximum and amountOutMinimum caps are not amount fields and keep their meaning.
+    /// amount given up. It is read only by the v2/v3 and v4 swap amountIn/amountOut, the PERMIT2_TRANSFER_FROM and
+    /// PERMIT2_TRANSFER_FROM_BATCH amounts, and the TRANSFER value; every other amount field, including minimums,
+    /// caps, thresholds, portions and signed permit amounts, keeps its literal meaning.
     uint256 internal constant USE_RESOLVED_AMOUNT = type(uint128).max;
 }
