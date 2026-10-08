@@ -66,7 +66,8 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
             }
         }
         // Delivery is measured at the recipient, so a token that hands over less than the pairs computed (fee on
-        // transfer or withholding, at any hop) fails the route instead of leaving a silent shortfall.
+        // transfer, withholding, or share-based rounding such as stETH delivering 1-2 wei less, at any hop) fails
+        // the route instead of leaving a silent shortfall.
         if (tokenOut.balanceOf(recipient) - balanceBefore < amountOutMinimum) revert V2TooLittleReceived();
     }
 

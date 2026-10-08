@@ -164,4 +164,80 @@ contract ResolveV4Test is Test, Deployers {
         vm.expectRevert(ResolvedAmount.ResolvedAmountUnset.selector);
         router.execute(commands, inputs);
     }
+
+    /// @dev SETTLE pays exactly the resolved amount into the PoolManager, and the exact-input swap then spends
+    /// that credit through OPEN_DELTA.
+    function test_resolve_v4Settle_paysExactlyTheResolvedAmount() public {
+        MockResolver resolver = new MockResolver(SELL_AMOUNT);
+        IV4Router.ExactInputSingleParams memory sp = IV4Router.ExactInputSingleParams({
+            poolKey: key,
+            zeroForOne: true,
+            amountIn: ActionConstants.OPEN_DELTA,
+            amountOutMinimum: 0,
+            minHopPriceX36: 0,
+            hookData: hex''
+        });
+        Plan memory plan = Planner.init();
+        plan = plan.add(Actions.SETTLE, abi.encode(currency0, Constants.USE_RESOLVED_AMOUNT, false));
+        plan = plan.add(Actions.SWAP_EXACT_IN_SINGLE, abi.encode(sp));
+        plan = plan.add(Actions.TAKE, abi.encode(currency1, RECIPIENT, ActionConstants.OPEN_DELTA));
+        (bytes memory commands, bytes[] memory inputs) = _resolveThenV4(address(resolver), plan.encode());
+
+        router.execute(commands, inputs);
+
+        assertEq(
+            MockERC20(Currency.unwrap(currency0)).balanceOf(address(router)),
+            FUNDING - SELL_AMOUNT,
+            'exactly the resolved amount was settled'
+        );
+        assertGt(MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT), 0);
+    }
+
+    /// @dev TAKE sends exactly the resolved amount of the swap output to one recipient, and the rest goes to
+    /// another through OPEN_DELTA.
+    function test_resolve_v4Take_takesExactlyTheResolvedAmount() public {
+        address rest = address(0xCAFE);
+        MockResolver resolver = new MockResolver(LITERAL);
+        IV4Router.ExactInputSingleParams memory sp = IV4Router.ExactInputSingleParams({
+            poolKey: key,
+            zeroForOne: true,
+            amountIn: SELL_AMOUNT,
+            amountOutMinimum: 0,
+            minHopPriceX36: 0,
+            hookData: hex''
+        });
+        Plan memory plan = Planner.init();
+        plan = plan.add(Actions.SWAP_EXACT_IN_SINGLE, abi.encode(sp));
+        plan = plan.add(Actions.SETTLE, abi.encode(currency0, ActionConstants.OPEN_DELTA, false));
+        plan = plan.add(Actions.TAKE, abi.encode(currency1, RECIPIENT, Constants.USE_RESOLVED_AMOUNT));
+        plan = plan.add(Actions.TAKE, abi.encode(currency1, rest, ActionConstants.OPEN_DELTA));
+        (bytes memory commands, bytes[] memory inputs) = _resolveThenV4(address(resolver), plan.encode());
+
+        router.execute(commands, inputs);
+
+        assertEq(MockERC20(Currency.unwrap(currency1)).balanceOf(RECIPIENT), LITERAL, 'exactly the resolved amount');
+        assertGt(MockERC20(Currency.unwrap(currency1)).balanceOf(rest), 0, 'the remainder went to the other taker');
+    }
+
+    function test_resolve_v4SettleSentinelWithoutResolve_reverts() public {
+        Plan memory plan = Planner.init();
+        plan = plan.add(Actions.SETTLE, abi.encode(currency0, Constants.USE_RESOLVED_AMOUNT, false));
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = plan.encode();
+
+        vm.expectRevert(ResolvedAmount.ResolvedAmountUnset.selector);
+        router.execute(commands, inputs);
+    }
+
+    function test_resolve_v4TakeSentinelWithoutResolve_reverts() public {
+        Plan memory plan = Planner.init();
+        plan = plan.add(Actions.TAKE, abi.encode(currency1, RECIPIENT, Constants.USE_RESOLVED_AMOUNT));
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.V4_SWAP)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = plan.encode();
+
+        vm.expectRevert(ResolvedAmount.ResolvedAmountUnset.selector);
+        router.execute(commands, inputs);
+    }
 }

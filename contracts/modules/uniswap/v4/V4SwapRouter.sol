@@ -29,6 +29,16 @@ abstract contract V4SwapRouter is PermissionedV4Router, Permit2Payments {
         return ResolvedAmount.map(amount).toUint128();
     }
 
+    /// @notice Maps the USE_RESOLVED_AMOUNT sentinel in a SETTLE amount through the RESOLVE register
+    function _mapSettleAmount(uint256 amount, Currency currency) internal view override returns (uint256) {
+        return super._mapSettleAmount(ResolvedAmount.map(amount), currency);
+    }
+
+    /// @notice Maps the USE_RESOLVED_AMOUNT sentinel in a TAKE amount through the RESOLVE register
+    function _mapTakeAmount(uint256 amount, Currency currency) internal view override returns (uint256) {
+        return super._mapTakeAmount(ResolvedAmount.map(amount), currency);
+    }
+
     function _payStandard(Currency currency, address payer, uint256 amount) internal override {
         payOrPermit2Transfer(Currency.unwrap(currency), payer, address(poolManager), amount);
     }

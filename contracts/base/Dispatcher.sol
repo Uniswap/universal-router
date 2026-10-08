@@ -16,10 +16,10 @@ import {IAmountResolver} from '../interfaces/IAmountResolver.sol';
 import {IV4FeeAdapter} from '../interfaces/external/IV4FeeAdapter.sol';
 import {IV3FeeAdapter} from '../interfaces/external/IV3FeeAdapter.sol';
 import {IUniswapV3Factory} from '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
-import {IProtocolFees} from '@uniswap/v4-core/src/interfaces/IProtocolFees.sol';
 import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
+import {SafeCast160} from 'permit2/src/libraries/SafeCast160.sol';
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
@@ -136,7 +136,12 @@ abstract contract Dispatcher is
                             recipient := calldataload(add(inputs.offset, 0x20))
                             amount := calldataload(add(inputs.offset, 0x40))
                         }
-                        permit2TransferFrom(token, msgSender(), _mapRecipient(recipient), amount);
+                        permit2TransferFrom(
+                            token,
+                            msgSender(),
+                            _mapRecipient(recipient),
+                            SafeCast160.toUint160(ResolvedAmount.map(amount))
+                        );
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
                         IAllowanceTransfer.PermitBatch calldata permitBatch = decodePermitBatch(inputs);
                         bytes calldata data = inputs.toBytes(1);
@@ -284,7 +289,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(inputs.offset)
                             amount := calldataload(add(inputs.offset, 0x20))
                         }
-                        Payments.wrapETH(_mapRecipient(recipient), amount);
+                        Payments.wrapETH(_mapRecipient(recipient), ResolvedAmount.map(amount));
                     } else if (command == Commands.UNWRAP_WETH) {
                         checkInputLength(inputs, 0x40);
                         // equivalent: abi.decode(inputs, (address, uint256))
@@ -325,7 +330,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(inputs.offset)
                             amount := calldataload(add(inputs.offset, 0x20))
                         }
-                        Payments.unwrapWETH9Exact(_mapRecipient(recipient), amount);
+                        Payments.unwrapWETH9Exact(_mapRecipient(recipient), ResolvedAmount.map(amount));
                     }
                 }
             } else {
@@ -389,7 +394,7 @@ abstract contract Dispatcher is
                     // PoolManager as its protocolFeeController and exposes a permissionless poke that pushes the
                     // resolved fee into pool state. Reading the controller onchain means the router never holds an
                     // adapter address and follows any future controller change.
-                    (success, output) = IProtocolFees(address(poolManager)).protocolFeeController()
+                    (success, output) = poolManager.protocolFeeController()
                         .call(abi.encodeCall(IV4FeeAdapter.triggerFeeUpdate, (poolKey)));
                 } else if (command == Commands.V3_PROTOCOL_FEE_UPDATE) {
                     checkInputLength(inputs, 0x20);
@@ -442,7 +447,8 @@ abstract contract Dispatcher is
     /// that reverts, returns fewer than 32 bytes, or returns zero fails the command, composing with
     /// FLAG_ALLOW_REVERT like the other call-based commands: zero is not an amount any command can act
     /// on, and the v4 swap helpers would read it as OPEN_DELTA. Every failure clears the register, so
-    /// no later command can consume a value this RESOLVE did not produce.
+    /// no later command can consume a value this RESOLVE did not produce. A failure inside a sub-plan that
+    /// then reverts is undone with the rest of the sub-plan, so the earlier value returns as if it never ran.
     function _resolve(address resolver, bytes calldata context) private returns (bool ok) {
         bytes memory callData = abi.encodeWithSelector(IAmountResolver.resolveAmount.selector, context);
         uint256 result;

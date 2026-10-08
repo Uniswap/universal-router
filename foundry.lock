@@ -14,7 +14,7 @@
   "lib/v4-periphery": {
     "branch": {
       "name": "dev-ur-2.3.0",
-      "rev": "ed72ce4716fddfb37e47a1c99e58738311d0fd5b"
+      "rev": "7ed84398b979827150306c8079271a2bc9b2a58b"
     }
   }
 }

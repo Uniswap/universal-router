@@ -8,7 +8,7 @@ library Commands {
     bytes1 internal constant FLAG_ALLOW_REVERT = 0x80;
     bytes1 internal constant COMMAND_TYPE_MASK = 0x7f;
 
-    // Command Types. Maximum supported command at this moment is 0x3f.
+    // Command types are 7 bits (COMMAND_TYPE_MASK); 0x40-0x5f is the highest assigned range, reserved for 3rd party integrations.
     // The commands are executed in nested if blocks to minimise gas consumption
 
     // Command Types where value<=0x07, executed in the first nested-if block
