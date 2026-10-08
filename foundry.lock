@@ -13,8 +13,8 @@
   },
   "lib/v4-periphery": {
     "branch": {
-      "name": "dev-ur-2.3.0",
-      "rev": "ed72ce4716fddfb37e47a1c99e58738311d0fd5b"
+      "name": "fix/oz-ur-2.3.0-audit-part2-findings",
+      "rev": "a4558a6f92ac0f47977722270999926c8a728293"
     }
   }
 }

@@ -6,6 +6,7 @@ import {IV3SpokePool} from '../interfaces/external/IV3SpokePool.sol';
 import {AcrossV4DepositV3Params} from '../interfaces/IUniversalRouter.sol';
 import {IERC20, SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
+import {ResolvedAmount} from '../libraries/ResolvedAmount.sol';
 
 abstract contract ChainedActions is Payments {
     using SafeERC20 for IERC20;
@@ -19,7 +20,7 @@ abstract contract ChainedActions is Payments {
     function _acrossV4DepositV3(bytes calldata input) internal {
         AcrossV4DepositV3Params memory params = abi.decode(input, (AcrossV4DepositV3Params));
 
-        uint256 inputAmount = params.inputAmount;
+        uint256 inputAmount = ResolvedAmount.map(params.inputAmount);
         uint256 callValue = 0;
 
         // Resolve sentinel value for inputAmount

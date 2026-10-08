@@ -289,7 +289,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(inputs.offset)
                             amount := calldataload(add(inputs.offset, 0x20))
                         }
-                        Payments.wrapETH(_mapRecipient(recipient), amount);
+                        Payments.wrapETH(_mapRecipient(recipient), ResolvedAmount.map(amount));
                     } else if (command == Commands.UNWRAP_WETH) {
                         checkInputLength(inputs, 0x40);
                         // equivalent: abi.decode(inputs, (address, uint256))
@@ -330,7 +330,7 @@ abstract contract Dispatcher is
                             recipient := calldataload(inputs.offset)
                             amount := calldataload(add(inputs.offset, 0x20))
                         }
-                        Payments.unwrapWETH9Exact(_mapRecipient(recipient), amount);
+                        Payments.unwrapWETH9Exact(_mapRecipient(recipient), ResolvedAmount.map(amount));
                     }
                 }
             } else {

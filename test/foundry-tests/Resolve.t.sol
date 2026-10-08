@@ -14,6 +14,9 @@ import {DeployPermit2} from 'permit2/test/utils/DeployPermit2.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
 import {Permit2Payments} from '../../contracts/modules/Permit2Payments.sol';
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
+import {WETH} from 'solmate/src/tokens/WETH.sol';
+import {MockSpokePool} from './mock/MockSpokePool.sol';
+import {AcrossV4DepositV3Params} from '../../contracts/interfaces/IUniversalRouter.sol';
 
 /// @notice Exercises the RESOLVE command and the USE_RESOLVED_AMOUNT sentinel end-to-end through the
 /// TRANSFER command, which resolves its value field from the register a prior RESOLVE populates.
@@ -412,3 +415,139 @@ contract ResolvePermit2TransferTest is Test, DeployPermit2 {
     }
 }
 
+/// @notice Exercises the USE_RESOLVED_AMOUNT sentinel in WRAP_ETH, UNWRAP_WETH_EXACT and ACROSS_V4_DEPOSIT_V3.
+contract ResolveWethAndAcrossTest is Test {
+    address constant RECIPIENT = address(1234);
+    uint256 constant N = 7 ether;
+
+    UniversalRouter router;
+    WETH weth;
+    MockSpokePool spokePool;
+    MockResolver resolver;
+
+    function setUp() public {
+        weth = new WETH();
+        spokePool = new MockSpokePool();
+        RouterParameters memory params = RouterParameters({
+            permit2: address(0),
+            weth9: address(weth),
+            v2Factory: address(0),
+            v3Factory: address(0),
+            pairInitCodeHash: bytes32(0),
+            poolInitCodeHash: bytes32(0),
+            v4PoolManager: address(0),
+            permissionsAdapterFactory: address(0),
+            v3NFTPositionManager: address(0),
+            v4PositionManager: address(0),
+            spokePool: address(spokePool)
+        });
+        router = new UniversalRouter(params);
+        resolver = new MockResolver(N);
+    }
+
+    function _resolveThen(uint256 command, bytes memory input)
+        internal
+        view
+        returns (bytes memory commands, bytes[] memory inputs)
+    {
+        commands = abi.encodePacked(bytes1(uint8(Commands.RESOLVE)), bytes1(uint8(command)));
+        inputs = new bytes[](2);
+        inputs[0] = abi.encode(address(resolver), bytes(''));
+        inputs[1] = input;
+    }
+
+    function _sentinelOnly(uint256 command, bytes memory input)
+        internal
+        pure
+        returns (bytes memory commands, bytes[] memory inputs)
+    {
+        commands = abi.encodePacked(bytes1(uint8(command)));
+        inputs = new bytes[](1);
+        inputs[0] = input;
+    }
+
+    function _fundRouterWeth(uint256 amount) internal {
+        deal(address(this), amount);
+        weth.deposit{value: amount}();
+        weth.transfer(address(router), amount);
+    }
+
+    function _acrossInput(uint256 inputAmount) internal view returns (bytes memory) {
+        return abi.encode(
+            AcrossV4DepositV3Params({
+                depositor: RECIPIENT,
+                recipient: RECIPIENT,
+                inputToken: address(weth),
+                outputToken: address(0),
+                inputAmount: inputAmount,
+                outputAmount: 1 ether,
+                destinationChainId: 10,
+                exclusiveRelayer: address(0),
+                quoteTimestamp: uint32(block.timestamp),
+                fillDeadline: uint32(block.timestamp + 1 hours),
+                exclusivityDeadline: 0,
+                message: bytes(''),
+                useNative: false
+            })
+        );
+    }
+
+    function test_wrapETH_wrapsResolvedAmount() public {
+        (bytes memory commands, bytes[] memory inputs) =
+            _resolveThen(Commands.WRAP_ETH, abi.encode(RECIPIENT, Constants.USE_RESOLVED_AMOUNT));
+
+        router.execute{value: 2 * N}(commands, inputs);
+
+        assertEq(weth.balanceOf(RECIPIENT), N);
+        assertEq(address(router).balance, N);
+    }
+
+    function test_wrapETH_sentinelWithoutResolve_reverts() public {
+        (bytes memory commands, bytes[] memory inputs) =
+            _sentinelOnly(Commands.WRAP_ETH, abi.encode(RECIPIENT, Constants.USE_RESOLVED_AMOUNT));
+
+        vm.expectRevert(ResolvedAmount.ResolvedAmountUnset.selector);
+        router.execute{value: N}(commands, inputs);
+    }
+
+    function test_unwrapWETHExact_unwrapsResolvedAmount() public {
+        _fundRouterWeth(2 * N);
+        (bytes memory commands, bytes[] memory inputs) =
+            _resolveThen(Commands.UNWRAP_WETH_EXACT, abi.encode(RECIPIENT, Constants.USE_RESOLVED_AMOUNT));
+
+        router.execute(commands, inputs);
+
+        assertEq(RECIPIENT.balance, N);
+        assertEq(weth.balanceOf(address(router)), N);
+    }
+
+    function test_unwrapWETHExact_sentinelWithoutResolve_reverts() public {
+        _fundRouterWeth(N);
+        (bytes memory commands, bytes[] memory inputs) =
+            _sentinelOnly(Commands.UNWRAP_WETH_EXACT, abi.encode(RECIPIENT, Constants.USE_RESOLVED_AMOUNT));
+
+        vm.expectRevert(ResolvedAmount.ResolvedAmountUnset.selector);
+        router.execute(commands, inputs);
+    }
+
+    function test_acrossDeposit_depositsResolvedAmount() public {
+        _fundRouterWeth(2 * N);
+        (bytes memory commands, bytes[] memory inputs) =
+            _resolveThen(Commands.ACROSS_V4_DEPOSIT_V3, _acrossInput(Constants.USE_RESOLVED_AMOUNT));
+
+        router.execute(commands, inputs);
+
+        assertEq(spokePool.lastInputAmount(), N);
+        assertEq(weth.balanceOf(address(spokePool)), N);
+        assertEq(weth.balanceOf(address(router)), N);
+    }
+
+    function test_acrossDeposit_sentinelWithoutResolve_reverts() public {
+        _fundRouterWeth(N);
+        (bytes memory commands, bytes[] memory inputs) =
+            _sentinelOnly(Commands.ACROSS_V4_DEPOSIT_V3, _acrossInput(Constants.USE_RESOLVED_AMOUNT));
+
+        vm.expectRevert(ResolvedAmount.ResolvedAmountUnset.selector);
+        router.execute(commands, inputs);
+    }
+}
