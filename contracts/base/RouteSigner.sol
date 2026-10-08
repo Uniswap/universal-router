@@ -3,22 +3,11 @@ pragma solidity ^0.8.24;
 
 import {EIP712} from '@openzeppelin/contracts/utils/cryptography/EIP712.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import {ROUTE_SIGNER_SLOT, ROUTE_INTENT_SLOT, ROUTE_DATA_SLOT} from '../libraries/TransientSlots.sol';
 
 /// @title RouteSigner
 /// @notice Contract for managing signed execution context using transient storage
 abstract contract RouteSigner is EIP712 {
-    /// @notice Transient storage slot for the route signer address
-    /// @dev bytes32(uint256(keccak256("RouteSigner")) - 1)
-    bytes32 private constant ROUTE_SIGNER_SLOT = 0xd317c76a4357223a1868125ee857a1f31cabfcec288f6cdd0ea8c52b6a71ee31;
-
-    /// @notice Transient storage slot for the route intent
-    /// @dev bytes32(uint256(keccak256("RouteIntent")) - 1)
-    bytes32 private constant ROUTE_INTENT_SLOT = 0xa42de8dec63499ed8713dc6815ea14006a1f8e80e1664c66e3beb461bb65b0da;
-
-    /// @notice Transient storage slot for the route data
-    /// @dev bytes32(uint256(keccak256("RouteData")) - 1)
-    bytes32 private constant ROUTE_DATA_SLOT = 0x17350132762f24cc4b86e10621ea1e0b5c33483a51cca86a1b11e7ed029b6eb6;
-
     /// @notice EIP712 typehash for signed execution
     bytes32 internal constant EXECUTE_SIGNED_TYPEHASH = keccak256(
         'ExecuteSigned(bytes commands,bytes[] inputs,bytes32 intent,bytes32 data,address sender,bytes32 nonce,uint256 deadline)'
