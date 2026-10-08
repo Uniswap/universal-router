@@ -447,7 +447,8 @@ abstract contract Dispatcher is
     /// that reverts, returns fewer than 32 bytes, or returns zero fails the command, composing with
     /// FLAG_ALLOW_REVERT like the other call-based commands: zero is not an amount any command can act
     /// on, and the v4 swap helpers would read it as OPEN_DELTA. Every failure clears the register, so
-    /// no later command can consume a value this RESOLVE did not produce.
+    /// no later command can consume a value this RESOLVE did not produce. A failure inside a sub-plan that
+    /// then reverts is undone with the rest of the sub-plan, so the earlier value returns as if it never ran.
     function _resolve(address resolver, bytes calldata context) private returns (bool ok) {
         bytes memory callData = abi.encodeWithSelector(IAmountResolver.resolveAmount.selector, context);
         uint256 result;
