@@ -32,6 +32,8 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
 
     /// @dev check that a call is to the ERC721 permit function
     function _checkV3PermitCall(bytes calldata inputs) internal pure {
+        if (inputs.length < 0x04) revert CalldataDecoder.SliceOutOfBounds();
+
         bytes4 selector;
         assembly {
             selector := calldataload(inputs.offset)
@@ -44,6 +46,8 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
 
     /// @dev check that the v3 position manager call is a safe call
     function _checkV3PositionManagerCall(bytes calldata inputs, address caller) internal view {
+        if (inputs.length < 0x24) revert CalldataDecoder.SliceOutOfBounds();
+
         bytes4 selector;
         assembly {
             selector := calldataload(inputs.offset)
@@ -72,6 +76,8 @@ abstract contract V3ToV4Migrator is MigratorImmutables {
     /// this is because, if a user could be tricked into approving the UniversalRouter for
     /// their position, an attacker could take their fees, or drain their entire position
     function _checkV4PositionManagerCall(bytes calldata inputs) internal view {
+        if (inputs.length < 0x04) revert CalldataDecoder.SliceOutOfBounds();
+
         bytes4 selector;
         assembly {
             selector := calldataload(inputs.offset)

@@ -9,6 +9,7 @@ import {Lock} from '../../contracts/base/Lock.sol';
 import {Constants} from '../../contracts/libraries/Constants.sol';
 import {Commands} from '../../contracts/libraries/Commands.sol';
 import {RouterParameters} from '../../contracts/types/RouterParameters.sol';
+import {BytesLib} from '../../contracts/modules/uniswap/v3/BytesLib.sol';
 
 contract ContextCapture {
     UniversalRouter public router;
@@ -130,6 +131,92 @@ contract RouteSignerTest is Test {
         // Sign
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, digest);
         signature = abi.encodePacked(r, s, v);
+    }
+
+    function encodeExecuteSignedWithSmuggledTransfer(
+        bytes memory commands,
+        bytes32 intent,
+        bytes32 data,
+        bytes32 nonce,
+        bytes memory signature,
+        uint256 deadline,
+        address token,
+        address recipient,
+        uint256 value
+    ) internal pure returns (bytes memory callData) {
+        bytes[] memory executionInputs = new bytes[](1);
+        executionInputs[0] = abi.encode(token, recipient, value);
+
+        callData = abi.encodeWithSelector(
+            IUniversalRouter.executeSigned.selector,
+            commands,
+            executionInputs,
+            intent,
+            data,
+            true,
+            nonce,
+            signature,
+            deadline
+        );
+
+        uint256 argsStart;
+        assembly {
+            argsStart := add(add(callData, 0x20), 0x04)
+        }
+
+        uint256 inputsOffset;
+        assembly {
+            inputsOffset := mload(add(argsStart, 0x20))
+        }
+        uint256 inputsStart = argsStart + inputsOffset;
+
+        uint256 firstInputOffset;
+        assembly {
+            firstInputOffset := mload(add(inputsStart, 0x20))
+        }
+        uint256 firstInputLengthPointer = inputsStart + 0x20 + firstInputOffset;
+
+        assembly {
+            mstore(firstInputLengthPointer, 0)
+        }
+    }
+
+    function testExecuteSignedRejectsSmuggledTransferInput() public {
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.TRANSFER)));
+        bytes[] memory signedInputs = new bytes[](1);
+        signedInputs[0] = hex'';
+
+        bytes32 intent = keccak256('zero-length-smuggled-input-intent');
+        bytes32 data = keccak256('zero-length-smuggled-input-data');
+        bytes32 nonce = keccak256('zero-length-smuggled-input-nonce');
+        uint256 deadline = block.timestamp + 1000;
+
+        bytes memory signature = signExecution(commands, signedInputs, intent, data, address(this), nonce, deadline);
+        bytes memory callData = encodeExecuteSignedWithSmuggledTransfer(
+            commands, intent, data, nonce, signature, deadline, Constants.ETH, address(capturer), AMOUNT
+        );
+
+        (bool success, bytes memory returnData) = address(router).call{value: AMOUNT}(callData);
+
+        assertFalse(success, 'smuggled transfer should revert');
+        assertEq(
+            keccak256(returnData),
+            keccak256(abi.encodeWithSelector(BytesLib.SliceOutOfBounds.selector)),
+            'unexpected revert'
+        );
+        assertEq(address(capturer).balance, 0, 'smuggled recipient should not receive ETH');
+        assertFalse(router.noncesUsed(signer, nonce), 'reverted route should not consume nonce');
+    }
+
+    function testFuzzTransferRejectsShortInput(uint256 inputLength) public {
+        inputLength = bound(inputLength, 0, 0x5f);
+
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.TRANSFER)));
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = new bytes(inputLength);
+
+        vm.expectRevert(BytesLib.SliceOutOfBounds.selector);
+        router.execute(commands, inputs);
     }
 
     function testExecuteSigned() public {

@@ -103,6 +103,78 @@ describe('UniversalRouter', () => {
         .withArgs(parseInt(invalidCommand))
     })
 
+    describe('UNWRAP_WETH_EXACT', () => {
+      it('unwraps an exact partial amount and leaves the remainder as WETH', async () => {
+        const total = expandTo18DecimalsBN(3)
+        const amount = expandTo18DecimalsBN(1)
+        await wethContract.transfer(router.address, total)
+
+        planner.addCommand(CommandType.UNWRAP_WETH_EXACT, [ADDRESS_THIS, amount])
+        const { commands, inputs } = planner
+
+        const ethBalanceBefore = await ethers.provider.getBalance(router.address)
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+
+        expect(await wethContract.balanceOf(router.address)).to.eq(total.sub(amount))
+        expect(await ethers.provider.getBalance(router.address)).to.eq(ethBalanceBefore.add(amount))
+      })
+
+      it('sends ETH to an external recipient', async () => {
+        const total = expandTo18DecimalsBN(3)
+        const amount = expandTo18DecimalsBN(1)
+        const recipient = (await ethers.getSigners())[1]
+        await wethContract.transfer(router.address, total)
+
+        planner.addCommand(CommandType.UNWRAP_WETH_EXACT, [recipient.address, amount])
+        const { commands, inputs } = planner
+
+        const ethBalanceBefore = await ethers.provider.getBalance(recipient.address)
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+
+        expect(await wethContract.balanceOf(router.address)).to.eq(total.sub(amount))
+        expect(await ethers.provider.getBalance(recipient.address)).to.eq(ethBalanceBefore.add(amount))
+      })
+
+      it('unwraps the full balance when amount equals the WETH balance', async () => {
+        const total = expandTo18DecimalsBN(3)
+        await wethContract.transfer(router.address, total)
+
+        planner.addCommand(CommandType.UNWRAP_WETH_EXACT, [ADDRESS_THIS, total])
+        const { commands, inputs } = planner
+
+        const ethBalanceBefore = await ethers.provider.getBalance(router.address)
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+
+        expect(await wethContract.balanceOf(router.address)).to.eq(0)
+        expect(await ethers.provider.getBalance(router.address)).to.eq(ethBalanceBefore.add(total))
+      })
+
+      it('does nothing when amount is zero', async () => {
+        const total = expandTo18DecimalsBN(3)
+        await wethContract.transfer(router.address, total)
+
+        planner.addCommand(CommandType.UNWRAP_WETH_EXACT, [ADDRESS_THIS, 0])
+        const { commands, inputs } = planner
+
+        const ethBalanceBefore = await ethers.provider.getBalance(router.address)
+        await router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+
+        expect(await wethContract.balanceOf(router.address)).to.eq(total)
+        expect(await ethers.provider.getBalance(router.address)).to.eq(ethBalanceBefore)
+      })
+
+      it('reverts when the amount exceeds the router WETH balance', async () => {
+        await wethContract.transfer(router.address, expandTo18DecimalsBN(3))
+
+        planner.addCommand(CommandType.UNWRAP_WETH_EXACT, [ADDRESS_THIS, expandTo18DecimalsBN(4)])
+        const { commands, inputs } = planner
+
+        await expect(
+          router['execute(bytes,bytes[],uint256)'](commands, inputs, DEADLINE)
+        ).to.be.revertedWithCustomError(router, 'InsufficientETH')
+      })
+    })
+
     it('reverts if paying a portion over 100% of contract balance', async () => {
       await daiContract.transfer(router.address, expandTo18DecimalsBN(1))
       planner.addCommand(CommandType.PAY_PORTION, [WETH.address, alice.address, 11_000])
