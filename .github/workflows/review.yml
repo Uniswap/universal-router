@@ -1,0 +1,1137 @@
+# Consumer-side review workflow.
+#
+# Drop this into your repo at `.github/workflows/review.yml`.
+#
+# Three triggers, two jobs:
+#
+#   pull_request               ┐
+#   issue_comment              ├──▶  triage (gate)  ──gated by──▶  review
+#   pull_request_review_comment┘
+#
+# All gate / comment-trigger / reaction logic lives in the cli
+# (`review triage` and `review react` subcommands). This file is a
+# thin adapter: it installs the cli, then hands off to it, and the cli
+# reads the GitHub Actions context from `GITHUB_EVENT_PATH` itself.
+# No `${{ github.event.* }}` interpolation into bash — that's a
+# command-injection vector when the field is user-controlled
+# (comment body, branch name, etc.). The cli reads those values as
+# data via the event JSON, never as shell tokens.
+
+name: PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+concurrency:
+  group: review-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  # Only pull_request events cancel in-progress runs in the group. We
+  # WANT a re-push to supersede the previous review (no point reviewing
+  # stale code). We do NOT want random issue_comment events from third-
+  # party bots (Socket Security alerts, dependency notices, etc) to
+  # kill an in-flight push review — most comments aren't even review
+  # triggers, and triage will skip them anyway. Letting them run in
+  # parallel costs nothing if they're filtered out at the gate.
+  #
+  # Every skip clause on the triage job's `if:` is mirrored here, and the
+  # two MUST stay in sync: concurrency is evaluated when the run is created,
+  # before any job `if:`. A push this predicate accepts but triage then
+  # skips (draft, fork, non-member author, release/ or dependabot/ branch, ...)
+  # would cancel a review a human asked for by comment and replace it with
+  # nothing — the commenter is left with a "cancelled, newer push" reply and
+  # no review. Cancel only for pushes that will produce a replacement.
+  # Folded scalar: every continuation line sits at the same indent so YAML
+  # collapses this to ONE line before Actions parses the expression.
+  cancel-in-progress: >-
+    ${{ github.event_name == 'pull_request'
+    && !github.event.pull_request.draft
+    && github.event.pull_request.head.repo.full_name == github.repository
+    && (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
+      || github.event.pull_request.user.type == 'Bot')
+    && !startsWith(github.head_ref, 'gh-readonly-queue/')
+    && !startsWith(github.head_ref, 'release/')
+    && !startsWith(github.head_ref, 'changeset-release/')
+    && !startsWith(github.head_ref, 'cherry-pick/')
+    && !startsWith(github.head_ref, 'dependabot/')
+    && !startsWith(github.head_ref, 'renovate/') }}
+
+# Permissions are scoped per-job. Workflow-level permissions are
+# flagged by linters (zizmor, etc.) as overly broad — the triage job
+# only needs read + reaction-write; only the review job needs
+# contents:write for the resolveReviewThread mutation.
+
+# ── Pinned versions — BUMP THEM HERE, nowhere else ───────────────────────
+#
+# `vars.<NAME>` lets a repo roll forward from repo settings without a
+# commit; the literal after `||` is the fallback this template shipped with.
+#
+# The Claude Code install step below downloads this exact release binary and
+# verifies its SHA256 against the release's GPG-signed manifest before
+# anything executes it. Without the pin, an install script fetched at job
+# time executes whatever upstream is serving at that moment — every other
+# third-party input to this workflow is SHA-pinned, so this one shouldn't be
+# the exception.
+#
+# Released Claude Code versions are listed at
+# https://www.npmjs.com/package/@anthropic-ai/claude-code?activeTab=versions
+# (the npm package and the native installer ship the same binary and the same
+# version numbers).
+env:
+  # Pin for @uniswap/review-cli. Defined once here so the two install blocks
+  # below cannot drift onto different versions.
+  REVIEW_CLI_VERSION: ${{ vars.REVIEW_CLI_VERSION || '1.12.1' }}
+  CLAUDE_CODE_VERSION: ${{ vars.CLAUDE_CODE_VERSION || '2.1.267' }}
+  # Fingerprint of the Anthropic Claude Code release signing key. Fixed across
+  # releases; published at
+  # https://code.claude.com/docs/en/setup#binary-integrity-and-code-signing
+  # Only change this if Anthropic rotates the key.
+  CLAUDE_CODE_GPG_FINGERPRINT: '31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE'
+  # Native installs auto-update in the background. A pin that silently updates
+  # itself mid-job is not a pin.
+  DISABLE_AUTOUPDATER: '1'
+  # Also switches off telemetry, error reporting and the update check, so the
+  # only outbound traffic from the binary is the model API. Keeps the Bullfrog
+  # egress log to what the job actually needs.
+  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1'
+
+jobs:
+  triage:
+    name: Triage
+    runs-on: ubuntu-latest
+    # Event-level gate. The branch-prefix skips mirror review-cli's
+    # built-in defaults (config.ts `skip`) and have to live here: the
+    # triage step below runs with `--skip-config`, which loads no policy
+    # at all, so only its draft check would otherwise apply — a push to
+    # `release/` would start a paid review. Bot-authored PRs are reviewed
+    # like any other; the `dependabot/` and `renovate/` prefixes stay
+    # because dependency bumps need no review and a dependabot PR's
+    # workflow run has no access to repository secrets anyway.
+    # Comment triggers deliberately bypass those skips (a human asked).
+    # Every clause added here must also be added to `cancel-in-progress`
+    # at the top of this file, or a skipped push cancels a comment-
+    # triggered review and nothing replaces it.
+    # This `if:` is also the first trust filter for comment triggers: only
+    # OWNER / MEMBER / COLLABORATOR comments can start a run, so anyone
+    # with mere read access (NONE, CONTRIBUTOR, FIRST_TIME_CONTRIBUTOR)
+    # cannot start a paid run by commenting. COLLABORATOR has to be
+    # accepted: the event payload labels an organization member
+    # COLLABORATOR whenever their membership is private (the default;
+    # observed on Uniswap/ai-sandbox#58, where a member's PR skipped every
+    # job) and MEMBER only when it is public, so the label cannot separate
+    # members from outside collaborators. The authoritative check is the
+    # review job's "Refuse fork PRs and non-member authors" step, which
+    # queries the repository's outside-collaborator list before any PR
+    # code is checked out.
+    if: |
+      (github.event_name == 'pull_request'
+        && !github.event.pull_request.draft
+        && github.event.pull_request.head.repo.full_name == github.repository
+        && (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
+          || github.event.pull_request.user.type == 'Bot')
+        && !startsWith(github.head_ref, 'gh-readonly-queue/')
+        && !startsWith(github.head_ref, 'release/')
+        && !startsWith(github.head_ref, 'changeset-release/')
+        && !startsWith(github.head_ref, 'cherry-pick/')
+        && !startsWith(github.head_ref, 'dependabot/')
+        && !startsWith(github.head_ref, 'renovate/')) ||
+      (github.event_name == 'issue_comment'
+        && github.event.issue.pull_request != null
+        && contains(github.event.comment.body, '@request-claude-review')
+        && github.event.comment.user.type != 'Bot'
+        && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request_review_comment'
+        && contains(github.event.comment.body, '@request-claude-review')
+        && github.event.comment.user.type != 'Bot'
+        && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    permissions:
+      contents: read           # baseline; this job performs no checkout
+      packages: read           # read @uniswap/review-cli from GH packages
+      issues: write            # 👀 reaction on issue_comment
+      pull-requests: write     # 👀 reaction on pull_request_review_comment
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+      pr_number: ${{ steps.gate.outputs.pr_number }}
+      comment_id: ${{ steps.gate.outputs.comment_id }}
+      trigger_source: ${{ steps.gate.outputs.trigger_source }}
+      note: ${{ steps.gate.outputs.note }}
+      commenter: ${{ steps.gate.outputs.commenter }}
+      thread_anchor: ${{ steps.gate.outputs.thread_anchor }}
+      # Threaded-reply id (when a running-state reply was posted in this
+      # job). The Post step uses it to PATCH the reply with the terminal
+      # verdict. Empty when the trigger wasn't a comment (push-driven
+      # runs have no comment to reply to).
+      reply_id: ${{ steps.post_reply.outputs.id }}
+    steps:
+      # Egress monitor. Must be the first step of the job or it cannot see
+      # the requests made before it started. Audit mode: every outbound
+      # connection is listed in the job summary without being blocked; that
+      # list is the input for switching this to `egress-policy: block`.
+      - uses: bullfrogsec/bullfrog@1831f79cce8ad602eef14d2163873f27081ebfb3 # v0.8.4
+        with:
+          egress-policy: audit
+
+      - uses: oven-sh/setup-bun@4bc047ad259df6fc24a6c9b0f9a0cb08cf17fbe5 # v2.0.1
+        with:
+          bun-version: '1.3.13'
+
+      # Install the CLI with NO repo content on disk — this job performs no
+      # checkout at all, so nothing PR-author-controlled can influence
+      # dependency resolution.
+      #
+      # review-cli is published only to GitHub Packages, so the @uniswap scope
+      # must be routed there. Bun supports per-scope but not per-package
+      # registry overrides, so the install runs from a scratch directory with
+      # its own bunfig rather than adding one to your repo. `bun add` is
+      # pointed at that file with --config; bun ignores the BUN_CONFIG_FILE
+      # environment variable entirely (verified on 1.3.13 and 1.3.14), so
+      # the flag and the scratch CWD are what keep any other bunfig.toml out
+      # of scope.
+      - name: Install review-cli
+        id: install
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          install_dir="$RUNNER_TEMP/review-cli-install"
+          mkdir -p "$install_dir"
+          cat > "$install_dir/bunfig.toml" <<EOF
+          [install.scopes]
+          "@uniswap" = { url = "https://npm.pkg.github.com", token = "$GH_PACKAGES_TOKEN" }
+          EOF
+          # The bunfig holds GITHUB_TOKEN in cleartext and is only needed until
+          # the package resolves. Remove it on every exit path — a failed
+          # `bun add` must not leave it under $RUNNER_TEMP either.
+          trap 'rm -f "$install_dir/bunfig.toml" "$RUNNER_TEMP/bun-add.err"' EXIT
+          cd "$install_dir"
+          bun init -y > /dev/null
+          if ! bun add --config="$install_dir/bunfig.toml" "@uniswap/review-cli@${REVIEW_CLI_VERSION}" 2> "$RUNNER_TEMP/bun-add.err"; then
+            cat "$RUNNER_TEMP/bun-add.err" >&2
+            if grep -qE '(^|[^0-9])403([^0-9]|$)' "$RUNNER_TEMP/bun-add.err"; then
+              echo "::error::403 from GitHub Packages. $GITHUB_REPOSITORY has no read access to @uniswap/review-cli. Fix: Uniswap/internal-tools -> Packages -> review-cli -> Package settings -> Manage Actions access -> add this repository. This is a per-repo grant; no workflow change can confer it."
+            fi
+            exit 1
+          fi
+          echo "bin=$install_dir/node_modules/.bin/review-cli" >> "$GITHUB_OUTPUT"
+
+      # Gate — `review triage --from-github-actions` reads
+      # GITHUB_EVENT_NAME + GITHUB_EVENT_PATH itself and writes the
+      # decision to GITHUB_OUTPUT. No user-controlled data ever
+      # touches the shell. `--skip-config` because we haven't checked
+      # out the repo yet, so no `.claude/review.yml` is on disk to
+      # read. With that flag the cli applies only its draft check; the
+      # branch and author skips are enforced by the job `if:` above.
+      # Repos that want richer policy can move this gate AFTER a
+      # checkout step.
+      - name: Decide whether to run
+        id: gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REVIEW_CLI: ${{ steps.install.outputs.bin }}
+        run: 'bun --config=/dev/null --env-file=/dev/null "$REVIEW_CLI" triage --from-github-actions --skip-config'
+
+      # Acknowledge a comment trigger with 👀. Only fires when the
+      # gate accepted the comment — bot-self-mentions, untrusted
+      # commenters, and missing-trigger-phrase comments don't get the
+      # ack (the comment id is empty in those cases).
+      - name: Acknowledge comment trigger (👀)
+        if: |
+          steps.gate.outputs.run == 'true' &&
+          steps.gate.outputs.comment_id != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          COMMENT_ID: ${{ steps.gate.outputs.comment_id }}
+          EVENT_NAME: ${{ github.event_name }}
+          REVIEW_CLI: ${{ steps.install.outputs.bin }}
+        run: |
+          bun --config=/dev/null --env-file=/dev/null "$REVIEW_CLI" react \
+            --repo "$GH_REPO" \
+            --comment-id "$COMMENT_ID" \
+            --event "$EVENT_NAME" \
+            --reaction ack
+
+      # Post a "Reviewing now" reply right under the trigger comment so
+      # the requester gets visible feedback while the review job spins
+      # up. The reaction (👀) is glanceable; this reply is the
+      # responsive one — it carries the run URL so the requester can
+      # click through to logs without scrolling back to the sticky.
+      # Best-effort: a failed post doesn't break the run, the worst
+      # case is silence until the terminal ✅/❌ reaction.
+      - name: Post running-state reply
+        id: post_reply
+        if: |
+          steps.gate.outputs.run == 'true' &&
+          steps.gate.outputs.comment_id != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          COMMENT_ID: ${{ steps.gate.outputs.comment_id }}
+          EVENT_NAME: ${{ github.event_name }}
+          REVIEW_CLI: ${{ steps.install.outputs.bin }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPLY_BODY: |
+            ↻ **Reviewing now** · [view run ↗](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            This comment will update when the review completes. Findings will appear in the sticky summary above.
+        run: |
+          OUT="$RUNNER_TEMP/reply-id.txt"
+          bun --config=/dev/null --env-file=/dev/null "$REVIEW_CLI" reply \
+            --repo "$GH_REPO" \
+            --pr "$PR_NUMBER" \
+            --event "$EVENT_NAME" \
+            --in-reply-to "$COMMENT_ID" \
+            --body "$REPLY_BODY" \
+            --out-id "$OUT"
+          if [ -s "$OUT" ]; then
+            echo "id=$(cat "$OUT")" >> "$GITHUB_OUTPUT"
+          fi
+
+  review:
+    name: AI review
+    needs: triage
+    if: needs.triage.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    # `contents: write` (not `read`) is required for the GraphQL
+    # `resolveReviewThread` mutation. `pull-requests: write` alone
+    # returns "Resource not accessible by integration".
+    # https://github.com/orgs/community/discussions/44650
+    permissions:
+      contents: write
+      packages: read           # pull @uniswap/review-cli
+      pull-requests: write     # post review comments + resolve threads
+      issues: write            # comment reactions + sticky on PRs
+    timeout-minutes: 20
+    env:
+      # Project-scope files Claude Code executes rather than reads: settings
+      # `hooks` run as commands and `.mcp.json` `mcpServers` spawn processes.
+      # The drop step removes every copy before Claude Code launches and the
+      # base-branch step never writes one back from either ref; both read
+      # this one list, so a new auto-executing config format is added here
+      # once. Space-separated paths relative to any directory.
+      CLAUDE_AUTORUN_FILES: .claude/settings.json .claude/settings.local.json .mcp.json
+    steps:
+      # Egress monitor. Must be the first step of the job or it cannot see
+      # the requests made before it started. Audit mode: every outbound
+      # connection is listed in the job summary without being blocked; that
+      # list is the input for switching this to `egress-policy: block`.
+      - uses: bullfrogsec/bullfrog@1831f79cce8ad602eef14d2163873f27081ebfb3 # v0.8.4
+        with:
+          egress-policy: audit
+
+      # Trust boundary for the review job, re-checked here against the API
+      # rather than trusting the event payload: the PR must come from this
+      # repository (never a fork) and be authored by a member or owner of
+      # the organization, or by a bot the organization installed. A comment
+      # trigger by a member on a fork PR would otherwise reach the checkout
+      # below with fork-controlled code in a job holding the LLM credential.
+      # Same-repo plus membership is the whole model: outside contributions
+      # never reach this job, so its reviewers (which run with Bash) only
+      # ever read code from people the organization already trusts.
+      # Membership is decided by the repository's outside-collaborator list,
+      # not by `author_association`: the API labels a member with private
+      # membership COLLABORATOR (verified on Uniswap/ai-sandbox#58), and
+      # the job token cannot read organization membership (404/403), but it
+      # can list outside collaborators, which is exactly the set to refuse.
+      # Kept byte-identical to the same-named step in the sibling template;
+      # packages/review-cli/src/templates-parity.test.ts fails if they drift.
+      - name: Refuse fork PRs and non-member authors
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.triage.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          pr=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")
+          head_repo=$(printf '%s' "$pr" | jq -r '.head.repo.full_name // empty')
+          author=$(printf '%s' "$pr" | jq -r '.user.login // empty')
+          assoc=$(printf '%s' "$pr" | jq -r '.author_association // empty')
+          utype=$(printf '%s' "$pr" | jq -r '.user.type // empty')
+          if [ "$head_repo" != "$GH_REPO" ]; then
+            echo "::error::PR #$PR_NUMBER head is $head_repo, not $GH_REPO. Fork PRs never pass this gate."
+            exit 1
+          fi
+          if [ "$utype" = "Bot" ]; then
+            echo "PR #$PR_NUMBER is authored by installed bot '$author'; continuing."
+            exit 0
+          fi
+          case "$assoc" in
+            OWNER|MEMBER|COLLABORATOR) ;;
+            *)
+              echo "::error::PR #$PR_NUMBER author '$author' has association '$assoc'. Only organization members, owners and installed bots pass this gate."
+              exit 1
+              ;;
+          esac
+          # COLLABORATOR is what the API reports for a member whose membership
+          # is private, and also for an outside collaborator. Only the second
+          # is refused, and the outside-collaborator list is how to tell.
+          is_outside=$(gh api --paginate "repos/$GH_REPO/collaborators?affiliation=outside&per_page=100" \
+            | jq -rs --arg a "$author" 'any(.[][]; .login == $a)')
+          if [ "$is_outside" != "false" ]; then
+            echo "::error::PR #$PR_NUMBER author '$author' is an outside collaborator (lookup: $is_outside). Only organization members, owners and installed bots pass this gate."
+            exit 1
+          fi
+          echo "PR #$PR_NUMBER author '$author': same-repo head, association $assoc, not an outside collaborator; continuing."
+
+      - uses: oven-sh/setup-bun@4bc047ad259df6fc24a6c9b0f9a0cb08cf17fbe5 # v2.0.1
+        with:
+          bun-version: '1.3.13'
+
+      # Install the CLI FIRST — before anything but the egress monitor
+      # above — for two independent reasons:
+      #
+      # 1. No PR-author-controlled content is on disk yet (the only
+      #    checkout is further down), so dependency resolution cannot be
+      #    steered by the PR.
+      # 2. The finalization steps at the bottom of this job (reaction +
+      #    threaded-reply updates) run on every terminal state and need
+      #    `steps.install.outputs.bin` to report that state. If install ran
+      #    later and an earlier step failed first, that output would be
+      #    empty, those steps would silently no-op under
+      #    `continue-on-error: true`, and a trigger comment would keep its
+      #    👀 and "Reviewing now" reply forever — indistinguishable from a
+      #    hung review.
+      #
+      # See the triage job's install step for why the bunfig lives in a
+      # scratch directory and is removed on every exit path.
+      - name: Install review-cli
+        id: install
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          install_dir="$RUNNER_TEMP/review-cli-install"
+          mkdir -p "$install_dir"
+          cat > "$install_dir/bunfig.toml" <<EOF
+          [install.scopes]
+          "@uniswap" = { url = "https://npm.pkg.github.com", token = "$GH_PACKAGES_TOKEN" }
+          EOF
+          # The bunfig holds GITHUB_TOKEN in cleartext and is only needed until
+          # the package resolves. Remove it on every exit path — a failed
+          # `bun add` must not leave it under $RUNNER_TEMP either.
+          trap 'rm -f "$install_dir/bunfig.toml" "$RUNNER_TEMP/bun-add.err"' EXIT
+          cd "$install_dir"
+          bun init -y > /dev/null
+          if ! bun add --config="$install_dir/bunfig.toml" "@uniswap/review-cli@${REVIEW_CLI_VERSION}" 2> "$RUNNER_TEMP/bun-add.err"; then
+            cat "$RUNNER_TEMP/bun-add.err" >&2
+            if grep -qE '(^|[^0-9])403([^0-9]|$)' "$RUNNER_TEMP/bun-add.err"; then
+              echo "::error::403 from GitHub Packages. $GITHUB_REPOSITORY has no read access to @uniswap/review-cli. Fix: Uniswap/internal-tools -> Packages -> review-cli -> Package settings -> Manage Actions access -> add this repository. This is a per-repo grant; no workflow change can confer it."
+            fi
+            exit 1
+          fi
+          echo "bin=$install_dir/node_modules/.bin/review-cli" >> "$GITHUB_OUTPUT"
+
+      - name: Verify an LLM credential is present
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ] && [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::No LLM credential. Set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN as a repo secret. If both are set, Claude Code uses the API key."
+            exit 1
+          fi
+
+      # Claude Code is fetched as a bare release binary and verified against
+      # the release's GPG-signed manifest BEFORE anything executes. Earlier
+      # revisions of this template piped https://claude.ai/install.sh into
+      # bash first and verified the binary it produced; that left the one
+      # unpinned, unsigned executable in the chain running before any check,
+      # in a job holding the LLM credential. Nothing here runs until the
+      # checksum matches.
+      #
+      # The binary is needed because, as of
+      # @anthropic-ai/claude-agent-sdk@0.2.113, the SDK looks for a
+      # per-platform binary shipped via optional deps — bun on Linux extracts
+      # only the host variant while the SDK probes the musl path first.
+      #
+      # The version installed is pinned by `CLAUDE_CODE_VERSION` at the top of
+      # this file. Bump it there.
+      # Kept byte-identical to the same-named step in the sibling template;
+      # packages/review-cli/src/templates-parity.test.ts fails if they drift.
+      - name: Install Claude Code binary
+        run: |
+          set -euo pipefail
+
+          case "$(uname -s)/$(uname -m)" in
+            Linux/x86_64) PLATFORM='linux-x64' ;;
+            Linux/aarch64 | Linux/arm64) PLATFORM='linux-arm64' ;;
+            *)
+              echo "::error::No release-manifest platform key for $(uname -s)/$(uname -m). This template assumes a Linux runner; add a case here if you changed runs-on."
+              exit 1
+              ;;
+          esac
+
+          RELEASES='https://downloads.claude.ai/claude-code-releases'
+          WORK="$(mktemp -d)"
+          curl -fsSL "$RELEASES/$CLAUDE_CODE_VERSION/manifest.json" -o "$WORK/manifest.json"
+          curl -fsSL "$RELEASES/$CLAUDE_CODE_VERSION/manifest.json.sig" -o "$WORK/manifest.json.sig"
+
+          # The manifest lists a SHA256 for every platform binary and is itself
+          # GPG-signed, so a good signature on the manifest transitively covers
+          # the binary. Import into a throwaway keyring, assert the KEY
+          # FINGERPRINT, then require the signature itself to come from that
+          # key: `gpg --verify` alone accepts a valid signature from ANY key in
+          # the keyring, so a poisoned key bundle would pass the fingerprint
+          # check and then sign a tampered manifest. VALIDSIG lists the signing
+          # key first and the primary key last.
+          export GNUPGHOME="$WORK/gnupg"
+          mkdir -m 0700 "$GNUPGHOME"
+          curl -fsSL https://downloads.claude.ai/keys/claude-code.asc | gpg --batch --quiet --import
+          if ! gpg --batch --with-colons --fingerprint security@anthropic.com \
+            | grep -q "^fpr:.*:${CLAUDE_CODE_GPG_FINGERPRINT}:"; then
+            echo "::error::Claude Code release signing key does not match the pinned fingerprint $CLAUDE_CODE_GPG_FINGERPRINT"
+            exit 1
+          fi
+          if ! gpg --batch --status-fd 1 --verify "$WORK/manifest.json.sig" "$WORK/manifest.json" \
+            | grep -qE "^\[GNUPG:\] VALIDSIG (${CLAUDE_CODE_GPG_FINGERPRINT} |.* ${CLAUDE_CODE_GPG_FINGERPRINT}$)"; then
+            echo "::error::manifest.json signature was not made by the pinned key $CLAUDE_CODE_GPG_FINGERPRINT"
+            exit 1
+          fi
+
+          MANIFEST_VERSION="$(jq -r '.version // empty' "$WORK/manifest.json")"
+          if [ "$MANIFEST_VERSION" != "$CLAUDE_CODE_VERSION" ]; then
+            echo "::error::manifest.json at the $CLAUDE_CODE_VERSION URL declares version '$MANIFEST_VERSION'. A validly signed manifest for a different release is not the release this workflow pinned."
+            exit 1
+          fi
+
+          EXPECTED="$(jq -r --arg p "$PLATFORM" '.platforms[$p].checksum // empty' "$WORK/manifest.json")"
+          if [ -z "$EXPECTED" ]; then
+            echo "::error::manifest.json for $CLAUDE_CODE_VERSION lists no checksum for $PLATFORM"
+            exit 1
+          fi
+
+          # Same URL the official installer downloads from, verified against
+          # the signed manifest before it is made executable.
+          curl -fsSL "$RELEASES/$CLAUDE_CODE_VERSION/$PLATFORM/claude" -o "$WORK/claude"
+          ACTUAL="$(sha256sum "$WORK/claude" | cut -d' ' -f1)"
+          if [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "::error::Claude Code $CLAUDE_CODE_VERSION checksum mismatch for $PLATFORM (expected $EXPECTED, got $ACTUAL). The download does not match the signed manifest; do not work around this by changing the version pin."
+            exit 1
+          fi
+          CLAUDE_DIR="$RUNNER_TEMP/claude-code"
+          mkdir -p "$CLAUDE_DIR"
+          install -m 0755 "$WORK/claude" "$CLAUDE_DIR/claude"
+          rm -rf "$WORK"
+          echo "Verified Claude Code $CLAUDE_CODE_VERSION ($PLATFORM) against the signed release manifest."
+
+          # Point the SDK at the binary we actually verified.
+          echo "CLAUDE_CODE_EXECUTABLE_PATH=$CLAUDE_DIR/claude" >> "$GITHUB_ENV"
+          echo "$CLAUDE_DIR" >> "$GITHUB_PATH"
+
+      # The ONLY checkout in this workflow, and it is explicitly pinned to
+      # the PR head rather than left to default. Required for the
+      # comment-trigger variants — `issue_comment` and
+      # `pull_request_review_comment` events default GITHUB_REF to the
+      # repo's default branch, so an un-pinned checkout would run the
+      # review against main and skip on "all hunks identical". The triage
+      # job already extracted pr_number from the event payload; reuse it
+      # here so the review runs against the PR's actual code regardless of
+      # which event triggered.
+      #
+      # Everything from here runs with untrusted files in the working
+      # directory. bun auto-loads ./bunfig.toml from CWD and executes its
+      # `preload` array in-process, and it auto-loads a CWD dotenv file into
+      # any environment variable the job left unset (ANTHROPIC_BASE_URL, for
+      # one). review-cli's bin is a `#!/usr/bin/env bun` script, so every bun
+      # invocation below, the Datadog `bun x` included, is launched with
+      # `--config=/dev/null --env-file=/dev/null`. Those flags are the only
+      # thing that works: BUN_CONFIG_FILE=/dev/null does NOT suppress the
+      # bunfig (a `preload` still ran under it on bun 1.3.13 and 1.3.14).
+      # The install above already completed against its own bunfig, before
+      # any of this was on disk.
+      - name: Checkout PR head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: refs/pull/${{ needs.triage.outputs.pr_number }}/head
+
+      # Repos with git submodules (Foundry's dependency directory is the
+      # common case): reviewers read that dependency source, which a plain
+      # checkout leaves empty. Two guards, because `.gitmodules` in the PR
+      # head is PR-author-controlled
+      # and a recursive init would otherwise fetch whatever URLs it names:
+      # (1) fetch only when the PR's `.gitmodules` is byte-identical to the
+      # default branch's, so a PR cannot redirect a submodule to another
+      # host; (2) allow only the https transport, so file://, ext::, git://
+      # and ssh URLs in any nested `.gitmodules` are refused rather than
+      # fetched. The submodule COMMIT (the gitlink) stays PR-controlled: a PR
+      # can point at any commit in the pinned upstream, and that content
+      # lands under the submodule path as read-only review context. Nothing
+      # in it is executed.
+      #
+      # The default branch is compared as `origin/<default>`, which the
+      # checkout above already fetched (`fetch-depth: 0` pulls every branch
+      # alongside the pull ref). Do NOT add an explicit `git fetch` here:
+      # `persist-credentials: false` leaves it with no credentials, so it
+      # fails on every private repo, and `--depth` would leave a shallow
+      # graft that breaks `git diff origin/main...HEAD` for later steps.
+      # Best effort on purpose: a private submodule warns instead of failing
+      # the review, and `continue-on-error` keeps a timeout kill from failing
+      # it either. A no-op in repos without submodules, so it is safe to
+      # leave enabled.
+      - name: Fetch submodules (best effort)
+        timeout-minutes: 10
+        continue-on-error: true
+        env:
+          GIT_TERMINAL_PROMPT: '0'
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -uo pipefail
+          [ -f .gitmodules ] || { echo "No .gitmodules; nothing to fetch."; exit 0; }
+          if ! git rev-parse --verify --quiet "origin/$DEFAULT_BRANCH^{commit}" > /dev/null; then
+            echo "::warning::origin/$DEFAULT_BRANCH is not present in the checkout, so .gitmodules cannot be verified; skipping the submodule fetch. Reviewers will see incomplete submodule content"
+            exit 0
+          fi
+          if ! git diff --quiet "origin/$DEFAULT_BRANCH" -- .gitmodules; then
+            echo "::warning::.gitmodules differs from $DEFAULT_BRANCH; skipping the submodule fetch so no PR-controlled URL is fetched. Reviewers will see incomplete submodule content"
+            exit 0
+          fi
+          git -c protocol.allow=never -c protocol.https.allow=always \
+            submodule update --init --recursive --depth 1 \
+            || echo "::warning::Some submodules could not be fetched; reviewers will see incomplete submodule content"
+
+      # review-cli runs its reviewers through the Claude Agent SDK with the
+      # `project` setting source, so Claude Code reads this checkout's
+      # `.claude/settings.json` and `.claude/settings.local.json` (whose
+      # `hooks` run as commands) and `.mcp.json` (whose `mcpServers` spawn
+      # commands), at the root and below it. That is a PR-author-controlled
+      # execution path of the same class as the bunfig and dotenv ones above,
+      # so every copy goes before anything launches Claude Code. The step runs
+      # after the submodule fetch so a copy shipped inside a pinned submodule
+      # is covered too. The same source also reads CLAUDE.md, `.claude/rules/`,
+      # `.claude/agents/` and `.claude/review.yml` as the reviewers'
+      # instructions, staffing and budget policy; the next step takes those
+      # from the base branch.
+      - name: Drop PR-authored Claude Code settings
+        run: |
+          # review-cli reviews this checkout in place only while HEAD is the
+          # PR head and `git status --porcelain` is empty; otherwise it
+          # re-extracts the PR's changed files (these included) into a temp
+          # workspace with the same setting source, which would both defeat
+          # this step and drop the full-tree review. Marking each tracked file
+          # assume-unchanged after the removal keeps the status clean; `git -C`
+          # lands that in whichever repo (superproject or submodule) holds the
+          # file, and the status check after it turns a removal that did not
+          # take into a failed job instead of a fall-through to extraction. A
+          # `.claude` directory or `.mcp.json` committed as a symlink is
+          # followed by Claude Code but skipped by a plain `find`, so symlinks
+          # by those names go first, then the files themselves.
+          set -euo pipefail
+          drop() {
+            rm -rf "$1" || { echo "::error::Could not remove PR-authored $1"; exit 1; }
+            if [ -e "$1" ] || [ -L "$1" ]; then echo "::error::PR-authored $1 is still present after its removal"; exit 1; fi
+            dir=$(dirname "$1"); base=$(basename "$1")
+            git -C "$dir" update-index --assume-unchanged "$base" 2>/dev/null || true
+            if [ -n "$(git -C "$dir" status --porcelain -- "$base")" ]; then
+              echo "::error::$1 still shows in git status after its removal; review-cli would fall back to extracting the PR files under the same setting source"
+              exit 1
+            fi
+            echo "::warning::Removed PR-authored $1 before launching Claude Code; inspect it in the PR diff."
+          }
+          # The file list is the job-level CLAUDE_AUTORUN_FILES, shared with the
+          # base-branch step below so the two cannot drift.
+          match=(); for n in $CLAUDE_AUTORUN_FILES; do match+=(-o -path "*/$n"); done
+          # The listing is written to a file first so a failing `find` ends the
+          # step under `set -e` instead of running an empty loop.
+          found=$(mktemp "${RUNNER_TEMP:-/tmp}/autorun-find.XXXXXX")
+          find . -path ./.git -prune -o -type l \( -name '.claude' "${match[@]}" \) -print0 > "$found"
+          while IFS= read -r -d '' f; do drop "$f"; done < "$found"
+          find . -path ./.git -prune -o \( -false "${match[@]}" \) -print0 > "$found"
+          while IFS= read -r -d '' f; do drop "$f"; done < "$found"
+          rm -f -- "$found"
+
+      # CLAUDE.md (root and nested, plus CLAUDE.local.md), everything under
+      # `.claude/` (review.yml, review-context.md, agents/, rules/, skills/,
+      # commands/), and the other convention files review-cli inlines into
+      # reviewer prompts (AGENTS.md at any depth; root .cursorrules,
+      # .cursor/rules.md, CONTRIBUTING.md, ARCHITECTURE.md and
+      # docs/ARCHITECTURE.md; kept identical to describe.yml) are read from
+      # this checkout as the reviewers' instructions, staffing and budget
+      # policy, and a PR can edit them: raise `agent_budget_usd`, change the
+      # model, widen `post.allowed_actors`, or add text to a context, agent,
+      # rules or skill file, and the change reaches the agents as repo policy
+      # rather than as diff content. This step rewrites every one of them,
+      # plus whatever the default branch's CLAUDE.md files import, to the
+      # default branch's version before Claude Code launches.
+      #
+      # The default branch, not the PR's base branch: in a stack main > A > B,
+      # B's base is A, which is itself an open PR, so policy read from the
+      # base would let a stacked PR apply its own instructions to the review
+      # of the PR above it. For a PR against the default branch the two refs
+      # are the same.
+      #
+      # Note that `pull_request` runs the PR's own copy of this workflow file
+      # (only `pull_request_target` uses the base branch's), so this step is
+      # the only thing keeping the PR's policy files from applying to their
+      # own review: the PR's version of each is reviewed as a change and
+      # never applied. The paths that were replaced are passed to the review
+      # as a note, so the agents know the policy they run under is the
+      # default branch's. review-cli has no option to read policy from
+      # another ref (ECO-891 item 17), so this lives here until it does.
+      #
+      # In a repo that also ships describe-cli's canonical describe.yml, keep
+      # this block identical to its "Take the instructions from the default
+      # branch" step, except for the assume-unchanged and exclude bookkeeping
+      # that only review-cli's in-place review needs; a change to the policy
+      # set goes in both files.
+      - name: Take the review policy from the default branch
+        id: policy
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          # Every tracked path in the policy set ends up identical to the default
+          # branch: there -> written from it (and, when the PR deleted it, listed
+          # in .git/info/exclude); not there -> removed.
+          # The auto-executing files (`.claude/settings*.json`, `.mcp.json`)
+          # are the exception: they are never written back, from either ref,
+          # so this pass is a second, index-driven removal for them and the
+          # default branch's hooks cannot re-enter through this step.
+          # assume-unchanged and the exclude list keep `git status --porcelain`
+          # empty, which the previous step explains review-cli needs. Files are
+          # written with `git checkout <sha> -- path` (then `git reset` on the
+          # index entry), so a mode on the default branch is reproduced; a
+          # symlink there is dereferenced (see write_policy). Paths are passed to
+          # git as `:(literal)` pathspecs so glob characters in a filename
+          # match themselves. Paths inside submodules are left alone: the
+          # `.gitmodules` guard fixes which submodules exist and where they
+          # come from, but the commit each one points at is the PR's, so a
+          # CLAUDE.md inside a submodule is PR-chosen instruction text. Only
+          # members' PRs reach this job, which is the accepted bound.
+          # Every listing a loop reads is written to a file first: `while read`
+          # over a process substitution never sees the producer's exit status,
+          # so a failing `git ls-files` would run an empty loop and leave the
+          # PR's policy in place with the step green. A redirect that fails
+          # ends the step under `set -e`.
+          policy_ref=$DEFAULT_BRANCH
+          rebased=""
+          policy_sha=$(git rev-parse --verify --quiet "refs/remotes/origin/$policy_ref^{commit}") \
+            || { echo "::error::origin/$policy_ref (the default branch) is not in this checkout; fetch-depth must stay 0"; exit 1; }
+          policy='(^|/)CLAUDE(\.local)?\.md$|(^|/)\.claude(/|$)|(^|/)\.mcp\.json$|(^|/)AGENTS\.md$|^\.cursorrules$|^\.cursor/rules\.md$|^CONTRIBUTING\.md$|^(docs/)?(ARCHITECTURE|architecture)\.md$'
+          blob_at() { [ "$(git cat-file -t "$1:$2" 2>/dev/null || true)" = blob ]; }
+          autorun() { for n in $CLAUDE_AUTORUN_FILES; do if [ "$1" = "$n" ] || [[ $1 == */"$n" ]]; then return 0; fi; done; return 1; }
+          # A policy path that is a symlink on the default branch is dereferenced,
+          # never reproduced as a link: its target is usually outside the policy
+          # set (CLAUDE.md -> docs/instructions.md), so a PR could edit the
+          # target and leave the link untouched. The target is resolved inside
+          # the default branch's tree and written as a regular file; a target that
+          # escapes the repository, is missing there, or is itself a symlink means
+          # the path is removed instead (return 1). Kept byte-identical in both
+          # templates; templates-parity.test.ts fails if they drift.
+          mode_at() { git ls-tree -z "$1" -- ":(literal)$2" | cut -d' ' -f1; }
+          normpath() {
+            local IFS=/ segs seg out=()
+            read -r -a segs <<< "$1"
+            for seg in "${segs[@]}"; do
+              case $seg in ''|.) ;; ..) [ ${#out[@]} -gt 0 ] || return 1; unset 'out[${#out[@]}-1]' ;; *) out+=("$seg") ;; esac
+            done
+            [ ${#out[@]} -gt 0 ] || return 1
+            printf '%s' "${out[*]}"
+          }
+          write_policy() {
+            local p=$1 target resolved
+            if [ "$(mode_at "$policy_sha" "$p")" != 120000 ]; then
+              git checkout -q "$policy_sha" -- ":(literal)$p" \
+                || { echo "::error::could not write $p from origin/$policy_ref"; exit 1; }
+              return 0
+            fi
+            target=$(git cat-file -p "$policy_sha:$p")
+            case $target in /*) return 1 ;; esac
+            resolved=$(normpath "$(dirname -- "$p")/$target") || return 1
+            case "$(mode_at "$policy_sha" "$resolved")" in 100644|100755) ;; *) return 1 ;; esac
+            mkdir -p -- "$(dirname -- "$p")"
+            git cat-file -p "$policy_sha:$resolved" > "$p"
+            [ "$(mode_at "$policy_sha" "$resolved")" = 100755 ] && chmod +x -- "$p"
+            echo "::warning::$p is a symlink to $resolved on the default branch; the default branch's target content is written in its place."
+            return 0
+          }
+          # A CLAUDE.md imports other files with `@path` and Claude Code resolves
+          # those imports from the checkout when it loads the file, so a
+          # default-branch CLAUDE.md that says `@docs/style.md` would still read the
+          # PR's docs/style.md. The imports of every CLAUDE.md on the default branch
+          # join the policy set, recursively to the same four hops Claude Code
+          # follows, and are taken from the default branch too. An import target
+          # that is missing on the default branch joins the set as well, so a PR
+          # cannot supply it; a CLAUDE.md that is a symlink there is read through
+          # its target. The token rule is Claude Code's: `@` at line start or after
+          # whitespace, up to the next whitespace; nothing inside a fenced block or
+          # a backtick code span counts; `~/` and absolute paths are outside the
+          # repository. `extra` is newline-delimited and lookups are whole-line, so
+          # a path is matched exactly.
+          imp='(^|[[:space:]])@([^[:space:]]+)(.*)$'
+          bt=\`
+          span="^([^${bt}]*)${bt}[^${bt}]*${bt}(.*)\$"
+          extra=$'\n'
+          in_policy() { [[ $1 =~ $policy ]] || [[ $extra == *$'\n'"$1"$'\n'* ]]; }
+          import_paths() {
+            local f=$1 depth=$2 src dir line trimmed rest tok p fence=0 body
+            [ "$depth" -le 4 ] || return 0
+            dir=$(dirname -- "$f")
+            src=$f
+            if [ "$(mode_at "$policy_sha" "$f")" = 120000 ]; then
+              tok=$(git cat-file -p "$policy_sha:$f")
+              case $tok in /*) return 0 ;; esac
+              src=$(normpath "$dir/$tok") || return 0
+              case "$(mode_at "$policy_sha" "$src")" in 100644|100755) ;; *) return 0 ;; esac
+            fi
+            body=$(mktemp "${RUNNER_TEMP:-/tmp}/policy-import.XXXXXX")
+            git cat-file -p "$policy_sha:$src" > "$body"
+            while IFS= read -r line || [ -n "$line" ]; do
+              trimmed=${line#"${line%%[![:space:]]*}"}
+              case $trimmed in '```'*|'~~~'*) fence=$((1 - fence)); continue ;; esac
+              [ "$fence" -eq 0 ] || continue
+              rest=$line
+              while [[ $rest =~ $span ]]; do rest=${BASH_REMATCH[1]}${BASH_REMATCH[2]}; done
+              while [[ $rest =~ $imp ]]; do
+                tok=${BASH_REMATCH[2]}; rest=${BASH_REMATCH[3]}
+                while [[ $tok == *[.,:\;\)\"\'\`\]\>] ]]; do tok=${tok%?}; done
+                case $tok in ''|~*|/*) continue ;; esac
+                p=$(normpath "$dir/$tok") || continue
+                [[ $extra == *$'\n'"$p"$'\n'* ]] && continue
+                extra="$extra$p"$'\n'
+                if blob_at "$policy_sha" "$p"; then import_paths "$p" $((depth + 1)); fi
+              done
+            done < "$body"
+            rm -f -- "$body"
+          }
+          claude_md='(^|/)CLAUDE(\.local)?\.md$'
+          listing=$(mktemp "${RUNNER_TEMP:-/tmp}/policy-listing.XXXXXX")
+          git ls-tree -r -z --name-only "$policy_sha" > "$listing"
+          while IFS= read -r -d '' f; do if [[ $f =~ $claude_md ]]; then import_paths "$f" 1; fi; done < "$listing"
+          git ls-files -z > "$listing"
+          while IFS= read -r -d '' p; do
+            in_policy "$p" || continue
+            if autorun "$p"; then rm -rf -- "$p"; git update-index --assume-unchanged -- "$p"; continue; fi
+            if blob_at "$policy_sha" "$p"; then
+              # A symlink on the default branch is always rewritten: comparing the
+              # link blob says nothing about the target's content.
+              if [ "$(mode_at "$policy_sha" "$p")" = 120000 ] || ! git diff --quiet "$policy_sha" HEAD -- ":(literal)$p"; then
+                rm -rf -- "$p"; rebased="$rebased $p"
+                if write_policy "$p"; then
+                  git reset -q -- ":(literal)$p"
+                  echo "::warning::$p differs from the default branch origin/$policy_ref; that version applies to this review and the PR's version is reviewed as a change."
+                else
+                  echo "::warning::Removed $p: a symlink on the default branch origin/$policy_ref whose target cannot be resolved inside its tree, so no version applies to this review."
+                fi
+              fi
+              git update-index --assume-unchanged -- "$p"
+            else
+              rm -rf -- "$p"; git update-index --assume-unchanged -- "$p"; rebased="$rebased $p"
+              echo "::warning::Removed $p: not on the default branch origin/$policy_ref, so it is reviewed as a change and not applied to this review."
+            fi
+          done < "$listing"
+          exclude=$(git rev-parse --git-path info/exclude)
+          git ls-tree -r -z --name-only "$policy_sha" > "$listing"
+          while IFS= read -r -d '' p; do
+            in_policy "$p" || continue
+            autorun "$p" && continue
+            blob_at HEAD "$p" && continue
+            children=$(mktemp "${RUNNER_TEMP:-/tmp}/policy-children.XXXXXX")
+            git ls-files -z -- ":(literal)$p" > "$children"
+            while IFS= read -r -d '' c; do rm -rf "$c"; git update-index --assume-unchanged "$c"; done < "$children"
+            rm -f -- "$children"
+            rm -rf -- "$p"; rebased="$rebased $p"
+            if write_policy "$p"; then
+              git reset -q -- ":(literal)$p"; printf '/%s\n' "$p" >> "$exclude"
+              echo "::warning::$p is not a file on the PR head; the default branch origin/$policy_ref version applies to this review."
+            else
+              echo "::warning::$p is not a file on the PR head and is an unresolvable symlink on the default branch origin/$policy_ref; no version applies to this review."
+            fi
+          done < "$listing"
+          rm -f -- "$listing"
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::The checkout is not clean after the policy restore; review-cli would fall back to extracting the PR files under the same setting source. git status:"
+            git status --porcelain
+            exit 1
+          fi
+          # Hand the list to the Analyze step, which passes it to the review
+          # as a note so the agents and the synthesis know which policy files
+          # they are not seeing the PR's version of.
+          # Random heredoc delimiter: a tracked filename can contain a newline,
+          # and a fixed delimiter in the value would end the output early and
+          # let the rest inject further outputs.
+          delim="POLICY_EOF_$(openssl rand -hex 16)"
+          {
+            echo "policy_ref=$policy_ref"
+            echo "rebased<<$delim"
+            printf '%s\n' "${rebased# }"
+            echo "$delim"
+          } >> "$GITHUB_OUTPUT"
+
+      # review-cli re-resolves the PR head from the API when it starts and
+      # reviews this checkout in place only if the two match; a push that
+      # lands between the checkout above and the review would otherwise send
+      # it down the extraction path with the PR's own settings and policy
+      # files. That run's own push reviews it, so this one stops here, before
+      # the sticky placeholder is posted. The Analyze step below repeats the
+      # check inside review-cli (`--head`), which refuses instead of
+      # extracting, so the seconds between this step and the review's own
+      # head resolution are covered too.
+      - name: Confirm the checkout is still the PR head
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.triage.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          api_head=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq .head.sha)
+          if [ "$(git rev-parse HEAD)" != "$api_head" ]; then
+            echo "::error::The PR head moved to ${api_head:0:7} after this checkout; the run for that push reviews it."
+            exit 1
+          fi
+
+      - name: Pre — running sticky placeholder
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.triage.outputs.pr_number }}
+          REVIEW_CLI: ${{ steps.install.outputs.bin }}
+        run: 'bun --config=/dev/null --env-file=/dev/null "$REVIEW_CLI" post "$PR_NUMBER" --repo "$GH_REPO" --pre'
+
+      # Analyze. The trigger source + steering note + commenter +
+      # thread anchor flow from the triage job's outputs via env vars
+      # (NOT shell-interpolated) so a malicious comment body can't
+      # break out into shell. The thread anchor is JSON-encoded.
+      - name: Analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Either credential works. When both are set, Claude Code uses
+          # ANTHROPIC_API_KEY (its documented authentication precedence), so
+          # a stale key cannot be shadowed by adding a token; replace or
+          # remove the key instead.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          REVIEW_NOTE: ${{ needs.triage.outputs.note }}
+          REVIEW_TRIGGER_SOURCE: ${{ needs.triage.outputs.trigger_source }}
+          REVIEW_COMMENTER: ${{ needs.triage.outputs.commenter }}
+          REVIEW_THREAD_ANCHOR: ${{ needs.triage.outputs.thread_anchor }}
+          # Pin where the cli writes the run artifact so the Upload
+          # and DD CI Stamp steps below can read it back from
+          # `${{ runner.temp }}` (cli default is `./` which would
+          # silently drop both downstream consumers).
+          REVIEW_CLI_ARTIFACT_PATH: ${{ runner.temp }}/review-cli-output.json
+          # Per-agent cost record stream — picked up by the
+          # agent-scorecard aggregator alongside the existing
+          # review-feedback engagement artifact.
+          REVIEW_CLI_TOKENS_ARTIFACT_PATH: ${{ runner.temp }}/agent-tokens.jsonl
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.triage.outputs.pr_number }}
+          REVIEW_CLI: ${{ steps.install.outputs.bin }}
+          REVIEW_POLICY_REF: ${{ steps.policy.outputs.policy_ref }}
+          REVIEW_POLICY_REBASED: ${{ steps.policy.outputs.rebased }}
+        run: |
+          # Tell the agents which policy files were taken from the default
+          # branch (previous steps); `--note` is surfaced to synthesis as a
+          # reviewer note, so the substitution is visible in the review itself.
+          if [ -n "${REVIEW_POLICY_REBASED:-}" ]; then
+            policy_note="Policy files taken from the default branch origin/${REVIEW_POLICY_REF} for this review because the PR changes them: ${REVIEW_POLICY_REBASED}. Review the PR's versions as changes; the instructions you run under are the default branch's."
+            REVIEW_NOTE="${REVIEW_NOTE:+$REVIEW_NOTE }${policy_note}"
+          fi
+          # `--head` pins the review to this prepared checkout: if the PR head
+          # on GitHub is no longer this commit, review-cli refuses rather than
+          # extracting the PR's files with their own settings and policy.
+          bun --config=/dev/null --env-file=/dev/null "$REVIEW_CLI" review "$PR_NUMBER" \
+            --repo "$GH_REPO" \
+            --head "$(git rev-parse HEAD)" \
+            --trigger-source "$REVIEW_TRIGGER_SOURCE" \
+            ${REVIEW_NOTE:+--note "$REVIEW_NOTE"} \
+            ${REVIEW_COMMENTER:+--commenter "$REVIEW_COMMENTER"} \
+            ${REVIEW_THREAD_ANCHOR:+--thread-anchor "$REVIEW_THREAD_ANCHOR"} \
+            --live
+
+      - name: Post
+        if: success() || failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.triage.outputs.pr_number }}
+          REVIEW_CLI: ${{ steps.install.outputs.bin }}
+        run: |
+          # `if: success() || failure()` runs this even when the install step
+          # failed; without a binary the step would exit 127 on top of the
+          # real error. Same guard as the react/reply steps below.
+          if [ -z "${REVIEW_CLI:-}" ] || [ ! -x "$REVIEW_CLI" ]; then
+            echo "::warning::review-cli was never installed, so there is nothing to post"
+            exit 0
+          fi
+          bun --config=/dev/null --env-file=/dev/null "$REVIEW_CLI" post "$PR_NUMBER" --repo "$GH_REPO"
+
+      - name: Upload run artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: review-cli-run-${{ needs.triage.outputs.pr_number }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/review-cli-output.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Per-run agent cost record stream — name MUST be exactly
+      # `agent-tokens` so the agent-scorecard aggregator finds it
+      # across consumer repos with one `gh run download` call.
+      - name: Upload agent-tokens artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: agent-tokens
+          path: ${{ runner.temp }}/agent-tokens.jsonl
+          if-no-files-found: ignore
+          retention-days: 30
+          overwrite: true
+
+      - name: Stamp DD CI Visibility with review outcome
+        if: always() && env.DATADOG_API_KEY != ''
+        env:
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          DATADOG_SITE: ${{ vars.DATADOG_SITE || 'datadoghq.com' }}
+          REVIEW_TEAM: ${{ vars.REVIEW_DD_TEAM || '' }}
+          ARTIFACT: ${{ runner.temp }}/review-cli-output.json
+        run: |
+          set -uo pipefail
+          [ ! -s "$ARTIFACT" ] && { echo "no artifact, skipping"; exit 0; }
+          VERDICT=$(jq -r '.review.verdict // "unknown"' "$ARTIFACT")
+          DEPTH=$(jq -r '.review.depth // "unknown"' "$ARTIFACT")
+          FINDINGS=$(jq -r '(.review.findings // []) | length' "$ARTIFACT")
+          SKIPPED=$([ "$FINDINGS" = 0 ] && [ "$VERDICT" = "APPROVE" ] && echo true || echo false)
+          TAGS=(--tags "service:review-cli" --tags "review.verdict:$VERDICT" --tags "review.depth:$DEPTH" --tags "review.skipped:$SKIPPED")
+          [ -n "$REVIEW_TEAM" ] && TAGS+=(--tags "team:$REVIEW_TEAM")
+          bun --config=/dev/null --env-file=/dev/null x @datadog/datadog-ci@5.15.0 tag --level pipeline "${TAGS[@]}" || true
+          bun --config=/dev/null --env-file=/dev/null x @datadog/datadog-ci@5.15.0 measure --level pipeline --measures "review.findings:$FINDINGS" || true
+
+      # Swap the 👀 ack for ✅/❌ on comment-triggered runs.
+      # `--clear-prior-ack` removes the eyes reaction first so the
+      # comment ends up with one terminal signal.
+      # `!cancelled()` runs on success and failure but not cancellation: a
+      # cancelled run is not a failed one, so the 👀 stays rather than
+      # telling the commenter their request broke. Gated by the status-check
+      # function, not by comparing `job.status` in bash: nothing documents
+      # that `job.status` reads `cancelled` inside a step of the job being
+      # cancelled, so a bash comparison against it is an unverified assumption.
+      - name: Update reaction (✅ / ❌) on comment trigger
+        if: |
+          !cancelled() &&
+          needs.triage.outputs.comment_id != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OUTCOME: ${{ job.status }}
+          GH_REPO: ${{ github.repository }}
+          COMMENT_ID: ${{ needs.triage.outputs.comment_id }}
+          EVENT_NAME: ${{ github.event_name }}
+          REVIEW_CLI: ${{ steps.install.outputs.bin }}
+        run: |
+          # If the install step failed (a 403 from GitHub Packages is the
+          # usual cause) there is no binary; "" would exit 127 under
+          # continue-on-error and the 👀 would stay forever. Say so instead.
+          if [ -z "${REVIEW_CLI:-}" ] || [ ! -x "$REVIEW_CLI" ]; then
+            echo "::warning::review-cli was never installed, so the 👀 reaction on the trigger comment cannot be updated"
+            exit 0
+          fi
+          REACTION=$([ "$OUTCOME" = "success" ] && echo "success" || echo "failure")
+          bun --config=/dev/null --env-file=/dev/null "$REVIEW_CLI" react \
+            --repo "$GH_REPO" \
+            --comment-id "$COMMENT_ID" \
+            --event "$EVENT_NAME" \
+            --reaction "$REACTION" \
+            --clear-prior-ack
+
+      # Edit the running-state reply with the terminal verdict so the
+      # requester sees responsive feedback without scrolling back up to
+      # the sticky. Only fires when the triage step posted a reply
+      # (reply_id non-empty) AND the trigger was a comment. Success and
+      # failure only; cancellation is the next step, gated on `cancelled()`.
+      - name: Update threaded reply with terminal state
+        if: |
+          !cancelled() &&
+          needs.triage.outputs.reply_id != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OUTCOME: ${{ job.status }}
+          GH_REPO: ${{ github.repository }}
+          REPLY_ID: ${{ needs.triage.outputs.reply_id }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REVIEW_CLI: ${{ steps.install.outputs.bin }}
+        run: |
+          if [ "$OUTCOME" = "success" ]; then
+            BODY="✅ **Reviewed** · [view run ↗](${RUN_URL}) · scroll up for the full summary."
+          else
+            BODY="⚠ **Review failed** · [view run ↗](${RUN_URL}) · scroll up for the partial state, or comment \`@request-claude-review\` to retry."
+          fi
+          # If the install step failed there is no binary to post with. The
+          # reply still has to leave the "Reviewing now" state, so edit it
+          # through the REST API directly: issue comments and review comments
+          # live under different endpoints.
+          if [ -z "${REVIEW_CLI:-}" ] || [ ! -x "$REVIEW_CLI" ]; then
+            case "$EVENT_NAME" in
+              pull_request_review_comment) ENDPOINT="repos/$GH_REPO/pulls/comments/$REPLY_ID" ;;
+              *) ENDPOINT="repos/$GH_REPO/issues/comments/$REPLY_ID" ;;
+            esac
+            gh api -X PATCH "$ENDPOINT" -f body="⚠ **Review failed before it started** · [view run ↗](${RUN_URL}) · the review-cli install step failed; see the run log."
+            exit 0
+          fi
+          bun --config=/dev/null --env-file=/dev/null "$REVIEW_CLI" reply \
+            --repo "$GH_REPO" \
+            --event "$EVENT_NAME" \
+            --edit-reply "$REPLY_ID" \
+            --body "$BODY"
+
+      # Cancellation is a third terminal state, not a flavour of failure, and
+      # `cancelled()` is the only documented way to detect it. The copy states
+      # the observable fact and hedges the cause: a manual cancel from the
+      # Actions UI produces the same state with no newer review behind it.
+      - name: Update threaded reply when the run is cancelled
+        if: |
+          cancelled() &&
+          needs.triage.outputs.reply_id != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          REPLY_ID: ${{ needs.triage.outputs.reply_id }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REVIEW_CLI: ${{ steps.install.outputs.bin }}
+        run: |
+          # Cancellation can land before the install step finished, in which
+          # case there is no binary to post with. Exit clean rather than
+          # failing a step whose whole job is already cancelled.
+          if [ -z "${REVIEW_CLI:-}" ] || [ ! -x "$REVIEW_CLI" ]; then
+            echo "review-cli not installed (cancelled early); leaving the reply as-is"
+            exit 0
+          fi
+          BODY="⏹ **Cancelled** · this run was cancelled before finishing, most often because a newer push to this PR started a fresh review · [view run ↗](${RUN_URL}) · comment \`@request-claude-review\` if you still need one."
+          bun --config=/dev/null --env-file=/dev/null "$REVIEW_CLI" reply \
+            --repo "$GH_REPO" \
+            --event "$EVENT_NAME" \
+            --edit-reply "$REPLY_ID" \
+            --body "$BODY"
+
+      # The sticky comment is the other surface a cancelled run leaves stuck:
+      # Pre wrote "Review running" and no Post ran to replace it (Post is
+      # gated on success() || failure()). `review post --cancelled` restores
+      # the previous review under a cancelled note, or writes the note alone
+      # when there is none, and leaves the comment untouched when a newer
+      # run's Pre already owns it.
+      - name: Resolve the running sticky when the run is cancelled
+        if: cancelled()
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.triage.outputs.pr_number }}
+          REVIEW_CLI: ${{ steps.install.outputs.bin }}
+        run: |
+          if [ -z "${REVIEW_CLI:-}" ] || [ ! -x "$REVIEW_CLI" ]; then
+            echo "review-cli not installed (cancelled early); leaving the sticky as-is"
+            exit 0
+          fi
+          bun --config=/dev/null --env-file=/dev/null "$REVIEW_CLI" post "$PR_NUMBER" --repo "$GH_REPO" --cancelled

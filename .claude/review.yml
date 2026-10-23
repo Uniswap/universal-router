@@ -1,0 +1,157 @@
+# review-cli config for Uniswap/universal-router.
+# Schema reference: packages/review-cli/src/config.ts in Uniswap/internal-tools.
+#
+# universal-router is a Foundry + Hardhat Solidity repo holding the
+# deployed UniversalRouter: non-upgradeable, immutable-address contracts
+# live on ~25 chains (see deploy-addresses/) that custody user funds
+# mid-transaction and hold user Permit2 allowances. Audited by ABDK,
+# OpenZeppelin, and Spearbit (reports under audit/).
+#
+# Only the fields that need to differ from the cli defaults are set;
+# everything else is inherited, including the default skip policy that
+# drops merge-queue, release/, and bot branches the old caller excluded
+# by hand.
+
+# ─── Post Policy ───────────────────────────────────
+# Only CI may write to GitHub. Without this, any local `gh` token with
+# repo scope could post a review into a teammate's PR.
+post:
+  allowed_actors:
+    - github-actions
+    - github-actions[bot]
+
+# ─── Model ─────────────────────────────────────────
+# Opus for every reviewer. The bundled agents declare `model: sonnet` in
+# frontmatter, which resolve-model treats as "unpinned", so this default
+# is what actually selects the model.
+#
+# The outgoing ai-toolkit caller pinned `claude-opus-4-6`; this is the
+# same intent carried onto the current Opus generation, matching
+# Uniswap/tjar — the other deployed-contract repo on review-cli. A missed
+# finding in this codebase is not a bug report: the contracts are
+# immutable, so the fix is a redeploy plus a coordinated integrator
+# migration across every chain in deploy-addresses/.
+model:
+  default: claude-opus-5
+
+# ─── Budget ────────────────────────────────────────
+# Well above the $5/$2 defaults. Command dispatch, payments, and the
+# Permit2 path are interdependent, so a reviewer needs to be free to read
+# Dispatcher.sol, the module it routes into, and the tests together
+# rather than stopping early.
+# Whole-run ceiling, stated as intent only: review-cli 1.10.7 and 1.12.0
+# parse max_budget_usd but enforce only the per-agent budget below, so the
+# real ceiling is agent_budget_usd times every agent staffed. The triage
+# guidance staffs four or more reviewers on a Solidity change; with triage
+# and synthesis that is six agents, or $60 at the per-agent cap, so this
+# number records intent rather than a limit anything enforces.
+max_budget_usd: 40.0
+agent_budget_usd: 10.0
+
+# Turn ceiling set high so the budget is always the binding cap, never
+# turns.
+agent_max_turns: 500
+
+# ─── Limits ────────────────────────────────────────
+# Review every PR regardless of size. The outgoing caller had no size
+# floor, and the recent history shows why: `fix: bound router command
+# input decoding` (#497) and `fix(payments): sweep permissions-adapter
+# currencies as their underlying token` (#499) are both small diffs on
+# fund-handling paths.
+trivial_threshold: 0
+
+# ─── Investigation Gate ────────────────────────────
+# An empty-findings APPROVE must be backed by evidence that the
+# reviewers actually opened the changed files. Raised above the defaults
+# (0.25 standard / 0.5 thorough) because "looks fine" is not an
+# acceptable review outcome for deployed contract code.
+investigation:
+  min_approve_coverage:
+    light: 0.5
+    standard: 0.75
+    thorough: 0.9
+
+# ─── Diff summarization ────────────────────────────────────────────────
+# There is no diff-summarization setting in review-cli 1.10.7 or 1.12.0.
+# The bundled template documents `diff.summarize`, but the config parser
+# has no such key and drops it silently, so regenerated files (gas
+# snapshots, lockfiles) reach reviewers in full and count against
+# max_diff_lines. Tracked upstream in Uniswap/internal-tools.
+
+# ─── Triage ────────────────────────────────────────
+# Guidance for the triage agent, which decides which reviewers to staff.
+triage:
+  guidance: |
+    Solidity/Foundry repo — the Uniswap Universal Router. Users encode a
+    `bytes commands` string plus a parallel `bytes[] inputs` array, and
+    `UniversalRouter.execute` dispatches each command byte through
+    Dispatcher.sol into the V2/V3/V4 swap modules, the payments modules,
+    the V3→V4 migrator, and Permit2. Funds transit the router contract
+    mid-transaction and the contract holds live Permit2 allowances, so
+    almost every diff here is a fund-safety diff. The contracts are
+    non-upgradeable and deployed at fixed addresses on ~25 chains
+    (deploy-addresses/); a behavioral fix means a new deployment plus an
+    integrator migration, not just a source patch. audit/ holds ABDK,
+    OpenZeppelin, and Spearbit reports against specific historical
+    commits. Bias toward staffing more reviewers rather than fewer.
+
+    Always staff contract-security-reviewer and defi-risk-reviewer on any
+    change under contracts/. They own the two surfaces this repo exists
+    to get right:
+
+    - contract-security-reviewer owns the EVM-level surface: command byte
+      decoding in Dispatcher.sol (the `f` allow-revert flag, the `r`
+      reserved bit, the 6-bit command id, unused command gaps, and
+      `checkInputLength` / CalldataDecoder slice bounds — an unbounded
+      decode here reads attacker-chosen calldata); Lock.sol and
+      Locker.sol reentrancy state across self-reentrancy and the V4
+      PoolManager unlock callback; `msgSender()` and the RouteSigner
+      EIP-712 signed-route context (typehash contents, input hashing,
+      nonce, and the transient slots being reset on every path);
+      Permit2Payments allowance handling; Constants.sol sentinel
+      addresses and magic values; and SwapProxy, which brokers a
+      permit2-less flow and therefore has its own trust boundary.
+
+    - defi-risk-reviewer owns the value-movement surface: Payments.sol
+      (`pay`, `payPortion`, `payPortionFullPrecision`, `sweep`,
+      `wrapETH`, `unwrapWETH9`, `unwrapWETH9Exact`) is where rounding,
+      bips math, minimum-out checks, and recipient selection decide who
+      ends up with the money. Router-held balances are the recurring
+      hazard: a command flagged allow-revert can leave funds stranded in
+      the router for the next caller to sweep, so any change to sweep
+      thresholds, portion math, `map()` recipient resolution, or the
+      MaxInputAmount transient value needs the leftover-funds case
+      reasoned through explicitly. Treat fee-on-transfer, rebasing, and
+      non-standard-return ERC20s as in scope — the router does not get to
+      pick which tokens it routes.
+
+    Add correctness-reviewer on non-trivial logic changes, especially the
+    V2/V3/V4 swap modules, V3 path encoding/decoding (V3Path, BytesLib),
+    the V3ToV4Migrator, ChainedActions sequencing, and anything that adds
+    or renumbers a command byte — the command table in README.md, the
+    constants in Commands.sol, the dispatch switch, and the SDK-side
+    encoder must all agree, and a mismatch silently routes a user's
+    inputs into the wrong handler.
+
+    Add security-reviewer for CI/workflow changes under .github/ and for
+    anything handling secrets or tokens. Skip it for pure Solidity diffs
+    — contract-security-reviewer covers that surface better.
+
+    Add patterns-reviewer only on larger refactors. Gas efficiency is a
+    deliberate design constraint here (the unused gaps in the command
+    table exist for it), so structural or readability advice that costs
+    gas is usually noise.
+
+    For deployment changes under script/ and deploy-addresses/, check the
+    RouterParameters wiring, per-chain protocol addresses, and recorded
+    addresses against the actual deployment rather than accepting them as
+    prose — recent history includes two fixes correcting exactly that
+    kind of address error. Gas snapshot churn under snapshots/ is
+    expected output, not a finding, but an unexplained jump on a
+    hot path is worth calling out.
+
+    Documentation-only diffs (README.md, CLAUDE.md files, audit/) usually
+    warrant general-reviewer alone. The README's command table and input
+    encodings are consumed by integrators, so validate claims against
+    Commands.sol and Dispatcher.dispatch rather than the previous README
+    text.
