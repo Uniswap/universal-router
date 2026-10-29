@@ -46,6 +46,8 @@ abstract contract Dispatcher is
     /// @notice Thrown when a route reaches V4_SWAP inside a foreign PoolManager unlock without opting in, or
     /// V4_POSITION_MANAGER_CALL inside any unlock (modifyLiquidities must open its own)
     error NestedExecutionNotPermitted();
+    /// @notice Thrown when a tolerated command failure left too little gas to rule out gas starvation
+    error InsufficientGas();
 
     /// @notice Executes encoded commands along with provided inputs.
     /// @param commands A set of concatenated commands, each 1 byte in length
@@ -434,10 +436,13 @@ abstract contract Dispatcher is
             if (command == Commands.EXECUTE_SUB_PLAN) {
                 (bytes calldata _commands, bytes[] calldata _inputs) = inputs.decodeCommandsAndInputs();
                 (success, output) = (address(this)).call(abi.encodeCall(Dispatcher.execute, (_commands, _inputs)));
-                // The nested-execution gate is a consent check, not a route failure: FLAG_ALLOW_REVERT on the
-                // sub-plan must not turn it into a silent skip that leaves the route's input in the router.
-                if (!success && output.length == 4 && bytes4(output) == NestedExecutionNotPermitted.selector) {
-                    revert NestedExecutionNotPermitted();
+                // Neither the nested-execution gate (a consent check) nor gas starvation is a route failure:
+                // FLAG_ALLOW_REVERT on the sub-plan must not turn either into a silent skip that leaves the
+                // route's input in the router.
+                if (!success && output.length == 4) {
+                    bytes4 selector = bytes4(output);
+                    if (selector == NestedExecutionNotPermitted.selector) revert NestedExecutionNotPermitted();
+                    if (selector == InsufficientGas.selector) revert InsufficientGas();
                 }
             } else {
                 // placeholder area for commands 0x22-0x3f
