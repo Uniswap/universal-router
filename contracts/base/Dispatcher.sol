@@ -308,7 +308,20 @@ abstract contract Dispatcher is
                             batchDetails.length := length
                             batchDetails.offset := offset
                         }
-                        permit2TransferFrom(batchDetails, msgSender());
+                        // One detail at a time, so each amount can be mapped through the RESOLVE register and each
+                        // recipient through the sentinel table without copying the array to memory. Permit2's own
+                        // batch transferFrom performs the same per-detail transfers.
+                        address owner = msgSender();
+                        for (uint256 i = 0; i < length; ++i) {
+                            IAllowanceTransfer.AllowanceTransferDetails calldata details = batchDetails[i];
+                            if (details.from != owner) revert FromAddressIsNotOwner();
+                            permit2TransferFrom(
+                                details.token,
+                                owner,
+                                _mapRecipient(details.to),
+                                SafeCast160.toUint160(ResolvedAmount.map(details.amount))
+                            );
+                        }
                     } else if (command == Commands.BALANCE_CHECK_ERC20) {
                         checkInputLength(inputs, 0x60);
                         // equivalent: abi.decode(inputs, (address, address, uint256))
