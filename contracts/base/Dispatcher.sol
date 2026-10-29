@@ -43,7 +43,8 @@ abstract contract Dispatcher is
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
-    /// @notice Thrown when a route reaches V4_SWAP inside a foreign PoolManager unlock without opting in
+    /// @notice Thrown when a route reaches V4_SWAP inside a foreign PoolManager unlock without opting in, or
+    /// V4_POSITION_MANAGER_CALL inside any unlock (modifyLiquidities must open its own)
     error NestedExecutionNotPermitted();
 
     /// @notice Executes encoded commands along with provided inputs.
@@ -373,6 +374,10 @@ abstract contract Dispatcher is
                 } else if (command == Commands.V4_POSITION_MANAGER_CALL) {
                     // should only call modifyLiquidities() to mint
                     _checkV4PositionManagerCall(inputs);
+                    // modifyLiquidities opens its own unlock, so inside a foreign unlock it can only fail with
+                    // AlreadyUnlocked. Fail loudly here instead, so FLAG_ALLOW_REVERT cannot turn an outsider's
+                    // unlock into a silent skip of a leg that may already have funds parked in the position manager.
+                    if (poolManager.isUnlocked()) revert NestedExecutionNotPermitted();
                     (success, output) = address(V4_POSITION_MANAGER).call{value: address(this).balance}(inputs);
                 } else if (command == Commands.RESOLVE) {
                     checkInputLength(inputs, 0x40);
