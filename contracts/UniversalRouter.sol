@@ -101,10 +101,16 @@ contract UniversalRouter is IUniversalRouter, ChainedActions, RouteSigner, Dispa
 
             bytes calldata input = inputs[commandIndex];
 
+            uint256 gasBefore = gasleft();
             (success, output) = dispatch(command, input);
 
-            if (!success && successRequired(command)) {
-                revert ExecutionFailed({commandIndex: commandIndex, message: output});
+            if (!success) {
+                // A failure that leaves this frame under 1/64 of the gas it started with may be gas starvation
+                // rather than the command's own: the submitter picks the gas limit, and EIP-150 leaves exactly
+                // that much when a callee runs out. Treat it as fatal before consulting the flag; EXECUTE_SUB_PLAN
+                // re-throws it so no enclosing allow-revert boundary can swallow it either.
+                if (gasleft() < gasBefore >> 6) revert InsufficientGas();
+                if (successRequired(command)) revert ExecutionFailed({commandIndex: commandIndex, message: output});
             }
         }
 

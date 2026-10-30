@@ -43,8 +43,11 @@ abstract contract Dispatcher is
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
-    /// @notice Thrown when a route reaches V4_SWAP inside a foreign PoolManager unlock without opting in
+    /// @notice Thrown when a route reaches V4_SWAP inside a foreign PoolManager unlock without opting in, or
+    /// V4_POSITION_MANAGER_CALL inside any unlock (modifyLiquidities must open its own)
     error NestedExecutionNotPermitted();
+    /// @notice Thrown when a tolerated command failure left too little gas to rule out gas starvation
+    error InsufficientGas();
 
     /// @notice Executes encoded commands along with provided inputs.
     /// @param commands A set of concatenated commands, each 1 byte in length
@@ -307,7 +310,20 @@ abstract contract Dispatcher is
                             batchDetails.length := length
                             batchDetails.offset := offset
                         }
-                        permit2TransferFrom(batchDetails, msgSender());
+                        // One detail at a time, so each amount can be mapped through the RESOLVE register and each
+                        // recipient through the sentinel table without copying the array to memory. Permit2's own
+                        // batch transferFrom performs the same per-detail transfers.
+                        address owner = msgSender();
+                        for (uint256 i = 0; i < length; ++i) {
+                            IAllowanceTransfer.AllowanceTransferDetails calldata details = batchDetails[i];
+                            if (details.from != owner) revert FromAddressIsNotOwner();
+                            permit2TransferFrom(
+                                details.token,
+                                owner,
+                                _mapRecipient(details.to),
+                                SafeCast160.toUint160(ResolvedAmount.map(details.amount))
+                            );
+                        }
                     } else if (command == Commands.BALANCE_CHECK_ERC20) {
                         checkInputLength(inputs, 0x60);
                         // equivalent: abi.decode(inputs, (address, address, uint256))
@@ -373,6 +389,10 @@ abstract contract Dispatcher is
                 } else if (command == Commands.V4_POSITION_MANAGER_CALL) {
                     // should only call modifyLiquidities() to mint
                     _checkV4PositionManagerCall(inputs);
+                    // modifyLiquidities opens its own unlock, so inside a foreign unlock it can only fail with
+                    // AlreadyUnlocked. Fail loudly here instead, so FLAG_ALLOW_REVERT cannot turn an outsider's
+                    // unlock into a silent skip of a leg that may already have funds parked in the position manager.
+                    if (poolManager.isUnlocked()) revert NestedExecutionNotPermitted();
                     (success, output) = address(V4_POSITION_MANAGER).call{value: address(this).balance}(inputs);
                 } else if (command == Commands.RESOLVE) {
                     checkInputLength(inputs, 0x40);
@@ -416,10 +436,13 @@ abstract contract Dispatcher is
             if (command == Commands.EXECUTE_SUB_PLAN) {
                 (bytes calldata _commands, bytes[] calldata _inputs) = inputs.decodeCommandsAndInputs();
                 (success, output) = (address(this)).call(abi.encodeCall(Dispatcher.execute, (_commands, _inputs)));
-                // The nested-execution gate is a consent check, not a route failure: FLAG_ALLOW_REVERT on the
-                // sub-plan must not turn it into a silent skip that leaves the route's input in the router.
-                if (!success && output.length == 4 && bytes4(output) == NestedExecutionNotPermitted.selector) {
-                    revert NestedExecutionNotPermitted();
+                // Neither the nested-execution gate (a consent check) nor gas starvation is a route failure:
+                // FLAG_ALLOW_REVERT on the sub-plan must not turn either into a silent skip that leaves the
+                // route's input in the router.
+                if (!success && output.length == 4) {
+                    bytes4 selector = bytes4(output);
+                    if (selector == NestedExecutionNotPermitted.selector) revert NestedExecutionNotPermitted();
+                    if (selector == InsufficientGas.selector) revert InsufficientGas();
                 }
             } else {
                 // placeholder area for commands 0x22-0x3f

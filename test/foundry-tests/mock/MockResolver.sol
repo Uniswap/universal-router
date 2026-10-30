@@ -25,6 +25,15 @@ contract RevertingResolver is IAmountResolver {
     }
 }
 
+/// @notice Burns every unit of gas forwarded to it, so a RESOLVE that staticcalls it fails from gas exhaustion.
+contract GasBurningResolver is IAmountResolver {
+    function resolveAmount(bytes calldata) external pure returns (uint256) {
+        assembly ('memory-safe') {
+            for {} 1 {} {}
+        }
+    }
+}
+
 /// @notice A resolver that returns fewer than 32 bytes, which the router must treat as a failure.
 contract ShortReturnResolver {
     fallback() external {

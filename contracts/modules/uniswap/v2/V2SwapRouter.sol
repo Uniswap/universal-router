@@ -24,7 +24,7 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         uint256 amountOutMinimum
     ) private {
         ERC20 tokenOut = ERC20(path[path.length - 1]);
-        uint256 balanceBefore = tokenOut.balanceOf(recipient);
+        uint256 balanceBefore;
         unchecked {
             // cached to save on duplicate operations
             (address token0,) = UniswapV2Library.sortTokens(path[0], path[1]);
@@ -50,6 +50,9 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
                         UNISWAP_V2_FACTORY, UNISWAP_V2_PAIR_INIT_CODE_HASH, output, path[i + 2]
                     )
                     : (recipient, address(0));
+                // Snapshot the recipient right before the final hop, so tokens an earlier hop routed through the same
+                // address (a pair that appears twice in the path) are not counted as delivery.
+                if (i == penultimatePairIndex) balanceBefore = tokenOut.balanceOf(recipient);
 
                 // if minHopPrice is being used, we need to check output balance change
                 if (minHopPriceEnabled && minHopPriceX36[i] != 0) {
