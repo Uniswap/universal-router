@@ -1,0 +1,7 @@
+{
+  "v2_aggregator_singleHop_exactIn_v2MostlyInput": "207670",
+  "v2_aggregator_singleHop_exactIn_v2OnlyInput": "190455",
+  "v2_aggregator_singleHop_exactOut_v2OnlyInput": "188736",
+  "v2_aggregator_threeHop_v2AggChain_exactIn": "381564",
+  "v2_aggregator_twoHop_v2AggChain_exactIn": "302403"
+}
