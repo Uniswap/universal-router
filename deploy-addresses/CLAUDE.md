@@ -22,6 +22,7 @@ This directory contains JSON files with deployed Universal Router contract addre
 - `worldchain.json` - Worldchain
 - `unichain.json` - Unichain
 - `hyperevm.json` - HyperEVM
+- `elysium.json` - Elysium
 
 **Testnet:**
 - `sepolia.json` - Sepolia
