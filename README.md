@@ -226,3 +226,11 @@ forge script --broadcast \
 script/deployParameters/DeployUniversalRouter.s.sol:DeployUniversalRouter \
 <pathToJSON>
 ```
+
+### Deploying on Ethereum L1 after the Amsterdam upgrade
+
+Amsterdam (Glamsterdam) adds state gas for deployed code (EIP-8037, 1,530 gas per byte). A large contract then needs more than 2^24 (16,777,216) gas to deploy. For example, a v4 PoolManager deployment (24,009 bytes of code) used 37,435,950 gas on Sepolia.
+
+The local `forge script` simulation uses the gas rules of the configured `evm_version`, which is older than Amsterdam. It sets a gas limit that is too low, and the deployment transaction reverts on chain. For the PoolManager example, the simulation set a gas limit of 7,256,884.
+
+On a chain that runs Amsterdam, add `--skip-simulation` to the deploy commands above. forge then gets the gas limit of each transaction from `eth_estimateGas` on the RPC node, multiplied by `--gas-estimate-multiplier` (default 130). Fund the deployer for the higher gas cost. The PoolManager example used 37,435,950 gas with Amsterdam rules and 5,253,854 gas with Osaka rules. Do not use `--gas-limit` for this. In `forge script` it sets the block gas limit of the local simulation, not the gas limit of the transaction.
