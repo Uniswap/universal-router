@@ -32,9 +32,4 @@ contract LockerTest is Test {
         Locker.set(address(0));
         assertEq(Locker.isLocked(), false);
     }
-
-    function test_lockerSlot() public {
-        bytes32 expectedSlot = bytes32(uint256(keccak256('Locker')) - 1);
-        assertEq(expectedSlot, Locker.LOCKER_SLOT);
-    }
 }

@@ -28,4 +28,13 @@ library Constants {
 
     /// @dev Precision multiplier for per-hop price calculations
     uint256 internal constant PRICE_PRECISION = 1e36;
+
+    /// @dev Sentinel placed in a command's amount field to consume the ResolvedAmount register written by a prior
+    /// RESOLVE command. It must fit uint128: v4 swap amounts are uint128 and the ABI decoder rejects a larger word
+    /// before the router sees it, the same constraint that makes OPEN_DELTA zero. The top of that range is the literal
+    /// amount given up. It is read by every exact amount the router moves: the v2/v3 and v4 swap amountIn/amountOut,
+    /// the v4 SETTLE and TAKE amounts, the PERMIT2_TRANSFER_FROM and PERMIT2_TRANSFER_FROM_BATCH amounts, the
+    /// TRANSFER value, the WRAP_ETH and UNWRAP_WETH_EXACT amounts, and the ACROSS_V4_DEPOSIT_V3 inputAmount.
+    /// Minimums, caps, thresholds, portions and signed permit amounts keep their literal meaning.
+    uint256 internal constant USE_RESOLVED_AMOUNT = type(uint128).max;
 }

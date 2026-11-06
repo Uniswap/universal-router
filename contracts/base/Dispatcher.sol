@@ -7,16 +7,23 @@ import {V4SwapRouter} from '../modules/uniswap/v4/V4SwapRouter.sol';
 import {BytesLib} from '../modules/uniswap/v3/BytesLib.sol';
 import {Payments} from '../modules/Payments.sol';
 import {Constants} from '../libraries/Constants.sol';
+import {NestedUnlock} from '../libraries/NestedUnlock.sol';
 import {PaymentsImmutables} from '../modules/PaymentsImmutables.sol';
 import {V3ToV4Migrator} from '../modules/V3ToV4Migrator.sol';
 import {Commands} from '../libraries/Commands.sol';
+import {ResolvedAmount} from '../libraries/ResolvedAmount.sol';
+import {IAmountResolver} from '../interfaces/IAmountResolver.sol';
+import {IV4FeeAdapter} from '../interfaces/external/IV4FeeAdapter.sol';
+import {IV3FeeAdapter} from '../interfaces/external/IV3FeeAdapter.sol';
+import {IUniswapV3Factory} from '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
 import {Lock} from './Lock.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol';
-import {ActionConstants} from '@uniswap/v4-periphery/src/libraries/ActionConstants.sol';
+import {SafeCast160} from 'permit2/src/libraries/SafeCast160.sol';
 import {CalldataDecoder} from '@uniswap/v4-periphery/src/libraries/CalldataDecoder.sol';
 import {PoolKey} from '@uniswap/v4-core/src/types/PoolKey.sol';
 import {IPoolManager} from '@uniswap/v4-core/src/interfaces/IPoolManager.sol';
+import {TransientStateLibrary} from '@uniswap/v4-core/src/libraries/TransientStateLibrary.sol';
 import {ChainedActions} from '../modules/ChainedActions.sol';
 
 /// @title Decodes and Executes Commands
@@ -32,9 +39,12 @@ abstract contract Dispatcher is
 {
     using BytesLib for bytes;
     using CalldataDecoder for bytes;
+    using TransientStateLibrary for IPoolManager;
 
     error InvalidCommandType(uint256 commandType);
     error BalanceTooLow();
+    /// @notice Thrown when a route reaches V4_SWAP inside a foreign PoolManager unlock without opting in
+    error NestedExecutionNotPermitted();
 
     /// @notice Executes encoded commands along with provided inputs.
     /// @param commands A set of concatenated commands, each 1 byte in length
@@ -66,6 +76,7 @@ abstract contract Dispatcher is
                 // 0x00 <= command < 0x08
                 if (command < Commands.V2_SWAP_EXACT_IN) {
                     if (command == Commands.V3_SWAP_EXACT_IN) {
+                        checkInputLength(inputs, 0xc0);
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool, uint256[]))
                         address recipient;
                         uint256 amountIn;
@@ -81,8 +92,16 @@ abstract contract Dispatcher is
                         bytes calldata path = inputs.toBytes(3);
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v3SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, minHopPriceX36);
+                        v3SwapExactInput(
+                            _mapRecipient(recipient),
+                            ResolvedAmount.map(amountIn),
+                            amountOutMin,
+                            path,
+                            payer,
+                            minHopPriceX36
+                        );
                     } else if (command == Commands.V3_SWAP_EXACT_OUT) {
+                        checkInputLength(inputs, 0xc0);
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, bytes, bool, uint256[]))
                         address recipient;
                         uint256 amountOut;
@@ -98,8 +117,16 @@ abstract contract Dispatcher is
                         bytes calldata path = inputs.toBytes(3);
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v3SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, minHopPriceX36);
+                        v3SwapExactOutput(
+                            _mapRecipient(recipient),
+                            ResolvedAmount.map(amountOut),
+                            amountInMax,
+                            path,
+                            payer,
+                            minHopPriceX36
+                        );
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM) {
+                        checkInputLength(inputs, 0x60);
                         // equivalent: abi.decode(inputs, (address, address, uint160))
                         address token;
                         address recipient;
@@ -109,14 +136,14 @@ abstract contract Dispatcher is
                             recipient := calldataload(add(inputs.offset, 0x20))
                             amount := calldataload(add(inputs.offset, 0x40))
                         }
-                        permit2TransferFrom(token, msgSender(), map(recipient), amount);
+                        permit2TransferFrom(
+                            token,
+                            msgSender(),
+                            _mapRecipient(recipient),
+                            SafeCast160.toUint160(ResolvedAmount.map(amount))
+                        );
                     } else if (command == Commands.PERMIT2_PERMIT_BATCH) {
-                        IAllowanceTransfer.PermitBatch calldata permitBatch;
-                        assembly {
-                            // this is a variable length struct, so calldataload(inputs.offset) contains the
-                            // offset from inputs.offset at which the struct begins
-                            permitBatch := add(inputs.offset, calldataload(inputs.offset))
-                        }
+                        IAllowanceTransfer.PermitBatch calldata permitBatch = decodePermitBatch(inputs);
                         bytes calldata data = inputs.toBytes(1);
                         (success, output) = address(PERMIT2)
                             .call(
@@ -128,10 +155,11 @@ abstract contract Dispatcher is
                                 )
                             );
                     } else if (command == Commands.SWEEP) {
+                        checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
-                        uint160 amountMin;
+                        uint256 amountMin;
                         assembly {
                             token := calldataload(inputs.offset)
                             recipient := calldataload(add(inputs.offset, 0x20))
@@ -145,8 +173,9 @@ abstract contract Dispatcher is
                             address underlying = PERMISSIONS_ADAPTER_FACTORY.verifiedPermissionsAdapterOf(token);
                             if (underlying != address(0)) token = underlying;
                         }
-                        Payments.sweep(token, map(recipient), amountMin);
+                        Payments.sweep(token, _mapRecipient(recipient), amountMin);
                     } else if (command == Commands.TRANSFER) {
+                        checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
@@ -156,8 +185,9 @@ abstract contract Dispatcher is
                             recipient := calldataload(add(inputs.offset, 0x20))
                             value := calldataload(add(inputs.offset, 0x40))
                         }
-                        Payments.pay(token, map(recipient), value);
+                        Payments.pay(token, _mapRecipient(recipient), ResolvedAmount.map(value));
                     } else if (command == Commands.PAY_PORTION) {
+                        checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
@@ -167,8 +197,9 @@ abstract contract Dispatcher is
                             recipient := calldataload(add(inputs.offset, 0x20))
                             bips := calldataload(add(inputs.offset, 0x40))
                         }
-                        Payments.payPortion(token, map(recipient), bips);
+                        Payments.payPortion(token, _mapRecipient(recipient), bips);
                     } else if (command == Commands.PAY_PORTION_FULL_PRECISION) {
+                        checkInputLength(inputs, 0x60);
                         // equivalent:  abi.decode(inputs, (address, address, uint256))
                         address token;
                         address recipient;
@@ -178,13 +209,12 @@ abstract contract Dispatcher is
                             recipient := calldataload(add(inputs.offset, 0x20))
                             portion := calldataload(add(inputs.offset, 0x40))
                         }
-                        Payments.payPortionFullPrecision(token, map(recipient), portion);
-                    } else {
-                        revert InvalidCommandType(command);
+                        Payments.payPortionFullPrecision(token, _mapRecipient(recipient), portion);
                     }
                 } else {
                     // 0x08 <= command < 0x10
                     if (command == Commands.V2_SWAP_EXACT_IN) {
+                        checkInputLength(inputs, 0xc0);
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, address[], bool, uint256[]))
                         address recipient;
                         uint256 amountIn;
@@ -200,8 +230,16 @@ abstract contract Dispatcher is
                         address[] calldata path = inputs.toAddressArray(3);
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v2SwapExactInput(map(recipient), amountIn, amountOutMin, path, payer, minHopPriceX36);
+                        v2SwapExactInput(
+                            _mapRecipient(recipient),
+                            ResolvedAmount.map(amountIn),
+                            amountOutMin,
+                            path,
+                            payer,
+                            minHopPriceX36
+                        );
                     } else if (command == Commands.V2_SWAP_EXACT_OUT) {
+                        checkInputLength(inputs, 0xc0);
                         // equivalent: abi.decode(inputs, (address, uint256, uint256, address[], bool, uint256[]))
                         address recipient;
                         uint256 amountOut;
@@ -217,8 +255,16 @@ abstract contract Dispatcher is
                         address[] calldata path = inputs.toAddressArray(3);
                         uint256[] calldata minHopPriceX36 = inputs.toUint256Array(5);
                         address payer = payerIsUser ? msgSender() : address(this);
-                        v2SwapExactOutput(map(recipient), amountOut, amountInMax, path, payer, minHopPriceX36);
+                        v2SwapExactOutput(
+                            _mapRecipient(recipient),
+                            ResolvedAmount.map(amountOut),
+                            amountInMax,
+                            path,
+                            payer,
+                            minHopPriceX36
+                        );
                     } else if (command == Commands.PERMIT2_PERMIT) {
+                        checkInputLength(inputs, 0xe0);
                         // equivalent: abi.decode(inputs, (IAllowanceTransfer.PermitSingle, bytes))
                         IAllowanceTransfer.PermitSingle calldata permitSingle;
                         assembly {
@@ -235,6 +281,7 @@ abstract contract Dispatcher is
                                 )
                             );
                     } else if (command == Commands.WRAP_ETH) {
+                        checkInputLength(inputs, 0x40);
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;
                         uint256 amount;
@@ -242,8 +289,9 @@ abstract contract Dispatcher is
                             recipient := calldataload(inputs.offset)
                             amount := calldataload(add(inputs.offset, 0x20))
                         }
-                        Payments.wrapETH(map(recipient), amount);
+                        Payments.wrapETH(_mapRecipient(recipient), ResolvedAmount.map(amount));
                     } else if (command == Commands.UNWRAP_WETH) {
+                        checkInputLength(inputs, 0x40);
                         // equivalent: abi.decode(inputs, (address, uint256))
                         address recipient;
                         uint256 amountMin;
@@ -251,16 +299,17 @@ abstract contract Dispatcher is
                             recipient := calldataload(inputs.offset)
                             amountMin := calldataload(add(inputs.offset, 0x20))
                         }
-                        Payments.unwrapWETH9(map(recipient), amountMin);
+                        Payments.unwrapWETH9(_mapRecipient(recipient), amountMin);
                     } else if (command == Commands.PERMIT2_TRANSFER_FROM_BATCH) {
                         IAllowanceTransfer.AllowanceTransferDetails[] calldata batchDetails;
-                        (uint256 length, uint256 offset) = inputs.toLengthOffset(0);
+                        (uint256 length, uint256 offset) = inputs.toLengthOffset(0, 0x80);
                         assembly {
                             batchDetails.length := length
                             batchDetails.offset := offset
                         }
                         permit2TransferFrom(batchDetails, msgSender());
                     } else if (command == Commands.BALANCE_CHECK_ERC20) {
+                        checkInputLength(inputs, 0x60);
                         // equivalent: abi.decode(inputs, (address, address, uint256))
                         address owner;
                         address token;
@@ -272,16 +321,38 @@ abstract contract Dispatcher is
                         }
                         success = (ERC20(token).balanceOf(owner) >= minBalance);
                         if (!success) output = abi.encodePacked(BalanceTooLow.selector);
-                    } else {
-                        // placeholder area for command 0x0f
-                        revert InvalidCommandType(command);
+                    } else if (command == Commands.UNWRAP_WETH_EXACT) {
+                        checkInputLength(inputs, 0x40);
+                        // equivalent: abi.decode(inputs, (address, uint256))
+                        address recipient;
+                        uint256 amount;
+                        assembly {
+                            recipient := calldataload(inputs.offset)
+                            amount := calldataload(add(inputs.offset, 0x20))
+                        }
+                        Payments.unwrapWETH9Exact(_mapRecipient(recipient), ResolvedAmount.map(amount));
                     }
                 }
             } else {
                 // 0x10 <= command < 0x21
                 if (command == Commands.V4_SWAP) {
-                    // pass the calldata provided to V4SwapRouter._executeActions (defined in BaseActionsRouter)
-                    _executeActions(inputs);
+                    // If the PoolManager is already unlocked, this contract is executing inside another
+                    // contract's unlock callback. Opening a new lock via _executeActions would revert with
+                    // AlreadyUnlocked, so instead run the v4 actions within the existing lock.
+                    if (poolManager.isUnlocked()) {
+                        // Nesting shares the router's delta account with every other call in this
+                        // unlock, so it runs only when the caller explicitly opted in via executeNested.
+                        if (!NestedUnlock.isPermitted()) revert NestedExecutionNotPermitted();
+                        // The v4 swap parameter decoders (v4-periphery) bound every struct and member offset
+                        // against the input length via abi.decode, so decoding directly from this calldata
+                        // slice cannot read past inputs[i].length. Coverage: V4NestedMemberSmuggle.t.sol and
+                        // V4NestedUnlockCalldataSmuggling.t.sol.
+                        (bytes calldata actions, bytes[] calldata params) = inputs.decodeActionsRouterParams();
+                        _executeActionsWithoutUnlock(actions, params);
+                    } else {
+                        // pass the calldata provided to V4SwapRouter._executeActions (defined in BaseActionsRouter)
+                        _executeActions(inputs);
+                    }
                     // This contract MUST be approved to spend the token since its going to be doing the call on the position manager
                 } else if (command == Commands.V3_POSITION_MANAGER_PERMIT) {
                     _checkV3PermitCall(inputs);
@@ -290,6 +361,7 @@ abstract contract Dispatcher is
                     _checkV3PositionManagerCall(inputs, msgSender());
                     (success, output) = address(V3_POSITION_MANAGER).call(inputs);
                 } else if (command == Commands.V4_INITIALIZE_POOL) {
+                    checkInputLength(inputs, 0xc0);
                     PoolKey calldata poolKey;
                     uint160 sqrtPriceX96;
                     assembly {
@@ -302,8 +374,40 @@ abstract contract Dispatcher is
                     // should only call modifyLiquidities() to mint
                     _checkV4PositionManagerCall(inputs);
                     (success, output) = address(V4_POSITION_MANAGER).call{value: address(this).balance}(inputs);
+                } else if (command == Commands.RESOLVE) {
+                    checkInputLength(inputs, 0x40);
+                    // equivalent: abi.decode(inputs, (address, bytes))
+                    address resolver;
+                    assembly {
+                        resolver := calldataload(inputs.offset)
+                    }
+                    bytes calldata context = inputs.toBytes(1);
+                    success = _resolve(resolver, context);
+                } else if (command == Commands.V4_PROTOCOL_FEE_UPDATE) {
+                    checkInputLength(inputs, 0xa0);
+                    // equivalent: abi.decode(inputs, (PoolKey))
+                    PoolKey calldata poolKey;
+                    assembly {
+                        poolKey := inputs.offset
+                    }
+                    // New pools initialize with no protocol fee; governance's fee adapter is registered on the
+                    // PoolManager as its protocolFeeController and exposes a permissionless poke that pushes the
+                    // resolved fee into pool state. Reading the controller onchain means the router never holds an
+                    // adapter address and follows any future controller change.
+                    (success, output) = poolManager.protocolFeeController()
+                        .call(abi.encodeCall(IV4FeeAdapter.triggerFeeUpdate, (poolKey)));
+                } else if (command == Commands.V3_PROTOCOL_FEE_UPDATE) {
+                    checkInputLength(inputs, 0x20);
+                    // equivalent: abi.decode(inputs, (address))
+                    address pool;
+                    assembly {
+                        pool := calldataload(inputs.offset)
+                    }
+                    // The v3 fee adapter owns the v3 factory; read it onchain and poke it for this pool.
+                    (success, output) = IUniswapV3Factory(UNISWAP_V3_FACTORY).owner()
+                        .call(abi.encodeCall(IV3FeeAdapter.triggerFeeUpdate, (pool)));
                 } else {
-                    // placeholder area for commands 0x15-0x20
+                    // placeholder area for commands 0x18-0x20
                     revert InvalidCommandType(command);
                 }
             }
@@ -312,6 +416,11 @@ abstract contract Dispatcher is
             if (command == Commands.EXECUTE_SUB_PLAN) {
                 (bytes calldata _commands, bytes[] calldata _inputs) = inputs.decodeCommandsAndInputs();
                 (success, output) = (address(this)).call(abi.encodeCall(Dispatcher.execute, (_commands, _inputs)));
+                // The nested-execution gate is a consent check, not a route failure: FLAG_ALLOW_REVERT on the
+                // sub-plan must not turn it into a silent skip that leaves the route's input in the router.
+                if (!success && output.length == 4 && bytes4(output) == NestedExecutionNotPermitted.selector) {
+                    revert NestedExecutionNotPermitted();
+                }
             } else {
                 // placeholder area for commands 0x22-0x3f
                 revert InvalidCommandType(command);
@@ -326,16 +435,73 @@ abstract contract Dispatcher is
         }
     }
 
-    /// @notice Calculates the recipient address for a command
-    /// @param recipient The recipient or recipient-flag for the command
-    /// @return output The resultant recipient for the command
-    function map(address recipient) internal view returns (address) {
-        if (recipient == ActionConstants.MSG_SENDER) {
-            return msgSender();
-        } else if (recipient == ActionConstants.ADDRESS_THIS) {
-            return address(this);
-        } else {
-            return recipient;
+    /// @dev Reverts if an input cannot contain the complete static ABI head consumed by a command.
+    function checkInputLength(bytes calldata input, uint256 minimumLength) private pure {
+        if (input.length < minimumLength) revert CalldataDecoder.SliceOutOfBounds();
+    }
+
+    /// @notice Performs a bounded staticcall to a resolver and writes the result to the transient
+    /// ResolvedAmount register for a later command to consume via Constants.USE_RESOLVED_AMOUNT.
+    /// @dev The call is read-only (staticcall) so it cannot mutate state or reenter. At most one word
+    /// of returndata is copied, so a return bomb costs the resolver gas and nothing else. A resolver
+    /// that reverts, returns fewer than 32 bytes, or returns zero fails the command, composing with
+    /// FLAG_ALLOW_REVERT like the other call-based commands: zero is not an amount any command can act
+    /// on, and the v4 swap helpers would read it as OPEN_DELTA. Every failure clears the register, so
+    /// no later command can consume a value this RESOLVE did not produce. A failure inside a sub-plan that
+    /// then reverts is undone with the rest of the sub-plan, so the earlier value returns as if it never ran.
+    function _resolve(address resolver, bytes calldata context) private returns (bool ok) {
+        bytes memory callData = abi.encodeWithSelector(IAmountResolver.resolveAmount.selector, context);
+        uint256 result;
+        assembly ('memory-safe') {
+            ok := staticcall(gas(), resolver, add(callData, 0x20), mload(callData), 0, 0x20)
+            // the copied word only means something after a successful call that returned a full word
+            result := mul(mload(0), and(ok, gt(returndatasize(), 0x1f)))
+            ok := iszero(iszero(result))
+        }
+        ResolvedAmount.set(result);
+    }
+
+    /// @dev Decodes a Permit2 batch after validating its dynamic details array against the input bounds.
+    function decodePermitBatch(bytes calldata input)
+        private
+        pure
+        returns (IAllowanceTransfer.PermitBatch calldata permitBatch)
+    {
+        // PermitBatch has a three-word head: details offset, spender, and signature deadline.
+        checkInputLength(input, 0x60);
+
+        assembly ('memory-safe') {
+            let inputLength := input.length
+            let permitBatchOffset := calldataload(input.offset)
+
+            // The PermitBatch head must be contained in the input.
+            if gt(permitBatchOffset, sub(inputLength, 0x60)) {
+                mstore(0, 0x3b99b53d) // SliceOutOfBounds()
+                revert(0x1c, 0x04)
+            }
+
+            let permitBatchPointer := add(input.offset, permitBatchOffset)
+            let detailsOffset := calldataload(permitBatchPointer)
+            let permitBatchLength := sub(inputLength, permitBatchOffset)
+
+            // The PermitDetails array length word must be contained in the PermitBatch slice.
+            if gt(detailsOffset, sub(permitBatchLength, 0x20)) {
+                mstore(0, 0x3b99b53d) // SliceOutOfBounds()
+                revert(0x1c, 0x04)
+            }
+
+            let detailsLengthPointer := add(permitBatchPointer, detailsOffset)
+            let detailsLength := calldataload(detailsLengthPointer)
+            let detailsDataOffset := add(detailsOffset, 0x20)
+            let remainingLength := sub(permitBatchLength, detailsDataOffset)
+
+            // Each PermitDetails element occupies four words.
+            if gt(detailsLength, div(remainingLength, 0x80)) {
+                mstore(0, 0x3b99b53d) // SliceOutOfBounds()
+                revert(0x1c, 0x04)
+            }
+
+            permitBatch := permitBatchPointer
         }
     }
 }
