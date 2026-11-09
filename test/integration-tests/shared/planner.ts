@@ -22,12 +22,16 @@ export enum CommandType {
   UNWRAP_WETH = 0x0c,
   PERMIT2_TRANSFER_FROM_BATCH = 0x0d,
   BALANCE_CHECK_ERC20 = 0x0e,
+  UNWRAP_WETH_EXACT = 0x0f,
 
   V4_SWAP = 0x10,
   V3_POSITION_MANAGER_PERMIT = 0x11,
   V3_POSITION_MANAGER_CALL = 0x12,
   V4_INITIALIZE_POOL = 0x13,
   V4_POSITION_MANAGER_CALL = 0x14,
+  RESOLVE = 0x15,
+  V4_PROTOCOL_FEE_UPDATE = 0x16,
+  V3_PROTOCOL_FEE_UPDATE = 0x17,
 
   EXECUTE_SUB_PLAN = 0x21,
 }
@@ -70,6 +74,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   // Token Actions and Checks
   [CommandType.WRAP_ETH]: ['address', 'uint256'],
   [CommandType.UNWRAP_WETH]: ['address', 'uint256'],
+  [CommandType.UNWRAP_WETH_EXACT]: ['address', 'uint256'],
   [CommandType.SWEEP]: ['address', 'address', 'uint256'],
   [CommandType.TRANSFER]: ['address', 'address', 'uint256'],
   [CommandType.PAY_PORTION]: ['address', 'address', 'uint256'],
@@ -81,6 +86,13 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.V3_POSITION_MANAGER_CALL]: ['bytes'],
   [CommandType.V4_INITIALIZE_POOL]: [POOL_KEY_STRUCT, 'uint160'],
   [CommandType.V4_POSITION_MANAGER_CALL]: ['bytes'],
+
+  // Callback amount resolution
+  [CommandType.RESOLVE]: ['address', 'bytes'],
+
+  // Protocol fee propagation
+  [CommandType.V4_PROTOCOL_FEE_UPDATE]: [POOL_KEY_STRUCT],
+  [CommandType.V3_PROTOCOL_FEE_UPDATE]: ['address'],
 }
 
 export class RoutePlanner {
