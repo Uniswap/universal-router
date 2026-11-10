@@ -70,7 +70,7 @@ Each command is a `bytes1` containing the following 8 bits:
    ├──────┼───────────────────────────────┤
    │ 0x06 │  PAY_PORTION                  │
    ├──────┼───────────────────────────────┤
-   │ 0x07 │  -------                      │
+   │ 0x07 │  PAY_PORTION_FULL_PRECISION   │
    ├──────┼───────────────────────────────┤
    │ 0x08 │  V2_SWAP_EXACT_IN             │
    ├──────┼───────────────────────────────┤
@@ -84,17 +84,35 @@ Each command is a `bytes1` containing the following 8 bits:
    ├──────┼───────────────────────────────┤
    │ 0x0d │  PERMIT2_TRANSFER_FROM_BATCH  │
    ├──────┼───────────────────────────────┤
-   │ 0x0e-│  -------                      │
+   │ 0x0e │  BALANCE_CHECK_ERC20          │
+   ├──────┼───────────────────────────────┤
+   │ 0x0f │  -------                      │
+   ├──────┼───────────────────────────────┤
+   │ 0x10 │  V4_SWAP                      │
+   ├──────┼───────────────────────────────┤
+   │ 0x11 │  V3_POSITION_MANAGER_PERMIT   │
+   ├──────┼───────────────────────────────┤
+   │ 0x12 │  V3_POSITION_MANAGER_CALL     │
+   ├──────┼───────────────────────────────┤
+   │ 0x13 │  V4_INITIALIZE_POOL           │
+   ├──────┼───────────────────────────────┤
+   │ 0x14 │  V4_POSITION_MANAGER_CALL     │
+   ├──────┼───────────────────────────────┤
+   │ 0x15-│  -------                      │
    │ 0x20 │                               │
    ├──────┼───────────────────────────────┤
    │ 0x21 │  EXECUTE_SUB_PLAN             │
    ├──────┼───────────────────────────────┤
    │ 0x22-│  -------                      │
    │ 0x3f │                               │
+   ├──────┼───────────────────────────────┤
+   │ 0x40 │  ACROSS_V4_DEPOSIT_V3         │
    └──────┴───────────────────────────────┘
 ```
 
 Note that some of the commands in the middle of the series are unused. These gaps allowed us to create gas-efficiencies when selecting which command to execute.
+
+> **V4 commands and `forge install`:** Uniswap V4 guides use `V4_SWAP` (`0x10`). That command exists on `main` and on the `2.x` git tags (for example `2.2.0`). The older `v1.6.0` tag does **not** include it. Prefer `forge install Uniswap/universal-router@2.2.0` (or `@main`) rather than a bare `forge install Uniswap/universal-router`, which may resolve to `v1.6.0`.
 
 #### How the input bytes are structures
 
